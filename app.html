@@ -1356,15 +1356,19 @@ let cardForm = null;
 
 // ─── SESSION ──────────────────────────────────────────────────
 async function loadSession() {
-  const { data } = await db.auth.getSession();
+  console.log('loadSession iniciado');
+  const { data, error } = await db.auth.getSession();
+  console.log('session data:', data, 'error:', error);
   if (data.session?.user) {
     currentSession = data.session;
     currentUser = data.session.user;
+    console.log('usuário logado:', currentUser.email);
     await loadSubscription();
     updateAvatarUI();
     if (currentSub) { renderApp(); }
     else { showScreen('nosub'); }
   } else {
+    console.log('sem sessão, mostrando login');
     showAuthModal('login');
   }
 }
