@@ -318,7 +318,7 @@ const state = {
     conditions:[],
     direction:'long', entryType:'breakout', validity:3,
     stopType:'fixed', stopPts:200, stopOffset:10, stopCandles:5,
-    tpType:'rr', tpPts:400, tpRR:2,
+    tpType:'rr', tpPts:400, tpRR:2, tpFibLevel:'161.8',
     trailing:false, trailAct:100, trailDist:100, trailStep:50,
     partial:false, partPct:50, partAt:200, partMoveStop:true,
     exitCond:false, exitCondition:null,
@@ -455,6 +455,9 @@ const INDS_BY_TAB = {
     { id:'ema',  name:'EMA',                 desc:'Média exponencial N períodos',  hasPer:true, hasVal:false,defCond:'Preço está acima',       defVal:0, defPer:200 },
     { id:'bb',   name:'Bandas de Bollinger', desc:'Canal dinâmico de volatilidade',hasPer:true, hasVal:false,defCond:'Preço toca banda sup.', defVal:0 },
     { id:'vwap', name:'VWAP',               desc:'Preço médio ponderado por volume',hasPer:false,hasVal:false,defCond:'Preço está acima do VWAP',defVal:0 },
+    { id:'adx',  name:'ADX',                desc:'Força da tendência (0–100)',     hasPer:true, hasVal:true, defCond:'está acima de', defVal:25 },
+    { id:'sar',  name:'SAR Parabólico',     desc:'Indicador de reversão de tendência',hasPer:false,hasVal:false,defCond:'Preço está acima do SAR',defVal:0 },
+    { id:'hilo', name:'HiLo Activator',    desc:'Linha de suporte/resistência baseada em máximas e mínimas de N períodos',hasPer:true,hasVal:false,defCond:'HiLo virou compra',defVal:0,defPer:6 },
   ],
   'Volume': [
     { id:'vol',    name:'Volume',       desc:'Volume total do candle',       hasPer:false,hasVal:true, defCond:'é maior que', defVal:1000 },
@@ -464,6 +467,16 @@ const INDS_BY_TAB = {
   'Preço': [
     { id:'price',  name:'Preço (OHLC)',      desc:'Abertura/Máxima/Mínima/Fechamento',hasPer:false,hasVal:true,defCond:'está acima de',defVal:0 },
     { id:'range',  name:'Range (Máx−Mín)',   desc:'Amplitude do candle em pontos',    hasPer:false,hasVal:true,defCond:'é maior que',  defVal:100 },
+    { id:'hilon',  name:'Máx/Mín de N períodos', desc:'Maior máxima ou menor mínima dos últimos N candles',hasPer:true,hasVal:false,defCond:'Preço rompe máxima de N períodos',defVal:0,defPer:20 },
+    { id:'gap',    name:'Gap',               desc:'Diferença entre fechamento anterior e abertura atual',hasPer:false,hasVal:true,defCond:'Gap de alta',defVal:0 },
+    { id:'prevday',name:'Máx/Mín Dia Anterior', desc:'Máxima ou mínima do pregão anterior',hasPer:false,hasVal:false,defCond:'Preço está acima da máxima de ontem',defVal:0 },
+    { id:'fib',    name:'Retração de Fibonacci', desc:'Níveis de retração baseados no swing de N períodos',hasPer:true,hasVal:false,defCond:'Preço toca nível 61.8%',defVal:0,defPer:50 },
+  ],
+  'Volatilidade': [
+    { id:'atr',    name:'ATR',              desc:'Average True Range — mede volatilidade média',hasPer:true,hasVal:true,defCond:'está acima de',defVal:100,defPer:14 },
+  ],
+  'Padrões': [
+    { id:'candle', name:'Padrão de Candle', desc:'Identifica formações clássicas de candlestick',hasPer:false,hasVal:false,defCond:'Martelo (alta)',defVal:0 },
   ],
 };
 
@@ -476,17 +489,35 @@ const VOL_CONDS  = ['é maior que','é menor que'];
 const TRD_CONDS  = ['está subindo','está caindo'];
 const PRC_CONDS  = ['está acima de','está abaixo de','cruza acima de','cruza abaixo de'];
 const RNG_CONDS  = ['é maior que','é menor que'];
+const ADX_CONDS  = ['está acima de','está abaixo de','cruza acima de','cruza abaixo de'];
+const SAR_CONDS  = ['Preço está acima do SAR','Preço está abaixo do SAR','Preço cruza acima do SAR','Preço cruza abaixo do SAR'];
+const HILO_CONDS = ['HiLo virou compra','HiLo virou venda','Preço está acima do HiLo','Preço está abaixo do HiLo'];
+const ATR_CONDS  = ['está acima de','está abaixo de','é maior que a média'];
+const HILON_CONDS = ['Preço rompe máxima de N períodos','Preço rompe mínima de N períodos','Preço está acima da máxima de N','Preço está abaixo da mínima de N'];
+const GAP_CONDS  = ['Gap de alta','Gap de baixa','Gap de alta maior que','Gap de baixa maior que'];
+const PREVDAY_CONDS = ['Preço está acima da máxima de ontem','Preço está abaixo da mínima de ontem','Preço cruza acima da máxima de ontem','Preço cruza abaixo da mínima de ontem','Preço está entre máxima e mínima de ontem'];
+const FIB_CONDS = ['Preço toca nível 23.6%','Preço toca nível 38.2%','Preço toca nível 50%','Preço toca nível 61.8%','Preço toca nível 78.6%','Preço cruza acima do nível 61.8%','Preço cruza abaixo do nível 61.8%','Preço está na zona 50%–61.8%','Preço está na zona 61.8%–78.6%'];
+const CANDLE_CONDS = ['Martelo (alta)','Martelo Invertido (alta)','Engolfo de Alta','Engolfo de Baixa','Doji','Estrela da Manhã (alta)','Estrela da Noite (baixa)','Harami de Alta','Harami de Baixa','Marubozu de Alta','Marubozu de Baixa','Spinning Top'];
 
 function getCondsFor(id) {
   if (['rsi','stoch','cci','williams'].includes(id)) return OSC_CONDS;
   if (['sma','ema'].includes(id)) return MA_CONDS;
-  if (id==='bb')   return BB_CONDS;
-  if (id==='vwap') return VWAP_CONDS;
-  if (id==='macd') return MACD_CONDS;
+  if (id==='bb')      return BB_CONDS;
+  if (id==='vwap')    return VWAP_CONDS;
+  if (id==='macd')    return MACD_CONDS;
+  if (id==='adx')     return ADX_CONDS;
+  if (id==='sar')     return SAR_CONDS;
+  if (id==='hilo')    return HILO_CONDS;
+  if (id==='atr')     return ATR_CONDS;
+  if (id==='hilon')   return HILON_CONDS;
+  if (id==='gap')     return GAP_CONDS;
+  if (id==='prevday') return PREVDAY_CONDS;
+  if (id==='fib')     return FIB_CONDS;
+  if (id==='candle')  return CANDLE_CONDS;
   if (['vol','avgvol'].includes(id)) return VOL_CONDS;
-  if (id==='obv')   return TRD_CONDS;
-  if (id==='price') return PRC_CONDS;
-  if (id==='range') return RNG_CONDS;
+  if (id==='obv')     return TRD_CONDS;
+  if (id==='price')   return PRC_CONDS;
+  if (id==='range')   return RNG_CONDS;
   return [];
 }
 
@@ -502,6 +533,15 @@ function condLabel(c) {
     case 'ema':      return `EMA(${p.per||200}) — ${p.cond}`;
     case 'bb':       return `Bollinger(${p.per||20}) — ${p.cond}`;
     case 'vwap':     return p.cond;
+    case 'adx':      return `ADX(${p.per||14}) ${p.cond} ${p.val}`;
+    case 'sar':      return `SAR — ${p.cond}`;
+    case 'hilo':     return `HiLo(${p.per||6}) — ${p.cond}`;
+    case 'atr':      return `ATR(${p.per||14}) ${p.cond} ${p.val||''}`;
+    case 'hilon':    return `${p.cond} (${p.per||20})`;
+    case 'gap':      return `${p.cond}${p.val?' > '+p.val+' pts':''}`;
+    case 'prevday':  return p.cond;
+    case 'fib':      return `Fibo(${p.per||50}) — ${p.cond}`;
+    case 'candle':   return `Padrão: ${p.cond}`;
     case 'vol':      return `Volume ${p.cond} ${p.val}`;
     case 'obv':      return `OBV ${p.cond}`;
     case 'avgvol':   return `Volume ${p.cond} Vol.Médio(${p.per||20})`;
@@ -701,8 +741,8 @@ function buildHistChart() {
 function buildPreview(step,cfg) {
   const svgEl=hsvg('svg',{width:'100%',viewBox:'0 0 300 190'});
   const candles=[{x:10,o:140,c:128,h:148,l:120},{x:38,o:128,c:145,h:152,l:122},{x:66,o:145,c:137,h:158,l:130},{x:94,o:137,c:152,h:162,l:130},{x:122,o:152,c:142,h:168,l:136},{x:150,o:142,c:158,h:172,l:136},{x:178,o:158,c:148,h:176,l:140},{x:206,o:148,c:162,h:180,l:140},{x:234,o:162,c:150,h:184,l:142},{x:262,o:150,c:165,h:188,l:143}];
-  const hasMA=cfg.conditions?.some(c=>['sma','ema','bb','vwap'].includes(c.id));
-  const hasOsc=cfg.conditions?.some(c=>['rsi','stoch','cci','williams','macd'].includes(c.id));
+  const hasMA=cfg.conditions?.some(c=>['sma','ema','bb','vwap','sar','prevday','hilo'].includes(c.id));
+  const hasOsc=cfg.conditions?.some(c=>['rsi','stoch','cci','williams','macd','adx','atr'].includes(c.id));
   const pH=hasOsc?148:185;
   // grid
   [50,90,130,170].forEach(y=>{const l=hsvg('line',{x1:'5',y1:y,x2:'295',y2:y,stroke:'#2A2A3C','stroke-width':'0.5','stroke-dasharray':'3,3'});svgEl.appendChild(l);});
@@ -863,8 +903,9 @@ function renderModal() {
     }
     if(ind.hasVal!==false && ms.params.val!==undefined) {
       const row=div('');
-      row.appendChild(slabel('Valor de referência'));
-      const s=stepper(ms.params.val,-999,99999,'',v=>{ms.params.val=v;renderModal();});
+      const valLabel = ind.id==='gap' ? 'Tamanho mínimo (pontos)' : ind.id==='atr' ? 'Valor em pontos' : 'Valor de referência';
+      row.appendChild(slabel(valLabel));
+      const s=stepper(ms.params.val,-999,99999, ind.id==='gap'||ind.id==='atr'?'pts':'', v=>{ms.params.val=v;renderModal();});
       row.appendChild(s);
       frag.appendChild(row);
     }
@@ -1136,6 +1177,7 @@ function renderStep4() {
   const TP_TYPES=[
     {id:'fixed',label:'Alvo fixo em pontos',desc:''},
     {id:'rr',label:'Alvo em múltiplo do risco (R:R)',desc:''},
+    {id:'fib_ext',label:'Extensão de Fibonacci',desc:'Alvo baseado na projeção de Fibonacci da perna anterior.'},
     {id:'none',label:'Sem alvo fixo',desc:'A operação será encerrada pela gestão configurada no próximo passo.'},
   ];
   const tList=div('');tList.style.cssText='display:flex;flex-direction:column;gap:7px';
@@ -1154,6 +1196,20 @@ function renderStep4() {
         rrow.append(stepper(cfg.tpRR,1,20,'',v=>{cfg.tpRR=v;renderApp();}),rl);
         sub.appendChild(rrow);
         if(cfg.stopType==='fixed'){const hint=div('');hint.style.cssText='font-size:11px;color:#44445A;font-family:JetBrains Mono';hint.textContent=`Stop ${cfg.stopPts} pts → alvo = ${(cfg.tpRR*cfg.stopPts).toLocaleString('pt-BR')} pts`;sub.appendChild(hint);}
+      }
+      if(t.id==='fib_ext'){
+        const fibLevels=['100','127.2','161.8','200','261.8'];
+        const fibRow=div('');fibRow.style.cssText='display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px';
+        fibLevels.forEach(lvl=>{
+          const chip=div('chip'+(cfg.tpFibLevel===lvl?' on':''));
+          chip.textContent=lvl+'%';
+          chip.addEventListener('click',()=>{cfg.tpFibLevel=lvl;renderApp();});
+          fibRow.appendChild(chip);
+        });
+        sub.appendChild(fibRow);
+        const hint=div('');hint.style.cssText='font-size:11px;color:#44445A;line-height:1.5';
+        hint.textContent=`Alvo na extensão de ${cfg.tpFibLevel}% da perna anterior ao ponto de entrada.`;
+        sub.appendChild(hint);
       }
       if(t.id==='none'&&t.desc){const ds=div('');ds.style.cssText='font-size:11px;color:#8888A0';ds.textContent=t.desc;sub.appendChild(ds);}
       c.appendChild(sub);
@@ -1229,7 +1285,7 @@ function renderConfirm() {
   const asset=findAsset(cfg.asset);
   const entryMap={breakout:'Rompimento da máx/mín do candle de sinal',next_open:'Abertura do próximo candle',sig_close:'Fechamento do candle de sinal'};
   const stopDesc={fixed:`${cfg.stopPts} pts abaixo/acima da entrada`,hl_candle:`Máx/Mín do candle de sinal (+${cfg.stopOffset} pts)`,n_candles:`Máx/Mín dos últimos ${cfg.stopCandles} candles (+${cfg.stopOffset} pts)`}[cfg.stopType];
-  const tpDesc={fixed:`${cfg.tpPts} pts`,rr:`${cfg.tpRR}× o risco${cfg.stopType==='fixed'?' = '+(cfg.tpRR*cfg.stopPts).toLocaleString('pt-BR')+' pts':''}`,none:'Sem alvo fixo'}[cfg.tpType];
+  const tpDesc={fixed:`${cfg.tpPts} pts`,rr:`${cfg.tpRR}× o risco${cfg.stopType==='fixed'?' = '+(cfg.tpRR*cfg.stopPts).toLocaleString('pt-BR')+' pts':''}`,fib_ext:`Extensão Fibonacci ${cfg.tpFibLevel}%`,none:'Sem alvo fixo'}[cfg.tpType];
   const mgmt=[];
   if(cfg.trailing) mgmt.push(`Trailing após ${cfg.trailAct} pts (dist.${cfg.trailDist}, step ${cfg.trailStep})`);
   if(cfg.partial)  mgmt.push(`Parcial ${cfg.partPct}% aos ${cfg.partAt} pts${cfg.partMoveStop?', move stop':''}` );
@@ -1447,7 +1503,7 @@ function renderApp() {
     ['Janela', state.cfg.tStart+' – '+state.cfg.tEnd],
     ['Condições', state.cfg.conditions.length===0?'Nenhuma':state.cfg.conditions.length+' condição'+(state.cfg.conditions.length>1?'ões':'')],
     ['Stop', {fixed:state.cfg.stopPts+' pts',hl_candle:'Candle signal',n_candles:state.cfg.stopCandles+' candles'}[state.cfg.stopType]],
-    ['Alvo', {fixed:state.cfg.tpPts+' pts',rr:state.cfg.tpRR+'× risco',none:'Por gestão'}[state.cfg.tpType]],
+    ['Alvo', {fixed:state.cfg.tpPts+' pts',rr:state.cfg.tpRR+'× risco',fib_ext:'Fibo '+state.cfg.tpFibLevel+'%',none:'Por gestão'}[state.cfg.tpType]],
   ];
   summRows.forEach(([k,v])=>{
     const r=div('');r.style.cssText='display:flex;justify-content:space-between';
