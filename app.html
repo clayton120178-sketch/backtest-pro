@@ -1344,7 +1344,15 @@ const CYCLE_DISC = { mensal: null, semestral: '11% off', anual: '30% off' };
 // ─── SUPABASE INIT ────────────────────────────────────────────
 console.log('supabase obj:', window.supabase, window.Supabase);
 const _supa = window.supabase || window.Supabase;
-const db = _supa.createClient(SUPA_URL, SUPA_KEY);
+const db = _supa.createClient(SUPA_URL, SUPA_KEY, {
+  auth: {
+    storage: window.localStorage,
+    storageKey: 'btp-auth',
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  }
+});
 console.log('db criado:', db);
 
 // ─── STATE ────────────────────────────────────────────────────
