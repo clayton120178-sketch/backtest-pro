@@ -1661,16 +1661,26 @@ function renderPayForm() {
 
 async function submitPix() {
   const btn = document.getElementById('pay-submit');
-  const email = currentUser.email;
   btn.disabled = true;
   btn.textContent = 'Gerando Pix...';
 
-  const session = currentSession;
+  // Buscar sessão atualizada
+  const { data: sessionData } = await db.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  console.log('token para pagamento:', token ? token.slice(0,20)+'...' : 'VAZIO');
+
+  if (!token) {
+    showPayError('Sessão expirada. Faça login novamente.');
+    btn.disabled = false;
+    btn.textContent = 'Gerar QR Code Pix';
+    return;
+  }
+
   const res = await fetch(`${SUPA_URL}/functions/v1/create-payment`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}`,
+      'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify({
       plan: selectedPlan,
