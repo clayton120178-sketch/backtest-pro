@@ -1496,11 +1496,14 @@ function initCardForm() {
   }
 }
 
+let detectedPaymentMethod = null;
+
 function renderCardForm() {
   const area = document.getElementById('card-form-area');
   if (!area) return;
   if (mpMounted) return;
   mpMounted = true;
+  detectedPaymentMethod = null;
   const price = PRICES[selectedPlan][selectedCycle];
   area.innerHTML = `
     <div class="pay-field"><label>Número do cartão</label><div id="mp-cardNumber" class="mp-field-container"></div></div>
@@ -1514,10 +1517,31 @@ function renderCardForm() {
     <button class="pay-btn" id="pay-submit" onclick="submitCard()">Pagar R$ ${price.toLocaleString('pt-BR',{minimumFractionDigits:2})}</button>`;
   try {
     mpInstance = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
-    const fieldStyle = { height:'42px', color:'#E8E8ED', 'font-size':'14px', 'font-family':'"DM Sans", sans-serif', 'placeholder-color':'#44445A' };
-    window.mpCardNumber = mpInstance.fields.create('cardNumber', { placeholder:'0000 0000 0000 0000', style:fieldStyle }).mount('mp-cardNumber');
-    window.mpExpiration = mpInstance.fields.create('expirationDate', { placeholder:'MM/AA', style:fieldStyle }).mount('mp-expiration');
-    window.mpCVV = mpInstance.fields.create('securityCode', { placeholder:'123', style:fieldStyle }).mount('mp-cvv');
+    const fieldStyle = {
+      height: '42px',
+      color: '#E8E8ED',
+      'font-size': '14px',
+      'font-family': '"DM Sans", sans-serif',
+      'placeholder-color': '#44445A',
+      'background-color': '#1A1A28',
+    };
+    window.mpCardNumber = mpInstance.fields.create('cardNumber', { placeholder:'0000 0000 0000 0000', style: fieldStyle }).mount('mp-cardNumber');
+    window.mpExpiration = mpInstance.fields.create('expirationDate', { placeholder:'MM/AA', style: fieldStyle }).mount('mp-expiration');
+    window.mpCVV = mpInstance.fields.create('securityCode', { placeholder:'123', style: fieldStyle }).mount('mp-cvv');
+
+    // Detect card type from BIN
+    window.mpCardNumber.on('binChange', async (data) => {
+      if (data.bin && data.bin.length >= 6) {
+        try {
+          const methods = await mpInstance.getPaymentMethods({ bin: data.bin });
+          if (methods.results && methods.results.length > 0) {
+            detectedPaymentMethod = methods.results[0];
+            console.log('MP: Detected card:', detectedPaymentMethod.id, detectedPaymentMethod.issuer?.id);
+          }
+        } catch(e) { console.error('MP getPaymentMethods:', e); }
+      }
+    });
+
     console.log('MP: Fields mounted via fields API');
   } catch(e) { console.error('MP fields error:', e); }
 }
@@ -1558,28 +1582,33 @@ async function checkPix(paymentId) {
 async function submitCard() {
   const btn = document.getElementById('pay-submit');
   btn.disabled=true; btn.textContent='Processando...';
+  const priceLabel = `Pagar R$ ${PRICES[selectedPlan][selectedCycle].toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
   try {
     const holderName = document.getElementById('pay-holder')?.value?.trim();
     const cpf = document.getElementById('pay-cpf')?.value?.replace(/\D/g,'');
-    if (!holderName || !cpf) { showPayError('Preencha nome e CPF.'); btn.disabled=false; btn.textContent=`Pagar R$ ${PRICES[selectedPlan][selectedCycle].toLocaleString('pt-BR',{minimumFractionDigits:2})}`; return; }
+    if (!holderName || !cpf) { showPayError('Preencha nome e CPF.'); btn.disabled=false; btn.textContent=priceLabel; return; }
+    if (!detectedPaymentMethod) { showPayError('Digite o número do cartão completo.'); btn.disabled=false; btn.textContent=priceLabel; return; }
     const tokenResult = await mpInstance.fields.createCardToken({
       cardholderName: holderName,
       identificationType: 'CPF',
       identificationNumber: cpf,
     });
-    if (!tokenResult?.id) { showPayError('Erro ao processar cartão. Verifique os dados.'); btn.disabled=false; btn.textContent=`Pagar R$ ${PRICES[selectedPlan][selectedCycle].toLocaleString('pt-BR',{minimumFractionDigits:2})}`; return; }
+    if (!tokenResult?.id) { showPayError('Erro ao processar cartão. Verifique os dados.'); btn.disabled=false; btn.textContent=priceLabel; return; }
     const { data: { session } } = await db.auth.getSession();
     const installments = Number(document.getElementById('pay-installments')?.value)||1;
+    const pmId = detectedPaymentMethod.id; // e.g. "visa", "master", "amex"
+    const issuerId = detectedPaymentMethod.issuer?.id || null;
+    console.log('MP: Submitting payment -', pmId, 'token:', tokenResult.id);
     const res = await fetch(`${SUPA_URL}/functions/v1/create-payment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-      body: JSON.stringify({ plan: selectedPlan, cycle: selectedCycle, payment_type: payMethod, payment_method_id: tokenResult.payment_method?.id || payMethod, token: tokenResult.id, issuer_id: tokenResult.issuer_id || null, installments, payer: { email: currentUser.email, identification: { type:'CPF', number: cpf } } }),
+      body: JSON.stringify({ plan: selectedPlan, cycle: selectedCycle, payment_type: payMethod, payment_method_id: pmId, token: tokenResult.id, issuer_id: issuerId, installments, payer: { email: currentUser.email, identification: { type:'CPF', number: cpf } } }),
     });
     const data = await res.json();
-    if (!res.ok || data.error) { showPayError(data.error||'Erro no pagamento.'); btn.disabled=false; btn.textContent=`Pagar R$ ${PRICES[selectedPlan][selectedCycle].toLocaleString('pt-BR',{minimumFractionDigits:2})}`; return; }
+    if (!res.ok || data.error) { showPayError(data.error||'Erro no pagamento.'); btn.disabled=false; btn.textContent=priceLabel; return; }
     if (data.status==='approved') { const { data: { session: s } } = await db.auth.getSession(); await loadSubscription(s.access_token); updateAvatarUI(); showPaySuccess(); }
-    else { showPayError('Pagamento recusado. Verifique os dados ou tente outro método.'); btn.disabled=false; btn.textContent=`Pagar R$ ${PRICES[selectedPlan][selectedCycle].toLocaleString('pt-BR',{minimumFractionDigits:2})}`; }
-  } catch(e) { console.error('submitCard error:', e); showPayError('Erro ao processar. Verifique os dados do cartão.'); btn.disabled=false; btn.textContent=`Pagar R$ ${PRICES[selectedPlan][selectedCycle].toLocaleString('pt-BR',{minimumFractionDigits:2})}`; }
+    else { showPayError('Pagamento recusado. Verifique os dados ou tente outro método.'); btn.disabled=false; btn.textContent=priceLabel; }
+  } catch(e) { console.error('submitCard error:', e); showPayError('Erro ao processar. Verifique os dados do cartão.'); btn.disabled=false; btn.textContent=priceLabel; }
 }
 
 function showPayError(msg) { const el=document.getElementById('pay-error'); if(el){el.textContent=msg;el.classList.add('show');} }
