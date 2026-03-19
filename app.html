@@ -1341,8 +1341,11 @@ const PRICES = {
 const CYCLE_DAYS = { mensal: 30, semestral: 180, anual: 365 };
 const CYCLE_DISC = { mensal: null, semestral: '11% off', anual: '30% off' };
 
-// ─── SUPABASE ─────────────────────────────────────────────────
-const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+// ─── SUPABASE INIT ────────────────────────────────────────────
+console.log('supabase obj:', window.supabase, window.Supabase);
+const _supa = window.supabase || window.Supabase;
+const db = _supa.createClient(SUPA_URL, SUPA_KEY);
+console.log('db criado:', db);
 
 // ─── STATE ────────────────────────────────────────────────────
 let currentUser = null;
