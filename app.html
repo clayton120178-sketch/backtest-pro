@@ -1576,10 +1576,6 @@ function renderPayForm() {
 
   if (payMethod === 'pix') {
     area.innerHTML = `
-      <div class="pay-field">
-        <label>E-mail para confirmação</label>
-        <input class="pay-input" id="pay-email" type="email" placeholder="seu@email.com" value="${currentUser?.email||''}">
-      </div>
       <button class="pay-btn" id="pay-submit" onclick="submitPix()">Gerar QR Code Pix</button>
     `;
     return;
@@ -1648,7 +1644,7 @@ function renderPayForm() {
 
 async function submitPix() {
   const btn = document.getElementById('pay-submit');
-  const email = document.getElementById('pay-email')?.value?.trim() || currentUser.email;
+  const email = currentUser.email;
   btn.disabled = true;
   btn.textContent = 'Gerando Pix...';
 
