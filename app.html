@@ -1484,7 +1484,8 @@ function renderCardForm() {
       <div class="pay-field"><label>CVV</label><div id="mp-cvv" style="background:var(--bg2);border:1px solid var(--bd);border-radius:9px;padding:11px 14px;height:44px"></div></div>
     </div>
     <div class="pay-field"><label>CPF do titular</label><input class="pay-input" id="pay-cpf" type="text" placeholder="000.000.000-00" maxlength="14"></div>
-    ${payMethod==='credit_card'?`<div class="pay-field"><label>Parcelas</label><select class="pay-input" id="pay-installments"><option value="1">1x sem juros</option></select></div>`:''}
+    <div class="pay-field" style="display:none"><select id="pay-id-type"><option value="CPF" selected>CPF</option><option value="CNPJ">CNPJ</option></select></div>
+    <div class="pay-field" ${payMethod!=='credit_card'?'style="display:none"':''}><label>Parcelas</label><select class="pay-input" id="pay-installments"><option value="1">1x sem juros</option></select></div>
     <button class="pay-btn" id="pay-submit" onclick="submitCard()">Pagar R$ ${price.toLocaleString('pt-BR',{minimumFractionDigits:2})}</button>`;
   try {
     mpInstance = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
@@ -1498,11 +1499,15 @@ function renderCardForm() {
         expirationDate: { id: 'mp-expiration', placeholder: 'MM/AA' },
         securityCode: { id: 'mp-cvv', placeholder: '123' },
         installments: { id: 'pay-installments' },
+        identificationType: { id: 'pay-id-type' },
         identificationNumber: { id: 'pay-cpf' },
       },
-      callbacks: { onFormMounted: err => { if(err) console.error('MP:', err); } }
+      callbacks: {
+        onFormMounted: err => { if(err) console.error('MP mount error:', err); else console.log('MP: Secure fields mounted'); },
+        onFormUnmounted: err => { if(err) console.error('MP unmount error:', err); },
+      }
     });
-  } catch(e) { console.error('MP init:', e); }
+  } catch(e) { console.error('MP init error:', e); }
 }
 
 async function submitPix() {
