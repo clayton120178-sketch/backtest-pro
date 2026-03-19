@@ -239,8 +239,9 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .pay-btn:disabled{opacity:.5;cursor:not-allowed}
 .pay-error{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 13px;font-size:12px;color:#EF4444;margin-bottom:14px;display:none}
 .pay-error.show{display:block}
-.mp-field-container{background:var(--bg2);border:1px solid var(--bd);border-radius:9px;min-height:44px;overflow:hidden}
-.mp-field-container iframe{width:100%!important;height:44px!important;border:none!important}
+.mp-field-container{background:var(--bg2);border:1px solid var(--bd);border-radius:9px;min-height:44px}
+.mp-field-container iframe{width:100%!important;height:44px!important;border:none!important;display:block!important}
+.mp-field-container:focus-within{border-color:var(--ac)}
 .pay-secure{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;color:var(--txm);margin-top:14px}
 .pix-box{background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:20px;text-align:center;margin-bottom:16px}
 .pix-qr{width:180px;height:180px;margin:0 auto 14px;border-radius:8px}
@@ -1498,7 +1499,7 @@ function initCardForm() {
 function renderCardForm() {
   const area = document.getElementById('card-form-area');
   if (!area) return;
-  if (mpMounted) return; // Already attempted mount, skip
+  if (mpMounted) return;
   mpMounted = true;
   const price = PRICES[selectedPlan][selectedCycle];
   area.innerHTML = `
@@ -1509,32 +1510,16 @@ function renderCardForm() {
       <div class="pay-field"><label>CVV</label><div id="mp-cvv" class="mp-field-container"></div></div>
     </div>
     <div class="pay-field"><label>CPF do titular</label><input class="pay-input" id="pay-cpf" type="text" placeholder="000.000.000-00" maxlength="14"></div>
-    <div class="pay-field" style="display:none"><select id="pay-id-type"><option value="CPF" selected>CPF</option><option value="CNPJ">CNPJ</option></select></div>
-    <div class="pay-field" style="display:none"><select id="pay-issuer"><option value="">-</option></select></div>
-    <div class="pay-field" ${payMethod!=='credit_card'?'style="display:none"':''}><label>Parcelas</label><select class="pay-input" id="pay-installments"><option value="1">1x sem juros</option></select></div>
+    ${payMethod==='credit_card'?`<div class="pay-field"><label>Parcelas</label><select class="pay-input" id="pay-installments"><option value="1">1x sem juros</option></select></div>`:''}
     <button class="pay-btn" id="pay-submit" onclick="submitCard()">Pagar R$ ${price.toLocaleString('pt-BR',{minimumFractionDigits:2})}</button>`;
   try {
     mpInstance = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
-    cardForm = mpInstance.cardForm({
-      amount: String(price),
-      autoMount: true,
-      form: {
-        id: 'card-form-area',
-        cardholderName: { id: 'pay-holder' },
-        cardNumber: { id: 'mp-cardNumber', placeholder: '0000 0000 0000 0000' },
-        expirationDate: { id: 'mp-expiration', placeholder: 'MM/AA' },
-        securityCode: { id: 'mp-cvv', placeholder: '123' },
-        issuer: { id: 'pay-issuer' },
-        installments: { id: 'pay-installments' },
-        identificationType: { id: 'pay-id-type' },
-        identificationNumber: { id: 'pay-cpf' },
-      },
-      callbacks: {
-        onFormMounted: err => { if(err) console.error('MP mount error:', err); else console.log('MP: Secure fields mounted'); },
-        onFormUnmounted: err => { if(err) console.error('MP unmount error:', err); },
-      }
-    });
-  } catch(e) { console.error('MP init error:', e); }
+    const fieldStyle = { height:'42px', color:'#E8E8ED', 'font-size':'14px', 'font-family':'"DM Sans", sans-serif', 'placeholder-color':'#44445A' };
+    window.mpCardNumber = mpInstance.fields.create('cardNumber', { placeholder:'0000 0000 0000 0000', style:fieldStyle }).mount('mp-cardNumber');
+    window.mpExpiration = mpInstance.fields.create('expirationDate', { placeholder:'MM/AA', style:fieldStyle }).mount('mp-expiration');
+    window.mpCVV = mpInstance.fields.create('securityCode', { placeholder:'123', style:fieldStyle }).mount('mp-cvv');
+    console.log('MP: Fields mounted via fields API');
+  } catch(e) { console.error('MP fields error:', e); }
 }
 
 async function submitPix() {
@@ -1574,19 +1559,27 @@ async function submitCard() {
   const btn = document.getElementById('pay-submit');
   btn.disabled=true; btn.textContent='Processando...';
   try {
-    const formData = cardForm.getCardFormData();
+    const holderName = document.getElementById('pay-holder')?.value?.trim();
     const cpf = document.getElementById('pay-cpf')?.value?.replace(/\D/g,'');
+    if (!holderName || !cpf) { showPayError('Preencha nome e CPF.'); btn.disabled=false; btn.textContent=`Pagar R$ ${PRICES[selectedPlan][selectedCycle].toLocaleString('pt-BR',{minimumFractionDigits:2})}`; return; }
+    const tokenResult = await mpInstance.fields.createCardToken({
+      cardholderName: holderName,
+      identificationType: 'CPF',
+      identificationNumber: cpf,
+    });
+    if (!tokenResult?.id) { showPayError('Erro ao processar cartão. Verifique os dados.'); btn.disabled=false; btn.textContent=`Pagar R$ ${PRICES[selectedPlan][selectedCycle].toLocaleString('pt-BR',{minimumFractionDigits:2})}`; return; }
     const { data: { session } } = await db.auth.getSession();
+    const installments = Number(document.getElementById('pay-installments')?.value)||1;
     const res = await fetch(`${SUPA_URL}/functions/v1/create-payment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-      body: JSON.stringify({ plan: selectedPlan, cycle: selectedCycle, payment_type: payMethod, payment_method_id: formData.paymentMethodId, token: formData.token, issuer_id: formData.issuerId, installments: Number(formData.selectedInstallments)||1, payer: { email: currentUser.email, identification: { type:'CPF', number: cpf } } }),
+      body: JSON.stringify({ plan: selectedPlan, cycle: selectedCycle, payment_type: payMethod, payment_method_id: tokenResult.payment_method?.id || payMethod, token: tokenResult.id, issuer_id: tokenResult.issuer_id || null, installments, payer: { email: currentUser.email, identification: { type:'CPF', number: cpf } } }),
     });
     const data = await res.json();
     if (!res.ok || data.error) { showPayError(data.error||'Erro no pagamento.'); btn.disabled=false; btn.textContent=`Pagar R$ ${PRICES[selectedPlan][selectedCycle].toLocaleString('pt-BR',{minimumFractionDigits:2})}`; return; }
     if (data.status==='approved') { const { data: { session: s } } = await db.auth.getSession(); await loadSubscription(s.access_token); updateAvatarUI(); showPaySuccess(); }
-    else { showPayError('Pagamento recusado. Verifique os dados ou tente outro método.'); btn.disabled=false; }
-  } catch(e) { console.error(e); showPayError('Erro ao processar.'); btn.disabled=false; }
+    else { showPayError('Pagamento recusado. Verifique os dados ou tente outro método.'); btn.disabled=false; btn.textContent=`Pagar R$ ${PRICES[selectedPlan][selectedCycle].toLocaleString('pt-BR',{minimumFractionDigits:2})}`; }
+  } catch(e) { console.error('submitCard error:', e); showPayError('Erro ao processar. Verifique os dados do cartão.'); btn.disabled=false; btn.textContent=`Pagar R$ ${PRICES[selectedPlan][selectedCycle].toLocaleString('pt-BR',{minimumFractionDigits:2})}`; }
 }
 
 function showPayError(msg) { const el=document.getElementById('pay-error'); if(el){el.textContent=msg;el.classList.add('show');} }
