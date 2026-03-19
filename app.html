@@ -1368,20 +1368,29 @@ let cardForm = null;
 // ─── SESSION ──────────────────────────────────────────────────
 async function loadSession() {
   console.log('loadSession iniciado');
-  const { data, error } = await db.auth.getSession();
-  console.log('session data:', data, 'error:', error);
-  if (data.session?.user) {
-    currentSession = data.session;
-    currentUser = data.session.user;
-    console.log('usuário logado:', currentUser.email);
-    await loadSubscription();
-    updateAvatarUI();
-    if (currentSub) { renderApp(); }
-    else { showScreen('nosub'); }
-  } else {
-    console.log('sem sessão, mostrando login');
-    showAuthModal('login');
-  }
+  // Timeout de segurança — se não resolver em 5s, mostra login
+  const timeout = setTimeout(() => {
+    console.log('timeout — mostrando login');
+    if (!currentUser) showAuthModal('login');
+  }, 5000);
+
+  db.auth.onAuthStateChange(async (event, session) => {
+    console.log('authStateChange:', event, session?.user?.email);
+    clearTimeout(timeout);
+    if (session?.user) {
+      currentSession = session;
+      currentUser = session.user;
+      await loadSubscription();
+      updateAvatarUI();
+      document.getElementById('auth-overlay')?.remove();
+      if (currentSub) { renderApp(); }
+      else { showScreen('nosub'); }
+    } else {
+      currentUser = null;
+      currentSession = null;
+      showAuthModal('login');
+    }
+  });
 }
 
 async function loadSubscription() {
@@ -1890,18 +1899,6 @@ async function handleAuth(mode) {
 async function handleGoogleAuth() {
   await db.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.href } });
 }
-
-db.auth.onAuthStateChange(async (event, session) => {
-  if (event==='SIGNED_IN'&&session?.user) {
-    currentSession = session;
-    currentUser = session.user;
-    await loadSubscription();
-    updateAvatarUI();
-    document.getElementById('auth-overlay')?.remove();
-    if (currentSub) { renderApp(); } else { showScreen('nosub'); }
-  }
-  if (event==='SIGNED_OUT') { currentUser=null; currentSub=null; }
-});
 
 // ─── BOOT ─────────────────────────────────────────────────────
 loadSession();
