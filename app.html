@@ -1475,6 +1475,8 @@ function renderPayment() {
 function renderCardForm() {
   const area = document.getElementById('pay-form-area');
   if (!area) return;
+  if (cardForm) { try { cardForm.unmount(); } catch(e) {} cardForm = null; }
+  if (mpInstance) { mpInstance = null; }
   const price = PRICES[selectedPlan][selectedCycle];
   area.innerHTML = `
     <div class="pay-field"><label>Número do cartão</label><div id="mp-cardNumber" style="background:var(--bg2);border:1px solid var(--bd);border-radius:9px;padding:11px 14px;height:44px"></div></div>
