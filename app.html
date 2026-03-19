@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Backtest Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -156,45 +156,40 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .confirm-key{font-size:10px;font-weight:800;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
 .confirm-val{font-size:14px;color:var(--tx);line-height:1.6}
 
-/* ─── AUTH MODAL ─────────────────────────────────────────────── */
-.auth-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeUp .18s ease-out}
+/* ─── AUTH ───────────────────────────────────────────────────── */
+.auth-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px}
 .auth-modal{background:var(--bg1);border:1px solid var(--bd);border-radius:18px;width:100%;max-width:420px;padding:36px 32px;box-shadow:0 28px 64px rgba(0,0,0,.8)}
 .auth-logo{display:flex;align-items:center;gap:9px;margin-bottom:28px;justify-content:center}
 .auth-logo-icon{width:34px;height:34px;border-radius:9px;background:var(--acd2);border:1px solid rgba(0,212,170,.3);display:flex;align-items:center;justify-content:center}
-.auth-logo-text{font-weight:800;font-size:16px}
+.auth-logo-text{font-weight:800;font-size:16px;color:var(--tx)}
 .auth-logo-text span{color:var(--ac)}
 .auth-title{font-size:20px;font-weight:700;color:var(--tx);margin-bottom:6px;text-align:center}
-.auth-sub{font-size:13px;color:var(--txs);text-align:center;margin-bottom:28px;line-height:1.5}
+.auth-sub{font-size:13px;color:var(--txs);text-align:center;margin-bottom:24px;line-height:1.5}
 .auth-field{margin-bottom:14px}
 .auth-field label{display:block;font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px}
-.auth-input{width:100%;background:var(--bg2);border:1px solid var(--bd);border-radius:9px;color:var(--tx);padding:11px 14px;font-size:14px;font-family:inherit;outline:none;transition:border-color .15s}
+.auth-input{width:100%;background:var(--bg2);border:1px solid var(--bd);border-radius:9px;color:var(--tx);padding:11px 14px;font-size:14px;font-family:inherit;outline:none;transition:border-color .15s;box-sizing:border-box}
 .auth-input:focus{border-color:var(--ac)}
 .auth-input::placeholder{color:var(--txm)}
 .auth-btn{width:100%;padding:13px;border-radius:9px;border:none;background:var(--ac);color:#0A0A0F;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;margin-top:4px}
-.auth-btn:hover{background:#00ecc0;box-shadow:0 0 28px rgba(0,212,170,.25)}
+.auth-btn:hover{background:#00ecc0}
 .auth-btn:disabled{opacity:.5;cursor:not-allowed}
-.auth-divider{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--txm);font-size:12px}
-.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--bd)}
-.auth-google{width:100%;padding:11px;border-radius:9px;border:1px solid var(--bd);background:transparent;color:var(--txs);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:9px}
-.auth-google:hover{color:var(--tx);border-color:var(--bdh)}
-.auth-toggle{text-align:center;margin-top:20px;font-size:13px;color:var(--txs)}
-.auth-toggle a{color:var(--ac);cursor:pointer;text-decoration:none;font-weight:600}
 .auth-error{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 13px;font-size:12px;color:#EF4444;margin-bottom:14px;display:none}
 .auth-error.show{display:block}
-/* Avatar menu */
+.auth-divider{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--txm);font-size:12px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--bd)}
+.auth-google{width:100%;padding:11px;border-radius:9px;border:1px solid var(--bd);background:transparent;color:var(--txs);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:9px;box-sizing:border-box}
+.auth-google:hover{color:var(--tx);border-color:var(--bdh)}
+.auth-toggle{text-align:center;margin-top:20px;font-size:13px;color:var(--txs)}
+.auth-toggle a{color:var(--ac);cursor:pointer;font-weight:600}
+.avatar-wrap{position:relative}
 .avatar-menu{position:absolute;top:48px;right:0;background:var(--bg1);border:1px solid var(--bd);border-radius:11px;padding:8px;min-width:200px;box-shadow:0 12px 36px rgba(0,0,0,.6);z-index:500;display:none}
 .avatar-menu.open{display:block}
-.avatar-wrap{position:relative}
-.avatar-name{font-size:12px;color:var(--txs);padding:8px 10px 10px;border-bottom:1px solid var(--bd);margin-bottom:6px;font-weight:500}
+.avatar-name{font-size:12px;color:var(--txs);padding:8px 10px 10px;border-bottom:1px solid var(--bd);margin-bottom:6px}
 .avatar-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--txs);transition:background .12s;background:none;border:none;width:100%;font-family:inherit;text-align:left}
 .avatar-item:hover{background:var(--bg2);color:var(--tx)}
 .avatar-item.danger{color:var(--dg)}
 .avatar-item.danger:hover{background:rgba(239,68,68,.08)}
-/* Plan badge on avatar */
-.plan-badge{padding:2px 8px;border-radius:5px;font-size:10px;font-weight:800;font-family:'JetBrains Mono',monospace}
-.plan-badge.essencial{background:var(--acd2);color:var(--ac)}
-.plan-badge.pro{background:rgba(99,102,241,.15);color:#6366F1}
-
+/* Tooltip */
 .tip-wrap{position:relative;display:inline-flex}
 .tip-box{position:absolute;bottom:130%;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--tx);line-height:1.5;width:210px;z-index:500;box-shadow:0 6px 24px rgba(0,0,0,.7);pointer-events:none;font-weight:400}
 </style>
@@ -1256,82 +1251,65 @@ function renderApp() {
   main.appendChild(two);
 }
 
-// ─── SUPABASE ─────────────────────────────────────────────────
+// ─── SUPABASE INIT ────────────────────────────────────────────
 const SUPA_URL = 'https://lmrpxtshdiwufbfkaymg.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtcnB4dHNoZGl3dWZiZmtheW1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4OTM1MjQsImV4cCI6MjA4OTQ2OTUyNH0.c8giT7wbSAcHecrHR9IMB1x39Uy_TTA5p2-Q_QyQvXs';
-const supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
 // ─── AUTH STATE ───────────────────────────────────────────────
 let currentUser = null;
-let currentSub  = null;
 
 async function loadSession() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.user) {
-    currentUser = session.user;
-    await loadSubscription();
+  const { data } = await db.auth.getSession();
+  if (data.session?.user) {
+    currentUser = data.session.user;
     updateAvatarUI();
+    renderApp();
   } else {
     showAuthModal('login');
   }
 }
 
-async function loadSubscription() {
-  if (!currentUser) return;
-  const now = new Date().toISOString();
-  const { data } = await supabase
-    .from('subscriptions')
-    .select('*')
-    .eq('user_id', currentUser.id)
-    .eq('status', 'active')
-    .gt('expires_at', now)
-    .order('expires_at', { ascending: false })
-    .limit(1)
-    .single();
-  currentSub = data || null;
-}
-
 function updateAvatarUI() {
-  const nameEl = document.getElementById('avatar-name');
-  const avatarBtn = document.getElementById('avatar-btn');
   if (!currentUser) return;
   const email = currentUser.email || '';
   const name  = currentUser.user_metadata?.full_name || email.split('@')[0];
-  // Nome + badge de plano
-  nameEl.innerHTML = `<div style="font-weight:600;color:#E8E8ED;margin-bottom:4px">${name}</div>
-    <div style="font-size:11px;color:#44445A">${email}</div>
-    ${currentSub ? `<div style="margin-top:6px"><span class="plan-badge ${currentSub.plan}">${currentSub.plan.toUpperCase()}</span></div>` : '<div style="margin-top:6px;font-size:11px;color:#EF4444">Sem assinatura ativa</div>'}`;
-  // Iniciais no avatar
-  avatarBtn.innerHTML = `<span style="font-size:11px;font-weight:700;color:#00D4AA;font-family:'JetBrains Mono'">${name.slice(0,2).toUpperCase()}</span>`;
+  const initials = name.slice(0,2).toUpperCase();
+  const btn = document.getElementById('avatar-btn');
+  const nameEl = document.getElementById('avatar-name');
+  if (btn) btn.innerHTML = `<span style="font-size:11px;font-weight:700;color:#00D4AA;font-family:'JetBrains Mono'">${initials}</span>`;
+  if (nameEl) {
+    nameEl.innerHTML = `<div style="font-weight:600;color:#E8E8ED;font-size:13px">${name}</div><div style="font-size:11px;color:#44445A;margin-top:2px">${email}</div>`;
+  }
 }
 
 function toggleAvatarMenu() {
   if (!currentUser) { showAuthModal('login'); return; }
   document.getElementById('avatar-menu').classList.toggle('open');
 }
+
 document.addEventListener('click', e => {
   const wrap = document.getElementById('avatar-wrap');
-  if (wrap && !wrap.contains(e.target)) document.getElementById('avatar-menu')?.classList.remove('open');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('avatar-menu')?.classList.remove('open');
+  }
 });
 
 async function handleLogout() {
-  await supabase.auth.signOut();
-  currentUser = null; currentSub = null;
+  await db.auth.signOut();
+  currentUser = null;
   document.getElementById('avatar-menu').classList.remove('open');
   showAuthModal('login');
 }
 
 // ─── AUTH MODAL ───────────────────────────────────────────────
-function showAuthModal(mode='login') {
-  const existing = document.getElementById('auth-overlay');
-  if (existing) existing.remove();
-
+function showAuthModal(mode) {
+  document.getElementById('auth-overlay')?.remove();
   const isLogin = mode === 'login';
-  const overlay = document.createElement('div');
-  overlay.className = 'auth-overlay';
-  overlay.id = 'auth-overlay';
-
-  overlay.innerHTML = `
+  const el = document.createElement('div');
+  el.className = 'auth-overlay';
+  el.id = 'auth-overlay';
+  el.innerHTML = `
     <div class="auth-modal">
       <div class="auth-logo">
         <div class="auth-logo-icon">
@@ -1340,7 +1318,7 @@ function showAuthModal(mode='login') {
         <div class="auth-logo-text">Backtest<span> Pro</span></div>
       </div>
       <div class="auth-title">${isLogin ? 'Entrar na sua conta' : 'Criar conta'}</div>
-      <div class="auth-sub">${isLogin ? 'Acesse sua conta para continuar.' : 'Crie sua conta gratuitamente.'}</div>
+      <div class="auth-sub">${isLogin ? 'Acesse sua conta para continuar.' : 'Crie sua conta para começar.'}</div>
       <div class="auth-error" id="auth-error"></div>
       ${!isLogin ? `<div class="auth-field"><label>Nome</label><input class="auth-input" id="auth-name" type="text" placeholder="Seu nome"></div>` : ''}
       <div class="auth-field"><label>E-mail</label><input class="auth-input" id="auth-email" type="email" placeholder="seu@email.com"></div>
@@ -1359,14 +1337,15 @@ function showAuthModal(mode='login') {
           : `Já tem conta? <a onclick="showAuthModal('login')">Entrar</a>`}
       </div>
     </div>`;
-
-  document.body.appendChild(overlay);
+  document.body.appendChild(el);
   setTimeout(() => document.getElementById('auth-email')?.focus(), 100);
 }
 
 function showAuthError(msg) {
   const el = document.getElementById('auth-error');
-  if (el) { el.textContent = msg; el.classList.add('show'); }
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
 }
 
 async function handleAuth(mode) {
@@ -1374,70 +1353,57 @@ async function handleAuth(mode) {
   const pass  = document.getElementById('auth-pass')?.value;
   const name  = document.getElementById('auth-name')?.value?.trim();
   const btn   = document.getElementById('auth-submit');
-
   if (!email || !pass) { showAuthError('Preencha e-mail e senha.'); return; }
   btn.disabled = true;
   btn.textContent = 'Aguarde...';
-
-  let error;
+  let result;
   if (mode === 'login') {
-    const res = await supabase.auth.signInWithPassword({ email, password: pass });
-    error = res.error;
-    if (!error) { currentUser = res.data.user; }
+    result = await db.auth.signInWithPassword({ email, password: pass });
   } else {
-    const res = await supabase.auth.signUp({
+    result = await db.auth.signUp({
       email, password: pass,
       options: { data: { full_name: name || email.split('@')[0] } }
     });
-    error = res.error;
-    if (!error) {
-      currentUser = res.data.user;
-      // Se precisar confirmar e-mail, Supabase retorna user mas sem session
-      if (!res.data.session) {
-        document.getElementById('auth-overlay').remove();
-        alert('Verifique seu e-mail para confirmar o cadastro, depois faça login.');
-        showAuthModal('login');
-        return;
-      }
-    }
   }
-
-  if (error) {
+  if (result.error) {
     const msgs = {
       'Invalid login credentials': 'E-mail ou senha incorretos.',
-      'User already registered': 'E-mail já cadastrado. Faça login.',
+      'User already registered':   'E-mail já cadastrado. Faça login.',
       'Password should be at least 6 characters': 'Senha deve ter pelo menos 6 caracteres.',
     };
-    showAuthError(msgs[error.message] || error.message);
+    showAuthError(msgs[result.error.message] || result.error.message);
     btn.disabled = false;
     btn.textContent = mode === 'login' ? 'Entrar' : 'Criar conta';
     return;
   }
-
-  await loadSubscription();
+  if (mode === 'signup' && !result.data.session) {
+    document.getElementById('auth-overlay')?.remove();
+    alert('Verifique seu e-mail para confirmar o cadastro.');
+    showAuthModal('login');
+    return;
+  }
+  currentUser = result.data.user;
   updateAvatarUI();
   document.getElementById('auth-overlay')?.remove();
   renderApp();
 }
 
 async function handleGoogleAuth() {
-  await supabase.auth.signInWithOAuth({
+  await db.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: window.location.href }
   });
 }
 
-// Escuta mudanças de sessão (ex: retorno do OAuth Google)
-supabase.auth.onAuthStateChange(async (event, session) => {
+db.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_IN' && session?.user) {
     currentUser = session.user;
-    await loadSubscription();
     updateAvatarUI();
     document.getElementById('auth-overlay')?.remove();
     renderApp();
   }
   if (event === 'SIGNED_OUT') {
-    currentUser = null; currentSub = null;
+    currentUser = null;
   }
 });
 
