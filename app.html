@@ -1362,22 +1362,9 @@ let cardForm = null;
 // ─── SESSION ──────────────────────────────────────────────────
 async function loadSession() {
   console.log('loadSession iniciado');
-
   db.auth.onAuthStateChange(async (event, session) => {
     console.log('authStateChange:', event, session?.user?.email);
-    if (event === 'INITIAL_SESSION') {
-      if (session?.user) {
-        currentSession = session;
-        currentUser = session.user;
-        await loadSubscription();
-        updateAvatarUI();
-        if (currentSub) { renderApp(); }
-        else { showScreen('nosub'); }
-      } else {
-        showAuthModal('login');
-      }
-    }
-    if (event === 'SIGNED_IN') {
+    if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && session?.user) {
       currentSession = session;
       currentUser = session.user;
       await loadSubscription();
@@ -1386,10 +1373,11 @@ async function loadSession() {
       if (currentSub) { renderApp(); }
       else { showScreen('nosub'); }
     }
+    if (!session && event === 'INITIAL_SESSION') {
+      showAuthModal('login');
+    }
     if (event === 'SIGNED_OUT') {
-      currentUser = null;
-      currentSession = null;
-      currentSub = null;
+      currentUser = null; currentSession = null; currentSub = null;
       showAuthModal('login');
     }
   });
