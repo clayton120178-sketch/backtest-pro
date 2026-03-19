@@ -1514,6 +1514,9 @@ async function renderCardBrick() {
     window.cardPaymentBrickController = await bricksBuilder.create('cardPayment', 'cardPaymentBrick_container', {
       initialization: {
         amount: price,
+        payer: {
+          email: currentUser.email,
+        },
       },
       customization: {
         visual: {
@@ -1529,8 +1532,7 @@ async function renderCardBrick() {
         },
         paymentMethods: {
           maxInstallments: payMethod === 'credit_card' ? 12 : 1,
-          creditCard: payMethod === 'credit_card' ? 'all' : [],
-          debitCard: payMethod === 'debit_card' ? 'all' : [],
+          ...(payMethod === 'credit_card' ? { debitCard: 'none' } : { creditCard: 'none' }),
         },
       },
       callbacks: {
