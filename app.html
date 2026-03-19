@@ -6,6 +6,7 @@
 <title>Backtest Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://sdk.mercadopago.com/js/v2"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -189,6 +190,80 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .avatar-item:hover{background:var(--bg2);color:var(--tx)}
 .avatar-item.danger{color:var(--dg)}
 .avatar-item.danger:hover{background:rgba(239,68,68,.08)}
+
+/* ─── PLANOS ─────────────────────────────────────────────────── */
+.plans-screen{max-width:900px;margin:0 auto;padding:32px 20px}
+.plans-title{font-size:24px;font-weight:800;color:var(--tx);margin-bottom:6px;text-align:center}
+.plans-sub{font-size:14px;color:var(--txs);text-align:center;margin-bottom:32px}
+.cycle-toggle{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:28px}
+.cycle-btn{padding:7px 18px;border-radius:20px;border:1px solid var(--bd);background:transparent;color:var(--txs);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
+.cycle-btn.active{background:var(--ac);border-color:var(--ac);color:#0A0A0F;font-weight:700}
+.disc-badge{padding:3px 9px;border-radius:5px;font-size:11px;font-weight:800;background:rgba(245,158,11,.12);color:var(--wn);border:1px solid rgba(245,158,11,.2)}
+.plans-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+@media(max-width:600px){.plans-grid{grid-template-columns:1fr}}
+.plan-card{background:var(--bg1);border:1px solid var(--bd);border-radius:14px;padding:26px;position:relative;overflow:hidden;cursor:pointer;transition:all .15s}
+.plan-card:hover{border-color:var(--bdh);transform:translateY(-2px)}
+.plan-card.featured{border-color:rgba(0,212,170,.35);background:linear-gradient(160deg,rgba(0,212,170,.04),var(--bg1))}
+.plan-card.featured::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--ac),var(--in))}
+.plan-popular{position:absolute;top:16px;right:16px;padding:3px 10px;border-radius:5px;font-size:11px;font-weight:800;background:var(--ac);color:#0A0A0F}
+.plan-name{font-size:12px;font-weight:800;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.plan-price{font-size:36px;font-weight:800;color:var(--tx);font-family:'JetBrains Mono',monospace;line-height:1;margin-bottom:4px;letter-spacing:-.02em}
+.plan-price span{font-size:16px;font-weight:500;color:var(--txs)}
+.plan-cycle-note{font-size:11px;color:var(--txm);margin-bottom:18px}
+.plan-divider{height:1px;background:var(--bd);margin-bottom:16px}
+.plan-features{display:flex;flex-direction:column;gap:8px;margin-bottom:22px}
+.plan-feat{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--txs)}
+.plan-feat-check{color:var(--ac);flex-shrink:0;margin-top:1px}
+.plan-feat-dash{color:var(--txm);flex-shrink:0;margin-top:1px}
+.plan-cta{width:100%;padding:11px;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;text-align:center;border:none}
+.plan-cta.primary{background:var(--ac);color:#0A0A0F}
+.plan-cta.primary:hover{background:#00ecc0}
+.plan-cta.secondary{background:transparent;color:var(--txs);border:1px solid var(--bd)}
+.plan-cta.secondary:hover{color:var(--tx);border-color:var(--bdh)}
+.plans-note{text-align:center;font-size:12px;color:var(--txm)}
+
+/* ─── PAGAMENTO ──────────────────────────────────────────────── */
+.pay-screen{max-width:520px;margin:0 auto;padding:32px 20px}
+.pay-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--txs);cursor:pointer;background:none;border:none;font-family:inherit;margin-bottom:20px;transition:color .13s}
+.pay-back:hover{color:var(--tx)}
+.pay-title{font-size:20px;font-weight:700;color:var(--tx);margin-bottom:4px}
+.pay-sub{font-size:13px;color:var(--txs);margin-bottom:24px}
+.pay-summary{background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:14px 16px;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between}
+.pay-summary-label{font-size:13px;color:var(--txs)}
+.pay-summary-val{font-size:16px;font-weight:700;color:var(--ac);font-family:'JetBrains Mono',monospace}
+.pay-methods{display:flex;gap:8px;margin-bottom:22px}
+.pay-method-btn{flex:1;padding:10px;border-radius:8px;border:1px solid var(--bd);background:transparent;color:var(--txs);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.pay-method-btn.active{border-color:var(--ac);color:var(--ac);background:var(--acd)}
+.pay-field{margin-bottom:14px}
+.pay-field label{display:block;font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px}
+.pay-input{width:100%;background:var(--bg2);border:1px solid var(--bd);border-radius:9px;color:var(--tx);padding:11px 14px;font-size:14px;font-family:inherit;outline:none;transition:border-color .15s;box-sizing:border-box}
+.pay-input:focus{border-color:var(--ac)}
+.pay-input::placeholder{color:var(--txm)}
+.pay-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pay-btn{width:100%;padding:14px;border-radius:9px;border:none;background:var(--ac);color:#0A0A0F;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;margin-top:6px}
+.pay-btn:hover{background:#00ecc0}
+.pay-btn:disabled{opacity:.5;cursor:not-allowed}
+.pay-error{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 13px;font-size:12px;color:#EF4444;margin-bottom:14px;display:none}
+.pay-error.show{display:block}
+.pay-secure{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;color:var(--txm);margin-top:14px}
+/* Pix */
+.pix-box{background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:20px;text-align:center;margin-bottom:16px}
+.pix-qr{width:180px;height:180px;margin:0 auto 14px;border-radius:8px}
+.pix-copy{width:100%;padding:11px;border-radius:8px;border:1px solid var(--bd);background:transparent;color:var(--ac);font-size:13px;font-weight:600;cursor:pointer;font-family:'JetBrains Mono',monospace;word-break:break-all;text-align:left;transition:all .15s}
+.pix-copy:hover{background:var(--acd)}
+.pix-note{font-size:12px;color:var(--txm);margin-top:10px;line-height:1.5}
+/* Sucesso */
+.pay-success{text-align:center;padding:20px 0}
+.pay-success-icon{width:64px;height:64px;border-radius:32px;background:rgba(16,185,129,.1);border:2px solid #10B981;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.pay-success h3{font-size:20px;font-weight:700;color:var(--tx);margin-bottom:8px}
+.pay-success p{font-size:14px;color:var(--txs);margin-bottom:24px;line-height:1.6}
+
+/* ─── NO SUBSCRIPTION ────────────────────────────────────────── */
+.nosub-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:55vh;text-align:center;padding:32px 20px}
+.nosub-icon{width:56px;height:56px;border-radius:14px;background:var(--acd2);border:1px solid rgba(0,212,170,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
+.nosub-title{font-size:22px;font-weight:700;color:var(--tx);margin-bottom:8px}
+.nosub-sub{font-size:14px;color:var(--txs);max-width:400px;margin:0 auto 28px;line-height:1.6}
+
 /* Tooltip */
 .tip-wrap{position:relative;display:inline-flex}
 .tip-box{position:absolute;bottom:130%;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--tx);line-height:1.5;width:210px;z-index:500;box-shadow:0 6px 24px rgba(0,0,0,.7);pointer-events:none;font-weight:400}
@@ -210,6 +285,10 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
       </div>
       <div class="avatar-menu" id="avatar-menu">
         <div class="avatar-name" id="avatar-name">—</div>
+        <button class="avatar-item" onclick="showPlans()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          Minha assinatura
+        </button>
         <button class="avatar-item danger" onclick="handleLogout()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           Sair
@@ -1251,55 +1330,458 @@ function renderApp() {
   main.appendChild(two);
 }
 
-// ─── SUPABASE INIT ────────────────────────────────────────────
+// ─── CONFIG ───────────────────────────────────────────────────
 const SUPA_URL = 'https://lmrpxtshdiwufbfkaymg.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtcnB4dHNoZGl3dWZiZmtheW1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4OTM1MjQsImV4cCI6MjA4OTQ2OTUyNH0.c8giT7wbSAcHecrHR9IMB1x39Uy_TTA5p2-Q_QyQvXs';
+const MP_PUBLIC_KEY = 'APP_USR-f040f8b2-6edf-4ace-abfb-4f03653bfbc2'; // substitua pela sua Public Key
+
+const PRICES = {
+  essencial: { mensal: 149.90, semestral: 799.90, anual: 1499.90 },
+  pro:       { mensal: 199.90, semestral: 999.90, anual: 2199.90 },
+};
+const CYCLE_DAYS = { mensal: 30, semestral: 180, anual: 365 };
+const CYCLE_DISC = { mensal: null, semestral: '11% off', anual: '30% off' };
+
+// ─── SUPABASE ─────────────────────────────────────────────────
 const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
-// ─── AUTH STATE ───────────────────────────────────────────────
+// ─── STATE ────────────────────────────────────────────────────
 let currentUser = null;
+let currentSub  = null;
+let selectedPlan  = null;
+let selectedCycle = 'mensal';
+let payMethod = 'pix';
+let mpInstance = null;
+let cardForm = null;
 
+// ─── SESSION ──────────────────────────────────────────────────
 async function loadSession() {
   const { data } = await db.auth.getSession();
   if (data.session?.user) {
     currentUser = data.session.user;
+    await loadSubscription();
     updateAvatarUI();
-    renderApp();
+    if (currentSub) { renderApp(); }
+    else { showScreen('nosub'); }
   } else {
     showAuthModal('login');
   }
+}
+
+async function loadSubscription() {
+  if (!currentUser) return;
+  const now = new Date().toISOString();
+  const { data } = await db
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .eq('status', 'active')
+    .gt('expires_at', now)
+    .order('expires_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  currentSub = data || null;
 }
 
 function updateAvatarUI() {
   if (!currentUser) return;
   const email = currentUser.email || '';
   const name  = currentUser.user_metadata?.full_name || email.split('@')[0];
-  const initials = name.slice(0,2).toUpperCase();
-  const btn = document.getElementById('avatar-btn');
-  const nameEl = document.getElementById('avatar-name');
-  if (btn) btn.innerHTML = `<span style="font-size:11px;font-weight:700;color:#00D4AA;font-family:'JetBrains Mono'">${initials}</span>`;
-  if (nameEl) {
-    nameEl.innerHTML = `<div style="font-weight:600;color:#E8E8ED;font-size:13px">${name}</div><div style="font-size:11px;color:#44445A;margin-top:2px">${email}</div>`;
-  }
+  const btn   = document.getElementById('avatar-btn');
+  const nameEl= document.getElementById('avatar-name');
+  if (btn) btn.innerHTML = `<span style="font-size:11px;font-weight:700;color:#00D4AA;font-family:'JetBrains Mono'">${name.slice(0,2).toUpperCase()}</span>`;
+  if (nameEl) nameEl.innerHTML = `<div style="font-weight:600;color:#E8E8ED;font-size:13px">${name}</div><div style="font-size:11px;color:#44445A;margin-top:2px">${email}</div>${currentSub?`<div style="margin-top:5px;font-size:11px;color:#00D4AA;font-weight:700">${currentSub.plan.toUpperCase()} · ativo até ${new Date(currentSub.expires_at).toLocaleDateString('pt-BR')}</div>`:'<div style="margin-top:5px;font-size:11px;color:#EF4444">Sem assinatura ativa</div>'}`;
 }
 
 function toggleAvatarMenu() {
   if (!currentUser) { showAuthModal('login'); return; }
   document.getElementById('avatar-menu').classList.toggle('open');
 }
-
 document.addEventListener('click', e => {
   const wrap = document.getElementById('avatar-wrap');
-  if (wrap && !wrap.contains(e.target)) {
-    document.getElementById('avatar-menu')?.classList.remove('open');
-  }
+  if (wrap && !wrap.contains(e.target)) document.getElementById('avatar-menu')?.classList.remove('open');
 });
 
 async function handleLogout() {
   await db.auth.signOut();
-  currentUser = null;
+  currentUser = null; currentSub = null;
   document.getElementById('avatar-menu').classList.remove('open');
   showAuthModal('login');
+}
+
+// ─── SCREENS ──────────────────────────────────────────────────
+function showScreen(name) {
+  const main = document.getElementById('main');
+  main.innerHTML = '';
+  if (name === 'nosub')  { main.appendChild(renderNoSub()); return; }
+  if (name === 'plans')  { main.appendChild(renderPlans()); return; }
+  if (name === 'payment'){ main.appendChild(renderPayment()); return; }
+}
+
+function showPlans() {
+  document.getElementById('avatar-menu').classList.remove('open');
+  showScreen('plans');
+}
+
+// ─── NO SUBSCRIPTION SCREEN ───────────────────────────────────
+function renderNoSub() {
+  const el = document.createElement('div');
+  el.className = 'nosub-screen';
+  el.innerHTML = `
+    <div class="nosub-icon">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="1.8" stroke-linecap="round"><path d="M3 3v18h18"/><path d="m9 17 3-5 3 3 3-5"/></svg>
+    </div>
+    <div class="nosub-title">Escolha seu plano para continuar</div>
+    <div class="nosub-sub">Você ainda não tem uma assinatura ativa. Assine um plano para acessar o Backtest Pro.</div>
+    <button onclick="showScreen('plans')" style="padding:13px 32px;border-radius:10px;border:none;background:#00D4AA;color:#0A0A0F;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">Ver planos</button>
+  `;
+  return el;
+}
+
+// ─── PLANS SCREEN ─────────────────────────────────────────────
+function renderPlans() {
+  const el = document.createElement('div');
+  el.className = 'plans-screen';
+
+  const cycleLabels = { mensal: 'Mensal', semestral: 'Semestral', anual: 'Anual' };
+
+  el.innerHTML = `
+    <div class="plans-title">Escolha seu plano</div>
+    <div class="plans-sub">Cobrança avulsa · Sem recorrência automática · Pix ou cartão</div>
+    <div class="cycle-toggle">
+      ${Object.keys(cycleLabels).map(c => `
+        <button class="cycle-btn${selectedCycle===c?' active':''}" onclick="selectCycle('${c}')">
+          ${cycleLabels[c]}${CYCLE_DISC[c]?` <span class="disc-badge" style="font-size:10px;padding:2px 6px">${CYCLE_DISC[c]}</span>`:''}
+        </button>`).join('')}
+    </div>
+    <div class="plans-grid">
+      ${renderPlanCard('essencial')}
+      ${renderPlanCard('pro')}
+    </div>
+    <div class="plans-note">Pagamento processado com segurança pelo Mercado Pago</div>
+  `;
+  return el;
+}
+
+function renderPlanCard(plan) {
+  const price = PRICES[plan][selectedCycle];
+  const isPro = plan === 'pro';
+  const features = {
+    essencial: [
+      [true,  'Backtests ilimitados'],
+      [true,  'Todos os indicadores e ativos'],
+      [true,  'Relatório de performance completo'],
+      [true,  'Histórico de backtests salvos'],
+      [true,  'Ranking e portfólio de estratégias'],
+      [false, 'Otimização de parâmetros'],
+      [false, 'Teste de robustez (anti-overfitting)'],
+    ],
+    pro: [
+      [true, 'Tudo do Essencial'],
+      [true, 'Otimização de parâmetros'],
+      [true, 'Teste de robustez (anti-overfitting)'],
+      [true, 'Exportação de relatório PDF'],
+      [true, 'Compartilhamento de resultado'],
+      [true, 'Funcionalidades avançadas em breve'],
+    ],
+  };
+  return `
+    <div class="plan-card${isPro?'':' featured'}" onclick="selectPlan('${plan}')">
+      ${!isPro?'<div class="plan-popular">Popular</div>':''}
+      <div class="plan-name">${plan.charAt(0).toUpperCase()+plan.slice(1)}</div>
+      <div class="plan-price">R$ <span>${price.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span></div>
+      <div class="plan-cycle-note">acesso por ${CYCLE_DAYS[selectedCycle]} dias · cobrança única</div>
+      <div class="plan-divider"></div>
+      <div class="plan-features">
+        ${features[plan].map(([ok,txt])=>`
+          <div class="plan-feat">
+            <span class="${ok?'plan-feat-check':'plan-feat-dash'}">${ok?'✓':'—'}</span>
+            ${txt}
+          </div>`).join('')}
+      </div>
+      <button class="plan-cta ${isPro?'secondary':'primary'}" onclick="selectPlan('${plan}');event.stopPropagation()">
+        Assinar ${plan.charAt(0).toUpperCase()+plan.slice(1)}
+      </button>
+    </div>`;
+}
+
+function selectCycle(c) {
+  selectedCycle = c;
+  showScreen('plans');
+}
+
+function selectPlan(plan) {
+  selectedPlan = plan;
+  showScreen('payment');
+}
+
+// ─── PAYMENT SCREEN ───────────────────────────────────────────
+function renderPayment() {
+  const price = PRICES[selectedPlan][selectedCycle];
+  const el = document.createElement('div');
+  el.className = 'pay-screen';
+  el.innerHTML = `
+    <button class="pay-back" onclick="showScreen('plans')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Voltar aos planos
+    </button>
+    <div class="pay-title">Finalizar assinatura</div>
+    <div class="pay-sub">Plano ${selectedPlan.charAt(0).toUpperCase()+selectedPlan.slice(1)} · ${selectedCycle.charAt(0).toUpperCase()+selectedCycle.slice(1)}</div>
+    <div class="pay-summary">
+      <span class="pay-summary-label">${selectedPlan.charAt(0).toUpperCase()+selectedPlan.slice(1)} · ${selectedCycle} · ${CYCLE_DAYS[selectedCycle]} dias</span>
+      <span class="pay-summary-val">R$ ${price.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+    </div>
+    <div class="pay-methods">
+      <button class="pay-method-btn${payMethod==='pix'?' active':''}" onclick="setPayMethod('pix')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        Pix
+      </button>
+      <button class="pay-method-btn${payMethod==='credit_card'?' active':''}" onclick="setPayMethod('credit_card')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        Crédito
+      </button>
+      <button class="pay-method-btn${payMethod==='debit_card'?' active':''}" onclick="setPayMethod('debit_card')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        Débito
+      </button>
+    </div>
+    <div class="pay-error" id="pay-error"></div>
+    <div id="pay-form-area"></div>
+    <div class="pay-secure">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Pagamento seguro via Mercado Pago
+    </div>
+  `;
+  setTimeout(() => renderPayForm(), 50);
+  return el;
+}
+
+function setPayMethod(m) {
+  payMethod = m;
+  showScreen('payment');
+}
+
+function renderPayForm() {
+  const area = document.getElementById('pay-form-area');
+  if (!area) return;
+
+  if (payMethod === 'pix') {
+    area.innerHTML = `
+      <div class="pay-field">
+        <label>E-mail para confirmação</label>
+        <input class="pay-input" id="pay-email" type="email" placeholder="seu@email.com" value="${currentUser?.email||''}">
+      </div>
+      <button class="pay-btn" id="pay-submit" onclick="submitPix()">Gerar QR Code Pix</button>
+    `;
+    return;
+  }
+
+  // Cartão — usar SDK do Mercado Pago
+  area.innerHTML = `
+    <div class="pay-field">
+      <label>Número do cartão</label>
+      <div id="mp-cardNumber" style="background:var(--bg2);border:1px solid var(--bd);border-radius:9px;padding:11px 14px;height:44px"></div>
+    </div>
+    <div class="pay-field">
+      <label>Nome no cartão</label>
+      <input class="pay-input" id="pay-holder" type="text" placeholder="NOME COMO NO CARTÃO">
+    </div>
+    <div class="pay-row">
+      <div class="pay-field">
+        <label>Validade</label>
+        <div id="mp-expiration" style="background:var(--bg2);border:1px solid var(--bd);border-radius:9px;padding:11px 14px;height:44px"></div>
+      </div>
+      <div class="pay-field">
+        <label>CVV</label>
+        <div id="mp-cvv" style="background:var(--bg2);border:1px solid var(--bd);border-radius:9px;padding:11px 14px;height:44px"></div>
+      </div>
+    </div>
+    <div class="pay-field">
+      <label>CPF do titular</label>
+      <input class="pay-input" id="pay-cpf" type="text" placeholder="000.000.000-00" maxlength="14">
+    </div>
+    ${payMethod==='credit_card'?`
+    <div class="pay-field">
+      <label>Parcelas</label>
+      <select class="pay-input" id="pay-installments">
+        <option value="1">1x sem juros</option>
+      </select>
+    </div>`:''}
+    <button class="pay-btn" id="pay-submit" onclick="submitCard()">Pagar R$ ${PRICES[selectedPlan][selectedCycle].toLocaleString('pt-BR',{minimumFractionDigits:2})}</button>
+  `;
+
+  // Inicializar SDK do MP
+  try {
+    mpInstance = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
+    cardForm = mpInstance.cardForm({
+      amount: String(PRICES[selectedPlan][selectedCycle]),
+      autoMount: true,
+      form: {
+        id: 'pay-form-area',
+        cardholderName: { id: 'pay-holder' },
+        cardholderEmail: { id: 'pay-email-hidden' },
+        cardNumber: { id: 'mp-cardNumber', placeholder: '0000 0000 0000 0000' },
+        expirationDate: { id: 'mp-expiration', placeholder: 'MM/AA' },
+        securityCode: { id: 'mp-cvv', placeholder: '123' },
+        installments: { id: 'pay-installments' },
+        identificationType: { id: 'pay-id-type-hidden' },
+        identificationNumber: { id: 'pay-cpf' },
+      },
+      callbacks: {
+        onFormMounted: err => { if(err) console.error('MP mount error:', err); },
+        onError: err => { console.error('MP error:', err); },
+      }
+    });
+  } catch(e) {
+    console.error('MP init error:', e);
+  }
+}
+
+async function submitPix() {
+  const btn = document.getElementById('pay-submit');
+  const email = document.getElementById('pay-email')?.value?.trim() || currentUser.email;
+  btn.disabled = true;
+  btn.textContent = 'Gerando Pix...';
+
+  const { data: { session } } = await db.auth.getSession();
+  const res = await fetch(`${SUPA_URL}/functions/v1/create-payment`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({
+      plan: selectedPlan,
+      cycle: selectedCycle,
+      payment_method_id: 'pix',
+      payment_type: 'pix',
+      payer: { email },
+    }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || data.error) {
+    showPayError(data.error || 'Erro ao gerar Pix.');
+    btn.disabled = false;
+    btn.textContent = 'Gerar QR Code Pix';
+    return;
+  }
+
+  // Mostrar QR Code
+  const area = document.getElementById('pay-form-area');
+  area.innerHTML = `
+    <div class="pix-box">
+      ${data.pix_qr_base64 ? `<img class="pix-qr" src="data:image/png;base64,${data.pix_qr_base64}" alt="QR Code Pix">` : ''}
+      <div style="font-size:13px;font-weight:600;color:#E8E8ED;margin-bottom:10px">Escaneie o QR Code ou copie o código abaixo</div>
+      <button class="pix-copy" onclick="copyPix('${data.pix_copy_paste}')" id="pix-copy-btn">
+        ${data.pix_copy_paste}
+      </button>
+      <div class="pix-note">Após o pagamento, aguarde até 1 minuto para liberação do acesso. O código expira em 30 minutos.</div>
+    </div>
+    <button class="pay-btn" onclick="checkPixStatus('${data.payment_id}')">Já paguei — Verificar acesso</button>
+  `;
+}
+
+function copyPix(code) {
+  navigator.clipboard.writeText(code);
+  const btn = document.getElementById('pix-copy-btn');
+  if (btn) { btn.style.color = '#10B981'; btn.textContent = '✓ Copiado!'; setTimeout(() => { btn.style.color = ''; btn.textContent = code; }, 2000); }
+}
+
+async function checkPixStatus(paymentId) {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = 'Verificando...';
+  await loadSubscription();
+  if (currentSub) {
+    updateAvatarUI();
+    showPaySuccess();
+  } else {
+    btn.disabled = false;
+    btn.textContent = 'Verificar novamente';
+    showPayError('Pagamento ainda não confirmado. Aguarde alguns segundos e tente novamente.');
+  }
+}
+
+async function submitCard() {
+  const btn = document.getElementById('pay-submit');
+  btn.disabled = true;
+  btn.textContent = 'Processando...';
+
+  try {
+    const formData = cardForm.getCardFormData();
+    const cpf = document.getElementById('pay-cpf')?.value?.replace(/\D/g,'');
+
+    const { data: { session } } = await db.auth.getSession();
+    const res = await fetch(`${SUPA_URL}/functions/v1/create-payment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        plan: selectedPlan,
+        cycle: selectedCycle,
+        payment_type: payMethod,
+        payment_method_id: formData.paymentMethodId,
+        token: formData.token,
+        issuer_id: formData.issuerId,
+        installments: Number(formData.selectedInstallments) || 1,
+        payer: {
+          email: currentUser.email,
+          identification: { type: 'CPF', number: cpf },
+        },
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      showPayError(data.error || 'Erro no pagamento. Verifique os dados e tente novamente.');
+      btn.disabled = false;
+      btn.textContent = `Pagar R$ ${PRICES[selectedPlan][selectedCycle].toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+      return;
+    }
+
+    if (data.status === 'approved') {
+      await loadSubscription();
+      updateAvatarUI();
+      showPaySuccess();
+    } else if (data.status === 'in_process' || data.status === 'pending') {
+      showPayError('Pagamento em análise. Você receberá uma confirmação em breve.');
+    } else {
+      showPayError('Pagamento recusado. Verifique os dados do cartão ou tente outro método.');
+      btn.disabled = false;
+      btn.textContent = `Pagar R$ ${PRICES[selectedPlan][selectedCycle].toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+    }
+  } catch(e) {
+    console.error(e);
+    showPayError('Erro ao processar pagamento. Tente novamente.');
+    btn.disabled = false;
+  }
+}
+
+function showPayError(msg) {
+  const el = document.getElementById('pay-error');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+function showPaySuccess() {
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="pay-screen">
+      <div class="pay-success">
+        <div class="pay-success-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h3>Assinatura ativada!</h3>
+        <p>Seu plano <strong>${selectedPlan.charAt(0).toUpperCase()+selectedPlan.slice(1)}</strong> está ativo por ${CYCLE_DAYS[selectedCycle]} dias. Bem-vindo ao Backtest Pro.</p>
+        <button onclick="renderApp()" style="padding:13px 32px;border-radius:10px;border:none;background:#00D4AA;color:#0A0A0F;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">Acessar o Backtest Pro</button>
+      </div>
+    </div>`;
 }
 
 // ─── AUTH MODAL ───────────────────────────────────────────────
@@ -1332,20 +1814,11 @@ function showAuthModal(mode) {
         Continuar com Google
       </button>
       <div class="auth-toggle">
-        ${isLogin
-          ? `Não tem conta? <a onclick="showAuthModal('signup')">Criar conta</a>`
-          : `Já tem conta? <a onclick="showAuthModal('login')">Entrar</a>`}
+        ${isLogin ? `Não tem conta? <a onclick="showAuthModal('signup')">Criar conta</a>` : `Já tem conta? <a onclick="showAuthModal('login')">Entrar</a>`}
       </div>
     </div>`;
   document.body.appendChild(el);
   setTimeout(() => document.getElementById('auth-email')?.focus(), 100);
-}
-
-function showAuthError(msg) {
-  const el = document.getElementById('auth-error');
-  if (!el) return;
-  el.textContent = msg;
-  el.classList.add('show');
 }
 
 async function handleAuth(mode) {
@@ -1353,58 +1826,47 @@ async function handleAuth(mode) {
   const pass  = document.getElementById('auth-pass')?.value;
   const name  = document.getElementById('auth-name')?.value?.trim();
   const btn   = document.getElementById('auth-submit');
-  if (!email || !pass) { showAuthError('Preencha e-mail e senha.'); return; }
-  btn.disabled = true;
-  btn.textContent = 'Aguarde...';
+  if (!email || !pass) { document.getElementById('auth-error').textContent='Preencha e-mail e senha.';document.getElementById('auth-error').classList.add('show');return; }
+  btn.disabled = true; btn.textContent = 'Aguarde...';
   let result;
   if (mode === 'login') {
     result = await db.auth.signInWithPassword({ email, password: pass });
   } else {
-    result = await db.auth.signUp({
-      email, password: pass,
-      options: { data: { full_name: name || email.split('@')[0] } }
-    });
+    result = await db.auth.signUp({ email, password: pass, options: { data: { full_name: name||email.split('@')[0] } } });
   }
   if (result.error) {
-    const msgs = {
-      'Invalid login credentials': 'E-mail ou senha incorretos.',
-      'User already registered':   'E-mail já cadastrado. Faça login.',
-      'Password should be at least 6 characters': 'Senha deve ter pelo menos 6 caracteres.',
-    };
-    showAuthError(msgs[result.error.message] || result.error.message);
-    btn.disabled = false;
-    btn.textContent = mode === 'login' ? 'Entrar' : 'Criar conta';
+    const msgs = { 'Invalid login credentials':'E-mail ou senha incorretos.','User already registered':'E-mail já cadastrado. Faça login.','Password should be at least 6 characters':'Senha deve ter pelo menos 6 caracteres.' };
+    const errEl = document.getElementById('auth-error');
+    errEl.textContent = msgs[result.error.message]||result.error.message;
+    errEl.classList.add('show');
+    btn.disabled=false; btn.textContent=mode==='login'?'Entrar':'Criar conta';
     return;
   }
-  if (mode === 'signup' && !result.data.session) {
+  if (mode==='signup'&&!result.data.session) {
     document.getElementById('auth-overlay')?.remove();
     alert('Verifique seu e-mail para confirmar o cadastro.');
-    showAuthModal('login');
-    return;
+    showAuthModal('login'); return;
   }
   currentUser = result.data.user;
+  await loadSubscription();
   updateAvatarUI();
   document.getElementById('auth-overlay')?.remove();
-  renderApp();
+  if (currentSub) { renderApp(); } else { showScreen('nosub'); }
 }
 
 async function handleGoogleAuth() {
-  await db.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: window.location.href }
-  });
+  await db.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.href } });
 }
 
-db.auth.onAuthStateChange((event, session) => {
-  if (event === 'SIGNED_IN' && session?.user) {
+db.auth.onAuthStateChange(async (event, session) => {
+  if (event==='SIGNED_IN'&&session?.user) {
     currentUser = session.user;
+    await loadSubscription();
     updateAvatarUI();
     document.getElementById('auth-overlay')?.remove();
-    renderApp();
+    if (currentSub) { renderApp(); } else { showScreen('nosub'); }
   }
-  if (event === 'SIGNED_OUT') {
-    currentUser = null;
-  }
+  if (event==='SIGNED_OUT') { currentUser=null; currentSub=null; }
 });
 
 // ─── BOOT ─────────────────────────────────────────────────────
