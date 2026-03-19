@@ -1366,15 +1366,17 @@ async function handleLogout() {
 // ─── SUBSCRIPTION ─────────────────────────────────────────────
 async function loadSubscription(accessToken) {
   const now = new Date().toISOString();
-  // Usar fetch direto com o token para evitar problemas de cache do client
-  const res = await fetch(`${SUPA_URL}/rest/v1/subscriptions?select=*&user_id=eq.${currentUser.id}&status=eq.active&expires_at=gt.${now}&order=expires_at.desc&limit=1`, {
+  const res = await fetch(`${SUPA_URL}/rest/v1/subscriptions?select=*&user_id=eq.${currentUser.id}&status=eq.active&expires_at=gt.${encodeURIComponent(now)}&order=expires_at.desc&limit=1`, {
     headers: {
       'apikey': SUPA_KEY,
       'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
     }
   });
+  if (!res.ok) { console.error('subscriptions error:', res.status); currentSub = null; return; }
   const data = await res.json();
   currentSub = (Array.isArray(data) && data.length > 0) ? data[0] : null;
+  console.log('subscription:', currentSub);
 }
 
 // ─── SCREENS ──────────────────────────────────────────────────
