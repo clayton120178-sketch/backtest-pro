@@ -239,6 +239,8 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .pay-btn:disabled{opacity:.5;cursor:not-allowed}
 .pay-error{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 13px;font-size:12px;color:#EF4444;margin-bottom:14px;display:none}
 .pay-error.show{display:block}
+.mp-field-container{background:var(--bg2);border:1px solid var(--bd);border-radius:9px;min-height:44px;overflow:hidden}
+.mp-field-container iframe{width:100%!important;height:44px!important;border:none!important}
 .pay-secure{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;color:var(--txm);margin-top:14px}
 .pix-box{background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:20px;text-align:center;margin-bottom:16px}
 .pix-qr{width:180px;height:180px;margin:0 auto 14px;border-radius:8px}
@@ -1340,6 +1342,7 @@ let selectedCycle = 'mensal';
 let payMethod = 'pix';
 let mpInstance = null;
 let cardForm = null;
+let mpMounted = false;
 
 // ─── AVATAR ───────────────────────────────────────────────────
 function toggleAvatarMenu() {
@@ -1381,6 +1384,8 @@ async function loadSubscription(accessToken) {
 
 // ─── SCREENS ──────────────────────────────────────────────────
 function showScreen(name) {
+  currentScreen = name;
+  cardForm = null; mpInstance = null; mpMounted = false; // Reset MP state on screen change
   const main = document.getElementById('main');
   main.innerHTML = '';
   if (name === 'nosub')   { main.appendChild(renderNoSub());   return; }
@@ -1445,45 +1450,63 @@ function renderPayment() {
       <span class="pay-summary-label">${selectedPlan.charAt(0).toUpperCase()+selectedPlan.slice(1)} · ${selectedCycle} · ${CYCLE_DAYS[selectedCycle]} dias</span>
       <span class="pay-summary-val">R$ ${price.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
     </div>
-    <div class="pay-methods">
-      <button class="pay-method-btn${payMethod==='pix'?' active':''}" onclick="payMethod='pix';showScreen('payment')">Pix</button>
-      <button class="pay-method-btn${payMethod==='credit_card'?' active':''}" onclick="payMethod='credit_card';showScreen('payment')">Crédito</button>
-      <button class="pay-method-btn${payMethod==='debit_card'?' active':''}" onclick="payMethod='debit_card';showScreen('payment')">Débito</button>
+    <div class="pay-methods" id="pay-methods">
+      <button class="pay-method-btn${payMethod==='pix'?' active':''}" onclick="switchPayMethod('pix',this)">Pix</button>
+      <button class="pay-method-btn${payMethod==='credit_card'?' active':''}" onclick="switchPayMethod('credit_card',this)">Crédito</button>
+      <button class="pay-method-btn${payMethod==='debit_card'?' active':''}" onclick="switchPayMethod('debit_card',this)">Débito</button>
     </div>
     <div class="pay-error" id="pay-error"></div>
-    <div id="pay-form-area"></div>
+    <div id="pix-form-area" style="display:${payMethod==='pix'?'block':'none'}">
+      <button class="pay-btn" id="pay-submit-pix" onclick="submitPix()">Gerar QR Code Pix</button>
+    </div>
+    <form id="card-form-area" onsubmit="return false" style="display:${payMethod!=='pix'?'block':'none'}"></form>
     <div class="pay-secure">🔒 Pagamento seguro via Mercado Pago</div>`;
 
-  if (payMethod === 'pix') {
-    setTimeout(() => {
-      const area = document.getElementById('pay-form-area');
-      if (area) area.innerHTML = `<button class="pay-btn" id="pay-submit" onclick="submitPix()">Gerar QR Code Pix</button>`;
-    }, 50);
-  } else {
-    if (!window.MercadoPago) {
-      const s = document.createElement('script');
-      s.src = 'https://sdk.mercadopago.com/js/v2';
-      s.onload = () => setTimeout(renderCardForm, 100);
-      document.head.appendChild(s);
-    } else {
-      setTimeout(renderCardForm, 50);
-    }
+  if (payMethod !== 'pix') {
+    setTimeout(() => initCardForm(), 50);
   }
   return el;
 }
 
+function switchPayMethod(method, btnEl) {
+  payMethod = method;
+  document.querySelectorAll('.pay-method-btn').forEach(b => b.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
+  const pixArea = document.getElementById('pix-form-area');
+  const cardArea = document.getElementById('card-form-area');
+  if (method === 'pix') {
+    if (pixArea) pixArea.style.display = 'block';
+    if (cardArea) cardArea.style.display = 'none';
+  } else {
+    if (pixArea) pixArea.style.display = 'none';
+    if (cardArea) cardArea.style.display = 'block';
+    if (!mpMounted) initCardForm();
+  }
+}
+
+function initCardForm() {
+  if (!window.MercadoPago) {
+    const s = document.createElement('script');
+    s.src = 'https://sdk.mercadopago.com/js/v2';
+    s.onload = () => setTimeout(renderCardForm, 100);
+    document.head.appendChild(s);
+  } else {
+    renderCardForm();
+  }
+}
+
 function renderCardForm() {
-  const area = document.getElementById('pay-form-area');
+  const area = document.getElementById('card-form-area');
   if (!area) return;
-  if (cardForm) { try { cardForm.unmount(); } catch(e) {} cardForm = null; }
-  if (mpInstance) { mpInstance = null; }
+  if (mpMounted) return; // Already attempted mount, skip
+  mpMounted = true;
   const price = PRICES[selectedPlan][selectedCycle];
   area.innerHTML = `
-    <div class="pay-field"><label>Número do cartão</label><div id="mp-cardNumber" style="background:var(--bg2);border:1px solid var(--bd);border-radius:9px;padding:11px 14px;height:44px"></div></div>
+    <div class="pay-field"><label>Número do cartão</label><div id="mp-cardNumber" class="mp-field-container"></div></div>
     <div class="pay-field"><label>Nome no cartão</label><input class="pay-input" id="pay-holder" type="text" placeholder="NOME COMO NO CARTÃO"></div>
     <div class="pay-row">
-      <div class="pay-field"><label>Validade</label><div id="mp-expiration" style="background:var(--bg2);border:1px solid var(--bd);border-radius:9px;padding:11px 14px;height:44px"></div></div>
-      <div class="pay-field"><label>CVV</label><div id="mp-cvv" style="background:var(--bg2);border:1px solid var(--bd);border-radius:9px;padding:11px 14px;height:44px"></div></div>
+      <div class="pay-field"><label>Validade</label><div id="mp-expiration" class="mp-field-container"></div></div>
+      <div class="pay-field"><label>CVV</label><div id="mp-cvv" class="mp-field-container"></div></div>
     </div>
     <div class="pay-field"><label>CPF do titular</label><input class="pay-input" id="pay-cpf" type="text" placeholder="000.000.000-00" maxlength="14"></div>
     <div class="pay-field" style="display:none"><select id="pay-id-type"><option value="CPF" selected>CPF</option><option value="CNPJ">CNPJ</option></select></div>
@@ -1496,7 +1519,7 @@ function renderCardForm() {
       amount: String(price),
       autoMount: true,
       form: {
-        id: 'pay-form-area',
+        id: 'card-form-area',
         cardholderName: { id: 'pay-holder' },
         cardNumber: { id: 'mp-cardNumber', placeholder: '0000 0000 0000 0000' },
         expirationDate: { id: 'mp-expiration', placeholder: 'MM/AA' },
@@ -1515,7 +1538,7 @@ function renderCardForm() {
 }
 
 async function submitPix() {
-  const btn = document.getElementById('pay-submit');
+  const btn = document.getElementById('pay-submit-pix');
   btn.disabled = true;
   btn.textContent = 'Gerando Pix...';
   try {
@@ -1527,7 +1550,7 @@ async function submitPix() {
     });
     const data = await res.json();
     if (!res.ok || data.error) { showPayError(data.error||'Erro ao gerar Pix.'); btn.disabled=false; btn.textContent='Gerar QR Code Pix'; return; }
-    const area = document.getElementById('pay-form-area');
+    const area = document.getElementById('pix-form-area');
     area.innerHTML = `
       <div class="pix-box">
         ${data.pix_qr_base64?`<img class="pix-qr" src="data:image/png;base64,${data.pix_qr_base64}" alt="QR Pix">`:''}
@@ -1631,6 +1654,8 @@ async function handleAuth(mode) {
 
 // ─── BOOT ─────────────────────────────────────────────────────
 // Único ponto de entrada de sessão — onAuthStateChange
+let currentScreen = null; // Track current screen to prevent auth override
+
 db.auth.onAuthStateChange(async (event, session) => {
   console.log('auth event:', event, session?.user?.email||'no user');
   if (event === 'SIGNED_IN' && session?.user) {
@@ -1638,6 +1663,8 @@ db.auth.onAuthStateChange(async (event, session) => {
     await loadSubscription(session.access_token);
     updateAvatarUI();
     document.getElementById('auth-overlay')?.remove();
+    // Don't override if user is already on plans/payment screens
+    if (currentScreen === 'plans' || currentScreen === 'payment') return;
     if (currentSub) { renderApp(); } else { showScreen('nosub'); }
   }
   if (event === 'INITIAL_SESSION') {
@@ -1651,7 +1678,7 @@ db.auth.onAuthStateChange(async (event, session) => {
     }
   }
   if (event === 'SIGNED_OUT') {
-    currentUser=null; currentSub=null;
+    currentUser=null; currentSub=null; currentScreen=null;
     showAuthModal('login');
   }
 });
