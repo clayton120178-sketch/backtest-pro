@@ -1571,16 +1571,29 @@ async function submitCard() {
     console.log('MP token:', JSON.stringify(tokenResult));
     let pmId = payMethod === 'debit_card' ? 'debvisa' : 'visa';
     let issuerId = null;
+    const DEBIT_MAP = { visa:'debvisa', master:'debmaster', elo:'debelo', cabal:'debcabal' };
     try {
       const bin = tokenResult.first_six_digits;
       if (bin) {
         const resp = await fetch(`https://api.mercadopago.com/v1/payment_methods/search?public_key=${MP_PUBLIC_KEY}&bin=${bin}&marketplace=NONE`);
         const pmData = await resp.json();
+        console.log('MP payment methods for BIN:', JSON.stringify(pmData.results?.map(m=>({id:m.id,type:m.payment_type_id}))));
         if (pmData.results && pmData.results.length > 0) {
-          const match = pmData.results.find(m => m.payment_type_id === (payMethod === 'debit_card' ? 'debit_card' : 'credit_card')) || pmData.results[0];
-          pmId = match.id;
-          if (match.issuer && match.issuer.default) issuerId = match.issuer.id;
-          console.log('MP detected:', pmId, 'issuer:', issuerId);
+          if (payMethod === 'debit_card') {
+            const debitMatch = pmData.results.find(m => m.payment_type_id === 'debit_card');
+            if (debitMatch) {
+              pmId = debitMatch.id;
+            } else {
+              const creditMatch = pmData.results.find(m => m.payment_type_id === 'credit_card') || pmData.results[0];
+              pmId = DEBIT_MAP[creditMatch.id] || ('deb' + creditMatch.id);
+            }
+          } else {
+            const match = pmData.results.find(m => m.payment_type_id === 'credit_card') || pmData.results[0];
+            pmId = match.id;
+          }
+          const issuerMatch = pmData.results.find(m => m.id === pmId);
+          if (issuerMatch?.issuer?.default) issuerId = issuerMatch.issuer.id;
+          console.log('MP final:', pmId, 'issuer:', issuerId, 'payType:', payMethod);
         }
       }
     } catch(e) { console.warn('MP detect fallback:', e); }
