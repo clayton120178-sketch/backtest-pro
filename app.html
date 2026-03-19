@@ -239,9 +239,6 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .pay-btn:disabled{opacity:.5;cursor:not-allowed}
 .pay-error{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 13px;font-size:12px;color:#EF4444;margin-bottom:14px;display:none}
 .pay-error.show{display:block}
-.mp-field-container{background:var(--bg2);border:1px solid var(--bd);border-radius:9px;min-height:44px}
-.mp-field-container iframe{width:100%!important;height:44px!important;border:none!important;display:block!important;filter:invert(1) hue-rotate(180deg)}
-.mp-field-container:focus-within{border-color:var(--ac)}
 .pay-secure{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;color:var(--txm);margin-top:14px}
 .pix-box{background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:20px;text-align:center;margin-bottom:16px}
 .pix-qr{width:180px;height:180px;margin:0 auto 14px;border-radius:8px}
@@ -1386,7 +1383,8 @@ async function loadSubscription(accessToken) {
 // ─── SCREENS ──────────────────────────────────────────────────
 function showScreen(name) {
   currentScreen = name;
-  cardForm = null; mpInstance = null; mpMounted = false; // Reset MP state on screen change
+  if (window.cardPaymentBrickController) { try { window.cardPaymentBrickController.unmount(); } catch(e){} window.cardPaymentBrickController = null; }
+  cardForm = null; mpInstance = null; mpMounted = false;
   const main = document.getElementById('main');
   main.innerHTML = '';
   if (name === 'nosub')   { main.appendChild(renderNoSub());   return; }
@@ -1460,65 +1458,121 @@ function renderPayment() {
     <div id="pix-form-area" style="display:${payMethod==='pix'?'block':'none'}">
       <button class="pay-btn" id="pay-submit-pix" onclick="submitPix()">Gerar QR Code Pix</button>
     </div>
-    <form id="card-form-area" onsubmit="return false" style="display:${payMethod!=='pix'?'block':'none'}"></form>
+    <div id="cardPaymentBrick_container" style="display:${payMethod!=='pix'?'block':'none'}"></div>
     <div class="pay-secure">🔒 Pagamento seguro via Mercado Pago</div>`;
 
   if (payMethod !== 'pix') {
-    setTimeout(() => initCardForm(), 50);
+    setTimeout(() => initCardBrick(), 50);
   }
   return el;
 }
 
 function switchPayMethod(method, btnEl) {
-  payMethod = method;
   document.querySelectorAll('.pay-method-btn').forEach(b => b.classList.remove('active'));
   if (btnEl) btnEl.classList.add('active');
   const pixArea = document.getElementById('pix-form-area');
-  const cardArea = document.getElementById('card-form-area');
+  const cardContainer = document.getElementById('cardPaymentBrick_container');
   if (method === 'pix') {
+    payMethod = 'pix';
     if (pixArea) pixArea.style.display = 'block';
-    if (cardArea) cardArea.style.display = 'none';
+    if (cardContainer) cardContainer.style.display = 'none';
   } else {
+    const needsRemount = payMethod !== method || !mpMounted;
+    payMethod = method;
     if (pixArea) pixArea.style.display = 'none';
-    if (cardArea) cardArea.style.display = 'block';
-    if (!mpMounted) initCardForm();
+    if (cardContainer) cardContainer.style.display = 'block';
+    if (needsRemount) {
+      // Destroy and recreate Brick with correct card type
+      if (window.cardPaymentBrickController) { try { window.cardPaymentBrickController.unmount(); } catch(e){} window.cardPaymentBrickController = null; }
+      mpMounted = false;
+      if (cardContainer) cardContainer.innerHTML = '';
+      initCardBrick();
+    }
   }
 }
 
-function initCardForm() {
+function initCardBrick() {
   if (!window.MercadoPago) {
     const s = document.createElement('script');
     s.src = 'https://sdk.mercadopago.com/js/v2';
-    s.onload = () => setTimeout(renderCardForm, 100);
+    s.onload = () => setTimeout(renderCardBrick, 200);
     document.head.appendChild(s);
   } else {
-    renderCardForm();
+    renderCardBrick();
   }
 }
 
-function renderCardForm() {
-  const area = document.getElementById('card-form-area');
-  if (!area) return;
+async function renderCardBrick() {
+  const container = document.getElementById('cardPaymentBrick_container');
+  if (!container) return;
   if (mpMounted) return;
   mpMounted = true;
   const price = PRICES[selectedPlan][selectedCycle];
-  area.innerHTML = `
-    <div class="pay-field"><label>Número do cartão</label><div id="mp-cardNumber" class="mp-field-container"></div></div>
-    <div class="pay-field"><label>Nome no cartão</label><input class="pay-input" id="pay-holder" type="text" placeholder="NOME COMO NO CARTÃO"></div>
-    <div class="pay-row">
-      <div class="pay-field"><label>Validade</label><div id="mp-expiration" class="mp-field-container"></div></div>
-      <div class="pay-field"><label>CVV</label><div id="mp-cvv" class="mp-field-container"></div></div>
-    </div>
-    <div class="pay-field"><label>CPF do titular</label><input class="pay-input" id="pay-cpf" type="text" placeholder="000.000.000-00" maxlength="14"></div>
-    ${payMethod==='credit_card'?`<div class="pay-field"><label>Parcelas</label><select class="pay-input" id="pay-installments"><option value="1">1x sem juros</option></select></div>`:''}
-    <button class="pay-btn" id="pay-submit" onclick="submitCard()">Pagar R$ ${price.toLocaleString('pt-BR',{minimumFractionDigits:2})}</button>`;
   try {
     mpInstance = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
-    window.mpCardNumber = mpInstance.fields.create('cardNumber', { placeholder:'0000 0000 0000 0000' }).mount('mp-cardNumber');
-    window.mpExpiration = mpInstance.fields.create('expirationDate', { placeholder:'MM/AA' }).mount('mp-expiration');
-    window.mpCVV = mpInstance.fields.create('securityCode', { placeholder:'123' }).mount('mp-cvv');
-    console.log('MP: Fields mounted via fields API');
-  } catch(e) { console.error('MP fields error:', e); }
+    const bricksBuilder = mpInstance.bricks();
+    window.cardPaymentBrickController = await bricksBuilder.create('cardPayment', 'cardPaymentBrick_container', {
+      initialization: {
+        amount: price,
+      },
+      customization: {
+        visual: {
+          style: {
+            theme: 'dark',
+            customVariables: {
+              formBackgroundColor: '#12121A',
+              baseColor: '#00D4AA',
+            }
+          },
+          hideFormTitle: true,
+          hidePaymentButton: false,
+        },
+        paymentMethods: {
+          maxInstallments: payMethod === 'credit_card' ? 12 : 1,
+          creditCard: payMethod === 'credit_card' ? 'all' : [],
+          debitCard: payMethod === 'debit_card' ? 'all' : [],
+        },
+      },
+      callbacks: {
+        onReady: () => { console.log('MP: Card Payment Brick ready'); },
+        onSubmit: async (formData) => {
+          console.log('MP Brick formData:', JSON.stringify(formData));
+          try {
+            const { data: { session } } = await db.auth.getSession();
+            const res = await fetch(`${SUPA_URL}/functions/v1/create-payment`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+              body: JSON.stringify({
+                plan: selectedPlan,
+                cycle: selectedCycle,
+                payment_type: payMethod,
+                payment_method_id: formData.payment_method_id,
+                token: formData.token,
+                issuer_id: formData.issuer_id || null,
+                installments: formData.installments || 1,
+                payer: {
+                  email: currentUser.email,
+                  identification: formData.payer?.identification || { type:'CPF', number:'' },
+                },
+              }),
+            });
+            const data = await res.json();
+            if (!res.ok || data.error) { showPayError(data.error||'Erro no pagamento.'); return; }
+            if (data.status==='approved') {
+              const { data: { session: s } } = await db.auth.getSession();
+              await loadSubscription(s.access_token);
+              updateAvatarUI();
+              showPaySuccess();
+            } else {
+              showPayError('Pagamento recusado. Verifique os dados ou tente outro método.');
+            }
+          } catch(e) { console.error('Payment error:', e); showPayError('Erro ao processar pagamento.'); }
+        },
+        onError: (error) => { console.error('MP Brick error:', error); },
+      },
+    });
+    console.log('MP: Card Payment Brick created');
+  } catch(e) { console.error('MP Brick init error:', e); }
 }
 
 async function submitPix() {
@@ -1552,47 +1606,6 @@ async function checkPix(paymentId) {
   await loadSubscription(session.access_token);
   if (currentSub) { updateAvatarUI(); showPaySuccess(); }
   else { btn.disabled=false; btn.textContent='Verificar novamente'; showPayError('Pagamento ainda não confirmado. Aguarde e tente novamente.'); }
-}
-
-async function submitCard() {
-  const btn = document.getElementById('pay-submit');
-  btn.disabled=true; btn.textContent='Processando...';
-  const priceLabel = `Pagar R$ ${PRICES[selectedPlan][selectedCycle].toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-  try {
-    const holderName = document.getElementById('pay-holder')?.value?.trim();
-    const cpf = document.getElementById('pay-cpf')?.value?.replace(/\D/g,'');
-    if (!holderName || !cpf) { showPayError('Preencha nome e CPF.'); btn.disabled=false; btn.textContent=priceLabel; return; }
-    const tokenResult = await mpInstance.fields.createCardToken({
-      cardholderName: holderName,
-      identificationType: 'CPF',
-      identificationNumber: cpf,
-    });
-    if (!tokenResult?.id) { showPayError('Erro ao processar cartão. Verifique os dados.'); btn.disabled=false; btn.textContent=priceLabel; return; }
-    console.log('MP token:', JSON.stringify(tokenResult));
-    const BRAND_TO_CREDIT = { mastercard:'master', visa:'visa', amex:'amex', elo:'elo', hipercard:'hipercard', cabal:'cabal', diners:'diners' };
-    const BRAND_TO_DEBIT  = { mastercard:'debmaster', visa:'debvisa', elo:'debelo', cabal:'debcabal', maestro:'maestro' };
-    const brand = tokenResult.brand?.code || tokenResult.payment_method?.id || '';
-    let pmId;
-    if (payMethod === 'debit_card') {
-      pmId = BRAND_TO_DEBIT[brand];
-      if (!pmId) { showPayError('Este cartão não suporta débito. Tente crédito ou Pix.'); btn.disabled=false; btn.textContent=priceLabel; return; }
-    } else {
-      pmId = BRAND_TO_CREDIT[brand] || brand || 'visa';
-    }
-    let issuerId = tokenResult.issuer?.id || null;
-    console.log('MP final: brand=' + brand, 'pmId=' + pmId, 'payType=' + payMethod, 'issuer=' + issuerId);
-    const { data: { session } } = await db.auth.getSession();
-    const installments = Number(document.getElementById('pay-installments')?.value)||1;
-    const res = await fetch(`${SUPA_URL}/functions/v1/create-payment`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-      body: JSON.stringify({ plan: selectedPlan, cycle: selectedCycle, payment_type: payMethod, payment_method_id: pmId, token: tokenResult.id, issuer_id: issuerId, installments, payer: { email: currentUser.email, identification: { type:'CPF', number: cpf } } }),
-    });
-    const data = await res.json();
-    if (!res.ok || data.error) { showPayError(data.error||'Erro no pagamento.'); btn.disabled=false; btn.textContent=priceLabel; return; }
-    if (data.status==='approved') { const { data: { session: s } } = await db.auth.getSession(); await loadSubscription(s.access_token); updateAvatarUI(); showPaySuccess(); }
-    else { showPayError('Pagamento recusado. Verifique os dados ou tente outro método.'); btn.disabled=false; btn.textContent=priceLabel; }
-  } catch(e) { console.error('submitCard error:', e); showPayError('Erro ao processar. Verifique os dados do cartão.'); btn.disabled=false; btn.textContent=priceLabel; }
 }
 
 function showPayError(msg) { const el=document.getElementById('pay-error'); if(el){el.textContent=msg;el.classList.add('show');} }
