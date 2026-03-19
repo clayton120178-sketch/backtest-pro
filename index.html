@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Backtest Pro — Prove antes de arriscar seu dinheiro</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#0A0A0F;
+  --bg1:#12121A;
+  --bg2:#1A1A28;
+  --bg3:#1E1E2E;
+  --bd:#2A2A3C;
+  --bdh:#3A3A52;
+  --tx:#E8E8ED;
+  --txs:#8888A0;
+  --txm:#44445A;
+  --ac:#00D4AA;
+  --acd:rgba(0,212,170,.07);
+  --acd2:rgba(0,212,170,.14);
+  --in:#6366F1;
+  --dg:#EF4444;
+  --pr:#10B981;
+  --wn:#F59E0B;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg0);color:var(--tx);font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.6;overflow-x:hidden}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg1)}
+::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
+
+/* ── NOISE OVERLAY ── */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  opacity:.025;pointer-events:none;z-index:0
+}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  height:62px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 5%;
+  background:rgba(10,10,15,.82);
+  backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--bd);
+}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-logo-icon{
+  width:32px;height:32px;border-radius:9px;
+  background:var(--acd2);border:1px solid rgba(0,212,170,.3);
+  display:flex;align-items:center;justify-content:center
+}
+.nav-logo-text{font-weight:800;font-size:15px;letter-spacing:-.01em;color:var(--tx)}
+.nav-logo-text span{color:var(--ac)}
+.nav-links{display:flex;align-items:center;gap:28px}
+.nav-links a{color:var(--txs);text-decoration:none;font-size:14px;font-weight:500;transition:color .15s}
+.nav-links a:hover{color:var(--tx)}
+.nav-ctas{display:flex;align-items:center;gap:10px}
+.btn-ghost{
+  padding:8px 16px;border-radius:8px;border:1px solid var(--bd);
+  background:transparent;color:var(--txs);font-size:14px;font-weight:500;
+  cursor:pointer;transition:all .15s;font-family:inherit;text-decoration:none;
+  display:inline-flex;align-items:center
+}
+.btn-ghost:hover{color:var(--tx);border-color:var(--bdh)}
+.btn-primary{
+  padding:9px 20px;border-radius:8px;border:none;
+  background:var(--ac);color:#0A0A0F;font-size:14px;font-weight:700;
+  cursor:pointer;transition:all .16s;font-family:inherit;text-decoration:none;
+  display:inline-flex;align-items:center;gap:6px
+}
+.btn-primary:hover{background:#00ecc0;box-shadow:0 0 28px rgba(0,212,170,.3);transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(0)}
+
+/* ── SECTIONS ── */
+section{position:relative;z-index:1}
+
+/* ── HERO ── */
+.hero{
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;
+  padding:100px 5% 80px;
+  position:relative;overflow:hidden
+}
+.hero-glow{
+  position:absolute;top:-20%;left:50%;transform:translateX(-50%);
+  width:800px;height:500px;
+  background:radial-gradient(ellipse at center,rgba(0,212,170,.09) 0%,transparent 70%);
+  pointer-events:none
+}
+.hero-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(42,42,60,.35) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(42,42,60,.35) 1px,transparent 1px);
+  background-size:48px 48px;
+  -webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,black 0%,transparent 100%);
+  mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,black 0%,transparent 100%);
+  pointer-events:none
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:6px 14px;border-radius:20px;
+  background:var(--acd2);border:1px solid rgba(0,212,170,.22);
+  font-size:12px;font-weight:600;color:var(--ac);
+  margin-bottom:28px;
+  animation:fadeUp .6s ease-out both
+}
+.hero-badge-dot{width:6px;height:6px;border-radius:3px;background:var(--ac);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.hero-h1{
+  font-size:clamp(40px,6vw,76px);
+  font-weight:800;
+  line-height:1.05;
+  letter-spacing:-.03em;
+  color:var(--tx);
+  margin-bottom:10px;
+  animation:fadeUp .65s .08s ease-out both
+}
+.hero-h1 .hl{
+  color:var(--ac);
+  position:relative;display:inline-block
+}
+.hero-h1 .hl::after{
+  content:'';position:absolute;bottom:-4px;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--ac),transparent);
+  border-radius:1px
+}
+.hero-sub{
+  font-size:clamp(16px,2vw,21px);
+  color:var(--txs);
+  max-width:580px;
+  margin:0 auto 38px;
+  line-height:1.55;
+  animation:fadeUp .65s .16s ease-out both
+}
+.hero-ctas{
+  display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;
+  margin-bottom:14px;
+  animation:fadeUp .65s .24s ease-out both
+}
+.btn-hero{
+  padding:14px 30px;border-radius:10px;border:none;
+  background:var(--ac);color:#0A0A0F;font-size:16px;font-weight:800;
+  cursor:pointer;transition:all .16s;font-family:inherit;text-decoration:none;
+  display:inline-flex;align-items:center;gap:8px;letter-spacing:-.01em
+}
+.btn-hero:hover{background:#00ecc0;box-shadow:0 0 40px rgba(0,212,170,.35);transform:translateY(-2px)}
+.btn-hero-s{
+  padding:14px 24px;border-radius:10px;
+  border:1px solid var(--bd);background:transparent;
+  color:var(--txs);font-size:15px;font-weight:500;
+  cursor:pointer;transition:all .16s;font-family:inherit;text-decoration:none;
+  display:inline-flex;align-items:center
+}
+.btn-hero-s:hover{color:var(--tx);border-color:var(--bdh)}
+.hero-trial-note{
+  font-size:12px;color:var(--txm);
+  animation:fadeUp .65s .3s ease-out both
+}
+.hero-trial-note span{color:var(--ac)}
+
+/* hero equity chart */
+.hero-chart-wrap{
+  margin-top:56px;
+  width:100%;max-width:860px;
+  background:var(--bg1);
+  border:1px solid var(--bd);
+  border-radius:16px;
+  overflow:hidden;
+  animation:fadeUp .8s .4s ease-out both;
+  position:relative
+}
+.hero-chart-bar{
+  height:38px;
+  background:var(--bg2);
+  border-bottom:1px solid var(--bd);
+  display:flex;align-items:center;padding:0 16px;gap:8px
+}
+.hcb-dot{width:10px;height:10px;border-radius:5px}
+.hcb-title{font-size:11px;font-weight:600;color:var(--txs);margin-left:6px;font-family:'JetBrains Mono',monospace}
+.hcb-badge{
+  margin-left:auto;padding:3px 10px;border-radius:4px;
+  font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace
+}
+.hcb-badge.ok{background:rgba(16,185,129,.12);color:#10B981;border:1px solid rgba(16,185,129,.22)}
+.hcb-badge.bad{background:rgba(239,68,68,.12);color:#EF4444;border:1px solid rgba(239,68,68,.22)}
+.hero-chart-body{padding:16px 20px 14px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hero-metric{
+  background:var(--bg2);border:1px solid var(--bd);border-radius:10px;
+  padding:12px 16px;
+}
+.hm-label{font-size:10px;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.hm-val{font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── DIVIDER ── */
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--bd),transparent);margin:0 5%}
+
+/* ── SECTION COMMON ── */
+.section{padding:90px 5%}
+.section-inner{max-width:1080px;margin:0 auto}
+.section-tag{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:800;color:var(--ac);
+  text-transform:uppercase;letter-spacing:.12em;
+  margin-bottom:14px
+}
+.section-tag::before{content:'';width:18px;height:1px;background:var(--ac)}
+.section-h2{
+  font-size:clamp(28px,4vw,46px);
+  font-weight:800;letter-spacing:-.025em;line-height:1.1;
+  color:var(--tx);margin-bottom:16px
+}
+.section-h2 em{color:var(--ac);font-style:normal}
+.section-sub{
+  font-size:17px;color:var(--txs);
+  max-width:560px;line-height:1.6;
+  margin-bottom:52px
+}
+
+/* ── PROBLEMA ── */
+.problema-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:0}
+@media(max-width:700px){.problema-grid{grid-template-columns:1fr}}
+.prob-card{
+  background:var(--bg1);border:1px solid var(--bd);border-radius:14px;
+  padding:26px 28px;position:relative;overflow:hidden
+}
+.prob-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--dg),transparent)
+}
+.prob-card.solution::before{background:linear-gradient(90deg,var(--ac),transparent)}
+.prob-num{
+  font-size:11px;font-weight:800;color:var(--txm);
+  text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;
+  font-family:'JetBrains Mono',monospace
+}
+.prob-card h3{font-size:18px;font-weight:700;color:var(--tx);margin-bottom:8px;line-height:1.3}
+.prob-card p{font-size:14px;color:var(--txs);line-height:1.65}
+.prob-icon{
+  width:40px;height:40px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:14px
+}
+.prob-icon.red{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2)}
+.prob-icon.green{background:rgba(0,212,170,.08);border:1px solid rgba(0,212,170,.2)}
+
+/* ── O QUE É AT ── */
+.at-layout{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+@media(max-width:800px){.at-layout{grid-template-columns:1fr}}
+.at-steps{display:flex;flex-direction:column;gap:0}
+.at-step{
+  display:flex;gap:18px;padding:20px 0;
+  border-bottom:1px solid var(--bd)
+}
+.at-step:last-child{border-bottom:none}
+.at-step-num{
+  width:32px;height:32px;border-radius:8px;
+  background:var(--acd2);border:1px solid rgba(0,212,170,.22);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-size:13px;font-weight:700;color:var(--ac);
+  font-family:'JetBrains Mono',monospace;margin-top:2px
+}
+.at-step-body h4{font-size:15px;font-weight:700;color:var(--tx);margin-bottom:5px}
+.at-step-body p{font-size:13px;color:var(--txs);line-height:1.6}
+.at-visual{
+  background:var(--bg1);border:1px solid var(--bd);border-radius:16px;
+  padding:24px;position:sticky;top:80px
+}
+.at-visual-label{
+  font-size:10px;font-weight:700;color:var(--txm);
+  text-transform:uppercase;letter-spacing:.1em;margin-bottom:16px;
+  font-family:'JetBrains Mono',monospace
+}
+.at-chart-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 12px;border-radius:8px;margin-bottom:5px;
+  background:var(--bg2);border:1px solid var(--bd)
+}
+.at-chart-row.highlight{
+  background:var(--acd);border-color:rgba(0,212,170,.25)
+}
+.at-chart-strat{font-size:12px;font-weight:600;color:var(--txs);font-family:'JetBrains Mono',monospace}
+.at-chart-strat.h{color:var(--tx)}
+.at-chart-val{
+  font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace
+}
+.at-chart-bar-wrap{flex:1;margin:0 12px;height:5px;background:var(--bg0);border-radius:3px;overflow:hidden}
+.at-chart-bar-fill{height:100%;border-radius:3px;transition:width .4s}
+
+/* ── COMO FUNCIONA ── */
+.como-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:700px){.como-steps{grid-template-columns:1fr}}
+.como-card{
+  background:var(--bg1);border:1px solid var(--bd);border-radius:14px;
+  padding:28px 26px;position:relative;overflow:hidden;
+  transition:border-color .2s
+}
+.como-card:hover{border-color:var(--bdh)}
+.como-card-num{
+  font-size:52px;font-weight:800;
+  color:var(--bg2);
+  font-family:'JetBrains Mono',monospace;
+  line-height:1;margin-bottom:16px;
+  letter-spacing:-.04em;
+  position:relative;z-index:0
+}
+.como-card h3{font-size:17px;font-weight:700;color:var(--tx);margin-bottom:8px;position:relative;z-index:1}
+.como-card p{font-size:13px;color:var(--txs);line-height:1.65;position:relative;z-index:1}
+.como-connector{
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;color:var(--txm);
+  padding-top:30px
+}
+@media(max-width:700px){.como-connector{display:none}}
+
+/* ── FEATURES ── */
+.features-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+@media(max-width:700px){.features-grid{grid-template-columns:1fr}}
+.feat-card{
+  background:var(--bg1);border:1px solid var(--bd);border-radius:14px;
+  padding:28px;transition:border-color .2s,transform .2s
+}
+.feat-card:hover{border-color:var(--bdh);transform:translateY(-2px)}
+.feat-icon{
+  width:44px;height:44px;border-radius:11px;
+  background:var(--acd2);border:1px solid rgba(0,212,170,.2);
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:16px;color:var(--ac)
+}
+.feat-card h3{font-size:17px;font-weight:700;color:var(--tx);margin-bottom:8px;line-height:1.3}
+.feat-card p{font-size:13px;color:var(--txs);line-height:1.65}
+.feat-tag{
+  display:inline-block;margin-top:12px;
+  padding:3px 10px;border-radius:5px;
+  font-size:11px;font-weight:700;
+  background:var(--acd2);color:var(--ac);
+  font-family:'JetBrains Mono',monospace
+}
+
+/* ── DADOS ── */
+.dados-layout{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+@media(max-width:800px){.dados-layout{grid-template-columns:1fr}}
+.dados-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dado-stat{
+  background:var(--bg1);border:1px solid var(--bd);border-radius:12px;
+  padding:20px;text-align:center
+}
+.dado-stat-num{
+  font-size:32px;font-weight:800;color:var(--ac);
+  font-family:'JetBrains Mono',monospace;line-height:1;margin-bottom:6px
+}
+.dado-stat-label{font-size:12px;color:var(--txs);font-weight:500}
+.dados-list{display:flex;flex-direction:column;gap:10px}
+.dado-item{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:14px 16px;
+  background:var(--bg1);border:1px solid var(--bd);border-radius:10px
+}
+.dado-item-dot{
+  width:6px;height:6px;border-radius:3px;
+  background:var(--ac);margin-top:7px;flex-shrink:0
+}
+.dado-item p{font-size:13px;color:var(--txs);line-height:1.55}
+.dado-item strong{color:var(--tx)}
+
+/* ── PRICING ── */
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start}
+@media(max-width:800px){.pricing-grid{grid-template-columns:1fr}}
+.price-card{
+  background:var(--bg1);border:1px solid var(--bd);border-radius:16px;
+  padding:28px;position:relative;overflow:hidden
+}
+.price-card.featured{
+  border-color:rgba(0,212,170,.4);
+  background:linear-gradient(160deg,rgba(0,212,170,.05),var(--bg1))
+}
+.price-card.featured::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--ac),var(--in))
+}
+.price-badge{
+  position:absolute;top:18px;right:18px;
+  padding:4px 10px;border-radius:6px;
+  font-size:11px;font-weight:800;
+  background:var(--ac);color:#0A0A0F
+}
+.price-name{font-size:13px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.price-val{
+  font-size:40px;font-weight:800;color:var(--tx);
+  font-family:'JetBrains Mono',monospace;line-height:1;margin-bottom:4px;
+  letter-spacing:-.03em
+}
+.price-val span{font-size:18px;font-weight:500;color:var(--txs)}
+.price-cycle{font-size:12px;color:var(--txm);margin-bottom:20px}
+.price-divider{height:1px;background:var(--bd);margin-bottom:20px}
+.price-features{display:flex;flex-direction:column;gap:9px;margin-bottom:24px}
+.pf-item{display:flex;align-items:flex-start;gap:9px;font-size:13px;color:var(--txs);line-height:1.5}
+.pf-check{color:var(--ac);flex-shrink:0;margin-top:2px}
+.pf-check.grey{color:var(--txm)}
+.price-cta{
+  width:100%;padding:12px;border-radius:9px;
+  font-size:14px;font-weight:700;cursor:pointer;
+  transition:all .15s;font-family:inherit;
+  display:block;text-align:center;text-decoration:none
+}
+.price-cta.primary{
+  background:var(--ac);color:#0A0A0F;border:none
+}
+.price-cta.primary:hover{background:#00ecc0;box-shadow:0 0 28px rgba(0,212,170,.25)}
+.price-cta.secondary{
+  background:transparent;color:var(--txs);
+  border:1px solid var(--bd)
+}
+.price-cta.secondary:hover{color:var(--tx);border-color:var(--bdh)}
+.price-trial-note{
+  text-align:center;font-size:12px;color:var(--txm);
+  margin-top:28px
+}
+.price-trial-note strong{color:var(--tx)}
+.pricing-toggle{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  margin-bottom:36px
+}
+.ptog-label{font-size:13px;color:var(--txs);font-weight:500}
+.ptog-label.active{color:var(--tx);font-weight:600}
+.ptog-switch{
+  width:44px;height:24px;border-radius:12px;
+  background:var(--ac);border:none;cursor:pointer;
+  position:relative;transition:background .2s
+}
+.ptog-thumb{
+  position:absolute;top:3px;left:3px;
+  width:18px;height:18px;border-radius:9px;
+  background:#0A0A0F;transition:left .18s
+}
+.ptog-disc{
+  padding:3px 10px;border-radius:5px;
+  font-size:11px;font-weight:800;
+  background:rgba(245,158,11,.12);color:var(--wn);
+  border:1px solid rgba(245,158,11,.2)
+}
+
+/* ── FAQ ── */
+.faq-list{max-width:740px;margin:0 auto}
+.faq-item{
+  border-bottom:1px solid var(--bd);overflow:hidden
+}
+.faq-q{
+  width:100%;background:transparent;border:none;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:20px 0;cursor:pointer;gap:16px;
+  text-align:left;font-family:inherit
+}
+.faq-q-text{font-size:16px;font-weight:600;color:var(--tx);flex:1}
+.faq-arrow{
+  width:28px;height:28px;border-radius:7px;
+  background:var(--bg2);border:1px solid var(--bd);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:all .2s;color:var(--txs)
+}
+.faq-q:hover .faq-arrow{border-color:var(--ac);color:var(--ac)}
+.faq-item.open .faq-arrow{background:var(--acd2);border-color:var(--ac);color:var(--ac);transform:rotate(45deg)}
+.faq-a{
+  max-height:0;overflow:hidden;transition:max-height .3s ease;
+}
+.faq-item.open .faq-a{max-height:500px}
+.faq-a-inner{padding:0 0 20px;font-size:14px;color:var(--txs);line-height:1.7}
+.faq-a-inner strong{color:var(--tx)}
+
+/* ── CTA FINAL ── */
+.cta-final{
+  text-align:center;padding:100px 5%;
+  position:relative;overflow:hidden
+}
+.cta-glow{
+  position:absolute;bottom:-30%;left:50%;transform:translateX(-50%);
+  width:600px;height:400px;
+  background:radial-gradient(ellipse,rgba(0,212,170,.08) 0%,transparent 70%);
+  pointer-events:none
+}
+.cta-final h2{
+  font-size:clamp(32px,5vw,58px);
+  font-weight:800;letter-spacing:-.03em;
+  color:var(--tx);line-height:1.1;margin-bottom:16px
+}
+.cta-final h2 em{color:var(--ac);font-style:normal}
+.cta-final p{font-size:18px;color:var(--txs);margin-bottom:36px;max-width:480px;margin-left:auto;margin-right:auto}
+.cta-note{font-size:13px;color:var(--txm);margin-top:16px}
+.cta-note span{color:var(--ac)}
+
+/* ── FOOTER ── */
+footer{
+  background:var(--bg1);border-top:1px solid var(--bd);
+  padding:40px 5%;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px
+}
+.footer-logo{display:flex;align-items:center;gap:8px;text-decoration:none}
+.footer-logo-text{font-weight:700;font-size:13px;color:var(--txs)}
+.footer-logo-text span{color:var(--ac)}
+.footer-links{display:flex;gap:20px}
+.footer-links a{font-size:12px;color:var(--txm);text-decoration:none;transition:color .13s}
+.footer-links a:hover{color:var(--txs)}
+.footer-copy{font-size:12px;color:var(--txm)}
+
+/* ── COMPARISON TABLE ── */
+.comp-table{
+  width:100%;border-collapse:collapse;margin-top:0
+}
+.comp-table th{
+  padding:12px 16px;font-size:11px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.08em;color:var(--txm);
+  border-bottom:1px solid var(--bd);text-align:left
+}
+.comp-table th:not(:first-child){text-align:center}
+.comp-table th.ours{color:var(--ac)}
+.comp-table td{
+  padding:13px 16px;font-size:13px;color:var(--txs);
+  border-bottom:1px solid rgba(42,42,60,.5)
+}
+.comp-table td:not(:first-child){text-align:center}
+.comp-table tr:last-child td{border-bottom:none}
+.comp-table td.feat{color:var(--tx);font-weight:500}
+.comp-table td.yes{color:var(--ac);font-weight:700}
+.comp-table td.no{color:var(--txm)}
+.comp-table td.ours-col{
+  background:rgba(0,212,170,.04)
+}
+.comp-wrap{
+  background:var(--bg1);border:1px solid var(--bd);border-radius:14px;
+  overflow:hidden
+}
+
+/* ── SCROLL REVEAL ── */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .55s ease,transform .55s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* ── TICKER ── */
+.ticker-section{
+  padding:18px 0;
+  background:var(--bg1);border-top:1px solid var(--bd);border-bottom:1px solid var(--bd);
+  overflow:hidden;position:relative;z-index:1
+}
+.ticker-track{
+  display:flex;gap:0;
+  animation:ticker 28s linear infinite;
+  width:max-content
+}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ticker-item{
+  display:flex;align-items:center;gap:10px;
+  padding:0 28px;white-space:nowrap;
+  font-size:12px;font-weight:600;color:var(--txm);
+  font-family:'JetBrains Mono',monospace;
+  border-right:1px solid var(--bd)
+}
+.ticker-item .val{color:var(--tx)}
+.ticker-item .chg{color:var(--ac)}
+.ticker-item .chg.neg{color:var(--dg)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:600px){
+  .nav-links{display:none}
+  .hero-chart-body{grid-template-columns:1fr 1fr}
+  .pricing-grid{grid-template-columns:1fr}
+  .dados-stats{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="m9 17 3-5 3 3 3-5"/></svg>
+    </div>
+    <div class="nav-logo-text">Backtest<span> Pro</span></div>
+  </a>
+  <div class="nav-links">
+    <a href="#como">Como funciona</a>
+    <a href="#funcionalidades">Funcionalidades</a>
+    <a href="#pricing">Planos</a>
+    <a href="#faq">FAQ</a>
+  </div>
+  <div class="nav-ctas">
+    <a href="/app.html" class="btn-ghost">Entrar</a>
+    <a href="#pricing" class="btn-primary">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Assinar
+    </a>
+  </div>
+</nav>
+
+<!-- TICKER -->
+<div class="ticker-section" style="margin-top:62px">
+  <div class="ticker-track" id="ticker">
+    <div class="ticker-item"><span>WIN$</span><span class="val">131.245</span><span class="chg">+0,42%</span></div>
+    <div class="ticker-item"><span>WDO$</span><span class="val">5.847</span><span class="chg">-0,18%</span></div>
+    <div class="ticker-item"><span>IND$</span><span class="val">131.190</span><span class="chg">+0,39%</span></div>
+    <div class="ticker-item"><span>DOL$</span><span class="val">5.843</span><span class="chg">-0,21%</span></div>
+    <div class="ticker-item"><span>TAXA DE ACERTO</span><span class="val">42,3%</span><span class="chg">3.847 trades</span></div>
+    <div class="ticker-item"><span>PROFIT FACTOR</span><span class="val">1,34</span><span class="chg">+válido</span></div>
+    <div class="ticker-item"><span>DRAWDOWN MÁX</span><span class="val">-R$ 12.400</span><span class="chg neg">-18,2%</span></div>
+    <div class="ticker-item"><span>WIN$</span><span class="val">131.245</span><span class="chg">+0,42%</span></div>
+    <div class="ticker-item"><span>WDO$</span><span class="val">5.847</span><span class="chg">-0,18%</span></div>
+    <div class="ticker-item"><span>IND$</span><span class="val">131.190</span><span class="chg">+0,39%</span></div>
+    <div class="ticker-item"><span>DOL$</span><span class="val">5.843</span><span class="chg">-0,21%</span></div>
+    <div class="ticker-item"><span>TAXA DE ACERTO</span><span class="val">42,3%</span><span class="chg">3.847 trades</span></div>
+    <div class="ticker-item"><span>PROFIT FACTOR</span><span class="val">1,34</span><span class="chg">+válido</span></div>
+    <div class="ticker-item"><span>DRAWDOWN MÁX</span><span class="val">-R$ 12.400</span><span class="chg neg">-18,2%</span></div>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-grid"></div>
+
+  <div class="hero-badge">
+    <div class="hero-badge-dot"></div>
+    Plataforma profissional de backtesting
+  </div>
+
+  <h1 class="hero-h1">
+    Quando o assunto é seu dinheiro,<br>
+    pare de chutar. <span class="hl">Faça backtest.</span>
+  </h1>
+
+  <p class="hero-sub">
+    Prove com dados reais antes de arriscar seu dinheiro.
+    O Backtest Pro testa qualquer estratégia de análise técnica
+    em até 5 anos de histórico — sem uma linha de código.
+  </p>
+
+  <div class="hero-ctas">
+    <a href="/app.html" class="btn-hero">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Começar agora
+    </a>
+    <a href="#como" class="btn-hero-s">Ver como funciona →</a>
+  </div>
+  <div class="hero-trial-note">Pagamento via Pix ou cartão · Sem recorrência automática</div>
+
+  <!-- Hero chart mock -->
+  <div class="hero-chart-wrap reveal">
+    <div class="hero-chart-bar">
+      <div class="hcb-dot" style="background:#EF4444"></div>
+      <div class="hcb-dot" style="background:#F59E0B;margin-left:3px"></div>
+      <div class="hcb-dot" style="background:#10B981;margin-left:3px"></div>
+      <span class="hcb-title">backtest_resultado.pro — WIN · M5 · Jan 2020 – Mar 2026</span>
+      <div class="hcb-badge ok">✓ LUCRATIVA</div>
+    </div>
+    <div style="padding:16px 20px 6px;display:flex;gap:10px;flex-wrap:wrap">
+      <div class="hero-metric" style="flex:1;min-width:140px">
+        <div class="hm-label">Lucro Total</div>
+        <div class="hm-val" style="color:#10B981">+R$ 42.380</div>
+      </div>
+      <div class="hero-metric" style="flex:1;min-width:140px">
+        <div class="hm-label">Total de Trades</div>
+        <div class="hm-val" style="color:#E8E8ED">3.847</div>
+      </div>
+      <div class="hero-metric" style="flex:1;min-width:140px">
+        <div class="hm-label">Taxa de Acerto</div>
+        <div class="hm-val" style="color:#F59E0B">42,3%</div>
+      </div>
+      <div class="hero-metric" style="flex:1;min-width:140px">
+        <div class="hm-label">Profit Factor</div>
+        <div class="hm-val" style="color:#00D4AA">1,34</div>
+      </div>
+    </div>
+    <!-- Equity curve SVG -->
+    <div style="padding:0 20px 16px">
+      <svg width="100%" viewBox="0 0 820 90" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="hg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#10B981" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="#10B981" stop-opacity="0.02"/>
+          </linearGradient>
+        </defs>
+        <path d="M0,80 L9,78 L18,74 L27,76 L36,68 L45,70 L54,62 L63,65 L72,58 L81,52 L90,55 L99,48 L108,44 L117,47 L126,40 L135,43 L144,36 L153,32 L162,35 L171,28 L180,31 L189,24 L198,20 L207,22 L216,16 L225,14 L234,18 L243,11 L252,8 L261,12 L270,6 L279,4 L288,7 L297,2 L306,5 L315,9 L324,3 L333,1 L342,4 L351,8 L360,3 L369,6 L378,2 L387,7 L396,4 L405,1 L414,5 L423,3 L432,6 L441,2 L450,4 L459,1 L468,5 L477,3 L486,2 L495,5 L504,3 L513,1 L522,4 L531,2 L540,5 L549,3 L558,2 L567,4 L576,2 L585,3 L594,1 L603,3 L612,2 L621,4 L630,1 L639,3 L648,2 L657,4 L666,1 L675,3 L684,2 L693,1 L702,2 L711,3 L720,1 L729,2 L738,1 L747,2 L756,1 L765,2 L774,1 L783,2 L792,1 L801,2 L810,1 L820,2 L820,85 L0,85 Z"
+          fill="url(#hg)"/>
+        <path d="M0,80 L9,78 L18,74 L27,76 L36,68 L45,70 L54,62 L63,65 L72,58 L81,52 L90,55 L99,48 L108,44 L117,47 L126,40 L135,43 L144,36 L153,32 L162,35 L171,28 L180,31 L189,24 L198,20 L207,22 L216,16 L225,14 L234,18 L243,11 L252,8 L261,12 L270,6 L279,4 L288,7 L297,2 L306,5 L315,9 L324,3 L333,1 L342,4 L351,8 L360,3 L369,6 L378,2 L387,7 L396,4 L405,1 L414,5 L423,3 L432,6 L441,2 L450,4 L459,1 L468,5 L477,3 L486,2 L495,5 L504,3 L513,1 L522,4 L531,2 L540,5 L549,3 L558,2 L567,4 L576,2 L585,3 L594,1 L603,3 L612,2 L621,4 L630,1 L639,3 L648,2 L657,4 L666,1 L675,3 L684,2 L693,1 L702,2 L711,3 L720,1 L729,2 L738,1 L747,2 L756,1 L765,2 L774,1 L783,2 L792,1 L801,2 L810,1 L820,2"
+          fill="none" stroke="#10B981" stroke-width="2"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEMA -->
+<section class="section" id="problema">
+  <div class="section-inner">
+    <div class="section-tag">O Problema</div>
+    <h2 class="section-h2">O trader aprende.<br>Mas nunca <em>testa como deveria</em>.</h2>
+    <p class="section-sub">
+      A maioria dos traders aplica setups aprendidos em cursos e podcasts diretamente no mercado ao vivo —
+      sem nenhuma evidência de que funcionam.
+    </p>
+
+    <div class="problema-grid reveal">
+      <div class="prob-card">
+        <div class="prob-icon red">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3"/></svg>
+        </div>
+        <div class="prob-num">O ciclo atual</div>
+        <h3>Aprende um setup → Opera ao vivo → Descobre que não funciona</h3>
+        <p>O trader gasta horas estudando análise técnica, aplica o setup no mercado real, perde dinheiro, e não sabe se o problema foi a estratégia, o momento ou a execução. O aprendizado custa caro.</p>
+      </div>
+
+      <div class="prob-card solution">
+        <div class="prob-icon green">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="prob-num">Com o Backtest Pro</div>
+        <h3>Aprende um setup → Testa com dados reais → Decide com evidência</h3>
+        <p>Antes de arriscar um centavo, você descobre se aquele setup realmente funcionaria nos últimos 5 anos. Se a estratégia é perdedora, você sabe antes de perder. Se é lucrativa, você opera com convicção.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- O QUE É AT -->
+<section class="section" id="at">
+  <div class="section-inner">
+    <div class="at-layout">
+      <div>
+        <div class="section-tag">Análise Técnica</div>
+        <h2 class="section-h2">O que é, de fato,<br><em>análise técnica</em></h2>
+        <p class="section-sub" style="margin-bottom:32px">
+          Entenda o processo completo — do estudo de padrões até a operação ao vivo com vantagem real.
+        </p>
+
+        <div class="at-steps reveal">
+          <div class="at-step">
+            <div class="at-step-num">01</div>
+            <div class="at-step-body">
+              <h4>Estudo de padrões de preço</h4>
+              <p>Análise técnica é o estudo sistemático de padrões históricos de preço e volume com o objetivo de identificar comportamentos que se repetem no mercado.</p>
+            </div>
+          </div>
+          <div class="at-step">
+            <div class="at-step-num">02</div>
+            <div class="at-step-body">
+              <h4>Construção de vantagem comprovada</h4>
+              <p>O objetivo final de todo esse estudo é identificar uma <strong style="color:#E8E8ED">vantagem comprovada sobre o mercado</strong> — uma situação em que a probabilidade de ganho supera a de perda de forma estatisticamente consistente.</p>
+            </div>
+          </div>
+          <div class="at-step">
+            <div class="at-step-num">03</div>
+            <div class="at-step-body">
+              <h4>O backtest é parte indispensável</h4>
+              <p>Nenhuma estratégia é válida sem evidência histórica. O backtest é a etapa que transforma uma <em style="color:#8888A0">ideia</em> em uma <strong style="color:#E8E8ED">hipótese testada</strong>. Sem ele, você está operando no achismo.</p>
+            </div>
+          </div>
+          <div class="at-step">
+            <div class="at-step-num">04</div>
+            <div class="at-step-body">
+              <h4>Decisão baseada em dados</h4>
+              <p>Com o resultado em mãos, você sabe exatamente o que esperar daquela estratégia: taxa de acerto, drawdown máximo, profit factor. A decisão de operar deixa de ser fé e passa a ser cálculo.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Visual ranking mock -->
+      <div class="at-visual reveal">
+        <div class="at-visual-label">Ranking de estratégias · WIN M5</div>
+        <div class="at-chart-row highlight">
+          <div>
+            <div class="at-chart-strat h">IFR + SMA200</div>
+            <div style="font-size:10px;color:#44445A;font-family:'JetBrains Mono';margin-top:2px">3.847 trades · 42,3%</div>
+          </div>
+          <div class="at-chart-bar-wrap">
+            <div class="at-chart-bar-fill" style="width:85%;background:#00D4AA"></div>
+          </div>
+          <div class="at-chart-val" style="color:#00D4AA">+R$ 42.380</div>
+        </div>
+        <div class="at-chart-row">
+          <div>
+            <div class="at-chart-strat">MACD cruzamento</div>
+            <div style="font-size:10px;color:#44445A;font-family:'JetBrains Mono';margin-top:2px">2.214 trades · 38,1%</div>
+          </div>
+          <div class="at-chart-bar-wrap">
+            <div class="at-chart-bar-fill" style="width:54%;background:#10B981"></div>
+          </div>
+          <div class="at-chart-val" style="color:#10B981">+R$ 18.200</div>
+        </div>
+        <div class="at-chart-row">
+          <div>
+            <div class="at-chart-strat">Bollinger rompimento</div>
+            <div style="font-size:10px;color:#44445A;font-family:'JetBrains Mono';margin-top:2px">4.102 trades · 35,8%</div>
+          </div>
+          <div class="at-chart-bar-wrap">
+            <div class="at-chart-bar-fill" style="width:28%;background:#F59E0B"></div>
+          </div>
+          <div class="at-chart-val" style="color:#F59E0B">+R$ 7.400</div>
+        </div>
+        <div class="at-chart-row">
+          <div>
+            <div class="at-chart-strat">Setup guru do podcast</div>
+            <div style="font-size:10px;color:#44445A;font-family:'JetBrains Mono';margin-top:2px">1.890 trades · 31,2%</div>
+          </div>
+          <div class="at-chart-bar-wrap">
+            <div class="at-chart-bar-fill" style="width:0%;background:#EF4444"></div>
+          </div>
+          <div class="at-chart-val" style="color:#EF4444">-R$ 23.640</div>
+        </div>
+        <div class="at-chart-row">
+          <div>
+            <div class="at-chart-strat">Estocástico sobrevendido</div>
+            <div style="font-size:10px;color:#44445A;font-family:'JetBrains Mono';margin-top:2px">3.310 trades · 29,4%</div>
+          </div>
+          <div class="at-chart-bar-wrap">
+            <div class="at-chart-bar-fill" style="width:0%;background:#EF4444"></div>
+          </div>
+          <div class="at-chart-val" style="color:#EF4444">-R$ 38.100</div>
+        </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bd);font-size:11px;color:#44445A;font-family:'JetBrains Mono'">
+          ↑ Estratégias rankeadas por lucro total · 5 anos de histórico
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- COMO FUNCIONA -->
+<section class="section" id="como">
+  <div class="section-inner">
+    <div style="text-align:center">
+      <div class="section-tag" style="justify-content:center">Como funciona</div>
+      <h2 class="section-h2" style="max-width:560px;margin:0 auto 14px">Do setup aprendido ao<br>resultado em <em>minutos</em></h2>
+      <p class="section-sub" style="margin:0 auto 52px">Sem instalar nada. Sem escrever código. Sem configurar planilhas.</p>
+    </div>
+
+    <div class="como-steps reveal">
+      <div class="como-card">
+        <div class="como-card-num">01</div>
+        <h3>Monte sua estratégia</h3>
+        <p>Selecione os indicadores que você usa — IFR, Médias Móveis, MACD, Bollinger e muito mais. Configure os parâmetros de entrada, stop e alvo como você os aprendeu. Tudo visual, sem código.</p>
+      </div>
+      <div class="como-card">
+        <div class="como-card-num">02</div>
+        <h3>Rode o backtest</h3>
+        <p>Com um clique, o sistema processa anos de dados históricos reais do mercado brasileiro. Mini índice, mini dólar, índice cheio e dólar cheio — nos principais timeframes.</p>
+      </div>
+      <div class="como-card">
+        <div class="como-card-num">03</div>
+        <h3>Descubra a verdade</h3>
+        <p>Você recebe um relatório completo: curva de equity, taxa de acerto, drawdown máximo, profit factor e distribuição de resultados. Agora você sabe o que esperar daquela estratégia.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- FUNCIONALIDADES -->
+<section class="section" id="funcionalidades">
+  <div class="section-inner">
+    <div class="section-tag">Funcionalidades</div>
+    <h2 class="section-h2">Tudo que você precisa para<br><em>operar com evidência</em></h2>
+    <p class="section-sub">Do primeiro teste até o portfólio de estratégias validadas.</p>
+
+    <div class="features-grid reveal">
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        </div>
+        <h3>Construa e teste novas estratégias</h3>
+        <p>Crie qualquer combinação de indicadores e condições com o wizard de 5 passos. Escolha o gatilho de entrada, configure stop e alvo, defina gestão da operação — tudo sem uma linha de código. O que você montou é exatamente o que roda.</p>
+        <span class="feat-tag">Wizard visual</span>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        </div>
+        <h3>Teste em todos os ativos e timeframes</h3>
+        <p>Um setup que parece funcionar no mini índice pode falhar no mini dólar. Teste a mesma estratégia em WIN, WDO, IND e DOL — em múltiplos timeframes — e descubra onde ela realmente entrega resultado.</p>
+        <span class="feat-tag">Multi-ativo</span>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </div>
+        <h3>Rankeie estratégias por performance</h3>
+        <p>Após testar múltiplas ideias, compare os resultados lado a lado: lucro total, drawdown, profit factor, taxa de acerto. Ordene do melhor para o pior e fique apenas com o que os dados aprovam.</p>
+        <span class="feat-tag">Ranking</span>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        </div>
+        <h3>Monte um portfólio de estratégias</h3>
+        <p>Um trader profissional não depende de uma única estratégia. Monte um portfólio com as estratégias validadas — diversificadas por ativo, timeframe e lógica de entrada. Reduza a dependência de um único setup e aumente a consistência.</p>
+        <span class="feat-tag">Portfólio</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- COMPARISON -->
+<section class="section">
+  <div class="section-inner">
+    <div style="text-align:center;margin-bottom:40px">
+      <div class="section-tag" style="justify-content:center">Comparativo</div>
+      <h2 class="section-h2" style="max-width:600px;margin:0 auto">Por que o Backtest Pro<br>para o mercado <em>brasileiro</em></h2>
+    </div>
+    <div class="comp-wrap reveal">
+      <table class="comp-table">
+        <thead>
+          <tr>
+            <th>Funcionalidade</th>
+            <th>Planilha Excel</th>
+            <th>MT5 Manual</th>
+            <th class="ours">Backtest Pro</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="feat">Sem necessidade de programação</td>
+            <td class="no">✗</td>
+            <td class="no">✗</td>
+            <td class="yes ours-col">✓</td>
+          </tr>
+          <tr>
+            <td class="feat">Dados históricos reais (WIN, WDO)</td>
+            <td class="no">✗</td>
+            <td>Parcial</td>
+            <td class="yes ours-col">✓ 5 anos</td>
+          </tr>
+          <tr>
+            <td class="feat">Relatório de performance completo</td>
+            <td class="no">✗</td>
+            <td>Parcial</td>
+            <td class="yes ours-col">✓</td>
+          </tr>
+          <tr>
+            <td class="feat">Em português, focado no Brasil</td>
+            <td>—</td>
+            <td class="no">✗</td>
+            <td class="yes ours-col">✓</td>
+          </tr>
+          <tr>
+            <td class="feat">Resultado em minutos</td>
+            <td class="no">Horas</td>
+            <td class="no">Requer EA</td>
+            <td class="yes ours-col">✓ Segundos</td>
+          </tr>
+          <tr>
+            <td class="feat">Ranking e portfólio de estratégias</td>
+            <td class="no">✗</td>
+            <td class="no">✗</td>
+            <td class="yes ours-col">✓</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- DADOS -->
+<section class="section" id="dados">
+  <div class="section-inner">
+    <div class="dados-layout">
+      <div>
+        <div class="section-tag">Os dados</div>
+        <h2 class="section-h2">5 anos de mercado<br>real, não <em>simulado</em></h2>
+        <p style="font-size:16px;color:var(--txs);line-height:1.65;margin-bottom:32px">
+          O motor do Backtest Pro processa dados históricos reais —
+          o mesmo dado tick a tick usado por instituições.
+        </p>
+        <div class="dados-list reveal">
+          <div class="dado-item">
+            <div class="dado-item-dot"></div>
+            <p><strong>Múltiplos ativos e mercados</strong> — futuros brasileiros e ativos globais, testados com dados históricos reais.</p>
+          </div>
+          <div class="dado-item">
+            <div class="dado-item-dot"></div>
+            <p><strong>Múltiplos timeframes</strong> — de 1 minuto ao gráfico diário. A mesma estratégia testada em todos os tempos gráficos de uma vez.</p>
+          </div>
+          <div class="dado-item">
+            <div class="dado-item-dot"></div>
+            <p><strong>5 anos de histórico</strong> — dados suficientes para cobrir diferentes regimes de mercado, crises e períodos de tendência.</p>
+          </div>
+        </div>
+      </div>
+      <div class="dados-stats reveal">
+        <div class="dado-stat">
+          <div class="dado-stat-num">5</div>
+          <div class="dado-stat-label">anos de histórico</div>
+        </div>
+        <div class="dado-stat">
+          <div class="dado-stat-num">8</div>
+          <div class="dado-stat-label">timeframes</div>
+        </div>
+        <div class="dado-stat">
+          <div class="dado-stat-num">0</div>
+          <div class="dado-stat-label">linhas de código</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- PRICING -->
+<section class="section" id="pricing">
+  <div class="section-inner">
+    <div style="text-align:center;margin-bottom:40px">
+      <div class="section-tag" style="justify-content:center">Planos</div>
+      <h2 class="section-h2">Escolha seu plano.<br>Sem surpresas, sem <em>recorrência</em>.</h2>
+      <p style="font-size:16px;color:var(--txs);margin:0 auto;max-width:480px">
+        Você paga uma vez e tem acesso pelo período do plano escolhido. Sem cobrança automática.
+      </p>
+    </div>
+
+    <div class="pricing-grid reveal" style="grid-template-columns:repeat(2,1fr);max-width:780px;margin:0 auto">
+      <!-- Essencial -->
+      <div class="price-card featured">
+        <div class="price-badge">Popular</div>
+        <div class="price-name">Essencial</div>
+        <div class="price-val">R$ <span>47</span></div>
+        <div class="price-cycle">por mês · ou R$ 279/semestral · R$ 499/anual</div>
+        <div class="price-divider"></div>
+        <div class="price-features">
+          <div class="pf-item"><span class="pf-check">✓</span> Backtests ilimitados</div>
+          <div class="pf-item"><span class="pf-check">✓</span> Todos os indicadores disponíveis</div>
+          <div class="pf-item"><span class="pf-check">✓</span> Todos os ativos e timeframes</div>
+          <div class="pf-item"><span class="pf-check">✓</span> Relatório de performance completo</div>
+          <div class="pf-item"><span class="pf-check">✓</span> Histórico de backtests salvos</div>
+          <div class="pf-item"><span class="pf-check">✓</span> Ranking e portfólio de estratégias</div>
+          <div class="pf-item"><span class="pf-check grey">—</span> Otimização de parâmetros</div>
+          <div class="pf-item"><span class="pf-check grey">—</span> Teste de robustez (anti-overfitting)</div>
+        </div>
+        <a href="/app.html" class="price-cta primary">Assinar Essencial</a>
+      </div>
+
+      <!-- Pro -->
+      <div class="price-card">
+        <div class="price-name">Pro</div>
+        <div class="price-val">R$ <span>97</span></div>
+        <div class="price-cycle">por mês · ou R$ 549/semestral · R$ 949/anual</div>
+        <div class="price-divider"></div>
+        <div class="price-features">
+          <div class="pf-item"><span class="pf-check">✓</span> Tudo do Essencial</div>
+          <div class="pf-item"><span class="pf-check">✓</span> <strong style="color:#E8E8ED">Otimização de parâmetros</strong></div>
+          <div class="pf-item"><span class="pf-check">✓</span> <strong style="color:#E8E8ED">Teste de robustez</strong> — proteção contra overfitting</div>
+          <div class="pf-item"><span class="pf-check">✓</span> Exportação de relatório (PDF)</div>
+          <div class="pf-item"><span class="pf-check">✓</span> Compartilhamento de resultado</div>
+          <div class="pf-item"><span class="pf-check">✓</span> Funcionalidades avançadas em breve</div>
+        </div>
+        <a href="/app.html" class="price-cta secondary">Assinar Pro</a>
+      </div>
+    </div>
+
+    <p class="price-trial-note">
+      Pagamento via <strong>Pix ou cartão</strong> · Cobrança avulsa, sem recorrência automática ·
+      Acesso por <strong>30 / 180 / 365 dias</strong> conforme o plano
+    </p>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- FAQ -->
+<section class="section" id="faq">
+  <div class="section-inner">
+    <div style="text-align:center;margin-bottom:48px">
+      <div class="section-tag" style="justify-content:center">Dúvidas</div>
+      <h2 class="section-h2">Perguntas frequentes</h2>
+    </div>
+
+    <div class="faq-list">
+      <div class="faq-item open">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <span class="faq-q-text">Preciso saber programar para usar o Backtest Pro?</span>
+          <div class="faq-arrow">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+        </button>
+        <div class="faq-a">
+          <div class="faq-a-inner">
+            <strong>Não.</strong> O Backtest Pro foi construído exatamente para quem não programa. Você monta a estratégia de forma visual — escolhendo indicadores, condições e parâmetros com cliques. Nenhum código é escrito ou mostrado em nenhum momento. Se você sabe usar um aplicativo de banco, você sabe usar o Backtest Pro.
+          </div>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <span class="faq-q-text">De onde vêm os dados históricos? São confiáveis?</span>
+          <div class="faq-arrow">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+        </button>
+        <div class="faq-a">
+          <div class="faq-a-inner">
+            Os backtests rodam no <strong>MetaTrader 5</strong>, o mesmo motor de simulação usado por traders profissionais e instituições. Os dados históricos dos contratos brasileiros (WIN, WDO, IND, DOL) são carregados diretamente pelo MT5 e abrangem 5 anos de histórico — o suficiente para cobrir diferentes regimes de mercado, crises e períodos de tendência.
+          </div>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <span class="faq-q-text">O que o relatório de backtest me diz exatamente?</span>
+          <div class="faq-arrow">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+        </button>
+        <div class="faq-a">
+          <div class="faq-a-inner">
+            Você recebe: <strong>curva de equity</strong> (evolução do capital ao longo do tempo), <strong>taxa de acerto</strong> (% de trades lucrativos), <strong>profit factor</strong> (quanto ganhou para cada R$ 1 perdido), <strong>drawdown máximo</strong> (a pior sequência de perdas), <strong>número total de trades</strong> e <strong>distribuição de resultados</strong> por operação. Tudo em português, com explicações de cada métrica.
+          </div>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <span class="faq-q-text">Um backtest positivo garante que vou lucrar ao vivo?</span>
+          <div class="faq-arrow">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+        </button>
+        <div class="faq-a">
+          <div class="faq-a-inner">
+            <strong>Não — e nós não vamos te mentir sobre isso.</strong> Um backtest positivo significa que a estratégia teria funcionado no passado. Mercados mudam. O valor do backtest é <em>eliminar estratégias que claramente não funcionam</em> antes de você arriscar dinheiro real — e te dar uma expectativa realista do que esperar. Estratégias sem backtest positivo não têm nenhuma base para operar. Estratégias com backtest positivo têm pelo menos evidência histórica.
+          </div>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <span class="faq-q-text">Como funciona o pagamento? Tem recorrência automática?</span>
+          <div class="faq-arrow">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+        </button>
+        <div class="faq-a">
+          <div class="faq-a-inner">
+            Não há recorrência automática. Você paga uma vez e tem acesso pelo período do plano escolhido — <strong>30 dias (mensal), 180 dias (semestral) ou 365 dias (anual)</strong>. Quando o período vence, o acesso é suspenso até uma nova compra. O pagamento é feito via <strong>Pix ou cartão</strong>.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- CTA FINAL -->
+<section class="cta-final">
+  <div class="cta-glow"></div>
+  <div class="section-tag" style="justify-content:center;margin-bottom:22px">Comece agora</div>
+  <h2>Pare de chutar.<br><em>Faça backtest.</em></h2>
+  <p>Descubra se sua estratégia realmente funciona antes de arriscar seu dinheiro.</p>
+  <a href="/app.html" class="btn-hero" style="margin:0 auto;display:inline-flex">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    Escolher meu plano
+  </a>
+  <p class="cta-note">Pagamento via Pix ou cartão · <span>Sem recorrência automática</span></p>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <a href="#" class="footer-logo">
+    <div class="nav-logo-icon" style="width:26px;height:26px;border-radius:7px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="m9 17 3-5 3 3 3-5"/></svg>
+    </div>
+    <div class="footer-logo-text">Backtest<span> Pro</span> · alphaQuant</div>
+  </a>
+  <div class="footer-links">
+    <a href="#">Termos de uso</a>
+    <a href="#">Privacidade</a>
+    <a href="#">Contato</a>
+    <a href="#">Aviso de risco</a>
+  </div>
+  <div class="footer-copy">© 2026 alphaQuant. Todos os direitos reservados.</div>
+</footer>
+
+<script>
+// ── FAQ TOGGLE
+function toggleFaq(btn) {
+  const item = btn.closest('.faq-item');
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+
+// ── SCROLL REVEAL
+const revealEls = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }});
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+revealEls.forEach(el => observer.observe(el));
+
+// ── NAV active state on scroll
+const navLinks = document.querySelectorAll('.nav-links a');
+const sections = document.querySelectorAll('section[id]');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => { if (window.scrollY >= s.offsetTop - 100) current = s.id; });
+  navLinks.forEach(a => {
+    a.style.color = a.getAttribute('href') === '#' + current ? '#E8E8ED' : '';
+  });
+}, { passive: true });
+
+// ── Smooth ticker duplicate (make it seamless)
+// Already handled by CSS animation on duplicate content
+</script>
+</body>
+</html>
