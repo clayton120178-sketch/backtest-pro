@@ -6,7 +6,6 @@
 <title>Backtest Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="https://sdk.mercadopago.com/js/v2"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -1333,7 +1332,7 @@ function renderApp() {
 // ─── CONFIG ───────────────────────────────────────────────────
 const SUPA_URL = 'https://lmrpxtshdiwufbfkaymg.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtcnB4dHNoZGl3dWZiZmtheW1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4OTM1MjQsImV4cCI6MjA4OTQ2OTUyNH0.c8giT7wbSAcHecrHR9IMB1x39Uy_TTA5p2-Q_QyQvXs';
-const MP_PUBLIC_KEY = 'APP_USR-f040f8b2-6edf-4ace-abfb-4f03653bfbc2'; // substitua pela sua Public Key
+const MP_PUBLIC_KEY = 'APP_USR-f040f8b2-6edf-4ace-abfb-4f03653bfbc2';
 
 const PRICES = {
   essencial: { mensal: 149.90, semestral: 799.90, anual: 1499.90 },
@@ -1552,7 +1551,17 @@ function renderPayment() {
       Pagamento seguro via Mercado Pago
     </div>
   `;
-  setTimeout(() => renderPayForm(), 50);
+
+  // Carregar SDK do MP dinamicamente
+  if (!window.MercadoPago) {
+    const script = document.createElement('script');
+    script.src = 'https://sdk.mercadopago.com/js/v2';
+    script.onload = () => setTimeout(() => renderPayForm(), 100);
+    document.head.appendChild(script);
+  } else {
+    setTimeout(() => renderPayForm(), 50);
+  }
+
   return el;
 }
 
