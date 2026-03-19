@@ -1347,6 +1347,7 @@ const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 // ─── STATE ────────────────────────────────────────────────────
 let currentUser = null;
 let currentSub  = null;
+let currentSession = null;
 let selectedPlan  = null;
 let selectedCycle = 'mensal';
 let payMethod = 'pix';
@@ -1357,6 +1358,7 @@ let cardForm = null;
 async function loadSession() {
   const { data } = await db.auth.getSession();
   if (data.session?.user) {
+    currentSession = data.session;
     currentUser = data.session.user;
     await loadSubscription();
     updateAvatarUI();
@@ -1648,7 +1650,7 @@ async function submitPix() {
   btn.disabled = true;
   btn.textContent = 'Gerando Pix...';
 
-  const { data: { session } } = await db.auth.getSession();
+  const session = currentSession;
   const res = await fetch(`${SUPA_URL}/functions/v1/create-payment`, {
     method: 'POST',
     headers: {
@@ -1718,7 +1720,7 @@ async function submitCard() {
     const formData = cardForm.getCardFormData();
     const cpf = document.getElementById('pay-cpf')?.value?.replace(/\D/g,'');
 
-    const { data: { session } } = await db.auth.getSession();
+    const session = currentSession;
     const res = await fetch(`${SUPA_URL}/functions/v1/create-payment`, {
       method: 'POST',
       headers: {
@@ -1852,6 +1854,7 @@ async function handleAuth(mode) {
     alert('Verifique seu e-mail para confirmar o cadastro.');
     showAuthModal('login'); return;
   }
+  currentSession = result.data.session;
   currentUser = result.data.user;
   await loadSubscription();
   updateAvatarUI();
@@ -1865,6 +1868,7 @@ async function handleGoogleAuth() {
 
 db.auth.onAuthStateChange(async (event, session) => {
   if (event==='SIGNED_IN'&&session?.user) {
+    currentSession = session;
     currentUser = session.user;
     await loadSubscription();
     updateAvatarUI();
