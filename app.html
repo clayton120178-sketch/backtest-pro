@@ -1569,34 +1569,18 @@ async function submitCard() {
     });
     if (!tokenResult?.id) { showPayError('Erro ao processar cartão. Verifique os dados.'); btn.disabled=false; btn.textContent=priceLabel; return; }
     console.log('MP token:', JSON.stringify(tokenResult));
-    let pmId = payMethod === 'debit_card' ? 'debvisa' : 'visa';
-    let issuerId = null;
-    const DEBIT_MAP = { visa:'debvisa', master:'debmaster', elo:'debelo', cabal:'debcabal' };
-    try {
-      const bin = tokenResult.first_six_digits;
-      if (bin) {
-        const resp = await fetch(`https://api.mercadopago.com/v1/payment_methods/search?public_key=${MP_PUBLIC_KEY}&bin=${bin}&marketplace=NONE`);
-        const pmData = await resp.json();
-        console.log('MP payment methods for BIN:', JSON.stringify(pmData.results?.map(m=>({id:m.id,type:m.payment_type_id}))));
-        if (pmData.results && pmData.results.length > 0) {
-          if (payMethod === 'debit_card') {
-            const debitMatch = pmData.results.find(m => m.payment_type_id === 'debit_card');
-            if (debitMatch) {
-              pmId = debitMatch.id;
-            } else {
-              const creditMatch = pmData.results.find(m => m.payment_type_id === 'credit_card') || pmData.results[0];
-              pmId = DEBIT_MAP[creditMatch.id] || ('deb' + creditMatch.id);
-            }
-          } else {
-            const match = pmData.results.find(m => m.payment_type_id === 'credit_card') || pmData.results[0];
-            pmId = match.id;
-          }
-          const issuerMatch = pmData.results.find(m => m.id === pmId);
-          if (issuerMatch?.issuer?.default) issuerId = issuerMatch.issuer.id;
-          console.log('MP final:', pmId, 'issuer:', issuerId, 'payType:', payMethod);
-        }
-      }
-    } catch(e) { console.warn('MP detect fallback:', e); }
+    const BRAND_TO_CREDIT = { mastercard:'master', visa:'visa', amex:'amex', elo:'elo', hipercard:'hipercard', cabal:'cabal', diners:'diners' };
+    const BRAND_TO_DEBIT  = { mastercard:'debmaster', visa:'debvisa', elo:'debelo', cabal:'debcabal', maestro:'maestro' };
+    const brand = tokenResult.brand?.code || tokenResult.payment_method?.id || '';
+    let pmId;
+    if (payMethod === 'debit_card') {
+      pmId = BRAND_TO_DEBIT[brand];
+      if (!pmId) { showPayError('Este cartão não suporta débito. Tente crédito ou Pix.'); btn.disabled=false; btn.textContent=priceLabel; return; }
+    } else {
+      pmId = BRAND_TO_CREDIT[brand] || brand || 'visa';
+    }
+    let issuerId = tokenResult.issuer?.id || null;
+    console.log('MP final: brand=' + brand, 'pmId=' + pmId, 'payType=' + payMethod, 'issuer=' + issuerId);
     const { data: { session } } = await db.auth.getSession();
     const installments = Number(document.getElementById('pay-installments')?.value)||1;
     const res = await fetch(`${SUPA_URL}/functions/v1/create-payment`, {
