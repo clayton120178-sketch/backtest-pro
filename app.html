@@ -1345,13 +1345,7 @@ const CYCLE_DISC = { mensal: null, semestral: '11% off', anual: '30% off' };
 console.log('supabase obj:', window.supabase, window.Supabase);
 const _supa = window.supabase || window.Supabase;
 const db = _supa.createClient(SUPA_URL, SUPA_KEY, {
-  auth: {
-    storage: window.localStorage,
-    storageKey: 'btp-auth',
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-  }
+  auth: { detectSessionInUrl: true, persistSession: true }
 });
 console.log('db criado:', db);
 
@@ -1368,16 +1362,22 @@ let cardForm = null;
 // ─── SESSION ──────────────────────────────────────────────────
 async function loadSession() {
   console.log('loadSession iniciado');
-  // Timeout de segurança — se não resolver em 5s, mostra login
-  const timeout = setTimeout(() => {
-    console.log('timeout — mostrando login');
-    if (!currentUser) showAuthModal('login');
-  }, 5000);
 
   db.auth.onAuthStateChange(async (event, session) => {
     console.log('authStateChange:', event, session?.user?.email);
-    clearTimeout(timeout);
-    if (session?.user) {
+    if (event === 'INITIAL_SESSION') {
+      if (session?.user) {
+        currentSession = session;
+        currentUser = session.user;
+        await loadSubscription();
+        updateAvatarUI();
+        if (currentSub) { renderApp(); }
+        else { showScreen('nosub'); }
+      } else {
+        showAuthModal('login');
+      }
+    }
+    if (event === 'SIGNED_IN') {
       currentSession = session;
       currentUser = session.user;
       await loadSubscription();
@@ -1385,9 +1385,11 @@ async function loadSession() {
       document.getElementById('auth-overlay')?.remove();
       if (currentSub) { renderApp(); }
       else { showScreen('nosub'); }
-    } else {
+    }
+    if (event === 'SIGNED_OUT') {
       currentUser = null;
       currentSession = null;
+      currentSub = null;
       showAuthModal('login');
     }
   });
