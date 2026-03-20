@@ -84,7 +84,9 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .stepper{display:flex;align-items:center;gap:6px}
 .step-btn{background:var(--bg2);border:1px solid var(--bd);color:var(--tx);width:28px;height:28px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:background .13s;flex-shrink:0;font-family:inherit}
 .step-btn:hover{background:var(--bd)}
-.step-val{min-width:48px;text-align:center;background:var(--bg2);border:1px solid var(--bd);border-radius:6px;padding:4px 8px;font-size:13px;color:var(--tx);font-family:'JetBrains Mono',monospace}
+.step-val{min-width:48px;width:64px;text-align:center;background:var(--bg2);border:1px solid var(--bd);border-radius:6px;padding:4px 8px;font-size:13px;color:var(--tx);font-family:'JetBrains Mono',monospace;-moz-appearance:textfield;outline:none;transition:border-color .15s}
+.step-val::-webkit-inner-spin-button,.step-val::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.step-val:focus{border-color:var(--ac)}
 .step-unit{font-size:12px;color:var(--txs);flex-shrink:0}
 .ckbox{width:17px;height:17px;border-radius:4px;border:2px solid var(--bd);background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .14s}
 .ckbox.on{background:var(--ac);border-color:var(--ac)}
@@ -598,13 +600,15 @@ function icon(name,color='currentColor') {
   return wrap.firstChild;
 }
 function stepper(val,min=0,max=9999,unit='',onChange) {
-  const valEl=div('step-val mono');
-  valEl.textContent=val;
-  const dec=h('button',{class:'step-btn',onclick:()=>{const nv=Math.max(min,val-1);onChange(nv);}});
+  const inp=h('input',{type:'number',class:'step-val',value:val,min:String(min),max:String(max)});
+  function commit(){let nv=parseInt(inp.value,10);if(isNaN(nv))nv=val;nv=Math.max(min,Math.min(max,nv));inp.value=nv;onChange(nv);}
+  inp.addEventListener('change',commit);
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});
+  const dec=h('button',{class:'step-btn',onclick:e=>{e.preventDefault();let nv=Math.max(min,(parseInt(inp.value,10)||val)-1);inp.value=nv;onChange(nv);}});
   dec.textContent='−';
-  const inc=h('button',{class:'step-btn',onclick:()=>{const nv=Math.min(max,val+1);onChange(nv);}});
+  const inc=h('button',{class:'step-btn',onclick:e=>{e.preventDefault();let nv=Math.min(max,(parseInt(inp.value,10)||val)+1);inp.value=nv;onChange(nv);}});
   inc.textContent='+';
-  const wrap=div('stepper',dec,valEl,inc);
+  const wrap=div('stepper',dec,inp,inc);
   if(unit) {const u=div('step-unit');u.textContent=unit;wrap.appendChild(u);}
   return wrap;
 }
@@ -884,7 +888,7 @@ function renderModal() {
     if(ind.hasPer!==false && ms.params.per!==undefined) {
       const row=div('');
       row.appendChild(slabel('Período'));
-      const s=stepper(ms.params.per,1,500,'',v=>{ms.params.per=v;renderModal();});
+      const s=stepper(ms.params.per,1,500,'',v=>{ms.params.per=v;});
       row.appendChild(s);
       frag.appendChild(row);
     }
@@ -905,7 +909,7 @@ function renderModal() {
       const row=div('');
       const valLabel = ind.id==='gap' ? 'Tamanho mínimo (pontos)' : ind.id==='atr' ? 'Valor em pontos' : 'Valor de referência';
       row.appendChild(slabel(valLabel));
-      const s=stepper(ms.params.val,-999,99999, ind.id==='gap'||ind.id==='atr'?'pts':'', v=>{ms.params.val=v;renderModal();});
+      const s=stepper(ms.params.val,-999,99999, ind.id==='gap'||ind.id==='atr'?'pts':'', v=>{ms.params.val=v;});
       row.appendChild(s);
       frag.appendChild(row);
     }
@@ -1133,7 +1137,7 @@ function renderStep3() {
   const vRow=div('');vRow.style.cssText='display:flex;align-items:center;gap:9px;flex-wrap:wrap';
   const vLabel=div('');vLabel.style.cssText='font-size:13px;color:#8888A0';vLabel.textContent='Cancelar após';
   const vUnit=div('');vUnit.style.cssText='font-size:13px;color:#8888A0';vUnit.textContent='candles sem execução';
-  vRow.append(vLabel,stepper(cfg.validity,1,20,'',v=>{cfg.validity=v;renderApp();}),vUnit);
+  vRow.append(vLabel,stepper(cfg.validity,1,20,'',v=>{cfg.validity=v;}),vUnit);
   vBlock.appendChild(vRow);el.appendChild(vBlock);
   return el;
 }
@@ -1161,9 +1165,9 @@ function renderStep4() {
     info.append(nm,ds);row.appendChild(info);c.appendChild(row);
     if(cfg.stopType===s.id){
       const sub=div('');sub.style.cssText='padding-left:29px;margin-top:11px;display:flex;gap:12px;flex-wrap:wrap';
-      if(s.id==='fixed') sub.appendChild(stepper(cfg.stopPts,1,5000,'pts',v=>{cfg.stopPts=v;renderApp();}));
-      if(s.id==='hl_candle') sub.appendChild(stepper(cfg.stopOffset,0,1000,'pts offset',v=>{cfg.stopOffset=v;renderApp();}));
-      if(s.id==='n_candles'){sub.appendChild(stepper(cfg.stopCandles,1,50,'candles',v=>{cfg.stopCandles=v;renderApp();}));sub.appendChild(stepper(cfg.stopOffset,0,1000,'pts offset',v=>{cfg.stopOffset=v;renderApp();}));}
+      if(s.id==='fixed') sub.appendChild(stepper(cfg.stopPts,1,5000,'pts',v=>{cfg.stopPts=v;}));
+      if(s.id==='hl_candle') sub.appendChild(stepper(cfg.stopOffset,0,1000,'pts offset',v=>{cfg.stopOffset=v;}));
+      if(s.id==='n_candles'){sub.appendChild(stepper(cfg.stopCandles,1,50,'candles',v=>{cfg.stopCandles=v;}));sub.appendChild(stepper(cfg.stopOffset,0,1000,'pts offset',v=>{cfg.stopOffset=v;}));}
       c.appendChild(sub);
     }
     c.addEventListener('click',()=>{cfg.stopType=s.id;renderApp();});
@@ -1189,11 +1193,11 @@ function renderStep4() {
     row.appendChild(nm);c.appendChild(row);
     if(cfg.tpType===t.id){
       const sub=div('');sub.style.cssText='padding-left:29px;margin-top:11px';
-      if(t.id==='fixed') sub.appendChild(stepper(cfg.tpPts,1,10000,'pts',v=>{cfg.tpPts=v;renderApp();}));
+      if(t.id==='fixed') sub.appendChild(stepper(cfg.tpPts,1,10000,'pts',v=>{cfg.tpPts=v;}));
       if(t.id==='rr'){
         const rrow=div('');rrow.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:6px';
         const rl=div('');rl.style.cssText='font-size:13px;color:#8888A0';rl.textContent='×  risco';
-        rrow.append(stepper(cfg.tpRR,1,20,'',v=>{cfg.tpRR=v;renderApp();}),rl);
+        rrow.append(stepper(cfg.tpRR,1,20,'',v=>{cfg.tpRR=v;}),rl);
         sub.appendChild(rrow);
         if(cfg.stopType==='fixed'){const hint=div('');hint.style.cssText='font-size:11px;color:#44445A;font-family:JetBrains Mono';hint.textContent=`Stop ${cfg.stopPts} pts → alvo = ${(cfg.tpRR*cfg.stopPts).toLocaleString('pt-BR')} pts`;sub.appendChild(hint);}
       }
@@ -1246,17 +1250,17 @@ function renderStep5() {
   el.appendChild(mgmtBlock('Trailing Stop','O stop se move a favor da operação conforme o preço avança.','Trailing stop protege lucros acumulados movendo o stop automaticamente.',cfg.trailing,v=>{cfg.trailing=v;renderApp();},body=>{
     const r1=div('');r1.style.cssText='margin-bottom:12px';
     r1.appendChild(slabel('Ativar trailing após'));
-    r1.appendChild(stepper(cfg.trailAct,1,5000,'pts de lucro',v=>{cfg.trailAct=v;renderApp();}));
+    r1.appendChild(stepper(cfg.trailAct,1,5000,'pts de lucro',v=>{cfg.trailAct=v;}));
     const r2=div('');r2.style.cssText='display:flex;gap:16px;flex-wrap:wrap';
-    const d=div('');d.appendChild(slabel('Distância'));d.appendChild(stepper(cfg.trailDist,1,2000,'pts',v=>{cfg.trailDist=v;renderApp();}));
-    const s=div('');s.appendChild(slabel('Step'));s.appendChild(stepper(cfg.trailStep,1,1000,'pts',v=>{cfg.trailStep=v;renderApp();}));
+    const d=div('');d.appendChild(slabel('Distância'));d.appendChild(stepper(cfg.trailDist,1,2000,'pts',v=>{cfg.trailDist=v;}));
+    const s=div('');s.appendChild(slabel('Step'));s.appendChild(stepper(cfg.trailStep,1,1000,'pts',v=>{cfg.trailStep=v;}));
     r2.append(d,s);body.append(r1,r2);
   }));
 
   el.appendChild(mgmtBlock('Realização Parcial','Parte da posição é encerrada com lucro e o restante continua rodando.','Parcial realiza ganho antes do alvo principal, reduzindo o risco residual.',cfg.partial,v=>{cfg.partial=v;renderApp();},body=>{
     const r1=div('');r1.style.cssText='display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px';
-    const p=div('');p.appendChild(slabel('Realizar'));p.appendChild(stepper(cfg.partPct,10,90,'% da posição',v=>{cfg.partPct=v;renderApp();}));
-    const a=div('');a.appendChild(slabel('Ao atingir'));a.appendChild(stepper(cfg.partAt,1,5000,'pts de lucro',v=>{cfg.partAt=v;renderApp();}));
+    const p=div('');p.appendChild(slabel('Realizar'));p.appendChild(stepper(cfg.partPct,10,90,'% da posição',v=>{cfg.partPct=v;}));
+    const a=div('');a.appendChild(slabel('Ao atingir'));a.appendChild(stepper(cfg.partAt,1,5000,'pts de lucro',v=>{cfg.partAt=v;}));
     r1.append(p,a);
     body.appendChild(r1);
     body.appendChild(ckbox(cfg.partMoveStop,'Mover stop para a entrada após a parcial',v=>{cfg.partMoveStop=v;renderApp();}));
