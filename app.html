@@ -314,6 +314,7 @@ const state = {
   step: 0,
   maxDone: 0,
   dir: 'fwd',
+  animate: false,
   loadMsg: 0,
   cfg: {
     asset:'WIN$N', market:'local', tf:'5m', tStart:'09:00', tEnd:'17:30', closeEnd:true,
@@ -895,12 +896,23 @@ function renderModal() {
     if(conds.length>0){
       const row=div('');
       row.appendChild(slabel('Condição'));
+      const radios=[];
       conds.forEach(c=>{
         const r=div('radio-row'+(ms.params.cond===c?' on':''));
-        r.appendChild(cring(ms.params.cond===c));
+        const ring=cring(ms.params.cond===c);
+        r.appendChild(ring);
         const t=div('');t.style.cssText='font-size:13px;color:#E8E8ED';t.textContent=c;
         r.appendChild(t);
-        r.addEventListener('click',()=>{ms.params.cond=c;renderModal();});
+        radios.push({el:r,ring,cond:c});
+        r.addEventListener('click',()=>{
+          ms.params.cond=c;
+          radios.forEach(rd=>{
+            const isOn=rd.cond===c;
+            rd.el.className='radio-row'+(isOn?' on':'');
+            rd.ring.className='cring'+(isOn?' on':'');
+            rd.ring.innerHTML=isOn?`<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0A0A0F" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`:'';
+          });
+        });
         row.appendChild(r);
       });
       frag.appendChild(row);
@@ -941,7 +953,7 @@ function renderModal() {
 // ─── STEP RENDERERS ───────────────────────────────────────────
 function renderStep1() {
   const cfg=state.cfg;
-  const el=div('aFwd');el.style.cssText='display:flex;flex-direction:column;gap:24px';
+  const el=div(state.animate?'aFwd':'');el.style.cssText='display:flex;flex-direction:column;gap:24px';
 
   // Market toggle
   const mktBlock=div('');
@@ -1040,7 +1052,7 @@ function renderStep1() {
 
 function renderStep2() {
   const cfg=state.cfg;
-  const el=div('aFwd');el.style.cssText='display:flex;flex-direction:column;gap:13px';
+  const el=div(state.animate?'aFwd':'');el.style.cssText='display:flex;flex-direction:column;gap:13px';
   const desc=div('');desc.style.cssText='font-size:13px;color:#8888A0;line-height:1.6';
   desc.innerHTML='Quando <strong style="color:#E8E8ED">TODAS</strong> estas condições forem verdadeiras simultaneamente:';
   el.appendChild(desc);
@@ -1077,7 +1089,7 @@ function renderStep2() {
 
 function renderStep3() {
   const cfg=state.cfg;
-  const el=div('aFwd');el.style.cssText='display:flex;flex-direction:column;gap:24px';
+  const el=div(state.animate?'aFwd':'');el.style.cssText='display:flex;flex-direction:column;gap:24px';
   const isLong=cfg.direction==='long'||cfg.direction==='both';
   const isShort=cfg.direction==='short'||cfg.direction==='both';
 
@@ -1144,7 +1156,7 @@ function renderStep3() {
 
 function renderStep4() {
   const cfg=state.cfg;
-  const el=div('aFwd');el.style.cssText='display:flex;flex-direction:column;gap:24px';
+  const el=div(state.animate?'aFwd':'');el.style.cssText='display:flex;flex-direction:column;gap:24px';
 
   // Stop
   const sBlock=div('');
@@ -1227,7 +1239,7 @@ function renderStep4() {
 
 function renderStep5() {
   const cfg=state.cfg;
-  const el=div('aFwd');
+  const el=div(state.animate?'aFwd':'');
 
   // Banner
   const banner=div('banner warn');
@@ -1296,7 +1308,7 @@ function renderConfirm() {
   if(cfg.exitCond&&cfg.exitCondition) mgmt.push('Saída: '+condLabel(cfg.exitCondition));
   if(!mgmt.length) mgmt.push('Stop e alvo fixos sem gestão adicional');
 
-  const el=div('aUp');el.style.maxWidth='660px';
+  const el=div(state.animate?'aUp':'');el.style.maxWidth='660px';
 
   const title=div('');title.style.cssText='font-size:19px;font-weight:700;color:#E8E8ED;margin-bottom:5px';title.textContent='Confirmar e Rodar';
   const sub=div('');sub.style.cssText='font-size:13px;color:#8888A0;margin-bottom:20px';sub.textContent='Revise as configurações antes de iniciar o backtest.';
@@ -1329,7 +1341,7 @@ function renderConfirm() {
   el.appendChild(period);
 
   const btns=div('');btns.style.cssText='display:flex;gap:9px';
-  const backBtn=h('button',{class:'btn btnS',onclick:()=>{state.screen='wizard';renderApp();}});
+  const backBtn=h('button',{class:'btn btnS',onclick:()=>{state.animate=true;state.screen='wizard';renderApp();}});
   backBtn.innerHTML=IC.back+' Editar';
   const runBtn=h('button',{class:'btn btnP',style:{flex:'1',justifyContent:'center',padding:'13px',fontSize:'15px'},onclick:startLoading});
   runBtn.innerHTML=IC.play+' Rodar Backtest';
@@ -1341,12 +1353,12 @@ function renderConfirm() {
 const LOAD_MSGS=['Analisando 7 anos de histórico...','Processando 48.000 candles...','Calculando drawdowns e métricas...','Simulando execução das operações...','Gerando relatório de performance...'];
 
 function startLoading() {
-  state.screen='loading';state.loadMsg=0;renderApp();
+  state.animate=true;state.screen='loading';state.loadMsg=0;renderApp();
   const iv=setInterval(()=>{
     state.loadMsg++;
     const msgEl=document.getElementById('load-msg');
     if(msgEl) msgEl.textContent=LOAD_MSGS[Math.min(state.loadMsg,LOAD_MSGS.length-1)];
-    if(state.loadMsg>=LOAD_MSGS.length-1){clearInterval(iv);setTimeout(()=>{state.screen='results';renderApp();},700);}
+    if(state.loadMsg>=LOAD_MSGS.length-1){clearInterval(iv);setTimeout(()=>{state.animate=true;state.screen='results';renderApp();},700);}
   },900);
 }
 
@@ -1373,7 +1385,7 @@ const METRICS=[
 
 function renderResults() {
   const last=EQ[EQ.length-1].v;const ok=last>0;
-  const el=div('aUp');el.style.maxWidth='860px';
+  const el=div(state.animate?'aUp':'');el.style.maxWidth='860px';
 
   // Verdict
   const verdict=div('verdict '+(ok?'ok':'bad'));
@@ -1414,7 +1426,7 @@ function renderResults() {
 
   // Actions
   const acts=div('');acts.style.cssText='display:flex;gap:9px;flex-wrap:wrap;margin-top:4px';
-  const resetBtn=h('button',{class:'btn btnP',style:{flex:'1 1 auto',justifyContent:'center'},onclick:()=>{state.screen='wizard';state.step=0;state.maxDone=0;renderApp();}});
+  const resetBtn=h('button',{class:'btn btnP',style:{flex:'1 1 auto',justifyContent:'center'},onclick:()=>{state.animate=true;state.screen='wizard';state.step=0;state.maxDone=0;renderApp();}});
   resetBtn.innerHTML=IC.ref+' Ajustar e testar novamente';
   const dlBtn=h('button',{class:'btn btnS'});dlBtn.innerHTML=IC.dl+' Exportar PDF';
   const svBtn=h('button',{class:'btn btnS'});svBtn.innerHTML=IC.save+' Salvar';
@@ -1435,7 +1447,7 @@ function renderProgressBar() {
   STEPS.forEach((s,i)=>{
     const done=i<state.maxDone;const active=i===state.step;
     const btn_=h('button',{class:'prog-step',disabled:i>state.maxDone});
-    btn_.addEventListener('click',()=>{if(i<=state.maxDone){state.dir=i>state.step?'fwd':'bwd';state.step=i;renderApp();}});
+    btn_.addEventListener('click',()=>{if(i<=state.maxDone&&i!==state.step){state.dir=i>state.step?'fwd':'bwd';state.animate=true;state.step=i;renderApp();}});
     const circle=div('prog-circle'+(done?' done':active?' active':''));
     if(done) circle.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`;
     else circle.innerHTML=IC[s.icon]||'';
@@ -1453,9 +1465,9 @@ function renderApp() {
   const main=document.getElementById('main');
   main.innerHTML='';
 
-  if(state.screen==='loading'){main.appendChild(renderLoading());return;}
-  if(state.screen==='confirm'){main.appendChild(renderConfirm());return;}
-  if(state.screen==='results'){main.appendChild(renderResults());return;}
+  if(state.screen==='loading'){main.appendChild(renderLoading());state.animate=false;return;}
+  if(state.screen==='confirm'){main.appendChild(renderConfirm());state.animate=false;return;}
+  if(state.screen==='results'){main.appendChild(renderResults());state.animate=false;return;}
 
   // Wizard
   const two=div('two-col');
@@ -1478,13 +1490,13 @@ function renderApp() {
 
   // Nav
   const nav=div('nav-footer');
-  const backBtn=h('button',{class:'btn btnS',onclick:()=>{if(state.step>0){state.dir='bwd';state.step--;renderApp();}}});
+  const backBtn=h('button',{class:'btn btnS',onclick:()=>{if(state.step>0){state.dir='bwd';state.animate=true;state.step--;renderApp();}}});
   backBtn.innerHTML=IC.back+' Voltar';
   if(state.step===0) backBtn.style.opacity='0.35';
 
   const fwdBtn=h('button',{class:'btn btnP',onclick:()=>{
-    if(state.step<4){state.dir='fwd';if(state.step>=state.maxDone)state.maxDone=state.step+1;state.step++;renderApp();}
-    else{state.screen='confirm';renderApp();}
+    if(state.step<4){state.dir='fwd';state.animate=true;if(state.step>=state.maxDone)state.maxDone=state.step+1;state.step++;renderApp();}
+    else{state.animate=true;state.screen='confirm';renderApp();}
   }});
   if(state.step<4) fwdBtn.innerHTML='Avançar '+IC.fwd;
   else fwdBtn.innerHTML='Confirmar estratégia '+IC.fwd;
@@ -1520,6 +1532,7 @@ function renderApp() {
   two.appendChild(right);
 
   main.appendChild(two);
+  state.animate=false;
 }
 
 // ─── CONFIG ───────────────────────────────────────────────────
