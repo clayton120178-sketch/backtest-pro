@@ -932,7 +932,7 @@ function buildPreview(step,cfg) {
   const panelCount=Math.min(oscConds.length+volConds.length,2);
   const panelH=32;
   const chartH=panelCount>0?148:185;
-  const labelPad=(step===0)?60:0;
+  const labelPad=(step===0)?72:0;
   const totalH=chartH+(panelCount>0?8+panelCount*panelH+(panelCount-1)*4:0)+8+labelPad;
   const svgEl=hsvg('svg',{width:'100%',viewBox:`0 0 300 ${totalH}`});
 
@@ -1051,12 +1051,12 @@ function buildPreview(step,cfg) {
     ln(x3,0,x3,chartH,'#EF4444',1);
     // Label bar background (covers candle bleed)
     const lbY=chartH+2;
-    rc(0,lbY,300,56,'#12121A',1,0);
+    rc(0,lbY,300,68,'#12121A',1,0);
     ln(5,lbY,295,lbY,'#2A2A3C',0.5);
     // Labels - stacked vertically, one per line
-    tx(10,lbY+16,cfg.tStart,'#00D4AA',13);tx(62,lbY+16,'Início da leitura','#8888A0',10);
-    tx(10,lbY+32,cfg.tLastEntry,'#F59E0B',13);tx(62,lbY+32,'Última abertura','#8888A0',10);
-    tx(10,lbY+48,cfg.tEnd,'#EF4444',13);tx(62,lbY+48,'Encerramento','#8888A0',10);
+    tx(10,lbY+18,cfg.tStart,'#00D4AA',16);tx(68,lbY+18,'Início da leitura','#8888A0',13);
+    tx(10,lbY+38,cfg.tLastEntry,'#F59E0B',16);tx(68,lbY+38,'Última abertura','#8888A0',13);
+    tx(10,lbY+58,cfg.tEnd,'#EF4444',16);tx(68,lbY+58,'Encerramento','#8888A0',13);
   }
 
   // ── Steps 1+: entry marker ──
