@@ -298,6 +298,26 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .asset-selected{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--bd);border-radius:9px;padding:10px 14px;margin-top:8px}
 .asset-selected .asset-ticker{font-size:13px;color:var(--ac)}
 .asset-selected .asset-name{font-size:13px;color:var(--tx)}
+/* Tour */
+.tour-overlay{position:fixed;inset:0;z-index:900;pointer-events:none}
+.tour-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:899;pointer-events:auto}
+.tour-highlight{position:absolute;z-index:901;border-radius:8px;box-shadow:0 0 0 4px rgba(0,212,170,.4),0 0 24px rgba(0,212,170,.15);pointer-events:none;transition:all .3s ease}
+.tour-tooltip{position:absolute;z-index:902;background:var(--bg1);border:1px solid var(--ac);border-radius:12px;padding:18px 20px;max-width:340px;min-width:260px;box-shadow:0 12px 40px rgba(0,0,0,.7);pointer-events:auto;animation:fadeUp .2s ease-out}
+.tour-tooltip-title{font-size:14px;font-weight:700;color:var(--tx);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.tour-tooltip-title svg{color:var(--ac);flex-shrink:0}
+.tour-tooltip-body{font-size:12px;color:var(--txs);line-height:1.6;margin-bottom:16px}
+.tour-tooltip-footer{display:flex;align-items:center;justify-content:space-between}
+.tour-tooltip-counter{font-size:11px;color:var(--txm);font-family:'JetBrains Mono'}
+.tour-tooltip-btns{display:flex;gap:8px}
+.tour-skip{background:none;border:none;color:var(--txs);font-size:12px;cursor:pointer;font-family:inherit;padding:6px 10px;border-radius:6px;transition:color .15s}
+.tour-skip:hover{color:var(--tx)}
+.tour-next{background:var(--ac);color:var(--bg0);font-size:12px;font-weight:700;border:none;cursor:pointer;padding:7px 16px;border-radius:7px;font-family:inherit;transition:all .15s}
+.tour-next:hover{background:#00ecc0;box-shadow:0 0 16px rgba(0,212,170,.3)}
+.tour-help-btn{width:30px;height:30px;border-radius:15px;background:var(--bg2);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;flex-shrink:0;margin-right:8px}
+.tour-help-btn:hover{border-color:var(--ac);background:var(--acd)}
+.tour-arrow{position:absolute;width:12px;height:12px;background:var(--bg1);border:1px solid var(--ac);transform:rotate(45deg)}
+.tour-arrow-top{bottom:-7px;left:24px;border-top:none;border-left:none}
+.tour-arrow-bottom{top:-7px;left:24px;border-bottom:none;border-right:none}
 </style>
 </head>
 <body>
@@ -310,7 +330,11 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
       <div class="logo-text">Backtest<span> Pro</span></div>
     </div>
     <div class="prog-bar" id="prog-bar"></div>
-    <div class="avatar-wrap" id="avatar-wrap">
+    <div style="display:flex;align-items:center">
+      <button class="tour-help-btn" id="tour-help-btn" onclick="startTourForCurrentScreen()" title="Tour guiado">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8888A0" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3"/></svg>
+      </button>
+      <div class="avatar-wrap" id="avatar-wrap">
       <div class="avatar" id="avatar-btn" style="cursor:pointer" onclick="toggleAvatarMenu()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8888A0" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
       </div>
@@ -329,6 +353,7 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
           Sair
         </button>
       </div>
+    </div>
     </div>
   </header>
   <main id="main"></main>
@@ -2590,6 +2615,127 @@ function renderHistory() {
   return el;
 }
 
+// ─── GUIDED TOUR ──────────────────────────────────────────────
+const TOUR_STEPS = {
+  wizard: [
+    {sel:'.prog-bar',title:'Navegação por Passos',body:'O wizard tem 5 etapas. Cada uma configura uma parte da sua estratégia. Você pode voltar a qualquer etapa já completada clicando nela.',pos:'bottom'},
+    {sel:'.step-icon',title:'Etapa Atual',body:'Aqui você vê o nome e descrição da etapa em que está. Cada passo foca em um aspecto: mercado, condições, gatilho, risco e gestão.',pos:'bottom'},
+    {sel:'.two-col',title:'Configuração + Preview',body:'Na esquerda você configura. Na direita, o preview mostra visualmente a estratégia sendo montada — ele atualiza em tempo real conforme suas escolhas.',pos:'top'},
+    {sel:'.nav-footer',title:'Navegação',body:'Use Voltar e Avançar para navegar entre as etapas. No último passo, o botão muda para "Confirmar estratégia".',pos:'top'},
+    {sel:'#tour-help-btn',title:'Precisa de Ajuda?',body:'Clique neste botão a qualquer momento para reexibir este tour na seção atual. Os ícones de "?" ao lado dos campos também explicam cada opção.',pos:'bottom'},
+  ],
+  results: [
+    {sel:'.verdict',title:'Veredicto',body:'O resultado principal da estratégia. Mostra se foi lucrativa ou deficitária no período testado, com o valor total em destaque.',pos:'bottom'},
+    {sel:'.metrics-grid',title:'Métricas de Performance',body:'8 métricas essenciais: trades, taxa de acerto, lucro, drawdown, profit factor, payoff, recovery factor e rentabilidade.',pos:'bottom'},
+    {sel:'.chart-card',title:'Gráficos de Análise',body:'Curva de equity com marcação de drawdown e sequência negativa, análise TUW (Time Underwater), gráfico de drawdown e distribuição de resultados por trade.',pos:'top'},
+  ],
+  history: [
+    {sel:'.history-title',title:'Seu Histórico',body:'Todos os backtests que você realizou ficam salvos aqui. Cada card mostra um resumo com as condições, métricas e resultado.',pos:'bottom'},
+    {sel:'.history-card',title:'Detalhes do Backtest',body:'Clique em qualquer card para ver o resultado detalhado completo — com gráficos, métricas expandidas e análise TUW.',pos:'bottom'},
+  ],
+};
+
+let tourActive=false, tourStepIdx=0, tourCurrentSteps=[];
+
+function startTour(steps){
+  if(!steps||!steps.length)return;
+  tourActive=true;tourStepIdx=0;tourCurrentSteps=steps;
+  showTourStep();
+}
+
+function startTourForCurrentScreen(){
+  if(state.screen==='wizard') startTour(TOUR_STEPS.wizard);
+  else if(state.screen==='results') startTour(TOUR_STEPS.results);
+  else if(currentScreen==='history') startTour(TOUR_STEPS.history);
+}
+
+function showTourStep(){
+  clearTour();
+  if(tourStepIdx>=tourCurrentSteps.length){endTour();return;}
+  const step=tourCurrentSteps[tourStepIdx];
+  const target=document.querySelector(step.sel);
+  if(!target){tourStepIdx++;showTourStep();return;}
+
+  // Backdrop
+  const backdrop=div('tour-backdrop');
+  backdrop.id='tour-backdrop';
+  backdrop.addEventListener('click',endTour);
+  document.body.appendChild(backdrop);
+
+  // Highlight
+  const rect=target.getBoundingClientRect();
+  const highlight=div('tour-highlight');
+  highlight.id='tour-highlight';
+  highlight.style.cssText=`position:fixed;left:${rect.left-4}px;top:${rect.top-4}px;width:${rect.width+8}px;height:${rect.height+8}px`;
+  document.body.appendChild(highlight);
+
+  // Ensure target is visible above backdrop
+  target.style.position=target.style.position||'relative';
+  target.style.zIndex='901';
+  target.dataset.tourRestore='1';
+
+  // Tooltip
+  const tooltip=div('tour-tooltip');
+  tooltip.id='tour-tooltip';
+
+  const titleEl=div('tour-tooltip-title');
+  titleEl.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3"/></svg> ${step.title}`;
+  const bodyEl=div('tour-tooltip-body');bodyEl.textContent=step.body;
+
+  const footer=div('tour-tooltip-footer');
+  const counter=div('tour-tooltip-counter');counter.textContent=`${tourStepIdx+1} de ${tourCurrentSteps.length}`;
+  const btns=div('tour-tooltip-btns');
+  const skipBtn=h('button',{class:'tour-skip',onclick:endTour});skipBtn.textContent='Pular';
+  const nextBtn=h('button',{class:'tour-next',onclick:nextTourStep});
+  nextBtn.textContent=tourStepIdx<tourCurrentSteps.length-1?'Próximo':'Entendi!';
+  btns.append(skipBtn,nextBtn);footer.append(counter,btns);
+
+  // Arrow
+  const arrow=div('tour-arrow');
+
+  tooltip.append(titleEl,bodyEl,footer);
+  document.body.appendChild(tooltip);
+
+  // Position tooltip
+  const ttRect=tooltip.getBoundingClientRect();
+  let left=rect.left, top;
+  if(step.pos==='bottom'||!step.pos){
+    top=rect.bottom+12;
+    arrow.className='tour-arrow tour-arrow-bottom';
+    tooltip.appendChild(arrow);
+  } else {
+    top=rect.top-ttRect.height-12;
+    arrow.className='tour-arrow tour-arrow-top';
+    tooltip.appendChild(arrow);
+  }
+  // Keep within viewport
+  if(left+ttRect.width>window.innerWidth-16) left=window.innerWidth-ttRect.width-16;
+  if(left<16) left=16;
+  if(top<8) {top=rect.bottom+12;arrow.className='tour-arrow tour-arrow-bottom';}
+  if(top+ttRect.height>window.innerHeight-8){top=rect.top-ttRect.height-12;arrow.className='tour-arrow tour-arrow-top';}
+
+  tooltip.style.left=left+'px';tooltip.style.top=top+'px';tooltip.style.position='fixed';
+}
+
+function nextTourStep(){tourStepIdx++;showTourStep();}
+
+function clearTour(){
+  document.getElementById('tour-backdrop')?.remove();
+  document.getElementById('tour-highlight')?.remove();
+  document.getElementById('tour-tooltip')?.remove();
+  document.querySelectorAll('[data-tour-restore]').forEach(el=>{el.style.zIndex='';delete el.dataset.tourRestore;});
+}
+
+function endTour(){
+  clearTour();tourActive=false;tourStepIdx=0;tourCurrentSteps=[];
+  try{localStorage.setItem('bt_tour_done','1');}catch(e){}
+}
+
+function maybeAutoTour(){
+  try{if(localStorage.getItem('bt_tour_done'))return;}catch(e){}
+  setTimeout(()=>{if(state.screen==='wizard')startTour(TOUR_STEPS.wizard);},600);
+}
+
 // ─── AUTH MODAL ───────────────────────────────────────────────
 function showAuthModal(mode) {
   document.getElementById('auth-overlay')?.remove();
@@ -2661,7 +2807,7 @@ db.auth.onAuthStateChange(async (event, session) => {
       currentUser = session.user;
       await loadSubscription(session.access_token);
       updateAvatarUI();
-      if (currentSub) { renderApp(); } else { showScreen('nosub'); }
+      if (currentSub) { renderApp(); maybeAutoTour(); } else { showScreen('nosub'); }
     } else {
       showAuthModal('login');
     }
