@@ -21,9 +21,6 @@
 html,body{min-height:100%;background:var(--bg0);color:var(--tx);font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.5}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--bg1)}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
 input,button,select{font-family:inherit}
-input[type=time]{color-scheme:dark;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;color:var(--tx);padding:7px 10px;outline:none;font-size:13px;font-family:'JetBrains Mono',monospace;min-width:110px}
-input[type=time]:focus{border-color:var(--ac)}
-input[type=time]::-webkit-calendar-picker-indicator{filter:invert(0.6);cursor:pointer}
 input[type=range]{accent-color:var(--ac)}
 @keyframes sright{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
 @keyframes sleft{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
@@ -709,6 +706,39 @@ function stepper(val,min=0,max=9999,unit='',onChange) {
   const wrap=div('stepper',dec,inp,inc);
   if(unit) {const u=div('step-unit');u.textContent=unit;wrap.appendChild(u);}
   return wrap;
+}
+function timeStepper(val,onChange) {
+  // val = 'HH:MM' string
+  function parseTime(s){const p=(s||'00:00').split(':');return{h:parseInt(p[0],10)||0,m:parseInt(p[1],10)||0};}
+  function fmt(h,m){return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');}
+  function addMin(s,delta){let{h,m}=parseTime(s);m+=delta;while(m>=60){m-=60;h++;}while(m<0){m+=60;h--;}h=Math.max(0,Math.min(23,h));return fmt(h,m);}
+
+  const inp=h('input',{type:'text',inputmode:'numeric',class:'step-val',value:val,maxlength:'5',placeholder:'HH:MM'});
+  inp.style.width='68px';inp.style.letterSpacing='1px';
+  // Auto-format: insert colon after 2 digits
+  inp.addEventListener('input',e=>{
+    let v=inp.value.replace(/[^\d]/g,'');
+    if(v.length>4)v=v.slice(0,4);
+    if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);
+    inp.value=v;
+  });
+  inp.addEventListener('blur',()=>{
+    const{h:hr,m:mn}=parseTime(inp.value);
+    const clamped=fmt(Math.max(0,Math.min(23,hr)),Math.max(0,Math.min(59,mn)));
+    inp.value=clamped;onChange(clamped);
+  });
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();inp.blur();}
+    if(e.key==='ArrowUp'){e.preventDefault();const nv=addMin(inp.value,30);inp.value=nv;onChange(nv);}
+    if(e.key==='ArrowDown'){e.preventDefault();const nv=addMin(inp.value,-30);inp.value=nv;onChange(nv);}
+  });
+
+  const dec=h('button',{class:'step-btn',type:'button'});dec.textContent='−';
+  dec.addEventListener('click',e=>{e.preventDefault();const nv=addMin(inp.value,-30);inp.value=nv;onChange(nv);});
+  const inc=h('button',{class:'step-btn',type:'button'});inc.textContent='+';
+  inc.addEventListener('click',e=>{e.preventDefault();const nv=addMin(inp.value,30);inp.value=nv;onChange(nv);});
+
+  return div('stepper',dec,inp,inc);
 }
 function ckbox(on,label,onChange) {
   const box=div('ckbox'+(on?' on':''));
@@ -1625,23 +1655,17 @@ function renderStep1() {
 
   const r1=div('');r1.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:10px;flex-wrap:wrap';
   const lb1=div('');lb1.style.cssText='font-size:13px;color:#8888A0;min-width:120px';lb1.textContent='Início da leitura';
-  const t1=h('input',{type:'time',value:cfg.tStart});
-  t1.addEventListener('change',e=>{cfg.tStart=e.target.value;});
-  r1.append(lb1,t1);
+  r1.append(lb1,timeStepper(cfg.tStart,v=>{cfg.tStart=v;}));
 
   const r2=div('');r2.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:10px;flex-wrap:wrap';
   const lb2=div('');lb2.style.cssText='font-size:13px;color:#8888A0;min-width:120px';lb2.textContent='Última abertura';
-  const t2=h('input',{type:'time',value:cfg.tLastEntry});
-  t2.addEventListener('change',e=>{cfg.tLastEntry=e.target.value;});
   const tip2=div('');tip2.style.cssText='font-size:11px;color:#6B6B80';tip2.textContent='Nenhuma operação nova após este horário';
-  r2.append(lb2,t2,tip2);
+  r2.append(lb2,timeStepper(cfg.tLastEntry,v=>{cfg.tLastEntry=v;}),tip2);
 
   const r3=div('');r3.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:4px;flex-wrap:wrap';
   const lb3=div('');lb3.style.cssText='font-size:13px;color:#8888A0;min-width:120px';lb3.textContent='Encerramento';
-  const t3=h('input',{type:'time',value:cfg.tEnd});
-  t3.addEventListener('change',e=>{cfg.tEnd=e.target.value;});
   const tip3=div('');tip3.style.cssText='font-size:11px;color:#6B6B80';tip3.textContent='Posições abertas são encerradas neste horário';
-  r3.append(lb3,t3,tip3);
+  r3.append(lb3,timeStepper(cfg.tEnd,v=>{cfg.tEnd=v;}),tip3);
 
   wBlock.append(r1,r2,r3);
   el.appendChild(wBlock);
