@@ -369,7 +369,7 @@ const state = {
   animate: false,
   loadMsg: 0,
   cfg: {
-    asset:'WIN$N', market:'local', tf:'5m', tStart:'09:00', tEnd:'17:30', closeEnd:true,
+    asset:'WIN$N', market:'local', tf:'5m', tStart:'09:00', tLastEntry:'17:00', tEnd:'17:30',
     conditions:[],
     direction:'long', entryType:'breakout', validity:3,
     stopType:'fixed', stopPts:200, stopOffset:10, stopCandles:5,
@@ -1003,9 +1003,18 @@ function buildPreview(step,cfg) {
 
   // ── Step 0: time window ──
   if(step===0){
-    rc(60,0,186,chartH,'#00D4AA',0.04,0);
-    ln(60,0,60,chartH,'#00D4AA',1);ln(246,0,246,chartH,'#00D4AA',1);
-    tx(64,chartH+10,cfg.tStart,'#00D4AA',7.5);tx(200,chartH+10,cfg.tEnd,'#00D4AA',7.5);
+    // Active trading zone (start → last entry)
+    rc(60,0,140,chartH,'#00D4AA',0.04,0);
+    // Close-only zone (last entry → end)
+    rc(200,0,46,chartH,'#F59E0B',0.04,0);
+    // Lines
+    ln(60,0,60,chartH,'#00D4AA',1);
+    ln(200,0,200,chartH,'#F59E0B',1,'3,2');
+    ln(246,0,246,chartH,'#EF4444',1);
+    // Labels
+    tx(64,chartH+10,cfg.tStart,'#00D4AA',6.5);
+    tx(168,chartH+10,cfg.tLastEntry,'#F59E0B',6.5);
+    tx(218,chartH+10,cfg.tEnd,'#EF4444',6.5);
   }
 
   // ── Steps 1+: entry marker ──
@@ -1611,15 +1620,26 @@ function renderStep1() {
 
   // Window
   const wBlock=div('');
-  wBlock.appendChild(slabel('Janela Operacional','Horário em que operações podem ser abertas. Sinais fora desta janela são ignorados.'));
-  const row=div('');row.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:11px;flex-wrap:wrap';
-  const from=div('');from.style.cssText='font-size:13px;color:#8888A0';from.textContent='Das';
+  wBlock.appendChild(slabel('Janela Operacional','Define três momentos: início da leitura de sinais, horário máximo para abrir novas posições, e horário de encerramento forçado de posições abertas.'));
+
+  const r1=div('');r1.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:10px;flex-wrap:wrap';
+  const lb1=div('');lb1.style.cssText='font-size:13px;color:#8888A0;min-width:120px';lb1.textContent='Início da leitura';
   const t1=h('input',{type:'time',value:cfg.tStart,onchange:e=>{cfg.tStart=e.target.value;renderApp();}});
-  const to=div('');to.style.cssText='font-size:13px;color:#8888A0';to.textContent='até';
-  const t2=h('input',{type:'time',value:cfg.tEnd,onchange:e=>{cfg.tEnd=e.target.value;renderApp();}});
-  row.append(from,t1,to,t2);
-  wBlock.appendChild(row);
-  wBlock.appendChild(ckbox(cfg.closeEnd,'Fechar posições abertas ao final da janela',v=>{cfg.closeEnd=v;renderApp();}));
+  r1.append(lb1,t1);
+
+  const r2=div('');r2.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:10px;flex-wrap:wrap';
+  const lb2=div('');lb2.style.cssText='font-size:13px;color:#8888A0;min-width:120px';lb2.textContent='Última abertura';
+  const t2=h('input',{type:'time',value:cfg.tLastEntry,onchange:e=>{cfg.tLastEntry=e.target.value;renderApp();}});
+  const tip2=div('');tip2.style.cssText='font-size:11px;color:#6B6B80';tip2.textContent='Nenhuma operação nova após este horário';
+  r2.append(lb2,t2,tip2);
+
+  const r3=div('');r3.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:4px;flex-wrap:wrap';
+  const lb3=div('');lb3.style.cssText='font-size:13px;color:#8888A0;min-width:120px';lb3.textContent='Encerramento';
+  const t3=h('input',{type:'time',value:cfg.tEnd,onchange:e=>{cfg.tEnd=e.target.value;renderApp();}});
+  const tip3=div('');tip3.style.cssText='font-size:11px;color:#6B6B80';tip3.textContent='Posições abertas são encerradas neste horário';
+  r3.append(lb3,t3,tip3);
+
+  wBlock.append(r1,r2,r3);
   el.appendChild(wBlock);
   return el;
 }
@@ -1898,7 +1918,7 @@ function renderConfirm() {
   const dirText=cfg.direction==='long'?'Apenas compra':cfg.direction==='short'?'Apenas venda':'Compra e venda';
   const condText=cfg.conditions.length===0?'<span style="color:#6B6B80">Sem condições configuradas</span>':cfg.conditions.map((c,i)=>(i>0?`<strong style="color:#00D4AA"> E </strong>`:'')+condLabel(c)).join('');
   box.append(
-    row('Mercado',`<span style="color:#00D4AA">${asset?.n||cfg.asset} (${cfg.asset})</span> · ${cfg.tf} · Das ${cfg.tStart} às ${cfg.tEnd}${cfg.closeEnd?' · Fecha ao final':''}`),
+    row('Mercado',`<span style="color:#00D4AA">${asset?.n||cfg.asset} (${cfg.asset})</span> · ${cfg.tf} · Leitura ${cfg.tStart} · Última abertura ${cfg.tLastEntry} · Encerramento ${cfg.tEnd}`),
     row('Condições de entrada',condText),
     row('Gatilho',`${dirText} · ${entryMap[cfg.entryType]} · Validade: ${cfg.validity} candles`),
     row('Stop Loss',stopDesc),
@@ -2214,7 +2234,7 @@ function renderApp() {
   const summ=div('');summ.style.cssText='margin-top:14px;border-top:1px solid #2A2A3C;padding-top:13px;display:flex;flex-direction:column;gap:6px';
   const summRows=[
     ['Ativo', state.cfg.asset+' · '+state.cfg.tf],
-    ['Janela', state.cfg.tStart+' – '+state.cfg.tEnd],
+    ['Janela', state.cfg.tStart+' → '+state.cfg.tLastEntry+' → '+state.cfg.tEnd],
     ['Condições', state.cfg.conditions.length===0?'Nenhuma':state.cfg.conditions.length+' condição'+(state.cfg.conditions.length>1?'ões':'')],
     ['Stop', {fixed:state.cfg.stopPts+' pts',hl_candle:'Candle signal',n_candles:state.cfg.stopCandles+' candles'}[state.cfg.stopType]],
     ['Alvo', {fixed:state.cfg.tpPts+' pts',rr:state.cfg.tpRR+'× risco',fib_ext:'Fibo '+state.cfg.tpFibLevel+'%',none:'Por gestão'}[state.cfg.tpType]],
