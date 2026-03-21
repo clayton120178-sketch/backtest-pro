@@ -2232,17 +2232,23 @@ function renderApp() {
 
   // Mini summary
   const summ=div('');summ.style.cssText='margin-top:14px;border-top:1px solid #2A2A3C;padding-top:13px;display:flex;flex-direction:column;gap:6px';
+  const pending='a definir';
+  const md=state.maxDone, sc2=state.cfg;
   const summRows=[
-    ['Ativo', state.cfg.asset+' · '+state.cfg.tf],
-    ['Janela', state.cfg.tStart+' → '+state.cfg.tLastEntry+' → '+state.cfg.tEnd],
-    ['Condições', state.cfg.conditions.length===0?'Nenhuma':state.cfg.conditions.length+' condição'+(state.cfg.conditions.length>1?'ões':'')],
-    ['Stop', {fixed:state.cfg.stopPts+' pts',hl_candle:'Candle signal',n_candles:state.cfg.stopCandles+' candles'}[state.cfg.stopType]],
-    ['Alvo', {fixed:state.cfg.tpPts+' pts',rr:state.cfg.tpRR+'× risco',fib_ext:'Fibo '+state.cfg.tpFibLevel+'%',none:'Por gestão'}[state.cfg.tpType]],
+    ['Ativo', sc2.asset+' · '+sc2.tf],
+    ['Janela', sc2.tStart+' → '+sc2.tLastEntry+' → '+sc2.tEnd],
+    ['Condições', md>=1?(sc2.conditions.length===0?'Nenhuma':sc2.conditions.length+' condição'+(sc2.conditions.length>1?'ões':'')):pending],
+    ['Gatilho', md>=2?((sc2.direction==='long'?'Compra':sc2.direction==='short'?'Venda':'Ambos')+' · '+{breakout:'Rompimento',next_open:'Próx. abertura',sig_close:'Fechamento'}[sc2.entryType]):pending],
+    ['Stop', md>=3?({fixed:sc2.stopPts+' pts',hl_candle:'Candle signal',n_candles:sc2.stopCandles+' candles'}[sc2.stopType]):pending],
+    ['Alvo', md>=3?({fixed:sc2.tpPts+' pts',rr:sc2.tpRR+'× risco',fib_ext:'Fibo '+sc2.tpFibLevel+'%',none:'Por gestão'}[sc2.tpType]):pending],
   ];
   summRows.forEach(([k,v])=>{
     const r=div('');r.style.cssText='display:flex;justify-content:space-between';
     const kEl=div('');kEl.style.cssText='font-size:11px;color:#6B6B80';kEl.textContent=k;
-    const vEl=div('');vEl.style.cssText='font-size:11px;color:#E8E8ED;font-family:JetBrains Mono';vEl.textContent=v;
+    const vEl=div('');
+    const isPending=v===pending;
+    vEl.style.cssText=`font-size:11px;font-family:JetBrains Mono;${isPending?'color:#3A3A52;font-style:italic':'color:#E8E8ED'}`;
+    vEl.textContent=v;
     r.append(kEl,vEl);summ.appendChild(r);
   });
   previewCard.appendChild(summ);
