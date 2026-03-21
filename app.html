@@ -21,8 +21,9 @@
 html,body{min-height:100%;background:var(--bg0);color:var(--tx);font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.5}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--bg1)}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
 input,button,select{font-family:inherit}
-input[type=time]{color-scheme:dark;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;color:var(--tx);padding:7px 10px;outline:none;font-size:13px}
+input[type=time]{color-scheme:dark;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;color:var(--tx);padding:7px 10px;outline:none;font-size:13px;font-family:'JetBrains Mono',monospace;min-width:110px}
 input[type=time]:focus{border-color:var(--ac)}
+input[type=time]::-webkit-calendar-picker-indicator{filter:invert(0.6);cursor:pointer}
 input[type=range]{accent-color:var(--ac)}
 @keyframes sright{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
 @keyframes sleft{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
@@ -1624,18 +1625,21 @@ function renderStep1() {
 
   const r1=div('');r1.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:10px;flex-wrap:wrap';
   const lb1=div('');lb1.style.cssText='font-size:13px;color:#8888A0;min-width:120px';lb1.textContent='Início da leitura';
-  const t1=h('input',{type:'time',value:cfg.tStart,onchange:e=>{cfg.tStart=e.target.value;renderApp();}});
+  const t1=h('input',{type:'time',value:cfg.tStart});
+  t1.addEventListener('change',e=>{cfg.tStart=e.target.value;});
   r1.append(lb1,t1);
 
   const r2=div('');r2.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:10px;flex-wrap:wrap';
   const lb2=div('');lb2.style.cssText='font-size:13px;color:#8888A0;min-width:120px';lb2.textContent='Última abertura';
-  const t2=h('input',{type:'time',value:cfg.tLastEntry,onchange:e=>{cfg.tLastEntry=e.target.value;renderApp();}});
+  const t2=h('input',{type:'time',value:cfg.tLastEntry});
+  t2.addEventListener('change',e=>{cfg.tLastEntry=e.target.value;});
   const tip2=div('');tip2.style.cssText='font-size:11px;color:#6B6B80';tip2.textContent='Nenhuma operação nova após este horário';
   r2.append(lb2,t2,tip2);
 
   const r3=div('');r3.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:4px;flex-wrap:wrap';
   const lb3=div('');lb3.style.cssText='font-size:13px;color:#8888A0;min-width:120px';lb3.textContent='Encerramento';
-  const t3=h('input',{type:'time',value:cfg.tEnd,onchange:e=>{cfg.tEnd=e.target.value;renderApp();}});
+  const t3=h('input',{type:'time',value:cfg.tEnd});
+  t3.addEventListener('change',e=>{cfg.tEnd=e.target.value;});
   const tip3=div('');tip3.style.cssText='font-size:11px;color:#6B6B80';tip3.textContent='Posições abertas são encerradas neste horário';
   r3.append(lb3,t3,tip3);
 
@@ -2209,7 +2213,7 @@ function renderApp() {
   const nav=div('nav-footer');
   const backBtn=h('button',{class:'btn btnS',onclick:()=>{if(state.step>0){state.dir='bwd';state.animate=true;state.step--;renderApp();}}});
   backBtn.innerHTML=IC.back+' Voltar';
-  if(state.step===0) backBtn.style.opacity='0.35';
+  if(state.step===0) backBtn.style.visibility='hidden';
 
   const fwdBtn=h('button',{class:'btn btnP',onclick:()=>{
     if(state.step<4){state.dir='fwd';state.animate=true;if(state.step>=state.maxDone)state.maxDone=state.step+1;state.step++;renderApp();}
