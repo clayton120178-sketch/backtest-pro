@@ -11,7 +11,7 @@
 :root{
   --bg0:#0A0A0F;--bg1:#12121A;--bg2:#1A1A28;--bg3:#1E1E2E;
   --bd:#2A2A3C;--bdh:#3A3A52;
-  --tx:#E8E8ED;--txs:#8888A0;--txm:#44445A;
+  --tx:#E8E8ED;--txs:#8888A0;--txm:#6B6B80;
   --ac:#00D4AA;--acd:rgba(0,212,170,.08);--acd2:rgba(0,212,170,.18);
   --in:#6366F1;
   --dg:#EF4444;--dgd:rgba(239,68,68,.08);
@@ -341,7 +341,7 @@ const IC = {
   play:   `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`,
   back:   `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`,
   fwd:    `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`,
-  help:   `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#44445A" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3"/></svg>`,
+  help:   `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B6B80" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3"/></svg>`,
   trend:  `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`,
   act:    `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
   warn:   `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3"/></svg>`,
@@ -1436,7 +1436,7 @@ function renderStep1() {
       });
     }
     if(!hasResults){
-      const empty=div('');empty.style.cssText='padding:16px;text-align:center;font-size:12px;color:#44445A';
+      const empty=div('');empty.style.cssText='padding:16px;text-align:center;font-size:12px;color:#6B6B80';
       empty.textContent='Nenhum ativo encontrado';
       dropdown.appendChild(empty);
     }
@@ -1454,7 +1454,7 @@ function renderStep1() {
     const sel=div('asset-selected');
     const tk=div('asset-ticker');tk.textContent=cur.t;
     const nm=div('asset-name');nm.textContent=cur.n;
-    const catBadge=div('');catBadge.style.cssText='font-size:10px;color:#44445A;background:#1E1E2E;border:1px solid #2A2A3C;border-radius:4px;padding:1px 6px;font-weight:600';
+    const catBadge=div('');catBadge.style.cssText='font-size:10px;color:#6B6B80;background:#1E1E2E;border:1px solid #2A2A3C;border-radius:4px;padding:1px 6px;font-weight:600';
     catBadge.textContent=CAT_LABELS[cur.cat]||cur.cat;
     sel.append(tk,nm,catBadge);
     assetBlock.appendChild(sel);
@@ -1492,7 +1492,7 @@ function renderStep2() {
   if(cfg.conditions.length===0){
     const empty=div('');
     empty.style.cssText='border:1px dashed #2A2A3C;border-radius:11px;padding:32px 18px;text-align:center';
-    empty.innerHTML=`${IC.search}<div style="font-size:13px;color:#8888A0;margin-top:9px;margin-bottom:3px">Nenhuma condição adicionada</div><div style="font-size:11px;color:#44445A">Adicione pelo menos uma condição para definir seu setup</div>`;
+    empty.innerHTML=`${IC.search}<div style="font-size:13px;color:#8888A0;margin-top:9px;margin-bottom:3px">Nenhuma condição adicionada</div><div style="font-size:11px;color:#6B6B80">Adicione pelo menos uma condição para definir seu setup</div>`;
     el.appendChild(empty);
   } else {
     const list=div('');list.style.cssText='display:flex;flex-direction:column;gap:5px';
@@ -1549,7 +1549,7 @@ function renderStep3() {
     renderApp();
   });
   dg.append(longCard,shortCard);
-  const hint=div('');hint.style.cssText='font-size:11px;color:#44445A';
+  const hint=div('');hint.style.cssText='font-size:11px;color:#6B6B80';
   hint.textContent='Ativo: '+(cfg.direction==='long'?'Apenas compra':cfg.direction==='short'?'Apenas venda':'Compra e venda')+' · Selecione um ou ambos';
   dBlock.appendChild(dg);dBlock.appendChild(hint);
   el.appendChild(dBlock);
@@ -1643,7 +1643,7 @@ function renderStep4() {
         const rl=div('');rl.style.cssText='font-size:13px;color:#8888A0';rl.textContent='×  risco';
         rrow.append(stepper(cfg.tpRR,1,20,'',v=>{cfg.tpRR=v;}),rl);
         sub.appendChild(rrow);
-        if(cfg.stopType==='fixed'){const hint=div('');hint.style.cssText='font-size:11px;color:#44445A;font-family:JetBrains Mono';hint.textContent=`Stop ${cfg.stopPts} pts → alvo = ${(cfg.tpRR*cfg.stopPts).toLocaleString('pt-BR')} pts`;sub.appendChild(hint);}
+        if(cfg.stopType==='fixed'){const hint=div('');hint.style.cssText='font-size:11px;color:#6B6B80;font-family:JetBrains Mono';hint.textContent=`Stop ${cfg.stopPts} pts → alvo = ${(cfg.tpRR*cfg.stopPts).toLocaleString('pt-BR')} pts`;sub.appendChild(hint);}
       }
       if(t.id==='fib_ext'){
         const fibLevels=['100','127.2','161.8','200','261.8'];
@@ -1655,7 +1655,7 @@ function renderStep4() {
           fibRow.appendChild(chip);
         });
         sub.appendChild(fibRow);
-        const hint=div('');hint.style.cssText='font-size:11px;color:#44445A;line-height:1.5';
+        const hint=div('');hint.style.cssText='font-size:11px;color:#6B6B80;line-height:1.5';
         hint.textContent=`Alvo na extensão de ${cfg.tpFibLevel}% da perna anterior ao ponto de entrada.`;
         sub.appendChild(hint);
       }
@@ -1754,7 +1754,7 @@ function renderConfirm() {
     r.append(k,v);return r;
   }
   const dirText=cfg.direction==='long'?'Apenas compra':cfg.direction==='short'?'Apenas venda':'Compra e venda';
-  const condText=cfg.conditions.length===0?'<span style="color:#44445A">Sem condições configuradas</span>':cfg.conditions.map((c,i)=>(i>0?`<strong style="color:#00D4AA"> E </strong>`:'')+condLabel(c)).join('');
+  const condText=cfg.conditions.length===0?'<span style="color:#6B6B80">Sem condições configuradas</span>':cfg.conditions.map((c,i)=>(i>0?`<strong style="color:#00D4AA"> E </strong>`:'')+condLabel(c)).join('');
   box.append(
     row('Mercado',`<span style="color:#00D4AA">${asset?.n||cfg.asset} (${cfg.asset})</span> · ${cfg.tf} · Das ${cfg.tStart} às ${cfg.tEnd}${cfg.closeEnd?' · Fecha ao final':''}`),
     row('Condições de entrada',condText),
@@ -1769,7 +1769,7 @@ function renderConfirm() {
   el.appendChild(box);
 
   const period=div('');period.style.cssText='background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.14);border-radius:9px;padding:10px 13px;margin:16px 0 22px;display:flex;align-items:center;gap:8px;font-size:12px;color:#8888A0';
-  period.innerHTML=`<span style="color:#00D4AA;flex-shrink:0">${IC.act}</span> Período: <strong style="color:#E8E8ED">Janeiro 2019 — Março 2026</strong> <span style="color:#44445A">(todo o histórico disponível)</span>`;
+  period.innerHTML=`<span style="color:#00D4AA;flex-shrink:0">${IC.act}</span> Período: <strong style="color:#E8E8ED">Janeiro 2019 — Março 2026</strong> <span style="color:#6B6B80">(todo o histórico disponível)</span>`;
   el.appendChild(period);
 
   const btns=div('');btns.style.cssText='display:flex;gap:9px';
@@ -1954,7 +1954,7 @@ function renderApp() {
   ];
   summRows.forEach(([k,v])=>{
     const r=div('');r.style.cssText='display:flex;justify-content:space-between';
-    const kEl=div('');kEl.style.cssText='font-size:11px;color:#44445A';kEl.textContent=k;
+    const kEl=div('');kEl.style.cssText='font-size:11px;color:#6B6B80';kEl.textContent=k;
     const vEl=div('');vEl.style.cssText='font-size:11px;color:#E8E8ED;font-family:JetBrains Mono';vEl.textContent=v;
     r.append(kEl,vEl);summ.appendChild(r);
   });
@@ -2005,7 +2005,7 @@ function updateAvatarUI() {
   const btn   = document.getElementById('avatar-btn');
   const nameEl= document.getElementById('avatar-name');
   if (btn) btn.innerHTML = `<span style="font-size:11px;font-weight:700;color:#00D4AA;font-family:'JetBrains Mono'">${name.slice(0,2).toUpperCase()}</span>`;
-  if (nameEl) nameEl.innerHTML = `<div style="font-weight:600;color:#E8E8ED;font-size:13px">${name}</div><div style="font-size:11px;color:#44445A;margin-top:2px">${email}</div>${currentSub?`<div style="margin-top:5px;font-size:11px;color:#00D4AA;font-weight:700">${currentSub.plan.toUpperCase()} · ativo até ${new Date(currentSub.expires_at).toLocaleDateString('pt-BR')}</div>`:'<div style="margin-top:5px;font-size:11px;color:#EF4444">Sem assinatura ativa</div>'}`;
+  if (nameEl) nameEl.innerHTML = `<div style="font-weight:600;color:#E8E8ED;font-size:13px">${name}</div><div style="font-size:11px;color:#6B6B80;margin-top:2px">${email}</div>${currentSub?`<div style="margin-top:5px;font-size:11px;color:#00D4AA;font-weight:700">${currentSub.plan.toUpperCase()} · ativo até ${new Date(currentSub.expires_at).toLocaleDateString('pt-BR')}</div>`:'<div style="margin-top:5px;font-size:11px;color:#EF4444">Sem assinatura ativa</div>'}`;
 }
 async function handleLogout() {
   await db.auth.signOut();
