@@ -534,8 +534,9 @@ const INDS_BY_TAB = {
 };
 
 const OSC_CONDS  = ['cruza acima de','cruza abaixo de','está acima de','está abaixo de'];
-const MA_CONDS   = ['Preço cruza acima','Preço cruza abaixo','Preço está acima','Preço está abaixo','Média curta cruza acima da longa','Média curta cruza abaixo da longa'];
-function isMACrossover(c){return c&&(c.startsWith('Média curta'));}
+const MA_CONDS   = ['Preço cruza acima','Preço cruza abaixo','Preço está acima','Preço está abaixo','Média curta cruza acima da longa','Média curta cruza abaixo da longa','Cruzamento de médias (compra e venda)'];
+function isMACrossover(c){return c&&(c.startsWith('Média curta')||c.startsWith('Cruzamento de médias'));}
+function isMACrossoverBoth(c){return c&&c.startsWith('Cruzamento de médias');}
 const BB_CONDS   = ['Preço toca banda sup.','Preço toca banda inf.','Preço cruza banda sup.','Preço sai da banda inf.'];
 const VWAP_CONDS = ['Preço está acima do VWAP','Preço está abaixo do VWAP','Preço cruza acima do VWAP','Preço cruza abaixo do VWAP'];
 const MACD_CONDS = ['MACD cruza acima do sinal','MACD cruza abaixo do sinal','MACD acima de zero','MACD abaixo de zero'];
@@ -575,6 +576,63 @@ function getCondsFor(id) {
   return [];
 }
 
+// Returns 'long', 'short', 'both', or null (neutral) for a single condition
+function getCondImpliedDir(cond) {
+  const ct=(cond.params?.cond||'').toLowerCase();
+  const id=cond.id;
+  // MA crossover
+  if(['sma','ema'].includes(id)){
+    if(ct.includes('cruzamento de médias')) return 'both';
+    if(ct.includes('curta cruza acima')) return 'long';
+    if(ct.includes('curta cruza abaixo')) return 'short';
+    return null; // Preço vs Média = filter, neutral
+  }
+  // HiLo
+  if(id==='hilo'){
+    if(ct.includes('compra')) return 'long';
+    if(ct.includes('venda')) return 'short';
+    return null;
+  }
+  // Gap
+  if(id==='gap'){
+    if(ct.includes('alta')) return 'long';
+    if(ct.includes('baixa')) return 'short';
+    return null;
+  }
+  // Candle patterns
+  if(id==='candle'){
+    if(ct.includes('alta')||ct.includes('manhã')) return 'long';
+    if(ct.includes('baixa')||ct.includes('noite')) return 'short';
+    return null; // Doji, Spinning Top
+  }
+  // SAR
+  if(id==='sar'){
+    if(ct.includes('cruza acima')) return 'long';
+    if(ct.includes('cruza abaixo')) return 'short';
+    return null; // "está acima/abaixo" = filter
+  }
+  // Everything else: oscillators, BB, VWAP, volume, price, range, ATR, ADX, etc.
+  return null;
+}
+
+// Analyzes ALL conditions and returns {dir, reasons}
+// dir: 'long' | 'short' | 'both' | null (user chooses)
+function inferDirection(conditions) {
+  let hasLong=false, hasShort=false, hasBoth=false;
+  const reasons=[];
+  for(const c of conditions){
+    const d=getCondImpliedDir(c);
+    if(d==='long'){hasLong=true;reasons.push({label:condLabel(c),dir:'compra'});}
+    if(d==='short'){hasShort=true;reasons.push({label:condLabel(c),dir:'venda'});}
+    if(d==='both'){hasBoth=true;reasons.push({label:condLabel(c),dir:'compra e venda'});}
+  }
+  if(hasBoth) return {dir:'both',reasons};
+  if(hasLong&&hasShort) return {dir:'conflict',reasons};
+  if(hasLong) return {dir:'long',reasons};
+  if(hasShort) return {dir:'short',reasons};
+  return {dir:null,reasons};
+}
+
 function condLabel(c) {
   const p = c.params;
   switch(c.id) {
@@ -583,8 +641,8 @@ function condLabel(c) {
     case 'cci':      return `CCI(${p.per||14}) ${p.cond} ${p.val}`;
     case 'williams': return `Williams %R(${p.per||14}) ${p.cond} ${p.val}`;
     case 'macd':     return `MACD — ${p.cond}`;
-    case 'sma':      return isMACrossover(p.cond)?`SMA(${p.per||9}) × SMA(${p.per2||200}) — ${p.cond}`:`SMA(${p.per||200}) — ${p.cond}`;
-    case 'ema':      return isMACrossover(p.cond)?`EMA(${p.per||9}) × EMA(${p.per2||200}) — ${p.cond}`:`EMA(${p.per||200}) — ${p.cond}`;
+    case 'sma':      return isMACrossover(p.cond)?`SMA(${p.per||9}) × SMA(${p.per2||200})${isMACrossoverBoth(p.cond)?' — Cruzamento (C/V)':' — '+p.cond}`:`SMA(${p.per||200}) — ${p.cond}`;
+    case 'ema':      return isMACrossover(p.cond)?`EMA(${p.per||9}) × EMA(${p.per2||200})${isMACrossoverBoth(p.cond)?' — Cruzamento (C/V)':' — '+p.cond}`:`EMA(${p.per||200}) — ${p.cond}`;
     case 'bb':       return `Bollinger(${p.per||20}, ${p.dev||2}σ) — ${p.cond}`;
     case 'vwap':     return p.cond;
     case 'adx':      return `ADX(${p.per||14}) ${p.cond} ${p.val}`;
@@ -1211,18 +1269,33 @@ function buildCondPreview(indId, condText) {
   // ═══ MOVING AVERAGES ═══
   if(['sma','ema'].includes(indId)){
     drawCds(CDS,0.5);
-    const maCrossover=ct.includes('longa');
+    const maCrossover=ct.includes('longa')||ct.includes('cruzamento de médias');
     if(maCrossover){
-      // Two MA lines crossing
-      const shortMA=up?[80,74,66,58,50,44,40,44,50,58,64,70]:[34,40,48,56,64,70,74,70,64,56,48,40];
-      const longMA= [52,54,56,58,60,62,63,62,60,58,56,54];
-      pl(shortMA.map((y,i)=>`${CDS[i].x+6},${y}`).join(' '),'#00D4AA',2);
-      pl(longMA.map((y,i)=>`${CDS[i].x+6},${y}`).join(' '),'#F59E0B',2,'4,3');
-      // Cross point
-      const cx=CDS[6].x+6,cy=longMA[6];
-      ci(cx,cy,sc,7);aw(cx+18,cy,up,sc);
-      tx(cx+26,cy+(up?-2:10),'CRUZAMENTO',sc,7);
-      tx(16,16,'CURTA','#00D4AA',8);tx(56,16,'LONGA','#F59E0B',8);
+      const isBoth=ct.includes('cruzamento de médias');
+      if(isBoth){
+        // Show wave crossing long MA twice (up then down)
+        const shortMA=[80,72,62,52,46,44,46,52,62,72,80,86];
+        const longMA= [56,56,56,56,56,56,56,56,56,56,56,56];
+        pl(shortMA.map((y,i)=>`${CDS[i].x+6},${y}`).join(' '),'#00D4AA',2);
+        pl(longMA.map((y,i)=>`${CDS[i].x+6},${y}`).join(' '),'#F59E0B',2,'4,3');
+        // Cross up point
+        ci(CDS[3].x+6,56,'#10B981',6);tx(CDS[3].x+18,50,'C','#10B981',8);
+        aw(CDS[3].x+18,56,true,'#10B981');
+        // Cross down point
+        ci(CDS[8].x+6,56,'#EF4444',6);tx(CDS[8].x+18,62,'V','#EF4444',8);
+        aw(CDS[8].x+18,56,false,'#EF4444');
+        tx(16,16,'CURTA','#00D4AA',8);tx(56,16,'LONGA','#F59E0B',8);
+      } else {
+        // Single direction crossover
+        const shortMA=up?[80,74,66,58,50,44,40,44,50,58,64,70]:[34,40,48,56,64,70,74,70,64,56,48,40];
+        const longMA= [52,54,56,58,60,62,63,62,60,58,56,54];
+        pl(shortMA.map((y,i)=>`${CDS[i].x+6},${y}`).join(' '),'#00D4AA',2);
+        pl(longMA.map((y,i)=>`${CDS[i].x+6},${y}`).join(' '),'#F59E0B',2,'4,3');
+        const cx=CDS[6].x+6,cy=longMA[6];
+        ci(cx,cy,sc,7);aw(cx+18,cy,up,sc);
+        tx(cx+26,cy+(up?-2:10),up?'COMPRA':'VENDA',sc,7);
+        tx(16,16,'CURTA','#00D4AA',8);tx(56,16,'LONGA','#F59E0B',8);
+      }
     } else {
       const maY=[40,46,52,58,64,70,74,72,66,58,50,44];
       pl(maY.map((y,i)=>`${CDS[i].x+6},${y}`).join(' '),'#F59E0B',2);
@@ -1778,22 +1851,50 @@ function renderStep2() {
 function renderStep3() {
   const cfg=state.cfg;
   const el=div(state.animate?'aFwd':'');el.style.cssText='display:flex;flex-direction:column;gap:24px';
+
+  // Infer direction from conditions
+  const inferred=inferDirection(cfg.conditions);
+  const locked=inferred.dir!==null;
+
+  // Auto-set direction when implied by conditions
+  if(inferred.dir==='long') cfg.direction='long';
+  else if(inferred.dir==='short') cfg.direction='short';
+  else if(inferred.dir==='both') cfg.direction='both';
+
   const isLong=cfg.direction==='long'||cfg.direction==='both';
   const isShort=cfg.direction==='short'||cfg.direction==='both';
 
   // Direction
   const dBlock=div('');
   dBlock.appendChild(slabel('Direção da operação','Defina se o sistema deve operar comprado (long), vendido (short) ou ambos.'));
+
+  // Show banner when direction is locked by conditions
+  if(locked){
+    const banner=div('banner');
+    banner.style.cssText='display:flex;align-items:flex-start;gap:9px;padding:10px 13px;border-radius:9px;margin-bottom:10px;background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.15)';
+    const ic=div('');ic.style.cssText='color:#00D4AA;flex-shrink:0;margin-top:1px';ic.innerHTML=IC.act;
+    const txt=div('');txt.style.cssText='font-size:12px;color:#8888A0;line-height:1.5';
+    if(inferred.dir==='conflict'){
+      banner.style.background='rgba(239,68,68,.06)';banner.style.borderColor='rgba(239,68,68,.15)';
+      ic.style.color='#EF4444';ic.innerHTML=IC.warn;
+      txt.innerHTML='<strong style="color:#EF4444">Conflito de direção.</strong> Suas condições implicam compra e venda ao mesmo tempo de forma contraditória. Revise as condições no passo anterior.';
+    } else {
+      const dirLabel=inferred.dir==='long'?'compra':inferred.dir==='short'?'venda':'compra e venda';
+      txt.innerHTML=`<strong style="color:#00D4AA">Direção definida automaticamente:</strong> ${dirLabel}.<br><span style="color:#6B6B80">Baseado em: ${inferred.reasons.map(r=>r.label).join(', ')}</span>`;
+    }
+    banner.append(ic,txt);dBlock.appendChild(banner);
+  }
+
   const dg=div('');dg.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:8px';
   const makeDir=(label,arrow,active,cls,onClick)=>{
     const c=div('card pick'+cls);c.style.cssText='padding:15px;text-align:center';
+    if(locked){c.style.opacity='0.5';c.style.cursor='not-allowed';c.style.pointerEvents='none';}
     c.innerHTML=`<div style="font-size:22px;margin-bottom:5px">${arrow}</div><div style="font-size:13px;font-weight:700;color:${active?'inherit':'#8888A0'}">${label}</div>`;
-    c.addEventListener('click',onClick);return c;
+    if(!locked) c.addEventListener('click',onClick);
+    return c;
   };
   const longCard=makeDir('COMPRA (Long)','▲',isLong,(isLong?' selp':''),()=>{
-    cfg.direction=cfg.direction==='long'?'short':cfg.direction==='both'?'short':'long'==='long'&&!isShort?'long':cfg.direction==='short'?'both':'long';
-    if(cfg.direction==='long'&&!isShort) cfg.direction='long';
-    else if(isLong&&isShort) cfg.direction='short';
+    if(isLong&&isShort) cfg.direction='short';
     else if(!isLong) cfg.direction='both';
     else cfg.direction='short';
     renderApp();
@@ -1806,7 +1907,9 @@ function renderStep3() {
   });
   dg.append(longCard,shortCard);
   const hint=div('');hint.style.cssText='font-size:11px;color:#6B6B80';
-  hint.textContent='Ativo: '+(cfg.direction==='long'?'Apenas compra':cfg.direction==='short'?'Apenas venda':'Compra e venda')+' · Selecione um ou ambos';
+  hint.textContent=locked
+    ?'Direção determinada pelas condições configuradas'
+    :'Ativo: '+(cfg.direction==='long'?'Apenas compra':cfg.direction==='short'?'Apenas venda':'Compra e venda')+' · Selecione um ou ambos';
   dBlock.appendChild(dg);dBlock.appendChild(hint);
   el.appendChild(dBlock);
 
