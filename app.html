@@ -534,7 +534,7 @@ function condLabel(c) {
     case 'macd':     return `MACD — ${p.cond}`;
     case 'sma':      return `SMA(${p.per||200}) — ${p.cond}`;
     case 'ema':      return `EMA(${p.per||200}) — ${p.cond}`;
-    case 'bb':       return `Bollinger(${p.per||20}) — ${p.cond}`;
+    case 'bb':       return `Bollinger(${p.per||20}, ${p.dev||2}σ) — ${p.cond}`;
     case 'vwap':     return p.cond;
     case 'adx':      return `ADX(${p.per||14}) ${p.cond} ${p.val}`;
     case 'sar':      return `SAR — ${p.cond}`;
@@ -1268,6 +1268,7 @@ function renderModal() {
             val:ind.hasVal?ind.defVal:undefined
           };
           if(['sma','ema'].includes(ind.id)) ms.params.per=200;
+          if(ind.id==='bb'){ ms.params.per=20; ms.params.dev=2; }
           ms.page=1;
           renderModal();
         });
@@ -1311,6 +1312,13 @@ function renderModal() {
       const row=div('');
       row.appendChild(slabel('Período'));
       const s=stepper(ms.params.per,1,500,'',v=>{ms.params.per=v;});
+      row.appendChild(s);
+      frag.appendChild(row);
+    }
+    if(ind.id==='bb' && ms.params.dev!==undefined) {
+      const row=div('');
+      row.appendChild(slabel('Desvio padrão','Quantidade de desvios padrão para as bandas superior e inferior. Padrão: 2. Valores maiores = bandas mais largas.'));
+      const s=stepper(ms.params.dev,1,5,'σ',v=>{ms.params.dev=v;});
       row.appendChild(s);
       frag.appendChild(row);
     }
