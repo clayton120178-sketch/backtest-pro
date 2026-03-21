@@ -534,7 +534,8 @@ const INDS_BY_TAB = {
 };
 
 const OSC_CONDS  = ['cruza acima de','cruza abaixo de','está acima de','está abaixo de'];
-const MA_CONDS   = ['Preço cruza acima','Preço cruza abaixo','Preço está acima','Preço está abaixo'];
+const MA_CONDS   = ['Preço cruza acima','Preço cruza abaixo','Preço está acima','Preço está abaixo','Média curta cruza acima da longa','Média curta cruza abaixo da longa'];
+function isMACrossover(c){return c&&(c.startsWith('Média curta'));}
 const BB_CONDS   = ['Preço toca banda sup.','Preço toca banda inf.','Preço cruza banda sup.','Preço sai da banda inf.'];
 const VWAP_CONDS = ['Preço está acima do VWAP','Preço está abaixo do VWAP','Preço cruza acima do VWAP','Preço cruza abaixo do VWAP'];
 const MACD_CONDS = ['MACD cruza acima do sinal','MACD cruza abaixo do sinal','MACD acima de zero','MACD abaixo de zero'];
@@ -582,8 +583,8 @@ function condLabel(c) {
     case 'cci':      return `CCI(${p.per||14}) ${p.cond} ${p.val}`;
     case 'williams': return `Williams %R(${p.per||14}) ${p.cond} ${p.val}`;
     case 'macd':     return `MACD — ${p.cond}`;
-    case 'sma':      return `SMA(${p.per||200}) — ${p.cond}`;
-    case 'ema':      return `EMA(${p.per||200}) — ${p.cond}`;
+    case 'sma':      return isMACrossover(p.cond)?`SMA(${p.per||9}) × SMA(${p.per2||200}) — ${p.cond}`:`SMA(${p.per||200}) — ${p.cond}`;
+    case 'ema':      return isMACrossover(p.cond)?`EMA(${p.per||9}) × EMA(${p.per2||200}) — ${p.cond}`:`EMA(${p.per||200}) — ${p.cond}`;
     case 'bb':       return `Bollinger(${p.per||20}, ${p.dev||2}σ) — ${p.cond}`;
     case 'vwap':     return p.cond;
     case 'adx':      return `ADX(${p.per||14}) ${p.cond} ${p.val}`;
@@ -1210,12 +1211,26 @@ function buildCondPreview(indId, condText) {
   // ═══ MOVING AVERAGES ═══
   if(['sma','ema'].includes(indId)){
     drawCds(CDS,0.5);
-    const maY=[40,46,52,58,64,70,74,72,66,58,50,44];
-    pl(maY.map((y,i)=>`${CDS[i].x+6},${y}`).join(' '),'#F59E0B',2);
-    const sx=CDS[6].x+6,sy=maY[6];
-    if(cross){ci(sx,sy,sc,6);aw(sx+16,sy,up,sc);tx(sx+24,sy+(up?-2:10),'CRUZAMENTO',sc,7);}
-    else{const s=up?7:0,e=up?11:5;let d=`M${CDS[s].x+6},${maY[s]}`;for(let i=s;i<=e;i++)d+=` L${CDS[i].x+6},${(CDS[i].o+CDS[i].c)/2}`;d+=` L${CDS[e].x+6},${maY[e]}`;for(let i=e;i>=s;i--)d+=` L${CDS[i].x+6},${maY[i]}`;d+=' Z';pa(d,sc,0.15);}
-    tx(16,16,indId.toUpperCase(),'#F59E0B',9);
+    const maCrossover=ct.includes('longa');
+    if(maCrossover){
+      // Two MA lines crossing
+      const shortMA=up?[80,74,66,58,50,44,40,44,50,58,64,70]:[34,40,48,56,64,70,74,70,64,56,48,40];
+      const longMA= [52,54,56,58,60,62,63,62,60,58,56,54];
+      pl(shortMA.map((y,i)=>`${CDS[i].x+6},${y}`).join(' '),'#00D4AA',2);
+      pl(longMA.map((y,i)=>`${CDS[i].x+6},${y}`).join(' '),'#F59E0B',2,'4,3');
+      // Cross point
+      const cx=CDS[6].x+6,cy=longMA[6];
+      ci(cx,cy,sc,7);aw(cx+18,cy,up,sc);
+      tx(cx+26,cy+(up?-2:10),'CRUZAMENTO',sc,7);
+      tx(16,16,'CURTA','#00D4AA',8);tx(56,16,'LONGA','#F59E0B',8);
+    } else {
+      const maY=[40,46,52,58,64,70,74,72,66,58,50,44];
+      pl(maY.map((y,i)=>`${CDS[i].x+6},${y}`).join(' '),'#F59E0B',2);
+      const sx=CDS[6].x+6,sy=maY[6];
+      if(cross){ci(sx,sy,sc,6);aw(sx+16,sy,up,sc);tx(sx+24,sy+(up?-2:10),'CRUZAMENTO',sc,7);}
+      else{const s=up?7:0,e=up?11:5;let d=`M${CDS[s].x+6},${maY[s]}`;for(let i=s;i<=e;i++)d+=` L${CDS[i].x+6},${(CDS[i].o+CDS[i].c)/2}`;d+=` L${CDS[e].x+6},${maY[e]}`;for(let i=e;i>=s;i--)d+=` L${CDS[i].x+6},${maY[i]}`;d+=' Z';pa(d,sc,0.15);}
+      tx(16,16,indId.toUpperCase(),'#F59E0B',9);
+    }
     return svg;
   }
 
@@ -1460,7 +1475,7 @@ function renderModal() {
             cond:conds[0]||ind.defCond,
             val:ind.hasVal?ind.defVal:undefined
           };
-          if(['sma','ema'].includes(ind.id)) ms.params.per=200;
+          if(['sma','ema'].includes(ind.id)){ ms.params.per=200; ms.params.per2=50; }
           if(ind.id==='bb'){ ms.params.per=20; ms.params.dev=2; }
           ms.page=1;
           renderModal();
@@ -1502,11 +1517,28 @@ function renderModal() {
     frag.appendChild(previewWrap);
 
     if(ind.hasPer!==false && ms.params.per!==undefined) {
+      const isMA=['sma','ema'].includes(ind.id);
+      const isCross=isMA&&isMACrossover(ms.params.cond);
       const row=div('');
-      row.appendChild(slabel('Período'));
+      const perLabel=div('');perLabel.id='per-label';
+      row.appendChild(perLabel);
+      function updatePerLabel(){
+        const cross=isMACrossover(ms.params.cond);
+        perLabel.replaceChildren(slabel(cross?'Período da média curta':'Período'));
+      }
+      updatePerLabel();
       const s=stepper(ms.params.per,1,500,'',v=>{ms.params.per=v;});
       row.appendChild(s);
       frag.appendChild(row);
+
+      // Second period (MA crossover only)
+      if(isMA){
+        const row2=div('');row2.id='per2-row';
+        row2.style.display=isCross?'block':'none';
+        row2.appendChild(slabel('Período da média longa'));
+        row2.appendChild(stepper(ms.params.per2||200,1,500,'',v=>{ms.params.per2=v;}));
+        frag.appendChild(row2);
+      }
     }
     if(ind.id==='bb' && ms.params.dev!==undefined) {
       const row=div('');
@@ -1527,6 +1559,7 @@ function renderModal() {
         r.appendChild(t);
         radios.push({el:r,ring,cond:c});
         r.addEventListener('click',()=>{
+          const prevCond=ms.params.cond;
           ms.params.cond=c;
           radios.forEach(rd=>{
             const isOn=rd.cond===c;
@@ -1537,6 +1570,15 @@ function renderModal() {
           // Update preview SVG
           const pw=document.getElementById('cond-preview-wrap');
           if(pw){pw.innerHTML='';pw.appendChild(buildCondPreview(ind.id,c));}
+          // Toggle per2 field for MA crossover — re-render modal to update steppers
+          if(['sma','ema'].includes(ind.id)){
+            const wasCross=isMACrossover(prevCond);const isCross=isMACrossover(c);
+            if(wasCross!==isCross){
+              if(isCross){ms.params.per=9;ms.params.per2=200;}
+              else{ms.params.per=200;}
+              renderModal();
+            }
+          }
         });
         row.appendChild(r);
       });
