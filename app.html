@@ -145,8 +145,8 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .verdict.ok{background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(16,185,129,.03));border:1px solid rgba(16,185,129,.22)}
 .verdict.bad{background:linear-gradient(135deg,rgba(239,68,68,.12),rgba(239,68,68,.03));border:1px solid rgba(239,68,68,.22)}
 .verdict-icon{width:50px;height:50px;border-radius:25px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.metrics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:18px}
-@media(max-width:600px){.metrics-grid{grid-template-columns:repeat(2,1fr)}}
+.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:18px}
+@media(max-width:700px){.metrics-grid{grid-template-columns:repeat(2,1fr)}}
 .metric-card{background:var(--bg1);border:1px solid var(--bd);border-radius:11px;padding:13px 15px}
 .metric-label{font-size:10px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}
 .metric-val{font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1}
@@ -558,7 +558,52 @@ function condLabel(c) {
 const EQ = (() => {
   const d=[1200,-800,2400,600,-1400,3200,1800,400,-900,2600,1400,-600,3800,2200,-1600,800,4200,1800,-2200,3400,2800,-400,1600,3200,-1800,2400,4600,-800,3000,1400,600,-1200,4800,2200,800,-2600,3600,1800,-600,4200,2800,400,-1600,3400,5200,-1000,2200,1600,800,3800,-2400,4600,1800,600,-800,3200,2400,-1200,4800,2600,800,-400,3600,5400,-1600,2800,1200,400,3000,-800,4200,2600,1000,-600,3800,2200,5600,-2000,3400,1800,1200,2800,4400,-400,1600,600,2200,3800,-800];
   let v=0,peak=0;
-  return d.map((x,i)=>{v+=x;if(v>peak)peak=v;const yr=2019+Math.floor(i/12),mo=i%12;return{v:Math.round(v),dd:Math.round(Math.min(0,v-peak)),t:(new Date(yr,mo)).toLocaleDateString('pt-BR',{month:'short'}).replace('.','')+" '"+String(yr).slice(2)};});
+  return d.map((x,i)=>{v+=x;if(v>peak)peak=v;const yr=2019+Math.floor(i/12),mo=i%12;return{v:Math.round(v),dd:Math.round(Math.min(0,v-peak)),pnl:x,t:(new Date(yr,mo)).toLocaleDateString('pt-BR',{month:'short'}).replace('.','')+" '"+String(yr).slice(2)};});
+})();
+
+// ─── EQUITY ANALYSIS (computed from EQ) ────────────────────────
+const EQ_ANALYSIS = (() => {
+  const cap=100000;
+  // Max drawdown by percentage
+  let peak=cap,peakIdx=0,maxDDPct=0,maxDDVal=0,maxDDIdx=0,maxDDPeakIdx=0;
+  for(let i=0;i<EQ.length;i++){
+    const eq=cap+EQ[i].v;
+    if(eq>peak){peak=eq;peakIdx=i;}
+    else{const ddv=peak-eq,ddp=peak>0?(ddv/peak)*100:0;
+    if(ddp>maxDDPct){maxDDPct=ddp;maxDDVal=ddv;maxDDIdx=i;maxDDPeakIdx=peakIdx;}}
+  }
+  // TUW periods
+  peak=cap;let uwStart=null;const uwPeriods=[];
+  for(let i=0;i<EQ.length;i++){
+    const eq=cap+EQ[i].v;
+    if(eq>=peak){if(uwStart!==null){uwPeriods.push({s:uwStart,e:i-1});uwStart=null;}peak=eq;}
+    else{if(uwStart===null)uwStart=i;}
+  }
+  if(uwStart!==null)uwPeriods.push({s:uwStart,e:EQ.length-1});
+  // TUW stats
+  const uwLens=uwPeriods.map(p=>p.e-p.s+1);
+  const tuwMax=uwLens.length?Math.max(...uwLens):0;
+  const tuwAvg=uwLens.length?uwLens.reduce((a,b)=>a+b,0)/uwLens.length:0;
+  // Max losing streak
+  let maxStreak=0,curStreak=0,streakStart=0,mStreakS=0,mStreakE=0;
+  for(let i=0;i<EQ.length;i++){
+    if(EQ[i].pnl<0){if(curStreak===0)streakStart=i;curStreak++;if(curStreak>maxStreak){maxStreak=curStreak;mStreakS=streakStart;mStreakE=i;}}
+    else curStreak=0;
+  }
+  // Trade stats
+  const wins=EQ.filter(d=>d.pnl>0),losses=EQ.filter(d=>d.pnl<0);
+  const avgWin=wins.length?wins.reduce((a,b)=>a+b.pnl,0)/wins.length:0;
+  const avgLoss=losses.length?Math.abs(losses.reduce((a,b)=>a+b.pnl,0)/losses.length):0;
+  const totalProfit=wins.reduce((a,b)=>a+b.pnl,0);
+  const totalLoss=Math.abs(losses.reduce((a,b)=>a+b.pnl,0));
+  const payoff=avgLoss>0?avgWin/avgLoss:0;
+  const profitFactor=totalLoss>0?totalProfit/totalLoss:0;
+  const recoveryFactor=maxDDVal>0?(cap+EQ[EQ.length-1].v-cap)/maxDDVal:0;
+  const winRate=EQ.length>0?(wins.length/EQ.length)*100:0;
+  const viés=(winRate/100)*avgWin-((100-winRate)/100)*avgLoss;
+  return {maxDDPct,maxDDVal,maxDDIdx,maxDDPeakIdx,uwPeriods,tuwMax,tuwAvg,maxStreak,mStreakS,mStreakE,
+    wins:wins.length,losses:losses.length,avgWin,avgLoss,payoff,profitFactor,recoveryFactor,winRate,viés,
+    totalProfit,totalLoss,cap};
 })();
 
 const HIST = [
@@ -679,38 +724,91 @@ function chipsWrap(items,active,onChange) {
 
 // ─── SVG CHARTS ───────────────────────────────────────────────
 function buildEquityChart() {
-  const W=560,H=150,PL=45,PR=10,PT=8,PB=24;
+  const A=EQ_ANALYSIS;
+  const W=560,H=170,PL=45,PR=10,PT=8,PB=24;
   const vals=EQ.map(d=>d.v);
   const min=Math.min(...vals),max=Math.max(...vals),rng=max-min||1;
   const iW=W-PL-PR,iH=H-PT-PB,n=EQ.length-1;
-  const tx=i=>PL+i/n*iW, ty=v=>PT+(1-(v-min)/rng)*iH;
-  const pts=EQ.map((d,i)=>`${tx(i).toFixed(1)},${ty(d.v).toFixed(1)}`);
+  const txf=i=>PL+i/n*iW, tyf=v=>PT+(1-(v-min)/rng)*iH;
+  const pts=EQ.map((d,i)=>`${txf(i).toFixed(1)},${tyf(d.v).toFixed(1)}`);
   const linePath='M'+pts.join(' L');
-  const areaPath=`M${tx(0).toFixed(1)},${(PT+iH).toFixed(1)} L`+pts.join(' L')+` L${tx(n).toFixed(1)},${(PT+iH).toFixed(1)} Z`;
+  const areaPath=`M${txf(0).toFixed(1)},${(PT+iH).toFixed(1)} L`+pts.join(' L')+` L${txf(n).toFixed(1)},${(PT+iH).toFixed(1)} Z`;
   const svgEl=hsvg('svg',{width:'100%',viewBox:`0 0 ${W} ${H}`});
   // Grid
-  for(let i=0;i<4;i++){const y=PT+i*(iH/3);const l=hsvg('line',{x1:PL,y1:y,x2:W-PR,y2:y,stroke:'#2A2A3C','stroke-width':'0.5','stroke-dasharray':'3,3'});svgEl.appendChild(l);}
+  for(let i=0;i<4;i++){const y=PT+i*(iH/3);svgEl.appendChild(hsvg('line',{x1:PL,y1:y,x2:W-PR,y2:y,stroke:'#2A2A3C','stroke-width':'0.5','stroke-dasharray':'3,3'}));}
   // Zero line
-  const zy=ty(0);
-  if(zy>PT&&zy<PT+iH){const zl=hsvg('line',{x1:PL,y1:zy,x2:W-PR,y2:zy,stroke:'#3A3A52','stroke-width':'1'});svgEl.appendChild(zl);}
-  // Defs gradient
+  const zy=tyf(0);
+  if(zy>PT&&zy<PT+iH) svgEl.appendChild(hsvg('line',{x1:PL,y1:zy,x2:W-PR,y2:zy,stroke:'#3A3A52','stroke-width':'1'}));
+  // Max losing streak shading
+  if(A.maxStreak>0){
+    const x1=txf(A.mStreakS),x2=txf(A.mStreakE);
+    svgEl.appendChild(hsvg('rect',{x:x1,y:PT,width:x2-x1,height:iH,fill:'#F59E0B','fill-opacity':'0.06',rx:3}));
+    const lt=hsvg('text',{x:(x1+x2)/2,y:PT+10,'text-anchor':'middle',fill:'#F59E0B','font-size':'7','font-family':'JetBrains Mono','font-weight':'600'});
+    lt.textContent=`Seq.Neg (${A.maxStreak})`;svgEl.appendChild(lt);
+  }
+  // Gradient
   const defs=hsvg('defs',{});
   const grad=hsvg('linearGradient',{id:'eqg',x1:'0',y1:'0',x2:'0',y2:'1'});
-  const s1=hsvg('stop',{offset:'0%','stop-color':'#10B981','stop-opacity':'0.3'});
-  const s2=hsvg('stop',{offset:'100%','stop-color':'#10B981','stop-opacity':'0.02'});
-  grad.appendChild(s1);grad.appendChild(s2);defs.appendChild(grad);svgEl.appendChild(defs);
-  // Area
-  const area=hsvg('path',{d:areaPath,fill:'url(#eqg)'});svgEl.appendChild(area);
-  // Line
-  const line=hsvg('path',{d:linePath,fill:'none',stroke:'#10B981','stroke-width':'1.8'});svgEl.appendChild(line);
+  grad.appendChild(hsvg('stop',{offset:'0%','stop-color':'#10B981','stop-opacity':'0.3'}));
+  grad.appendChild(hsvg('stop',{offset:'100%','stop-color':'#10B981','stop-opacity':'0.02'}));
+  defs.appendChild(grad);svgEl.appendChild(defs);
+  // Area + Line
+  svgEl.appendChild(hsvg('path',{d:areaPath,fill:'url(#eqg)'}));
+  svgEl.appendChild(hsvg('path',{d:linePath,fill:'none',stroke:'#10B981','stroke-width':'1.8'}));
+  // Max Drawdown marker
+  if(A.maxDDPct>0){
+    const px=txf(A.maxDDPeakIdx),py=tyf(EQ[A.maxDDPeakIdx].v);
+    const dx=txf(A.maxDDIdx),dy=tyf(EQ[A.maxDDIdx].v);
+    // Peak to trough horizontal line
+    svgEl.appendChild(hsvg('line',{x1:px,y1:py,x2:dx,y2:py,stroke:'#EF4444','stroke-width':'0.8','stroke-dasharray':'3,2','stroke-opacity':'0.6'}));
+    // Vertical drop line
+    svgEl.appendChild(hsvg('line',{x1:dx,y1:py,x2:dx,y2:dy,stroke:'#EF4444','stroke-width':'1','stroke-dasharray':'3,2','stroke-opacity':'0.6'}));
+    // Trough marker
+    svgEl.appendChild(hsvg('circle',{cx:dx,cy:dy,r:4,fill:'#EF4444','fill-opacity':'0.2',stroke:'#EF4444','stroke-width':'1.5'}));
+    const ddLabel=hsvg('text',{x:dx+6,y:dy+4,fill:'#EF4444','font-size':'8','font-family':'JetBrains Mono','font-weight':'700'});
+    ddLabel.textContent=`-${A.maxDDPct.toFixed(1)}%`;svgEl.appendChild(ddLabel);
+  }
   // X labels
   [0,12,24,36,48,60,72,84].forEach(i=>{
-    if(i<EQ.length){const t=hsvg('text',{x:tx(i),y:H-6,'text-anchor':'middle',fill:'#44445A','font-size':'9','font-family':'JetBrains Mono'});t.textContent=EQ[i].t.split(' ')[1];svgEl.appendChild(t);}
+    if(i<EQ.length){const t=hsvg('text',{x:txf(i),y:H-6,'text-anchor':'middle',fill:'#44445A','font-size':'9','font-family':'JetBrains Mono'});t.textContent=EQ[i].t.split(' ')[1];svgEl.appendChild(t);}
   });
   // Y labels
-  [0,1].forEach(i=>{const v=min+i*rng;const t=hsvg('text',{x:PL-4,y:ty(v)+4,'text-anchor':'end',fill:'#44445A','font-size':'9','font-family':'JetBrains Mono'});t.textContent=(v>=0?'+':'')+Math.round(v/1000)+'k';svgEl.appendChild(t);});
+  [0,0.5,1].forEach(f=>{const v=min+f*rng;const t=hsvg('text',{x:PL-4,y:tyf(v)+4,'text-anchor':'end',fill:'#44445A','font-size':'9','font-family':'JetBrains Mono'});t.textContent=(v>=0?'+':'')+Math.round(v/1000)+'k';svgEl.appendChild(t);});
   return svgEl;
 }
+
+function buildTUWChart() {
+  const A=EQ_ANALYSIS;
+  const W=560,H=170,PL=45,PR=10,PT=8,PB=24;
+  const vals=EQ.map(d=>d.v);
+  const min=Math.min(...vals),max=Math.max(...vals),rng=max-min||1;
+  const iW=W-PL-PR,iH=H-PT-PB,n=EQ.length-1;
+  const txf=i=>PL+i/n*iW, tyf=v=>PT+(1-(v-min)/rng)*iH;
+  const pts=EQ.map((d,i)=>`${txf(i).toFixed(1)},${tyf(d.v).toFixed(1)}`);
+  const linePath='M'+pts.join(' L');
+  const svgEl=hsvg('svg',{width:'100%',viewBox:`0 0 ${W} ${H}`});
+  // Grid
+  for(let i=0;i<4;i++){const y=PT+i*(iH/3);svgEl.appendChild(hsvg('line',{x1:PL,y1:y,x2:W-PR,y2:y,stroke:'#2A2A3C','stroke-width':'0.5','stroke-dasharray':'3,3'}));}
+  // TUW shading
+  A.uwPeriods.forEach(p=>{
+    const x1=txf(p.s),x2=txf(p.e);
+    svgEl.appendChild(hsvg('rect',{x:x1,y:PT,width:Math.max(2,x2-x1),height:iH,fill:'#EF4444','fill-opacity':'0.08'}));
+    if(p.e-p.s>=4){const lt=hsvg('text',{x:(x1+x2)/2,y:PT+10,'text-anchor':'middle',fill:'#EF4444','font-size':'6','font-family':'JetBrains Mono','fill-opacity':'0.6'});lt.textContent='TUW';svgEl.appendChild(lt);}
+  });
+  // Equity line
+  svgEl.appendChild(hsvg('path',{d:linePath,fill:'none',stroke:'#1E90FF','stroke-width':'1.8'}));
+  // Peak markers
+  let peak=EQ[0].v;
+  EQ.forEach((d,i)=>{if(d.v>=peak){peak=d.v;svgEl.appendChild(hsvg('circle',{cx:txf(i),cy:tyf(d.v),r:2.5,fill:'#10B981'}));}});
+  // X labels
+  [0,12,24,36,48,60,72,84].forEach(i=>{
+    if(i<EQ.length){const t=hsvg('text',{x:txf(i),y:H-6,'text-anchor':'middle',fill:'#44445A','font-size':'9','font-family':'JetBrains Mono'});t.textContent=EQ[i].t.split(' ')[1];svgEl.appendChild(t);}
+  });
+  // Y labels
+  [0,0.5,1].forEach(f=>{const v=min+f*rng;const t=hsvg('text',{x:PL-4,y:tyf(v)+4,'text-anchor':'end',fill:'#44445A','font-size':'9','font-family':'JetBrains Mono'});t.textContent=(v>=0?'+':'')+Math.round(v/1000)+'k';svgEl.appendChild(t);});
+  return svgEl;
+}
+
 function buildDDChart() {
   const W=560,H=80,PL=45,PR=10,PT=4,PB=18;
   const vals=EQ.map(d=>d.dd);
@@ -720,13 +818,12 @@ function buildDDChart() {
   const svgEl=hsvg('svg',{width:'100%',viewBox:`0 0 ${W} ${H}`});
   const defs=hsvg('defs',{});
   const grad=hsvg('linearGradient',{id:'ddg',x1:'0',y1:'0',x2:'0',y2:'1'});
-  const s1=hsvg('stop',{offset:'0%','stop-color':'#EF4444','stop-opacity':'0.35'});
-  const s2=hsvg('stop',{offset:'100%','stop-color':'#EF4444','stop-opacity':'0.04'});
-  grad.appendChild(s1);grad.appendChild(s2);defs.appendChild(grad);svgEl.appendChild(defs);
+  grad.appendChild(hsvg('stop',{offset:'0%','stop-color':'#EF4444','stop-opacity':'0.35'}));
+  grad.appendChild(hsvg('stop',{offset:'100%','stop-color':'#EF4444','stop-opacity':'0.04'}));
+  defs.appendChild(grad);svgEl.appendChild(defs);
   const pts=EQ.map((d,i)=>`${tx(i).toFixed(1)},${ty(d.dd).toFixed(1)}`);
-  const areaPath=`M${tx(0)},${PT} L`+pts.join(' L')+` L${tx(n)},${PT} Z`;
-  const area=hsvg('path',{d:areaPath,fill:'url(#ddg)'});svgEl.appendChild(area);
-  const line=hsvg('path',{d:'M'+pts.join(' L'),fill:'none',stroke:'#EF4444','stroke-width':'1.4'});svgEl.appendChild(line);
+  svgEl.appendChild(hsvg('path',{d:`M${tx(0)},${PT} L`+pts.join(' L')+` L${tx(n)},${PT} Z`,fill:'url(#ddg)'}));
+  svgEl.appendChild(hsvg('path',{d:'M'+pts.join(' L'),fill:'none',stroke:'#EF4444','stroke-width':'1.4'}));
   return svgEl;
 }
 function buildHistChart() {
@@ -739,8 +836,7 @@ function buildHistChart() {
     const bh=(d.c/maxC)*(H-PT-PB);
     const by=H-PB-bh;
     const fill=d.t==='profit'?'#10B981':d.t==='loss'?'#EF4444':'#2A2A3C';
-    const rect=hsvg('rect',{x,y:by,width:barW,height:Math.max(0,bh),rx:'2',fill,opacity:'0.82'});
-    svgEl.appendChild(rect);
+    svgEl.appendChild(hsvg('rect',{x,y:by,width:barW,height:Math.max(0,bh),rx:'2',fill,opacity:'0.82'}));
     const lbl=hsvg('text',{x:x+barW/2,y:H-5,'text-anchor':'middle',fill:'#44445A','font-size':'8.5','font-family':'JetBrains Mono'});
     lbl.textContent=d.r;svgEl.appendChild(lbl);
   });
@@ -1807,30 +1903,33 @@ function renderLoading() {
 
 // ─── RESULTS ─────────────────────────────────────────────────
 const METRICS=[
-  {label:'Total de Trades',val:'3.847',color:'#E8E8ED',tip:'Número total de operações abertas e encerradas no período.'},
-  {label:'Taxa de Acerto',val:'42,3%',color:'#F59E0B',pct:42.3,tip:'Percentual de operações encerradas com lucro.'},
-  {label:'Lucro Total',val:'+R$ 42.380',color:'#10B981',tip:'Resultado financeiro acumulado de todas as operações.'},
-  {label:'Maior Drawdown',val:'−R$ 12.400',color:'#EF4444',tip:'Maior queda do capital a partir de um pico — o pior período.'},
-  {label:'Profit Factor',val:'1,34',color:'#00D4AA',tip:'Razão entre lucros e perdas. Acima de 1 é lucrativo.'},
-  {label:'Resultado/Trade',val:'+R$ 11,02',color:'#10B981',tip:'Lucro médio por operação. Mede a eficiência individual.'},
+  {label:'Total de Trades',val:String(EQ.length),color:'#E8E8ED',tip:'Número total de operações abertas e encerradas no período.'},
+  {label:'Taxa de Acerto',val:EQ_ANALYSIS.winRate.toFixed(1)+'%',color:'#F59E0B',pct:EQ_ANALYSIS.winRate,tip:'Percentual de operações encerradas com lucro.'},
+  {label:'Lucro Total',val:(EQ[EQ.length-1].v>=0?'+':'')+'R$ '+Math.abs(EQ[EQ.length-1].v).toLocaleString('pt-BR'),color:EQ[EQ.length-1].v>=0?'#10B981':'#EF4444',tip:'Resultado financeiro acumulado de todas as operações.'},
+  {label:'Max Drawdown',val:'−'+EQ_ANALYSIS.maxDDPct.toFixed(2)+'%',color:'#EF4444',tip:'Maior queda percentual do capital a partir de um pico.'},
+  {label:'Profit Factor',val:EQ_ANALYSIS.profitFactor.toFixed(2),color:EQ_ANALYSIS.profitFactor>1?'#00D4AA':'#EF4444',tip:'Razão entre lucros totais e perdas totais. Acima de 1 = lucrativo.'},
+  {label:'Payoff',val:EQ_ANALYSIS.payoff.toFixed(2),color:EQ_ANALYSIS.payoff>1?'#10B981':'#F59E0B',tip:'Razão entre média de ganho e média de perda. Payoff > 1 = ganhos médios maiores que perdas médias.'},
+  {label:'Recovery Factor',val:EQ_ANALYSIS.recoveryFactor.toFixed(2),color:EQ_ANALYSIS.recoveryFactor>2?'#10B981':'#F59E0B',tip:'Lucro total dividido pelo max drawdown. Mede a capacidade de recuperação.'},
+  {label:'Rentabilidade',val:((EQ[EQ.length-1].v/EQ_ANALYSIS.cap)*100).toFixed(2)+'%',color:EQ[EQ.length-1].v>=0?'#10B981':'#EF4444',tip:'Retorno percentual sobre o capital inicial.'},
 ];
 
 function renderResults() {
+  const A=EQ_ANALYSIS;
   const last=EQ[EQ.length-1].v;const ok=last>0;
   const el=div(state.animate?'aUp':'');el.style.maxWidth='860px';
 
-  // Verdict
+  // ── Verdict ──
   const verdict=div('verdict '+(ok?'ok':'bad'));
   const vIco=div('verdict-icon');vIco.style.cssText=`background:${ok?'rgba(16,185,129,.1)':'rgba(239,68,68,.1)'};border:2px solid ${ok?'#10B981':'#EF4444'}`;
   vIco.innerHTML=ok?`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2.5" stroke-linecap="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>`;
   const vText=div('');
   const vLabel=div('');vLabel.style.cssText=`font-size:10px;font-weight:800;color:${ok?'#10B981':'#EF4444'};letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px`;vLabel.textContent='Resultado: '+(ok?'LUCRATIVA':'DEFICITÁRIA');
   const vVal=div('');vVal.style.cssText=`font-size:34px;font-weight:700;color:${ok?'#10B981':'#EF4444'};font-family:'JetBrains Mono';line-height:1`;vVal.textContent=(ok?'+':'−')+'R$ '+Math.abs(last).toLocaleString('pt-BR');
-  const vSub=div('');vSub.style.cssText='font-size:11px;color:#8888A0;margin-top:5px';vSub.textContent='Jan 2019 – Mar 2026 · 87 meses · 3.847 operações';
+  const vSub=div('');vSub.style.cssText='font-size:11px;color:#8888A0;margin-top:5px';vSub.textContent=`Jan 2019 – Mar 2026 · 87 meses · ${EQ.length} operações`;
   vText.append(vLabel,vVal,vSub);verdict.append(vIco,vText);el.appendChild(verdict);
 
-  // Metrics
-  const mg=div('metrics-grid');
+  // ── Metrics Grid (4 columns) ──
+  const mg=div('metrics-grid');mg.style.gridTemplateColumns='repeat(4,1fr)';
   METRICS.forEach(m=>{
     const c=div('metric-card');
     const lb=div('metric-label');lb.textContent=m.label;
@@ -1841,22 +1940,93 @@ function renderResults() {
   });
   el.appendChild(mg);
 
-  // Equity Chart
+  // ── Trade Stats Section ──
+  const statsCard=div('chart-card');
+  const statsLabel=div('chart-label');statsLabel.innerHTML=`${IC.act} Estatísticas de Trades`;
+  statsCard.appendChild(statsLabel);
+  const statsGrid=div('');statsGrid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:12px';
+
+  const leftCol=div('');leftCol.style.cssText='display:flex;flex-direction:column;gap:8px';
+  const statRow=(label,val,color)=>{const r=div('');r.style.cssText='display:flex;justify-content:space-between;align-items:center';const l=div('');l.style.cssText='font-size:12px;color:#8888A0';l.textContent=label;const v=div('');v.style.cssText=`font-size:13px;font-weight:600;color:${color||'#E8E8ED'};font-family:'JetBrains Mono'`;v.textContent=val;r.append(l,v);return r;};
+  leftCol.append(
+    statRow('Gains',String(A.wins),'#10B981'),
+    statRow('Losses',String(A.losses),'#EF4444'),
+    statRow('Média de Ganho','R$ '+A.avgWin.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#10B981'),
+    statRow('Média de Perda','R$ '+A.avgLoss.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#EF4444')
+  );
+
+  const rightCol=div('');rightCol.style.cssText='display:flex;flex-direction:column;gap:8px';
+  rightCol.append(
+    statRow('Viés Efetivo','R$ '+A.viés.toFixed(2),A.viés>0?'#10B981':'#EF4444'),
+    statRow('Lucro Bruto','R$ '+A.totalProfit.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#10B981'),
+    statRow('Perda Bruta','R$ '+A.totalLoss.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#EF4444'),
+    statRow('Resultado/Trade','R$ '+(last/EQ.length).toFixed(2),last>=0?'#10B981':'#EF4444')
+  );
+  statsGrid.append(leftCol,rightCol);
+  statsCard.appendChild(statsGrid);el.appendChild(statsCard);
+
+  // ── Equity Chart (with DD marker + losing streak) ──
   const ec=div('chart-card');
   const ecl=div('chart-label');ecl.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg> Curva de Equity`;
-  ec.append(ecl,buildEquityChart());el.appendChild(ec);
+  ec.append(ecl,buildEquityChart());
 
-  // Drawdown
+  // DD analysis below equity chart
+  if(A.maxDDPct>0){
+    const ddInfo=div('');ddInfo.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px;padding-top:12px;border-top:1px solid #2A2A3C';
+    const ddCard=(label,val,sub,color)=>{const c=div('');const l=div('');l.style.cssText='font-size:9px;font-weight:700;color:#8888A0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px';l.textContent=label;const v=div('');v.style.cssText=`font-size:16px;font-weight:700;color:${color||'#E8E8ED'};font-family:'JetBrains Mono'`;v.textContent=val;c.append(l,v);if(sub){const s=div('');s.style.cssText='font-size:10px;color:#6B6B80;margin-top:2px';s.textContent=sub;c.appendChild(s);}return c;};
+    const ddDuration=A.maxDDIdx-A.maxDDPeakIdx;
+    ddInfo.append(
+      ddCard('Max Drawdown','-'+A.maxDDPct.toFixed(2)+'%','R$ '+A.maxDDVal.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#EF4444'),
+      ddCard('Duração',ddDuration+' operações',EQ[A.maxDDPeakIdx].t+' → '+EQ[A.maxDDIdx].t),
+      ddCard('Pico → Vale','R$ '+(A.cap+EQ[A.maxDDPeakIdx].v).toLocaleString('pt-BR',{maximumFractionDigits:0}),'→ R$ '+(A.cap+EQ[A.maxDDIdx].v).toLocaleString('pt-BR',{maximumFractionDigits:0}))
+    );
+    ec.appendChild(ddInfo);
+  }
+
+  // Losing streak info
+  if(A.maxStreak>0){
+    const lsInfo=div('');lsInfo.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px;padding-top:10px;border-top:1px solid #2A2A3C';
+    const lsCard=(label,val,color)=>{const c=div('');const l=div('');l.style.cssText='font-size:9px;font-weight:700;color:#8888A0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px';l.textContent=label;const v=div('');v.style.cssText=`font-size:16px;font-weight:700;color:${color||'#E8E8ED'};font-family:'JetBrains Mono'`;v.textContent=val;c.append(l,v);return c;};
+    lsInfo.append(
+      lsCard('Max Sequência Negativa',A.maxStreak+' operações','#F59E0B'),
+      lsCard('Período',EQ[A.mStreakS].t+' → '+EQ[A.mStreakE].t,'#F59E0B')
+    );
+    ec.appendChild(lsInfo);
+  }
+  el.appendChild(ec);
+
+  // ── TUW Equity Chart ──
+  const tuw=div('chart-card');
+  const tuwl=div('chart-label');tuwl.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1E90FF" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="m9 17 3-5 3 3 3-5"/></svg> Curva de Equity — Time Underwater (TUW)`;
+  tuw.append(tuwl,buildTUWChart());
+
+  // TUW stats
+  const tuwStats=div('');tuwStats.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px;padding-top:12px;border-top:1px solid #2A2A3C';
+  const tuwCard=(label,val,color)=>{const c=div('');const l=div('');l.style.cssText='font-size:9px;font-weight:700;color:#8888A0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px';l.textContent=label;const v=div('');v.style.cssText=`font-size:16px;font-weight:700;color:${color||'#E8E8ED'};font-family:'JetBrains Mono'`;v.textContent=val;c.append(l,v);return c;};
+  tuwStats.append(
+    tuwCard('Períodos TUW',String(A.uwPeriods.length),'#1E90FF'),
+    tuwCard('TUW Máximo',A.tuwMax+' operações','#EF4444'),
+    tuwCard('TUW Médio',A.tuwAvg.toFixed(1)+' operações','#F59E0B')
+  );
+  tuw.appendChild(tuwStats);
+
+  // Legend
+  const legend=div('');legend.style.cssText='display:flex;gap:16px;margin-top:10px;font-size:10px;color:#6B6B80';
+  legend.innerHTML='<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:rgba(239,68,68,0.15)"></span> Período underwater</span><span style="display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:3px;background:#10B981"></span> Nova máxima</span>';
+  tuw.appendChild(legend);
+  el.appendChild(tuw);
+
+  // ── Drawdown ──
   const dc=div('chart-card');
   const dcl=div('chart-label');dcl.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg> Drawdown`;
   dc.append(dcl,buildDDChart());el.appendChild(dc);
 
-  // Histogram
+  // ── Histogram ──
   const hc=div('chart-card');
   const hcl=div('chart-label');hcl.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> Distribuição de Resultados por Trade`;
   hc.append(hcl,buildHistChart());el.appendChild(hc);
 
-  // Actions
+  // ── Actions ──
   const acts=div('');acts.style.cssText='display:flex;gap:9px;flex-wrap:wrap;margin-top:4px';
   const resetBtn=h('button',{class:'btn btnP',style:{flex:'1 1 auto',justifyContent:'center'},onclick:()=>{state.animate=true;state.screen='wizard';state.step=0;state.maxDone=0;renderApp();}});
   resetBtn.innerHTML=IC.ref+' Ajustar e testar novamente';
