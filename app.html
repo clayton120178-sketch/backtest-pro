@@ -367,7 +367,7 @@ const state = {
   animate: false,
   loadMsg: 0,
   cfg: {
-    asset:'WIN$N', market:'local', tf:'5m', tStart:'09:00', tLastEntry:'17:00', tEnd:'17:30',
+    asset:'WIN$N', market:'local', tf:'5m', tStart:'09:00', tLastEntry:'17:00', tEnd:'17:30', maxDailyTrades:0,
     conditions:[],
     direction:'long', entryType:'breakout', validity:3,
     stopType:'fixed', stopPts:200, stopOffset:10, stopCandles:5,
@@ -729,14 +729,14 @@ function timeStepper(val,onChange) {
   });
   inp.addEventListener('keydown',e=>{
     if(e.key==='Enter'){e.preventDefault();inp.blur();}
-    if(e.key==='ArrowUp'){e.preventDefault();const nv=addMin(inp.value,30);inp.value=nv;onChange(nv);}
-    if(e.key==='ArrowDown'){e.preventDefault();const nv=addMin(inp.value,-30);inp.value=nv;onChange(nv);}
+    if(e.key==='ArrowUp'){e.preventDefault();const nv=addMin(inp.value,5);inp.value=nv;onChange(nv);}
+    if(e.key==='ArrowDown'){e.preventDefault();const nv=addMin(inp.value,-5);inp.value=nv;onChange(nv);}
   });
 
   const dec=h('button',{class:'step-btn',type:'button'});dec.textContent='−';
-  dec.addEventListener('click',e=>{e.preventDefault();const nv=addMin(inp.value,-30);inp.value=nv;onChange(nv);});
+  dec.addEventListener('click',e=>{e.preventDefault();const nv=addMin(inp.value,-5);inp.value=nv;onChange(nv);});
   const inc=h('button',{class:'step-btn',type:'button'});inc.textContent='+';
-  inc.addEventListener('click',e=>{e.preventDefault();const nv=addMin(inp.value,30);inp.value=nv;onChange(nv);});
+  inc.addEventListener('click',e=>{e.preventDefault();const nv=addMin(inp.value,5);inp.value=nv;onChange(nv);});
 
   return div('stepper',dec,inp,inc);
 }
@@ -1669,6 +1669,18 @@ function renderStep1() {
 
   wBlock.append(r1,r2,r3);
   el.appendChild(wBlock);
+
+  // Max daily trades
+  const dtBlock=div('');
+  dtBlock.appendChild(slabel('Operações por dia','Limite máximo de operações que podem ser abertas no mesmo dia. Zero = sem limite.'));
+  const dtRow=div('');dtRow.style.cssText='display:flex;align-items:center;gap:9px;flex-wrap:wrap';
+  dtRow.appendChild(stepper(cfg.maxDailyTrades,0,100,'',v=>{cfg.maxDailyTrades=v;}));
+  const dtHint=div('');dtHint.style.cssText='font-size:11px;color:#6B6B80';
+  dtHint.textContent=cfg.maxDailyTrades===0?'Sem limite — abre quantas operações o mercado gerar':'Máximo de '+cfg.maxDailyTrades+' operação'+(cfg.maxDailyTrades>1?'ões':'')+' por dia';
+  dtRow.appendChild(dtHint);
+  dtBlock.appendChild(dtRow);
+  el.appendChild(dtBlock);
+
   return el;
 }
 
@@ -1946,7 +1958,7 @@ function renderConfirm() {
   const dirText=cfg.direction==='long'?'Apenas compra':cfg.direction==='short'?'Apenas venda':'Compra e venda';
   const condText=cfg.conditions.length===0?'<span style="color:#6B6B80">Sem condições configuradas</span>':cfg.conditions.map((c,i)=>(i>0?`<strong style="color:#00D4AA"> E </strong>`:'')+condLabel(c)).join('');
   box.append(
-    row('Mercado',`<span style="color:#00D4AA">${asset?.n||cfg.asset} (${cfg.asset})</span> · ${cfg.tf} · Leitura ${cfg.tStart} · Última abertura ${cfg.tLastEntry} · Encerramento ${cfg.tEnd}`),
+    row('Mercado',`<span style="color:#00D4AA">${asset?.n||cfg.asset} (${cfg.asset})</span> · ${cfg.tf} · Leitura ${cfg.tStart} · Última abertura ${cfg.tLastEntry} · Encerramento ${cfg.tEnd}${cfg.maxDailyTrades>0?' · Máx '+cfg.maxDailyTrades+' ops/dia':''}`),
     row('Condições de entrada',condText),
     row('Gatilho',`${dirText} · ${entryMap[cfg.entryType]} · Validade: ${cfg.validity} candles`),
     row('Stop Loss',stopDesc),
@@ -2265,6 +2277,7 @@ function renderApp() {
   const summRows=[
     ['Ativo', sc2.asset+' · '+sc2.tf],
     ['Janela', sc2.tStart+' → '+sc2.tLastEntry+' → '+sc2.tEnd],
+    ['Ops/dia', sc2.maxDailyTrades>0?sc2.maxDailyTrades+' máx':'Sem limite'],
     ['Condições', md>=1?(sc2.conditions.length===0?'Nenhuma':sc2.conditions.length+' condição'+(sc2.conditions.length>1?'ões':'')):pending],
     ['Gatilho', md>=2?((sc2.direction==='long'?'Compra':sc2.direction==='short'?'Venda':'Ambos')+' · '+{breakout:'Rompimento',next_open:'Próx. abertura',sig_close:'Fechamento'}[sc2.entryType]):pending],
     ['Stop', md>=3?({fixed:sc2.stopPts+' pts',hl_candle:'Candle signal',n_candles:sc2.stopCandles+' candles'}[sc2.stopType]):pending],
