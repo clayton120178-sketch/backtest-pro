@@ -255,6 +255,29 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .nosub-icon{width:56px;height:56px;border-radius:14px;background:var(--acd2);border:1px solid rgba(0,212,170,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
 .nosub-title{font-size:22px;font-weight:700;color:var(--tx);margin-bottom:8px}
 .nosub-sub{font-size:14px;color:var(--txs);max-width:400px;margin:0 auto 28px;line-height:1.6}
+/* History */
+.history-screen{max-width:860px;margin:0 auto;padding:32px 20px}
+.history-title{font-size:22px;font-weight:700;color:var(--tx);margin-bottom:4px}
+.history-sub{font-size:13px;color:var(--txs);margin-bottom:24px}
+.history-list{display:flex;flex-direction:column;gap:10px}
+.history-card{background:var(--bg1);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;cursor:pointer;transition:border-color .15s}
+.history-card:hover{border-color:var(--bdh)}
+.history-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.history-card-strat{font-size:14px;font-weight:600;color:var(--tx);flex:1}
+.history-card-date{font-size:11px;color:var(--txs);font-family:'JetBrains Mono'}
+.history-card-verdict{font-size:12px;font-weight:800;letter-spacing:.06em;padding:3px 10px;border-radius:6px}
+.history-card-verdict.ok{color:#10B981;background:rgba(16,185,129,.1)}
+.history-card-verdict.bad{color:#EF4444;background:rgba(239,68,68,.1)}
+.history-card-metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+@media(max-width:600px){.history-card-metrics{grid-template-columns:repeat(3,1fr)}}
+.history-card-metric{display:flex;flex-direction:column;gap:2px}
+.history-card-metric-label{font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.05em}
+.history-card-metric-val{font-size:13px;font-weight:600;font-family:'JetBrains Mono';color:var(--tx)}
+.history-card-conds{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.history-card-cond{font-size:10px;padding:2px 8px;border-radius:4px;background:var(--bg2);border:1px solid var(--bd);color:var(--txs);font-family:'JetBrains Mono'}
+.history-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:40vh;text-align:center}
+.history-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--txs);background:none;border:none;cursor:pointer;font-family:inherit;margin-bottom:20px;padding:0;transition:color .15s}
+.history-back:hover{color:var(--tx)}
 /* Tooltip */
 .tip-wrap{position:relative;display:inline-flex}
 .tip-box{position:absolute;bottom:130%;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--tx);line-height:1.5;width:210px;z-index:500;box-shadow:0 6px 24px rgba(0,0,0,.7);pointer-events:none;font-weight:400}
@@ -293,6 +316,10 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
       </div>
       <div class="avatar-menu" id="avatar-menu">
         <div class="avatar-name" id="avatar-name">—</div>
+        <button class="avatar-item" onclick="showScreen('history');document.getElementById('avatar-menu').classList.remove('open')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Meus backtests
+        </button>
         <button class="avatar-item" onclick="showScreen('plans');document.getElementById('avatar-menu').classList.remove('open')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
           Minha assinatura
@@ -2208,6 +2235,7 @@ function showScreen(name) {
   if (name === 'nosub')   { main.appendChild(renderNoSub());   return; }
   if (name === 'plans')   { main.appendChild(renderPlans());   return; }
   if (name === 'payment') { main.appendChild(renderPayment()); return; }
+  if (name === 'history') { main.appendChild(renderHistory()); return; }
 }
 
 function renderNoSub() {
@@ -2440,6 +2468,83 @@ function showPaySuccess() {
     </div></div>`;
 }
 
+// ─── HISTORY SCREEN ──────────────────────────────────────────
+const MOCK_HISTORY = [
+  {id:1,date:'21/03/2026 14:32',asset:'WIN$N',tf:'5m',conditions:['RSI(14) cruza acima de 30','SMA(200) — Preço está acima'],direction:'long',entryType:'Rompimento',stopPts:200,tpRR:2,result:42380,trades:3847,winRate:42.3,maxDD:-8.2,profitFactor:1.34,payoff:1.62,recoveryFactor:3.42},
+  {id:2,date:'20/03/2026 09:15',asset:'WDO$N',tf:'15m',conditions:['Bollinger(20, 2σ) — Preço toca banda inf.','Volume > Média'],direction:'long',entryType:'Abertura próximo candle',stopPts:150,tpRR:3,result:-18720,trades:2156,winRate:38.1,maxDD:-15.4,profitFactor:0.87,payoff:1.41,recoveryFactor:0.8},
+  {id:3,date:'19/03/2026 16:48',asset:'WIN$N',tf:'5m',conditions:['MACD — cruza acima do sinal','EMA(21) — Preço cruza acima'],direction:'both',entryType:'Rompimento',stopPts:300,tpRR:2,result:67450,trades:5210,winRate:44.7,maxDD:-6.1,profitFactor:1.52,payoff:1.38,recoveryFactor:5.1},
+  {id:4,date:'18/03/2026 11:20',asset:'EURUSD',tf:'60m',conditions:['RSI(14) cruza abaixo de 70'],direction:'short',entryType:'Fechamento do candle',stopPts:500,tpRR:2,result:12890,trades:890,winRate:40.5,maxDD:-11.3,profitFactor:1.18,payoff:1.72,recoveryFactor:1.9},
+  {id:5,date:'17/03/2026 08:45',asset:'WIN$N',tf:'2m',conditions:['Estocástico(14) cruza acima de 20','VWAP — Preço está acima'],direction:'long',entryType:'Rompimento',stopPts:100,tpRR:3,result:-31200,trades:6820,winRate:35.2,maxDD:-18.7,profitFactor:0.78,payoff:1.65,recoveryFactor:0.5},
+  {id:6,date:'16/03/2026 15:10',asset:'WIN$N',tf:'5m',conditions:['SAR — Preço cruza acima do SAR','ADX(14) está acima de 25'],direction:'long',entryType:'Abertura próximo candle',stopPts:250,tpRR:2,result:28900,trades:2940,winRate:43.8,maxDD:-9.5,profitFactor:1.29,payoff:1.48,recoveryFactor:2.8},
+  {id:7,date:'15/03/2026 10:30',asset:'WDO$N',tf:'5m',conditions:['CCI(20) cruza acima de -100','HiLo virou compra'],direction:'long',entryType:'Rompimento',stopPts:180,tpRR:2,result:8450,trades:1780,winRate:41.2,maxDD:-12.1,profitFactor:1.08,payoff:1.52,recoveryFactor:1.2},
+];
+
+function renderHistory() {
+  const el=document.createElement('div');el.className='history-screen';
+  el.innerHTML=`
+    <button class="history-back" onclick="renderApp()">
+      ${IC.back} Voltar ao backtester
+    </button>
+    <div class="history-title">Meus Backtests</div>
+    <div class="history-sub">${MOCK_HISTORY.length} testes realizados</div>
+  `;
+
+  if(MOCK_HISTORY.length===0){
+    const empty=div('history-empty');
+    empty.innerHTML=`
+      <div style="width:56px;height:56px;border-radius:14px;background:var(--acd2);border:1px solid rgba(0,212,170,.2);display:flex;align-items:center;justify-content:center;margin-bottom:20px">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div style="font-size:16px;font-weight:600;color:#E8E8ED;margin-bottom:6px">Nenhum backtest realizado</div>
+      <div style="font-size:13px;color:#8888A0;max-width:320px;line-height:1.5">Monte sua primeira estratégia no wizard e rode um backtest para ver os resultados aqui.</div>
+    `;
+    el.appendChild(empty);
+    return el;
+  }
+
+  const list=div('history-list');
+
+  MOCK_HISTORY.forEach(bt=>{
+    const ok=bt.result>0;
+    const card=div('history-card');
+
+    // Top row: strategy + date + verdict
+    const top=div('history-card-top');
+    const strat=div('history-card-strat');
+    strat.textContent=`${bt.asset} · ${bt.tf} · ${bt.direction==='long'?'Compra':bt.direction==='short'?'Venda':'Compra e Venda'}`;
+    const date=div('history-card-date');date.textContent=bt.date;
+    const verdict=div('history-card-verdict '+(ok?'ok':'bad'));
+    verdict.textContent=ok?'LUCRATIVA':'DEFICITÁRIA';
+    top.append(strat,verdict,date);
+    card.appendChild(top);
+
+    // Conditions tags
+    const conds=div('history-card-conds');
+    bt.conditions.forEach(c=>{const tag=div('history-card-cond');tag.textContent=c;conds.appendChild(tag);});
+    card.appendChild(conds);
+
+    // Metrics row
+    const metrics=div('history-card-metrics');
+    const addMetric=(label,val,color)=>{
+      const m=div('history-card-metric');
+      const l=div('history-card-metric-label');l.textContent=label;
+      const v=div('history-card-metric-val');v.textContent=val;if(color)v.style.color=color;
+      m.append(l,v);metrics.appendChild(m);
+    };
+    addMetric('Resultado',(ok?'+':'')+'R$ '+bt.result.toLocaleString('pt-BR'),ok?'#10B981':'#EF4444');
+    addMetric('Trades',bt.trades.toLocaleString('pt-BR'));
+    addMetric('Win Rate',bt.winRate.toFixed(1)+'%','#F59E0B');
+    addMetric('Max DD',bt.maxDD.toFixed(1)+'%','#EF4444');
+    addMetric('Profit Factor',bt.profitFactor.toFixed(2),bt.profitFactor>1?'#00D4AA':'#EF4444');
+    card.appendChild(metrics);
+
+    list.appendChild(card);
+  });
+
+  el.appendChild(list);
+  return el;
+}
+
 // ─── AUTH MODAL ───────────────────────────────────────────────
 function showAuthModal(mode) {
   document.getElementById('auth-overlay')?.remove();
@@ -2503,7 +2608,7 @@ db.auth.onAuthStateChange(async (event, session) => {
     updateAvatarUI();
     document.getElementById('auth-overlay')?.remove();
     // Don't override if user is already on plans/payment screens
-    if (currentScreen === 'plans' || currentScreen === 'payment') return;
+    if (currentScreen === 'plans' || currentScreen === 'payment' || currentScreen === 'history') return;
     if (currentSub) { renderApp(); } else { showScreen('nosub'); }
   }
   if (event === 'INITIAL_SESSION') {
