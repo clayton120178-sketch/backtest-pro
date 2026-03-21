@@ -1660,17 +1660,17 @@ function renderStep1() {
 
   const r1=div('');r1.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:10px;flex-wrap:wrap';
   const lb1=div('');lb1.style.cssText='font-size:13px;color:#8888A0;min-width:120px';lb1.textContent='Início da leitura';
-  r1.append(lb1,timeStepper(cfg.tStart,v=>{cfg.tStart=v;}));
+  r1.append(lb1,timeStepper(cfg.tStart,v=>{cfg.tStart=v;renderApp();}));
 
   const r2=div('');r2.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:10px;flex-wrap:wrap';
   const lb2=div('');lb2.style.cssText='font-size:13px;color:#8888A0;min-width:120px';lb2.textContent='Última abertura';
   const tip2=div('');tip2.style.cssText='font-size:11px;color:#6B6B80';tip2.textContent='Nenhuma operação nova após este horário';
-  r2.append(lb2,timeStepper(cfg.tLastEntry,v=>{cfg.tLastEntry=v;}),tip2);
+  r2.append(lb2,timeStepper(cfg.tLastEntry,v=>{cfg.tLastEntry=v;renderApp();}),tip2);
 
   const r3=div('');r3.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:4px;flex-wrap:wrap';
   const lb3=div('');lb3.style.cssText='font-size:13px;color:#8888A0;min-width:120px';lb3.textContent='Encerramento';
   const tip3=div('');tip3.style.cssText='font-size:11px;color:#6B6B80';tip3.textContent='Posições abertas são encerradas neste horário';
-  r3.append(lb3,timeStepper(cfg.tEnd,v=>{cfg.tEnd=v;}),tip3);
+  r3.append(lb3,timeStepper(cfg.tEnd,v=>{cfg.tEnd=v;renderApp();}),tip3);
 
   wBlock.append(r1,r2,r3);
   el.appendChild(wBlock);
@@ -1682,7 +1682,7 @@ function renderStep1() {
   const dtHint=div('');dtHint.style.cssText='font-size:11px;color:#6B6B80';
   function updateDtHint(v){dtHint.textContent=v===0?'Sem limite':'Máximo de '+v+(v>1?' operações':' operação')+' por dia';}
   updateDtHint(cfg.maxDailyTrades);
-  dtRow.appendChild(stepper(cfg.maxDailyTrades,0,100,'',v=>{cfg.maxDailyTrades=v;updateDtHint(v);}));
+  dtRow.appendChild(stepper(cfg.maxDailyTrades,0,100,'',v=>{cfg.maxDailyTrades=v;renderApp();}));
   dtRow.appendChild(dtHint);
   dtBlock.appendChild(dtRow);
   el.appendChild(dtBlock);
