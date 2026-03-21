@@ -1675,7 +1675,7 @@ function renderStep1() {
   dtBlock.appendChild(slabel('Operações por dia','Limite máximo de operações que podem ser abertas no mesmo dia. Zero = sem limite.'));
   const dtRow=div('');dtRow.style.cssText='display:flex;align-items:center;gap:9px;flex-wrap:wrap';
   const dtHint=div('');dtHint.style.cssText='font-size:11px;color:#6B6B80';
-  function updateDtHint(v){dtHint.textContent=v===0?'Sem limite':'Máximo de '+v+' operação'+(v>1?'ões':'')+' por dia';}
+  function updateDtHint(v){dtHint.textContent=v===0?'Sem limite':'Máximo de '+v+(v>1?' operações':' operação')+' por dia';}
   updateDtHint(cfg.maxDailyTrades);
   dtRow.appendChild(stepper(cfg.maxDailyTrades,0,100,'',v=>{cfg.maxDailyTrades=v;updateDtHint(v);}));
   dtRow.appendChild(dtHint);
