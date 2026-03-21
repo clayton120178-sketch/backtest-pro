@@ -1879,7 +1879,7 @@ function renderProgressBar() {
   STEPS.forEach((s,i)=>{
     const done=i<state.maxDone;const active=i===state.step;
     const btn_=h('button',{class:'prog-step',disabled:i>state.maxDone});
-    btn_.addEventListener('click',()=>{if(i<=state.maxDone&&i!==state.step){state.dir=i>state.step?'fwd':'bwd';state.animate=true;state.step=i;renderApp();}});
+    btn_.addEventListener('click',()=>{if(i<=state.maxDone&&i!==state.step){if(i>1&&state.cfg.conditions.length===0)return;state.dir=i>state.step?'fwd':'bwd';state.animate=true;state.step=i;renderApp();}});
     const circle=div('prog-circle'+(done?' done':active?' active':''));
     if(done) circle.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`;
     else circle.innerHTML=IC[s.icon]||'';
@@ -1931,6 +1931,7 @@ function renderApp() {
   }});
   if(state.step<4) fwdBtn.innerHTML='Avançar '+IC.fwd;
   else fwdBtn.innerHTML='Confirmar estratégia '+IC.fwd;
+  if(state.step===1 && state.cfg.conditions.length===0){fwdBtn.disabled=true;fwdBtn.style.opacity='0.35';fwdBtn.style.cursor='not-allowed';fwdBtn.style.pointerEvents='none';}
 
   nav.append(backBtn,fwdBtn);left.appendChild(nav);
   two.appendChild(left);
