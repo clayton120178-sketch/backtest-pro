@@ -46,6 +46,14 @@ Backtest Pro é um produto da [alphaQuant](https://alphaquant.com.br) que permit
 
 Automático via Vercel a cada push no `main`.
 
+- **URL de produção:** [backtestpro-app.vercel.app](https://backtestpro-app.vercel.app)
+- **Landing page:** `/` → `index.html`
+- **Backtester:** `/app.html`
+- **Repositório:** [github.com/clayton120178-sketch/backtest-pro](https://github.com/clayton120178-sketch/backtest-pro)
+- **Branch:** `main`
+
+Pastas `docs/` e `supabase/` não afetam o deploy — Vercel serve apenas os arquivos estáticos da raiz.
+
 ## Documentação
 
 - **[docs/SUPABASE.md](docs/SUPABASE.md)** — Schema, RLS policies, Edge Functions, secrets

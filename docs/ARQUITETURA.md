@@ -14,6 +14,32 @@ O Backtest Pro **não gera código**. Usa um EA universal pré-compilado (.ex5) 
 - HTML + CSS + JS vanilla, single-file
 - Deploy automático via GitHub → Vercel
 
+## Hospedagem — Vercel
+
+### Dados do projeto
+- **URL de produção:** https://backtestpro-app.vercel.app
+- **Repositório vinculado:** [github.com/clayton120178-sketch/backtest-pro](https://github.com/clayton120178-sketch/backtest-pro)
+- **Branch de deploy:** `main`
+- **Framework:** None (static files)
+
+### Como funciona o deploy
+1. Push no branch `main` do GitHub
+2. Vercel detecta automaticamente e faz build
+3. Serve os arquivos estáticos da raiz (`index.html`, `app.html`)
+4. Pastas `docs/` e `supabase/` são ignoradas (não afetam o deploy)
+
+### Rotas
+| URL | Arquivo |
+|---|---|
+| `backtestpro-app.vercel.app` | `index.html` (landing page) |
+| `backtestpro-app.vercel.app/app.html` | `app.html` (backtester) |
+
+### Domínio customizado
+Ainda não configurado. Quando definido, basta adicionar nas configurações do projeto Vercel (Settings → Domains) e apontar o DNS.
+
+### Variáveis de ambiente
+Não há variáveis de ambiente configuradas na Vercel. As chaves públicas (Supabase anon key, MP public key) estão hardcoded no `app.html` — são chaves públicas por design, seguras para exposição no frontend. Chaves secretas ficam exclusivamente nas Edge Functions do Supabase.
+
 ### Backend / Banco (Supabase)
 - Postgres para dados (users, subscriptions, backtests)
 - Auth embutido (email + Google OAuth)
