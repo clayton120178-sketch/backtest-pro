@@ -582,56 +582,50 @@ function condLabel(c) {
 }
 
 // ─── EQUITY CHART DATA ─────────────────────────────────────────
-const EQ = (() => {
-  const d=[1200,-800,2400,600,-1400,3200,1800,400,-900,2600,1400,-600,3800,2200,-1600,800,4200,1800,-2200,3400,2800,-400,1600,3200,-1800,2400,4600,-800,3000,1400,600,-1200,4800,2200,800,-2600,3600,1800,-600,4200,2800,400,-1600,3400,5200,-1000,2200,1600,800,3800,-2400,4600,1800,600,-800,3200,2400,-1200,4800,2600,800,-400,3600,5400,-1600,2800,1200,400,3000,-800,4200,2600,1000,-600,3800,2200,5600,-2000,3400,1800,1200,2800,4400,-400,1600,600,2200,3800,-800];
+// ─── EQUITY DATA (mutable — swapped when viewing history) ────
+function generateEQ(seed,n,bias) {
+  // Seeded pseudo-random for reproducible mock data
+  let s=seed;const rng=()=>{s=(s*16807+0)%2147483647;return(s&0x7fffffff)/2147483647;};
+  const d=[];for(let i=0;i<n;i++){const base=(rng()-0.48+bias)*2000;d.push(Math.round(base));}
   let v=0,peak=0;
-  return d.map((x,i)=>{v+=x;if(v>peak)peak=v;const yr=2019+Math.floor(i/12),mo=i%12;return{v:Math.round(v),dd:Math.round(Math.min(0,v-peak)),pnl:x,t:(new Date(yr,mo)).toLocaleDateString('pt-BR',{month:'short'}).replace('.','')+" '"+String(yr).slice(2)};});
-})();
+  return d.map((x,i)=>{v+=x;if(v>peak)peak=v;const yr=2019+Math.floor(i*87/n/12),mo=Math.floor((i*87/n)%12);return{v:Math.round(v),dd:Math.round(Math.min(0,v-peak)),pnl:x,t:(new Date(2019+Math.floor(i*87/n/12),Math.floor((i*87/n)%12))).toLocaleDateString('pt-BR',{month:'short'}).replace('.','')+" '"+String(2019+Math.floor(i*87/n/12)).slice(2)};});
+}
 
-// ─── EQUITY ANALYSIS (computed from EQ) ────────────────────────
-const EQ_ANALYSIS = (() => {
-  const cap=100000;
-  // Max drawdown by percentage
+function computeAnalysis(eq,cap) {
   let peak=cap,peakIdx=0,maxDDPct=0,maxDDVal=0,maxDDIdx=0,maxDDPeakIdx=0;
-  for(let i=0;i<EQ.length;i++){
-    const eq=cap+EQ[i].v;
-    if(eq>peak){peak=eq;peakIdx=i;}
-    else{const ddv=peak-eq,ddp=peak>0?(ddv/peak)*100:0;
-    if(ddp>maxDDPct){maxDDPct=ddp;maxDDVal=ddv;maxDDIdx=i;maxDDPeakIdx=peakIdx;}}
+  for(let i=0;i<eq.length;i++){
+    const e=cap+eq[i].v;
+    if(e>peak){peak=e;peakIdx=i;}
+    else{const ddv=peak-e,ddp=peak>0?(ddv/peak)*100:0;if(ddp>maxDDPct){maxDDPct=ddp;maxDDVal=ddv;maxDDIdx=i;maxDDPeakIdx=peakIdx;}}
   }
-  // TUW periods
   peak=cap;let uwStart=null;const uwPeriods=[];
-  for(let i=0;i<EQ.length;i++){
-    const eq=cap+EQ[i].v;
-    if(eq>=peak){if(uwStart!==null){uwPeriods.push({s:uwStart,e:i-1});uwStart=null;}peak=eq;}
-    else{if(uwStart===null)uwStart=i;}
-  }
-  if(uwStart!==null)uwPeriods.push({s:uwStart,e:EQ.length-1});
-  // TUW stats
+  for(let i=0;i<eq.length;i++){const e=cap+eq[i].v;if(e>=peak){if(uwStart!==null){uwPeriods.push({s:uwStart,e:i-1});uwStart=null;}peak=e;}else{if(uwStart===null)uwStart=i;}}
+  if(uwStart!==null)uwPeriods.push({s:uwStart,e:eq.length-1});
   const uwLens=uwPeriods.map(p=>p.e-p.s+1);
   const tuwMax=uwLens.length?Math.max(...uwLens):0;
   const tuwAvg=uwLens.length?uwLens.reduce((a,b)=>a+b,0)/uwLens.length:0;
-  // Max losing streak
   let maxStreak=0,curStreak=0,streakStart=0,mStreakS=0,mStreakE=0;
-  for(let i=0;i<EQ.length;i++){
-    if(EQ[i].pnl<0){if(curStreak===0)streakStart=i;curStreak++;if(curStreak>maxStreak){maxStreak=curStreak;mStreakS=streakStart;mStreakE=i;}}
-    else curStreak=0;
-  }
-  // Trade stats
-  const wins=EQ.filter(d=>d.pnl>0),losses=EQ.filter(d=>d.pnl<0);
+  for(let i=0;i<eq.length;i++){if(eq[i].pnl<0){if(curStreak===0)streakStart=i;curStreak++;if(curStreak>maxStreak){maxStreak=curStreak;mStreakS=streakStart;mStreakE=i;}}else curStreak=0;}
+  const wins=eq.filter(d=>d.pnl>0),losses=eq.filter(d=>d.pnl<0);
   const avgWin=wins.length?wins.reduce((a,b)=>a+b.pnl,0)/wins.length:0;
   const avgLoss=losses.length?Math.abs(losses.reduce((a,b)=>a+b.pnl,0)/losses.length):0;
   const totalProfit=wins.reduce((a,b)=>a+b.pnl,0);
   const totalLoss=Math.abs(losses.reduce((a,b)=>a+b.pnl,0));
   const payoff=avgLoss>0?avgWin/avgLoss:0;
   const profitFactor=totalLoss>0?totalProfit/totalLoss:0;
-  const recoveryFactor=maxDDVal>0?(cap+EQ[EQ.length-1].v-cap)/maxDDVal:0;
-  const winRate=EQ.length>0?(wins.length/EQ.length)*100:0;
+  const recoveryFactor=maxDDVal>0?(cap+eq[eq.length-1].v-cap)/maxDDVal:0;
+  const winRate=eq.length>0?(wins.length/eq.length)*100:0;
   const viés=(winRate/100)*avgWin-((100-winRate)/100)*avgLoss;
-  return {maxDDPct,maxDDVal,maxDDIdx,maxDDPeakIdx,uwPeriods,tuwMax,tuwAvg,maxStreak,mStreakS,mStreakE,
-    wins:wins.length,losses:losses.length,avgWin,avgLoss,payoff,profitFactor,recoveryFactor,winRate,viés,
-    totalProfit,totalLoss,cap};
-})();
+  return{maxDDPct,maxDDVal,maxDDIdx,maxDDPeakIdx,uwPeriods,tuwMax,tuwAvg,maxStreak,mStreakS,mStreakE,wins:wins.length,losses:losses.length,avgWin,avgLoss,payoff,profitFactor,recoveryFactor,winRate,viés,totalProfit,totalLoss,cap};
+}
+
+// Default EQ (for wizard backtest result)
+const DEFAULT_EQ_DATA=[1200,-800,2400,600,-1400,3200,1800,400,-900,2600,1400,-600,3800,2200,-1600,800,4200,1800,-2200,3400,2800,-400,1600,3200,-1800,2400,4600,-800,3000,1400,600,-1200,4800,2200,800,-2600,3600,1800,-600,4200,2800,400,-1600,3400,5200,-1000,2200,1600,800,3800,-2400,4600,1800,600,-800,3200,2400,-1200,4800,2600,800,-400,3600,5400,-1600,2800,1200,400,3000,-800,4200,2600,1000,-600,3800,2200,5600,-2000,3400,1800,1200,2800,4400,-400,1600,600,2200,3800,-800];
+let EQ=(()=>{let v=0,peak=0;return DEFAULT_EQ_DATA.map((x,i)=>{v+=x;if(v>peak)peak=v;const yr=2019+Math.floor(i/12),mo=i%12;return{v:Math.round(v),dd:Math.round(Math.min(0,v-peak)),pnl:x,t:(new Date(yr,mo)).toLocaleDateString('pt-BR',{month:'short'}).replace('.','')+" '"+String(yr).slice(2)};});})();
+let EQ_ANALYSIS=computeAnalysis(EQ,100000);
+
+// State for history detail view
+let viewingHistoryItem=null;
 
 const HIST = [
   {r:'-5R+',c:12,t:'loss'},{r:'-4R',c:23,t:'loss'},{r:'-3R',c:42,t:'loss'},{r:'-2R',c:98,t:'loss'},{r:'-1R',c:220,t:'loss'},
@@ -1929,21 +1923,62 @@ function renderLoading() {
 }
 
 // ─── RESULTS ─────────────────────────────────────────────────
-const METRICS=[
-  {label:'Total de Trades',val:String(EQ.length),color:'#E8E8ED',tip:'Número total de operações abertas e encerradas no período.'},
-  {label:'Taxa de Acerto',val:EQ_ANALYSIS.winRate.toFixed(1)+'%',color:'#F59E0B',pct:EQ_ANALYSIS.winRate,tip:'Percentual de operações encerradas com lucro.'},
-  {label:'Lucro Total',val:(EQ[EQ.length-1].v>=0?'+':'')+'R$ '+Math.abs(EQ[EQ.length-1].v).toLocaleString('pt-BR'),color:EQ[EQ.length-1].v>=0?'#10B981':'#EF4444',tip:'Resultado financeiro acumulado de todas as operações.'},
-  {label:'Max Drawdown',val:'−'+EQ_ANALYSIS.maxDDPct.toFixed(2)+'%',color:'#EF4444',tip:'Maior queda percentual do capital a partir de um pico.'},
-  {label:'Profit Factor',val:EQ_ANALYSIS.profitFactor.toFixed(2),color:EQ_ANALYSIS.profitFactor>1?'#00D4AA':'#EF4444',tip:'Razão entre lucros totais e perdas totais. Acima de 1 = lucrativo.'},
-  {label:'Payoff',val:EQ_ANALYSIS.payoff.toFixed(2),color:EQ_ANALYSIS.payoff>1?'#10B981':'#F59E0B',tip:'Razão entre média de ganho e média de perda. Payoff > 1 = ganhos médios maiores que perdas médias.'},
-  {label:'Recovery Factor',val:EQ_ANALYSIS.recoveryFactor.toFixed(2),color:EQ_ANALYSIS.recoveryFactor>2?'#10B981':'#F59E0B',tip:'Lucro total dividido pelo max drawdown. Mede a capacidade de recuperação.'},
-  {label:'Rentabilidade',val:((EQ[EQ.length-1].v/EQ_ANALYSIS.cap)*100).toFixed(2)+'%',color:EQ[EQ.length-1].v>=0?'#10B981':'#EF4444',tip:'Retorno percentual sobre o capital inicial.'},
-];
+function getMetrics(){
+  const A=EQ_ANALYSIS,last=EQ[EQ.length-1].v;
+  return[
+    {label:'Total de Trades',val:String(EQ.length),color:'#E8E8ED'},
+    {label:'Taxa de Acerto',val:A.winRate.toFixed(1)+'%',color:'#F59E0B',pct:A.winRate},
+    {label:'Lucro Total',val:(last>=0?'+':'')+'R$ '+Math.abs(last).toLocaleString('pt-BR'),color:last>=0?'#10B981':'#EF4444'},
+    {label:'Max Drawdown',val:'−'+A.maxDDPct.toFixed(2)+'%',color:'#EF4444'},
+    {label:'Profit Factor',val:A.profitFactor.toFixed(2),color:A.profitFactor>1?'#00D4AA':'#EF4444'},
+    {label:'Payoff',val:A.payoff.toFixed(2),color:A.payoff>1?'#10B981':'#F59E0B'},
+    {label:'Recovery Factor',val:A.recoveryFactor.toFixed(2),color:A.recoveryFactor>2?'#10B981':'#F59E0B'},
+    {label:'Rentabilidade',val:((last/A.cap)*100).toFixed(2)+'%',color:last>=0?'#10B981':'#EF4444'},
+  ];
+}
+
+function viewHistoryItem(id){
+  const bt=MOCK_HISTORY.find(b=>b.id===id);
+  if(!bt)return;
+  viewingHistoryItem=bt;
+  // Generate unique equity curve for this backtest
+  const bias=bt.result>0?0.04:-0.02;
+  EQ=generateEQ(bt.id*7919,bt.trades>200?90:bt.trades,bias);
+  EQ_ANALYSIS=computeAnalysis(EQ,100000);
+  state.screen='results';
+  const main=document.getElementById('main');
+  main.replaceChildren(renderResults());
+}
+
+function exitHistoryDetail(){
+  viewingHistoryItem=null;
+  // Restore default EQ
+  EQ=(()=>{let v=0,peak=0;return DEFAULT_EQ_DATA.map((x,i)=>{v+=x;if(v>peak)peak=v;const yr=2019+Math.floor(i/12),mo=i%12;return{v:Math.round(v),dd:Math.round(Math.min(0,v-peak)),pnl:x,t:(new Date(yr,mo)).toLocaleDateString('pt-BR',{month:'short'}).replace('.','')+" '"+String(yr).slice(2)};});})();
+  EQ_ANALYSIS=computeAnalysis(EQ,100000);
+  showScreen('history');
+}
 
 function renderResults() {
-  const A=EQ_ANALYSIS;
+  const A=EQ_ANALYSIS;const METRICS=getMetrics();
   const last=EQ[EQ.length-1].v;const ok=last>0;
   const el=div(state.animate?'aUp':'');el.style.maxWidth='860px';
+
+  // ── History header (when viewing from history) ──
+  if(viewingHistoryItem){
+    const bt=viewingHistoryItem;
+    const hdr=div('');hdr.style.cssText='margin-bottom:20px';
+    const backBtn=h('button',{class:'history-back',onclick:exitHistoryDetail});
+    backBtn.innerHTML=IC.back+' Voltar ao histórico';
+    const info=div('');info.style.cssText='display:flex;align-items:center;gap:12px;flex-wrap:wrap';
+    const title=div('');title.style.cssText='font-size:18px;font-weight:700;color:#E8E8ED';title.textContent=`${bt.asset} · ${bt.tf}`;
+    const dir=div('');dir.style.cssText='font-size:12px;color:#8888A0';dir.textContent=bt.direction==='long'?'Compra':bt.direction==='short'?'Venda':'Compra e Venda';
+    const date=div('');date.style.cssText='font-size:11px;color:#6B6B80;font-family:JetBrains Mono';date.textContent=bt.date;
+    info.append(title,dir,date);
+    const conds=div('');conds.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin-top:8px';
+    bt.conditions.forEach(c=>{const tag=div('');tag.style.cssText='font-size:10px;padding:2px 8px;border-radius:4px;background:#1A1A28;border:1px solid #2A2A3C;color:#8888A0;font-family:JetBrains Mono';tag.textContent=c;conds.appendChild(tag);});
+    hdr.append(backBtn,info,conds);
+    el.appendChild(hdr);
+  }
 
   // ── Verdict ──
   const verdict=div('verdict '+(ok?'ok':'bad'));
@@ -2055,12 +2090,21 @@ function renderResults() {
 
   // ── Actions ──
   const acts=div('');acts.style.cssText='display:flex;gap:9px;flex-wrap:wrap;margin-top:4px';
-  const resetBtn=h('button',{class:'btn btnP',style:{flex:'1 1 auto',justifyContent:'center'},onclick:()=>{state.animate=true;state.screen='wizard';state.step=0;state.maxDone=0;renderApp();}});
-  resetBtn.innerHTML=IC.ref+' Ajustar e testar novamente';
-  const dlBtn=h('button',{class:'btn btnS'});dlBtn.innerHTML=IC.dl+' Exportar PDF';
-  const svBtn=h('button',{class:'btn btnS'});svBtn.innerHTML=IC.save+' Salvar';
-  const shBtn=h('button',{class:'btn btnS'});shBtn.innerHTML=IC.share+' Compartilhar';
-  acts.append(resetBtn,dlBtn,svBtn,shBtn);el.appendChild(acts);
+  if(viewingHistoryItem){
+    const backBtn=h('button',{class:'btn btnP',style:{flex:'1 1 auto',justifyContent:'center'},onclick:exitHistoryDetail});
+    backBtn.innerHTML=IC.back+' Voltar ao histórico';
+    const dlBtn=h('button',{class:'btn btnS'});dlBtn.innerHTML=IC.dl+' Exportar PDF';
+    const shBtn=h('button',{class:'btn btnS'});shBtn.innerHTML=IC.share+' Compartilhar';
+    acts.append(backBtn,dlBtn,shBtn);
+  } else {
+    const resetBtn=h('button',{class:'btn btnP',style:{flex:'1 1 auto',justifyContent:'center'},onclick:()=>{state.animate=true;state.screen='wizard';state.step=0;state.maxDone=0;renderApp();}});
+    resetBtn.innerHTML=IC.ref+' Ajustar e testar novamente';
+    const dlBtn=h('button',{class:'btn btnS'});dlBtn.innerHTML=IC.dl+' Exportar PDF';
+    const svBtn=h('button',{class:'btn btnS'});svBtn.innerHTML=IC.save+' Salvar';
+    const shBtn=h('button',{class:'btn btnS'});shBtn.innerHTML=IC.share+' Compartilhar';
+    acts.append(resetBtn,dlBtn,svBtn,shBtn);
+  }
+  el.appendChild(acts);
   return el;
 }
 
@@ -2507,6 +2551,7 @@ function renderHistory() {
   MOCK_HISTORY.forEach(bt=>{
     const ok=bt.result>0;
     const card=div('history-card');
+    card.addEventListener('click',()=>viewHistoryItem(bt.id));
 
     // Top row: strategy + date + verdict
     const top=div('history-card-top');
