@@ -1002,6 +1002,8 @@ function buildPreview(step,cfg) {
   const tx=(x,y,t,c,s,a)=>{const e=hsvg('text',{x,y,fill:c,'font-size':s||7,'font-family':'JetBrains Mono','font-weight':500,'text-anchor':a||'start'});e.textContent=t;svgEl.appendChild(e);};
   const pa=(d,c,o)=>svgEl.appendChild(hsvg('path',{d,fill:c,'fill-opacity':o||0.12}));
   const cir=(x,y,c,r)=>svgEl.appendChild(hsvg('circle',{cx:x,cy:y,r:r||3,fill:c,'fill-opacity':0.3,stroke:c,'stroke-width':1}));
+  // Badge: text with opaque background pill
+  const badge=(x,y,t,c,s,a)=>{const fs=s||8;const tw=t.length*(fs*0.62);const ax=a==='end'?x-tw-4:a==='middle'?x-tw/2-2:x-2;rc(ax,y-fs+1,tw+4,fs+3,'#12121A',0.88,3);tx(x,y,t,c,fs,a);};
 
   const candles=[{x:10,o:140,c:128,h:148,l:120},{x:38,o:128,c:145,h:152,l:122},{x:66,o:145,c:137,h:158,l:130},{x:94,o:137,c:152,h:162,l:130},{x:122,o:152,c:142,h:168,l:136},{x:150,o:142,c:158,h:172,l:136},{x:178,o:158,c:148,h:176,l:140},{x:206,o:148,c:162,h:180,l:140},{x:234,o:162,c:150,h:184,l:142},{x:262,o:150,c:165,h:188,l:143}];
 
@@ -1022,7 +1024,7 @@ function buildPreview(step,cfg) {
       const maY=[165,160,155,150,145,140,136,138,142,148];
       const pts=candles.map((c,i)=>`${c.x+9},${maY[i]}`).join(' ');
       pl(pts,col,1.5);
-      tx(candles[0].x,maY[0]-6,cond.id.toUpperCase()+(cond.params?.per?'('+cond.params.per+')':''),col,6);
+      badge(candles[0].x,maY[0]-6,cond.id.toUpperCase()+(cond.params?.per?'('+cond.params.per+')':''),col,8);
       // Signal dot at crossover area
       if(ct.includes('cruza')){cir(candles[6].x+9,maY[6],'#00D4AA',4);}
     }
@@ -1037,14 +1039,14 @@ function buildPreview(step,cfg) {
       pl(mid.map((y,i)=>`${candles[i].x+9},${y-bw}`).join(' '),col,0.8,'3,2');
       pl(mid.map((y,i)=>`${candles[i].x+9},${y+bw}`).join(' '),col,0.8,'3,2');
       pl(mid.map((y,i)=>`${candles[i].x+9},${y}`).join(' '),col,0.8);
-      tx(candles[0].x,mid[0]-bw-4,'BB'+(cond.params?.per?'('+cond.params.per+')':''),col,6);
+      badge(candles[0].x,mid[0]-bw-4,'BB'+(cond.params?.per?'('+cond.params.per+')':''),col,8);
       const isUp=ct.includes('sup');
       cir(candles[5].x+9,mid[5]+(isUp?-bw:bw),'#00D4AA',4);
     }
     else if(cond.id==='vwap'){
       const vwY=[152,150,148,147,146,146,147,148,149,150];
       pl(vwY.map((y,i)=>`${candles[i].x+9},${y}`).join(' '),col,1.5);
-      tx(candles[0].x,vwY[0]-6,'VWAP',col,6);
+      badge(candles[0].x,vwY[0]-6,'VWAP',col,8);
     }
     else if(cond.id==='sar'){
       candles.forEach((cd,i)=>{
@@ -1052,25 +1054,25 @@ function buildPreview(step,cfg) {
         const dy=above?cd.l+10:cd.h-10;
         svgEl.appendChild(hsvg('circle',{cx:cd.x+9,cy:dy,r:2,fill:above?'#EF4444':'#10B981'}));
       });
-      tx(candles[0].x,candles[0].l+18,'SAR',col,6);
+      badge(candles[0].x,candles[0].l+18,'SAR',col,8);
     }
     else if(cond.id==='hilo'){
       for(let i=0;i<10;i++){
         const sell=i<5;const y=sell?candles[i].l+8:candles[i].h-8;
         ln(candles[i].x,y,candles[i].x+18,y,sell?'#EF4444':'#10B981',1.5);
       }
-      tx(candles[0].x,candles[0].l+16,'HiLo',col,6);
+      badge(candles[0].x,candles[0].l+16,'HiLo',col,8);
     }
     else if(cond.id==='prevday'){
       const maxY=125,minY=175;
       ln(5,maxY,295,maxY,'#10B981',0.8,'4,3');ln(5,minY,295,minY,'#EF4444',0.8,'4,3');
-      tx(270,maxY-3,'MÁX','#10B981',5.5);tx(270,minY+8,'MÍN','#EF4444',5.5);
+      badge(270,maxY-3,'MÁX','#10B981',8);badge(270,minY+8,'MÍN','#EF4444',8);
     }
     else if(cond.id==='hilon'){
       const levelY=up?Math.min(...candles.slice(0,7).map(c=>c.h)):Math.max(...candles.slice(0,7).map(c=>c.l));
       ln(candles[0].x,levelY,candles[7].x+18,levelY,col,1,'4,3');
       cir(candles[7].x+9,levelY,'#00D4AA',4);
-      tx(candles[0].x,levelY+(up?-6:10),'N per.',col,5.5);
+      badge(candles[0].x,levelY+(up?-6:10),'N per.',col,8);
     }
     else if(cond.id==='fib'){
       const top=125,bot=180,rng=bot-top;
@@ -1079,7 +1081,7 @@ function buildPreview(step,cfg) {
         const y=bot-rng*lv.f;
         const hl=ct.includes(lv.p.replace('%',''));
         ln(5,y,295,y,hl?'#F59E0B':'#2A2A3C',hl?1:0.5,hl?'':'3,3');
-        if(hl)tx(270,y-3,lv.p,'#F59E0B',5.5);
+        if(hl)badge(270,y-3,lv.p,'#F59E0B',8);
       });
     }
   });
@@ -1123,7 +1125,7 @@ function buildPreview(step,cfg) {
     // Signal candle highlight
     rc(candles[6].x-2,candles[6].h-6,22,candles[6].l-candles[6].h+12,'#00D4AA',0.06,3);
     ln(candles[6].x+9,candles[6].h-10,candles[6].x+9,candles[6].h-20,'#00D4AA',1);
-    tx(candles[6].x-4,candles[6].h-22,'SINAL','#00D4AA',6,'middle');
+    badge(candles[6].x+9,candles[6].h-24,'SINAL','#00D4AA',9,'middle');
   }
 
   // ── Steps 3+: stop/target ──
@@ -1132,18 +1134,18 @@ function buildPreview(step,cfg) {
     const stopDist=cfg.stopType==='fixed'?cfg.stopPts/15:20;
     const stopY=Math.min(entryY+stopDist,chartH-5);
     ln(candles[7].x,stopY,295,stopY,'#EF4444',1.2,'4,2');
-    tx(270,stopY-3,'STOP','#EF4444',6);
+    badge(270,stopY-3,'STOP','#EF4444',9);
 
     let targetY=entryY;
     if(cfg.tpType==='fixed') targetY=Math.max(entryY-cfg.tpPts/15,10);
     else if(cfg.tpType==='rr') targetY=Math.max(entryY-stopDist*cfg.tpRR,10);
     else targetY=entryY-30;
     ln(candles[7].x,targetY,295,targetY,'#10B981',1.2,'4,2');
-    tx(270,targetY-3,'ALVO','#10B981',6);
+    badge(270,targetY-3,'ALVO','#10B981',9);
 
     // Entry line
     ln(candles[7].x,entryY,295,entryY,'#00D4AA',1,'4,2');
-    tx(270,entryY-3,'ENTR','#00D4AA',6);
+    badge(270,entryY-3,'ENTR','#00D4AA',9);
   }
 
   // ── Step 4: trailing ──
@@ -1154,7 +1156,7 @@ function buildPreview(step,cfg) {
       return `${candles[7].x+i*20},${entryY-i*4}`;
     }).join(' ');
     pl(pts,'#F59E0B',1.2,'3,2');
-    tx(candles[7].x+60,entryY-22,'TRAIL','#F59E0B',5.5);
+    badge(candles[7].x+60,entryY-22,'TRAIL','#F59E0B',8);
   }
 
   // ── Oscillator panels (below chart) ──
@@ -1167,7 +1169,7 @@ function buildPreview(step,cfg) {
     svgEl.appendChild(hsvg('rect',{x:5,y:yOff,width:290,height:panelH,rx:3,fill:'none',stroke:'#2A2A3C','stroke-width':0.5}));
 
     const label=({rsi:'RSI',stoch:'STOCH',cci:'CCI',williams:'W%R',macd:'MACD',adx:'ADX',atr:'ATR'})[cond.id]||cond.id.toUpperCase();
-    tx(10,yOff+10,label+(cond.params?.per?'('+cond.params.per+')':''),'#44445A',6);
+    tx(10,yOff+10,label+(cond.params?.per?'('+cond.params.per+')':''),'#6B6B80',8);
 
     if(cond.id==='macd'){
       // Histogram + lines
@@ -1200,7 +1202,7 @@ function buildPreview(step,cfg) {
       const yOff=panelY;
       rc(5,yOff,290,panelH,'#1A1A28',1,3);
       svgEl.appendChild(hsvg('rect',{x:5,y:yOff,width:290,height:panelH,rx:3,fill:'none',stroke:'#2A2A3C','stroke-width':0.5}));
-      tx(10,yOff+10,'VOL','#44445A',6);
+      tx(10,yOff+10,'VOL','#6B6B80',8);
       const bars=[12,18,14,22,16,24,28,20,26,17];
       bars.forEach((v,j)=>{const x=15+j*28,h=v,y=yOff+panelH-4-h;rc(x,y,18,h,v>20?'#10B981':'#44445A',v>20?0.6:0.3,1);});
       if(cond.id==='avgvol'){const avgLine=yOff+panelH-4-20;ln(5,avgLine,295,avgLine,'#F59E0B',0.5,'3,2');}
@@ -1208,7 +1210,7 @@ function buildPreview(step,cfg) {
       const yOff=panelY;
       rc(5,yOff,290,panelH,'#1A1A28',1,3);
       svgEl.appendChild(hsvg('rect',{x:5,y:yOff,width:290,height:panelH,rx:3,fill:'none',stroke:'#2A2A3C','stroke-width':0.5}));
-      tx(10,yOff+10,'OBV','#44445A',6);
+      tx(10,yOff+10,'OBV','#6B6B80',8);
       const obvY=[panelH-8,panelH-10,panelH-14,panelH-16,panelH-20,panelH-22,panelH-24,panelH-22,panelH-20,panelH-18];
       pl(obvY.map((y,j)=>`${15+j*28},${yOff+y}`).join(' '),'#6366F1',1.2);
     } else {
