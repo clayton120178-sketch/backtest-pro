@@ -56,11 +56,11 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 @media(max-width:800px){.two-col{grid-template-columns:1fr}.side-panel{display:none!important}}
 
 /* Cards */
-.card{background:var(--bg1);border:1px solid var(--bd);border-radius:12px;transition:border-color .15s,background .15s}
+.card{background:var(--bg1);border:1px solid var(--bd);border-radius:12px;transition:border-color .15s,background .15s,box-shadow .15s,transform .15s}
 .card.sel{border-color:var(--ac)!important;background:var(--acd)!important}
 .card.seld{border-color:var(--dg)!important;background:var(--dgd)!important}
 .card.selp{border-color:var(--pr)!important;background:var(--prd)!important}
-.card.pick{cursor:pointer}.card.pick:hover{border-color:var(--bdh)}
+.card.pick{cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s,transform .15s}.card.pick:hover{border-color:var(--ac);background:rgba(0,212,170,.04);box-shadow:0 0 20px rgba(0,212,170,.1);transform:translateY(-1px)}
 
 /* Buttons */
 .btn{display:inline-flex;align-items:center;gap:6px;border:none;cursor:pointer;font-weight:500;transition:all .16s;border-radius:8px;white-space:nowrap;font-size:14px}
@@ -258,8 +258,8 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .history-title{font-size:22px;font-weight:700;color:var(--tx);margin-bottom:4px}
 .history-sub{font-size:13px;color:var(--txs);margin-bottom:24px}
 .history-list{display:flex;flex-direction:column;gap:10px}
-.history-card{background:var(--bg1);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;cursor:pointer;transition:border-color .15s}
-.history-card:hover{border-color:var(--bdh)}
+.history-card{background:var(--bg1);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s,transform .15s}
+.history-card:hover{border-color:var(--ac);background:rgba(0,212,170,.03);box-shadow:0 0 20px rgba(0,212,170,.08);transform:translateY(-1px)}
 .history-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .history-card-strat{font-size:14px;font-weight:600;color:var(--tx);flex:1}
 .history-card-date{font-size:11px;color:var(--txs);font-family:'JetBrains Mono'}
