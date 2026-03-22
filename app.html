@@ -1508,10 +1508,15 @@ function renderModal() {
   const hdr=div('modal-header');
   const htitle=div('');
   htitle.style.cssText='font-size:15px;font-weight:700;color:#E8E8ED';
-  htitle.textContent=ms.page===0?'Adicionar Condição':'Configurar: '+ms.ind?.name;
+  const isMAInd=ms.ind&&['sma','ema'].includes(ms.ind.id);
+  const isMAModeSelect=ms.page===1&&isMAInd&&!ms.maMode;
+  htitle.textContent=ms.page===0?'Adicionar Condição':isMAModeSelect?ms.ind.name+' — Tipo de uso':'Configurar: '+ms.ind?.name+(isMAInd&&ms.maMode==='crossover'?' (cruzamento)':isMAInd&&ms.maMode==='filter'?' (filtro)':'');
   hdr.appendChild(htitle);
   if(ms.page===1){
-    const backBtn=h('button',{class:'btnGh',onclick:()=>{ms.page=0;renderModal();}});
+    const backBtn=h('button',{class:'btnGh',onclick:()=>{
+      if(isMAInd&&ms.maMode){ms.maMode=null;renderModal();}
+      else{ms.page=0;ms.maMode=null;renderModal();}
+    }});
     backBtn.textContent='← Voltar';
     backBtn.style.marginTop='6px';
     htitle.appendChild(document.createElement('br'));
@@ -1548,7 +1553,7 @@ function renderModal() {
             cond:conds[0]||ind.defCond,
             val:ind.hasVal?ind.defVal:undefined
           };
-          if(['sma','ema'].includes(ind.id)){ ms.params.per=200; ms.params.per2=50; }
+          if(['sma','ema'].includes(ind.id)){ ms.params.per=200; }
           if(ind.id==='bb'){ ms.params.per=20; ms.params.dev=2; }
           ms.page=1;
           renderModal();
@@ -1579,99 +1584,120 @@ function renderModal() {
   } else {
     // Config page
     const ind=ms.ind;
-    const conds=getCondsFor(ind.id);
-    const frag=div('');
-    frag.style.cssText='display:flex;flex-direction:column;gap:20px';
+    const isMA=['sma','ema'].includes(ind.id);
 
-    // ── Condition Preview SVG ──
-    const previewWrap=div('cond-preview');
-    previewWrap.id='cond-preview-wrap';
-    previewWrap.appendChild(buildCondPreview(ind.id, ms.params.cond||conds[0]||''));
-    frag.appendChild(previewWrap);
+    // ── MA MODE SELECTION (sub-page before config) ──
+    if(isMA && !ms.maMode){
+      const frag=div('');frag.style.cssText='display:flex;flex-direction:column;gap:14px';
+      const desc=div('');desc.style.cssText='font-size:13px;color:#8888A0;margin-bottom:4px';
+      desc.textContent=`Como você quer usar a ${ind.name}?`;
+      frag.appendChild(desc);
 
-    if(ind.hasPer!==false && ms.params.per!==undefined) {
-      const isMA=['sma','ema'].includes(ind.id);
-      const isCross=isMA&&isMACrossover(ms.params.cond);
-      const row=div('');
-      const perLabel=div('');perLabel.id='per-label';
-      row.appendChild(perLabel);
-      function updatePerLabel(){
-        const cross=isMACrossover(ms.params.cond);
-        perLabel.replaceChildren(slabel(cross?'Período da média curta':'Período'));
-      }
-      updatePerLabel();
-      const s=stepper(ms.params.per,1,500,'',v=>{ms.params.per=v;});
-      row.appendChild(s);
-      frag.appendChild(row);
-
-      // Second period (MA crossover only)
-      if(isMA){
-        const row2=div('');row2.id='per2-row';
-        row2.style.display=isCross?'block':'none';
-        row2.appendChild(slabel('Período da média longa'));
-        row2.appendChild(stepper(ms.params.per2||200,1,500,'',v=>{ms.params.per2=v;}));
-        frag.appendChild(row2);
-      }
-    }
-    if(ind.id==='bb' && ms.params.dev!==undefined) {
-      const row=div('');
-      row.appendChild(slabel('Desvio padrão','Quantidade de desvios padrão para as bandas superior e inferior. Padrão: 2. Valores maiores = bandas mais largas.'));
-      const s=stepper(ms.params.dev,1,5,'σ',v=>{ms.params.dev=v;});
-      row.appendChild(s);
-      frag.appendChild(row);
-    }
-    if(conds.length>0){
-      const row=div('');
-      row.appendChild(slabel('Condição'));
-      const radios=[];
-      conds.forEach(c=>{
-        const r=div('radio-row'+(ms.params.cond===c?' on':''));
-        const ring=cring(ms.params.cond===c);
-        r.appendChild(ring);
-        const t=div('');t.style.cssText='font-size:13px;color:#E8E8ED';t.textContent=c;
-        r.appendChild(t);
-        radios.push({el:r,ring,cond:c});
-        r.addEventListener('click',()=>{
-          const prevCond=ms.params.cond;
-          ms.params.cond=c;
-          radios.forEach(rd=>{
-            const isOn=rd.cond===c;
-            rd.el.className='radio-row'+(isOn?' on':'');
-            rd.ring.className='cring'+(isOn?' on':'');
-            rd.ring.innerHTML=isOn?`<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0A0A0F" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`:'';
-          });
-          // Update preview SVG
-          const pw=document.getElementById('cond-preview-wrap');
-          if(pw){pw.innerHTML='';pw.appendChild(buildCondPreview(ind.id,c));}
-          // Toggle per2 field for MA crossover — re-render modal to update steppers
-          if(['sma','ema'].includes(ind.id)){
-            const wasCross=isMACrossover(prevCond);const isCross=isMACrossover(c);
-            if(wasCross!==isCross){
-              if(isCross){ms.params.per=9;ms.params.per2=200;}
-              else{ms.params.per=200;}
-              renderModal();
-            }
-          }
-        });
-        row.appendChild(r);
+      // Filter card
+      const filterCard=div('card pick');filterCard.style.cssText='padding:18px;cursor:pointer';
+      filterCard.innerHTML=`<div style="font-size:14px;font-weight:700;color:#E8E8ED;margin-bottom:6px">📊 Filtro de Tendência</div>
+        <div style="font-size:12px;color:#8888A0;line-height:1.5">Usar a média como referência para o preço. Ex: "Preço está acima da ${ind.name}(200)".</div>
+        <div style="font-size:11px;color:#6B6B80;margin-top:6px">→ Um período · Preço vs Média</div>`;
+      filterCard.addEventListener('click',()=>{
+        ms.maMode='filter';
+        ms.params={per:200,cond:'Preço está acima',per2:undefined};
+        renderModal();
       });
-      frag.appendChild(row);
+      frag.appendChild(filterCard);
+
+      // Crossover card
+      const crossCard=div('card pick');crossCard.style.cssText='padding:18px;cursor:pointer';
+      crossCard.innerHTML=`<div style="font-size:14px;font-weight:700;color:#E8E8ED;margin-bottom:6px">✕ Cruzamento de Médias</div>
+        <div style="font-size:12px;color:#8888A0;line-height:1.5">Usar o cruzamento de uma média curta com uma longa como sinal de entrada. Padrão clássico de trading.</div>
+        <div style="font-size:11px;color:#6B6B80;margin-top:6px">→ Dois períodos · Média curta vs Média longa</div>`;
+      crossCard.addEventListener('click',()=>{
+        ms.maMode='crossover';
+        ms.params={per:9,per2:200,cond:'Cruzamento de médias (compra e venda)'};
+        renderModal();
+      });
+      frag.appendChild(crossCard);
+      body.appendChild(frag);
+
+    // ── STANDARD CONFIG PAGE (all indicators + MA with mode selected) ──
+    } else {
+      // Filter conditions based on MA mode
+      let conds=getCondsFor(ind.id);
+      if(isMA && ms.maMode==='filter') conds=conds.filter(c=>!isMACrossover(c));
+      if(isMA && ms.maMode==='crossover') conds=conds.filter(c=>isMACrossover(c));
+
+      const frag=div('');
+      frag.style.cssText='display:flex;flex-direction:column;gap:20px';
+
+      // ── Condition Preview SVG ──
+      const previewWrap=div('cond-preview');
+      previewWrap.id='cond-preview-wrap';
+      previewWrap.appendChild(buildCondPreview(ind.id, ms.params.cond||conds[0]||''));
+      frag.appendChild(previewWrap);
+
+      if(ind.hasPer!==false && ms.params.per!==undefined) {
+        const isCross=isMA&&isMACrossover(ms.params.cond);
+        const row=div('');
+        row.appendChild(slabel(isCross?'Período da média curta':'Período'));
+        row.appendChild(stepper(ms.params.per,1,500,'',v=>{ms.params.per=v;}));
+        frag.appendChild(row);
+
+        // Second period (MA crossover only)
+        if(isMA && ms.maMode==='crossover'){
+          const row2=div('');
+          row2.appendChild(slabel('Período da média longa'));
+          row2.appendChild(stepper(ms.params.per2||200,1,500,'',v=>{ms.params.per2=v;}));
+          frag.appendChild(row2);
+        }
+      }
+      if(ind.id==='bb' && ms.params.dev!==undefined) {
+        const row=div('');
+        row.appendChild(slabel('Desvio padrão','Quantidade de desvios padrão para as bandas superior e inferior. Padrão: 2. Valores maiores = bandas mais largas.'));
+        row.appendChild(stepper(ms.params.dev,1,5,'σ',v=>{ms.params.dev=v;}));
+        frag.appendChild(row);
+      }
+      if(conds.length>0){
+        const row=div('');
+        row.appendChild(slabel('Condição'));
+        const radios=[];
+        conds.forEach(c=>{
+          const r=div('radio-row'+(ms.params.cond===c?' on':''));
+          const ring=cring(ms.params.cond===c);
+          r.appendChild(ring);
+          const t=div('');t.style.cssText='font-size:13px;color:#E8E8ED';t.textContent=c;
+          r.appendChild(t);
+          radios.push({el:r,ring,cond:c});
+          r.addEventListener('click',()=>{
+            ms.params.cond=c;
+            radios.forEach(rd=>{
+              const isOn=rd.cond===c;
+              rd.el.className='radio-row'+(isOn?' on':'');
+              rd.ring.className='cring'+(isOn?' on':'');
+              rd.ring.innerHTML=isOn?`<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0A0A0F" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`:'';
+            });
+            // Update preview SVG
+            const pw=document.getElementById('cond-preview-wrap');
+            if(pw){pw.innerHTML='';pw.appendChild(buildCondPreview(ind.id,c));}
+          });
+          row.appendChild(r);
+        });
+        frag.appendChild(row);
+      }
+      if(ind.hasVal!==false && ms.params.val!==undefined) {
+        const row=div('');
+        const valLabel = ind.id==='gap' ? 'Tamanho mínimo (pontos)' : ind.id==='atr' ? 'Valor em pontos' : 'Valor de referência';
+        row.appendChild(slabel(valLabel));
+        row.appendChild(stepper(ms.params.val,-999,99999, ind.id==='gap'||ind.id==='atr'?'pts':'', v=>{ms.params.val=v;}));
+        frag.appendChild(row);
+      }
+      body.appendChild(frag);
     }
-    if(ind.hasVal!==false && ms.params.val!==undefined) {
-      const row=div('');
-      const valLabel = ind.id==='gap' ? 'Tamanho mínimo (pontos)' : ind.id==='atr' ? 'Valor em pontos' : 'Valor de referência';
-      row.appendChild(slabel(valLabel));
-      const s=stepper(ms.params.val,-999,99999, ind.id==='gap'||ind.id==='atr'?'pts':'', v=>{ms.params.val=v;});
-      row.appendChild(s);
-      frag.appendChild(row);
-    }
-    body.appendChild(frag);
   }
 
   modal.appendChild(body);
 
-  // Footer (page 1 only)
-  if(ms.page===1){
+  // Footer (page 1, but not MA mode selection)
+  const showFooter=ms.page===1&&!(ms.ind&&['sma','ema'].includes(ms.ind.id)&&!ms.maMode);
+  if(showFooter){
     const foot=div('modal-footer');
     const cancelBtn=h('button',{class:'btn btnS',onclick:closeModal});cancelBtn.textContent='Cancelar';
     const confirmBtn=h('button',{class:'btn btnP',onclick:()=>{
