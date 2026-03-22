@@ -2322,7 +2322,6 @@ function renderResults() {
 
   const rightCol=div('');rightCol.style.cssText='display:flex;flex-direction:column;gap:8px';
   rightCol.append(
-    statRow('Viés Efetivo','R$ '+A.viés.toFixed(2),A.viés>0?'#10B981':'#EF4444'),
     statRow('Lucro Bruto','R$ '+A.totalProfit.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#10B981'),
     statRow('Perda Bruta','R$ '+A.totalLoss.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#EF4444'),
     statRow('Resultado/Trade','R$ '+(last/EQ.length).toFixed(2),last>=0?'#10B981':'#EF4444')
@@ -2380,16 +2379,6 @@ function renderResults() {
   legend.innerHTML='<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:rgba(239,68,68,0.15)"></span> Período underwater</span><span style="display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:3px;background:#10B981"></span> Nova máxima</span>';
   tuw.appendChild(legend);
   el.appendChild(tuw);
-
-  // ── Drawdown ──
-  const dc=div('chart-card');
-  const dcl=div('chart-label');dcl.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg> Drawdown`;
-  dc.append(dcl,buildDDChart());el.appendChild(dc);
-
-  // ── Histogram ──
-  const hc=div('chart-card');
-  const hcl=div('chart-label');hcl.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> Distribuição de Resultados por Trade`;
-  hc.append(hcl,buildHistChart());el.appendChild(hc);
 
   // ── Actions ──
   const acts=div('');acts.style.cssText='display:flex;gap:9px;flex-wrap:wrap;margin-top:4px';
