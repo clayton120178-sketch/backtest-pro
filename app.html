@@ -1028,10 +1028,11 @@ function buildPreview(step,cfg) {
         const longY= [148,148,147,146,145,143,142,141,140,140];
         pl(candles.map((c,i)=>`${c.x+9},${shortY[i]}`).join(' '),'#00D4AA',2);
         pl(candles.map((c,i)=>`${c.x+9},${longY[i]}`).join(' '),col,1.5,'4,3');
-        // Cross point
+        // Cross point with SINAL label
         cir(candles[5].x+9,longY[5],'#00D4AA',5);
-        badge(candles[0].x,shortY[0]-8,cond.id.toUpperCase()+'('+( cond.params?.per||9)+')',  '#00D4AA',8);
-        badge(candles[5].x+30,longY[5]-8,cond.id.toUpperCase()+'('+(cond.params?.per2||200)+')',col,8);
+        badge(candles[5].x+9,longY[5]-10,'SINAL','#00D4AA',9,'middle');
+        badge(candles[0].x,shortY[0]-8,cond.id.toUpperCase()+'('+(cond.params?.per||9)+')',  '#00D4AA',8);
+        badge(candles[5].x+30,longY[5]+6,cond.id.toUpperCase()+'('+(cond.params?.per2||200)+')',col,8);
       } else {
         // Single MA line (price vs MA filter)
         const maY=[165,160,155,150,145,140,136,138,142,148];
@@ -1133,8 +1134,9 @@ function buildPreview(step,cfg) {
   }
 
   // ── Steps 1+: entry marker ──
-  if(step>=1&&conds.length>0){
-    // Signal candle highlight
+  const hasCrossoverSignal=conds.some(c=>['sma','ema'].includes(c.id)&&isMACrossover(c.params?.cond||''));
+  if(step>=1&&conds.length>0&&!hasCrossoverSignal){
+    // Signal candle highlight (only when crossover isn't already showing its own)
     rc(candles[6].x-2,candles[6].h-6,22,candles[6].l-candles[6].h+12,'#00D4AA',0.06,3);
     ln(candles[6].x+9,candles[6].h-10,candles[6].x+9,candles[6].h-20,'#00D4AA',1);
     badge(candles[6].x+9,candles[6].h-24,'SINAL','#00D4AA',9,'middle');
