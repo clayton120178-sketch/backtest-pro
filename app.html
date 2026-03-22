@@ -1021,12 +1021,24 @@ function buildPreview(step,cfg) {
     const up=ct.includes('acima')||ct.includes('sup')||ct.includes('alta')||ct.includes('compra')||ct.includes('maior');
 
     if(['sma','ema'].includes(cond.id)){
-      const maY=[165,160,155,150,145,140,136,138,142,148];
-      const pts=candles.map((c,i)=>`${c.x+9},${maY[i]}`).join(' ');
-      pl(pts,col,1.5);
-      badge(candles[0].x,maY[0]-6,cond.id.toUpperCase()+(cond.params?.per?'('+cond.params.per+')':''),col,8);
-      // Signal dot at crossover area
-      if(ct.includes('cruza')){cir(candles[6].x+9,maY[6],'#00D4AA',4);}
+      const isCross=isMACrossover(cond.params?.cond||'');
+      if(isCross){
+        // TWO lines crossing — short MA (fast, volatile) and long MA (slow, flat)
+        const shortY=[170,162,154,146,138,132,128,132,138,146];
+        const longY= [148,148,147,146,145,143,142,141,140,140];
+        pl(candles.map((c,i)=>`${c.x+9},${shortY[i]}`).join(' '),'#00D4AA',2);
+        pl(candles.map((c,i)=>`${c.x+9},${longY[i]}`).join(' '),col,1.5,'4,3');
+        // Cross point
+        cir(candles[5].x+9,longY[5],'#00D4AA',5);
+        badge(candles[0].x,shortY[0]-8,cond.id.toUpperCase()+'('+( cond.params?.per||9)+')',  '#00D4AA',8);
+        badge(candles[5].x+30,longY[5]-8,cond.id.toUpperCase()+'('+(cond.params?.per2||200)+')',col,8);
+      } else {
+        // Single MA line (price vs MA filter)
+        const maY=[165,160,155,150,145,140,136,138,142,148];
+        pl(candles.map((c,i)=>`${c.x+9},${maY[i]}`).join(' '),col,1.5);
+        badge(candles[0].x,maY[0]-8,cond.id.toUpperCase()+(cond.params?.per?'('+cond.params.per+')':''),col,8);
+        if(ct.includes('cruza')){cir(candles[6].x+9,maY[6],'#00D4AA',4);}
+      }
     }
     else if(cond.id==='bb'){
       const mid=[140,145,150,154,156,155,152,148,144,140];
