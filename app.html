@@ -1845,23 +1845,24 @@ function renderModal() {
         vRow.appendChild(stepper(ms.params.val,1,5000,'pts',v=>{ms.params.val=v;}));
         frag.appendChild(vRow);
         // Visual: what is an FVG
-        frag.appendChild(miniSVG(280,70,(ln,rc,tx,cd,ci)=>{
+        frag.appendChild(miniSVG(500,130,(ln,rc,tx,cd,ci)=>{
           // Before impulse
-          cd(10,40,36,32,44,0.5);cd(28,36,30,26,40,0.5);
+          cd(16,75,60,50,82,0.5);cd(46,60,50,42,68,0.5);
           // Impulse candles leaving gap
-          cd(48,30,14,8,34,0.8);cd(66,14,8,4,18,0.8);
+          cd(80,50,22,12,58,0.8);cd(114,22,12,6,28,0.8);
           // Gap zone
-          rc(44,18,140,12,'#6366F1',0.18,2);
-          ln(44,18,184,18,'#6366F1',1,'3,2');ln(44,30,184,30,'#6366F1',1,'3,2');
-          tx(100,27,'FVG','#6366F1',9,'middle');
+          rc(76,30,260,24,'#6366F1',0.18,4);
+          ln(76,30,336,30,'#6366F1',1,'4,3');ln(76,54,336,54,'#6366F1',1,'4,3');
+          tx(180,46,'FVG','#6366F1',14,'middle');
           // After
-          cd(88,10,16,6,20,0.6);cd(106,16,22,12,26,0.6);
+          cd(150,14,28,8,34,0.6);cd(184,28,40,20,46,0.6);
           // Arrow showing return
-          ln(140,14,140,22,'#00D4AA',1.5);ln(137,19,140,22,'#00D4AA',1.5);ln(143,19,140,22,'#00D4AA',1.5);
-          tx(148,20,'retorno','#00D4AA',7);
-          cd(130,22,26,18,30,0.6);
-          tx(230,12,'Gap = zona','#6B6B80',6);
-          tx(230,22,'sem negociação','#6B6B80',6);
+          ln(240,24,240,42,'#00D4AA',2);ln(235,37,240,42,'#00D4AA',2);ln(245,37,240,42,'#00D4AA',2);
+          tx(252,38,'retorno','#00D4AA',12);
+          cd(220,42,48,34,56,0.6);
+          tx(370,24,'Gap = zona sem','#8888A0',11);
+          tx(370,40,'negociação. O preço','#8888A0',11);
+          tx(370,56,'costuma voltar.','#8888A0',11);
         }));
       }
 
@@ -1873,25 +1874,23 @@ function renderModal() {
         frag.appendChild(pRow);
         // Confirmation pills with visual
         frag.appendChild(pills('Confirmação','Fechamento = o candle precisa fechar além do nível. Sombra = basta a sombra ultrapassar.',['Por fechamento','Por sombra'],ms.params.conf==='sombra'?'Por sombra':'Por fechamento',v=>{ms.params.conf=v==='Por sombra'?'sombra':'fechamento';}));
-        frag.appendChild(miniSVG(280,65,(ln,rc,tx,cd,ci)=>{
+        frag.appendChild(miniSVG(500,120,(ln,rc,tx,cd,ci)=>{
           // --- "Por fechamento" side ---
-          ln(4,32,130,32,'#F59E0B',0.8,'3,2');
-          tx(8,28,'nível','#F59E0B',6);
-          // Candle body closes beyond
-          rc(50,14,10,16,'#10B981',0.8,1);ln(55,12,55,30,'#10B981',1);
-          tx(68,20,'corpo fecha','#8888A0',6);
-          tx(68,28,'além ✓','#10B981',6);
-          tx(40,58,'POR FECHAMENTO','#E8E8ED',7,'middle');
+          ln(8,60,235,60,'#F59E0B',1,'4,3');
+          tx(14,54,'nível','#F59E0B',11);
+          rc(85,24,18,32,'#10B981',0.8,2);ln(94,18,94,56,'#10B981',1.5);
+          tx(114,40,'corpo fecha','#8888A0',11);
+          tx(114,54,'além do nível ✓','#10B981',11);
+          tx(120,108,'POR FECHAMENTO','#E8E8ED',12,'middle');
           // Divider
-          ln(140,8,140,55,'#2A2A3C',0.5);
+          ln(250,12,250,105,'#2A2A3C',1);
           // --- "Por sombra" side ---
-          ln(148,32,276,32,'#F59E0B',0.8,'3,2');
-          tx(152,28,'nível','#F59E0B',6);
-          // Candle wick beyond but body stays
-          rc(196,34,10,14,'#10B981',0.8,1);ln(201,16,201,48,'#10B981',1);
-          tx(212,20,'sombra passa','#8888A0',6);
-          tx(212,28,'corpo fica ✓','#10B981',6);
-          tx(212,58,'POR SOMBRA','#E8E8ED',7,'middle');
+          ln(260,60,490,60,'#F59E0B',1,'4,3');
+          tx(266,54,'nível','#F59E0B',11);
+          rc(340,64,18,26,'#10B981',0.8,2);ln(349,26,349,90,'#10B981',1.5);
+          tx(368,40,'sombra passa','#8888A0',11);
+          tx(368,54,'corpo fica acima ✓','#10B981',11);
+          tx(375,108,'POR SOMBRA','#E8E8ED',12,'middle');
         }));
       }
 
@@ -1903,16 +1902,16 @@ function renderModal() {
         frag.appendChild(pRow);
         frag.appendChild(pills('Confirmação','Fechamento = o candle precisa fechar além do nível. Sombra = basta a sombra ultrapassar.',['Por fechamento','Por sombra'],ms.params.conf==='sombra'?'Por sombra':'Por fechamento',v=>{ms.params.conf=v==='Por sombra'?'sombra':'fechamento';}));
         // Same confirmation visual as BoS
-        frag.appendChild(miniSVG(280,65,(ln,rc,tx,cd,ci)=>{
-          ln(4,32,130,32,'#F59E0B',0.8,'3,2');tx(8,28,'nível','#F59E0B',6);
-          rc(50,14,10,16,'#10B981',0.8,1);ln(55,12,55,30,'#10B981',1);
-          tx(68,20,'corpo fecha','#8888A0',6);tx(68,28,'além ✓','#10B981',6);
-          tx(40,58,'POR FECHAMENTO','#E8E8ED',7,'middle');
-          ln(140,8,140,55,'#2A2A3C',0.5);
-          ln(148,32,276,32,'#F59E0B',0.8,'3,2');tx(152,28,'nível','#F59E0B',6);
-          rc(196,34,10,14,'#10B981',0.8,1);ln(201,16,201,48,'#10B981',1);
-          tx(212,20,'sombra passa','#8888A0',6);tx(212,28,'corpo fica ✓','#10B981',6);
-          tx(212,58,'POR SOMBRA','#E8E8ED',7,'middle');
+        frag.appendChild(miniSVG(500,120,(ln,rc,tx,cd,ci)=>{
+          ln(8,60,235,60,'#F59E0B',1,'4,3');tx(14,54,'nível','#F59E0B',11);
+          rc(85,24,18,32,'#10B981',0.8,2);ln(94,18,94,56,'#10B981',1.5);
+          tx(114,40,'corpo fecha','#8888A0',11);tx(114,54,'além do nível ✓','#10B981',11);
+          tx(120,108,'POR FECHAMENTO','#E8E8ED',12,'middle');
+          ln(250,12,250,105,'#2A2A3C',1);
+          ln(260,60,490,60,'#F59E0B',1,'4,3');tx(266,54,'nível','#F59E0B',11);
+          rc(340,64,18,26,'#10B981',0.8,2);ln(349,26,349,90,'#10B981',1.5);
+          tx(368,40,'sombra passa','#8888A0',11);tx(368,54,'corpo fica acima ✓','#10B981',11);
+          tx(375,108,'POR SOMBRA','#E8E8ED',12,'middle');
         }));
       }
 
@@ -1924,29 +1923,28 @@ function renderModal() {
         frag.appendChild(vRow);
         frag.appendChild(pills('Considerar','Corpo = apenas o corpo do candle define a zona. Corpo + sombras = inclui as sombras na zona.',['Corpo','Corpo + sombras'],ms.params.bodyOnly,v=>{ms.params.bodyOnly=v;}));
         // OB visual: detected + retest
-        frag.appendChild(miniSVG(280,75,(ln,rc,tx,cd,ci)=>{
+        frag.appendChild(miniSVG(500,140,(ln,rc,tx,cd,ci)=>{
           // --- "Detectado" side ---
-          cd(10,40,46,36,50,0.4);cd(28,46,42,38,52,0.4);
-          // OB candle (opposite direction before impulse)
-          rc(46,34,10,12,'#EF4444',0.85,1);ln(51,30,51,50,'#EF4444',1);
-          tx(40,28,'OB','#6366F1',7,'middle');
-          // Zone
-          rc(44,34,40,12,'#6366F1',0.12,2);
+          cd(16,72,86,64,92,0.4);cd(46,86,78,68,96,0.4);
+          // OB candle
+          rc(80,60,18,24,'#EF4444',0.85,2);ln(89,52,89,92,'#EF4444',1.5);
+          tx(74,48,'OB','#6366F1',12,'middle');
+          rc(76,60,80,24,'#6366F1',0.12,3);
           // Impulse
-          cd(66,32,16,10,36,0.8);cd(84,16,10,6,20,0.8);
-          tx(70,68,'DETECTADO','#E8E8ED',7);
+          cd(110,56,28,16,64,0.8);cd(140,28,16,10,36,0.8);
+          tx(60,128,'DETECTADO','#E8E8ED',12,'middle');
           // Divider
-          ln(140,8,140,68,'#2A2A3C',0.5);
+          ln(245,14,245,125,'#2A2A3C',1);
           // --- "Retesta" side ---
-          cd(150,40,46,36,50,0.3);cd(168,46,42,38,52,0.3);
-          rc(186,34,10,12,'#EF4444',0.7,1);ln(191,30,191,50,'#EF4444',1);
-          rc(184,34,80,12,'#6366F1',0.1,2);
-          ln(184,34,264,34,'#6366F1',0.8,'3,2');ln(184,46,264,46,'#6366F1',0.8,'3,2');
-          cd(206,32,16,10,36,0.6);cd(224,16,10,6,20,0.6);
-          // Return
-          cd(242,12,24,8,28,0.5);cd(256,24,36,20,40,0.5);
-          ci(256,40,'#00D4AA',5);
-          tx(208,68,'RETESTA','#E8E8ED',7);
+          cd(260,72,86,64,92,0.3);cd(290,86,78,68,96,0.3);
+          rc(324,60,18,24,'#EF4444',0.7,2);ln(333,52,333,92,'#EF4444',1.5);
+          rc(320,60,140,24,'#6366F1',0.1,3);
+          ln(320,60,460,60,'#6366F1',1,'4,3');ln(320,84,460,84,'#6366F1',1,'4,3');
+          cd(354,56,28,16,64,0.6);cd(384,28,16,10,36,0.6);
+          // Return to OB zone
+          cd(414,18,42,12,48,0.5);cd(440,42,66,36,72,0.5);
+          ci(445,72,'#00D4AA',6);
+          tx(380,128,'RETESTA OB','#E8E8ED',12,'middle');
         }));
       }
 
@@ -1963,27 +1961,27 @@ function renderModal() {
         cRow.appendChild(stepper(ms.params.confCandles,1,20,'candles',v=>{ms.params.confCandles=v;}));
         frag.appendChild(cRow);
         // Sweep visual
-        frag.appendChild(miniSVG(280,80,(ln,rc,tx,cd,ci)=>{
+        frag.appendChild(miniSVG(500,150,(ln,rc,tx,cd,ci)=>{
           // Price action approaching level
-          cd(10,30,36,26,40,0.4);cd(28,36,32,28,42,0.4);cd(46,32,28,24,38,0.4);cd(64,28,24,20,34,0.4);
+          cd(16,54,66,46,72,0.4);cd(46,66,58,50,76,0.4);cd(76,58,50,42,68,0.4);cd(106,50,42,34,60,0.4);
           // Liquidity level
-          ln(4,44,276,44,'#F59E0B',1,'4,3');
-          tx(8,54,'nível de liquidez','#F59E0B',6);
+          ln(8,82,492,82,'#F59E0B',1.5,'5,4');
+          tx(14,100,'nível de liquidez','#F59E0B',11);
           // Sweep candle: wick goes below, body stays above
-          rc(90,34,10,8,'#EF4444',0.85,1);ln(95,30,95,60,'#EF4444',1.5);
-          // Sweep zone
-          rc(88,44,14,16,'#EF4444',0.08,2);
-          tx(108,56,'sweep!','#EF4444',7);
-          // Arrow down then up
-          ln(120,48,120,56,'#EF4444',1);ln(130,56,130,38,'#10B981',1.5);
-          ln(127,42,130,38,'#10B981',1.5);ln(133,42,130,38,'#10B981',1.5);
+          rc(150,62,18,16,'#EF4444',0.85,2);ln(159,52,159,115,'#EF4444',2);
+          // Sweep zone highlight
+          rc(146,82,26,33,'#EF4444',0.08,3);
+          tx(180,108,'sweep!','#EF4444',13);
+          // Arrow showing reversal
+          ln(210,100,210,68,'#10B981',2);ln(205,74,210,68,'#10B981',2);ln(215,74,210,68,'#10B981',2);
           // Reversal candles
-          cd(140,36,24,20,40,0.7);cd(158,24,18,14,28,0.7);cd(176,18,12,10,22,0.7);
-          tx(142,74,'confirmação →','#10B981',6);
-          // Summary
-          tx(200,20,'1. Preço toca nível','#6B6B80',6);
-          tx(200,30,'2. Varre além (sweep)','#6B6B80',6);
-          tx(200,40,'3. Reverte e confirma','#6B6B80',6);
+          cd(230,64,42,34,72,0.7);cd(260,42,30,24,48,0.7);cd(290,30,18,14,36,0.7);
+          tx(240,140,'confirmação →','#10B981',11);
+          // Summary steps
+          tx(340,36,'1. Preço se aproxima do nível','#8888A0',12);
+          tx(340,56,'2. Varre além (sweep)','#8888A0',12);
+          tx(340,76,'3. Reverte e confirma','#8888A0',12);
+          tx(340,100,'Falso rompimento institucional','#6B6B80',10);
         }));
       }
 
