@@ -531,6 +531,13 @@ const INDS_BY_TAB = {
   'Padrões': [
     { id:'candle', name:'Padrão de Candle', desc:'Identifica formações clássicas de candlestick',hasPer:false,hasVal:false,defCond:'Martelo (alta)',defVal:0 },
   ],
+  'Smart Money': [
+    { id:'fvg',   name:'Fair Value Gap (FVG)',        desc:'Gap de preço criado por movimento impulsivo',              hasPer:false,hasVal:true,  defCond:'Preço retorna ao FVG',defVal:50 },
+    { id:'bos',   name:'Break of Structure (BoS)',     desc:'Rompimento de topo/fundo confirma tendência',             hasPer:true, hasVal:false, defCond:'BoS detectado',defVal:0,defPer:10 },
+    { id:'choch', name:'Change of Character (CHoCH)',  desc:'Possível reversão — rompe estrutura oposta',              hasPer:true, hasVal:false, defCond:'CHoCH detectado',defVal:0,defPer:10 },
+    { id:'ob',    name:'Order Block (OB)',             desc:'Zona institucional — último candle oposto antes de impulso',hasPer:false,hasVal:true, defCond:'Preço retesta Order Block',defVal:150 },
+    { id:'sweep', name:'Liquidity Sweep',              desc:'Falso rompimento institucional — varre e reverte',        hasPer:true, hasVal:true,  defCond:'Liquidity Sweep detectado',defVal:10,defPer:20 },
+  ],
 };
 
 const OSC_CONDS  = ['cruza acima de','cruza abaixo de','está acima de','está abaixo de'];
@@ -554,6 +561,14 @@ const PREVDAY_CONDS = ['Preço está acima da máxima de ontem','Preço está ab
 const FIB_CONDS = ['Preço toca nível 23.6%','Preço toca nível 38.2%','Preço toca nível 50%','Preço toca nível 61.8%','Preço toca nível 78.6%','Preço cruza acima do nível 61.8%','Preço cruza abaixo do nível 61.8%','Preço está na zona 50%–61.8%','Preço está na zona 61.8%–78.6%'];
 const CANDLE_CONDS = ['Martelo (alta)','Martelo Invertido (alta)','Engolfo de Alta','Engolfo de Baixa','Doji','Estrela da Manhã (alta)','Estrela da Noite (baixa)','Harami de Alta','Harami de Baixa','Marubozu de Alta','Marubozu de Baixa','Spinning Top'];
 
+// Smart Money Concepts
+const FVG_CONDS   = ['FVG detectado','Preço retorna ao FVG','Preço preenche parcialmente'];
+const BOS_CONDS   = ['BoS detectado'];
+const CHOCH_CONDS = ['CHoCH detectado'];
+const OB_CONDS    = ['Order Block detectado','Preço retesta Order Block'];
+const SWEEP_CONDS = ['Liquidity Sweep detectado'];
+const SMC_IDS     = ['fvg','bos','choch','ob','sweep'];
+
 function getCondsFor(id) {
   if (['rsi','stoch','cci','williams'].includes(id)) return OSC_CONDS;
   if (['sma','ema'].includes(id)) return MA_CONDS;
@@ -569,6 +584,11 @@ function getCondsFor(id) {
   if (id==='prevday') return PREVDAY_CONDS;
   if (id==='fib')     return FIB_CONDS;
   if (id==='candle')  return CANDLE_CONDS;
+  if (id==='fvg')     return FVG_CONDS;
+  if (id==='bos')     return BOS_CONDS;
+  if (id==='choch')   return CHOCH_CONDS;
+  if (id==='ob')      return OB_CONDS;
+  if (id==='sweep')   return SWEEP_CONDS;
   if (['vol','avgvol'].includes(id)) return VOL_CONDS;
   if (id==='obv')     return TRD_CONDS;
   if (id==='price')   return PRC_CONDS;
@@ -610,6 +630,13 @@ function getCondImpliedDir(cond) {
     if(ct.includes('cruza acima')) return 'long';
     if(ct.includes('cruza abaixo')) return 'short';
     return null; // "está acima/abaixo" = filter
+  }
+  // Smart Money Concepts — direction from params.dir
+  if(SMC_IDS.includes(id)){
+    const dir=(cond.params?.dir||'').toLowerCase();
+    if(dir.includes('bullish')||dir.includes('alta')) return 'long';
+    if(dir.includes('bearish')||dir.includes('baixa')) return 'short';
+    return null;
   }
   // Everything else: oscillators, BB, VWAP, volume, price, range, ATR, ADX, etc.
   return null;
@@ -659,6 +686,11 @@ function condLabel(c) {
     case 'avgvol':   return `Volume ${p.cond} Vol.Médio(${p.per||20})`;
     case 'price':    return `Preço ${p.cond} ${p.val}`;
     case 'range':    return `Range ${p.cond} ${p.val} pts`;
+    case 'fvg':      return `FVG ${p.dir||'Bullish'} (≥${p.val} pts) — ${p.cond}`;
+    case 'bos':      return `BoS ${p.dir||'Bullish'} (swing ${p.per} candles, ${p.conf||'fechamento'})`;
+    case 'choch':    return `CHoCH ${p.dir||'Bullish'} (swing ${p.per} candles, ${p.conf||'fechamento'})`;
+    case 'ob':       return `OB ${p.dir||'Bullish'} (impulso ≥${p.val} pts) — ${p.cond}`;
+    case 'sweep':    return `Sweep ${p.dir||'de alta'} (${p.per} candles, ≥${p.val} pts, ${p.confCandles||3} conf.)`;
     default:         return c.name;
   }
 }
@@ -1511,6 +1543,105 @@ function buildCondPreview(indId, condText) {
     return svg;
   }
 
+  // ═══ SMART MONEY: FVG ═══
+  if(indId==='fvg'){
+    drawCds(CDS.slice(0,5),0.5);
+    // Impulse candles
+    const imp=[{x:132,o:80,c:38,h:34,l:84},{x:152,o:38,c:28,h:24,l:42},{x:172,o:28,c:22,h:18,l:32}];
+    imp.forEach(cd=>{ln(cd.x+6,cd.h,cd.x+6,cd.l,'#10B981',1);rc(cd.x,Math.min(cd.o,cd.c),12,Math.abs(cd.o-cd.c),'#10B981',0.85,1);});
+    // FVG zone
+    const fvgTop=CDS[4].l,fvgBot=imp[0].h;
+    rc(CDS[4].x,fvgBot,W-CDS[4].x-10,fvgTop-fvgBot,'#6366F1',0.15,2);
+    ln(CDS[4].x,fvgTop,W-10,fvgTop,'#6366F1',1,'3,2');
+    ln(CDS[4].x,fvgBot,W-10,fvgBot,'#6366F1',1,'3,2');
+    tx(W/2,((fvgTop+fvgBot)/2)+4,'FVG','#6366F1',10,'middle');
+    // Return candles
+    const ret=[{x:192,o:24,c:40,h:20,l:44},{x:212,o:40,c:48,h:36,l:52}];
+    ret.forEach(cd=>{ln(cd.x+6,cd.h,cd.x+6,cd.l,'#EF4444',1);rc(cd.x,Math.min(cd.o,cd.c),12,Math.abs(cd.o-cd.c),'#EF4444',0.6,1);});
+    if(ct.includes('retorna'))ci(ret[1].x+6,(fvgTop+fvgBot)/2,sc,6);
+    tx(16,16,'FVG','#6366F1',9);
+    return svg;
+  }
+
+  // ═══ SMART MONEY: BoS ═══
+  if(indId==='bos'){
+    const prices=up?[70,62,68,54,60,48,44,38,32,28,22,18]:[40,48,42,56,50,62,66,72,78,82,88,92];
+    drawCds(CDS,0.3);
+    // Swing high/low
+    const pivotIdx=up?3:3;const pivotY=prices[pivotIdx];
+    ln(8,pivotY,W-8,pivotY,'#F59E0B',1,'4,3');
+    tx(W-8,pivotY-4,up?'TOPO':'FUNDO','#F59E0B',7,'end');
+    // Break point
+    const breakIdx=8;
+    ci(CDS[breakIdx].x+6,pivotY,sc,6);
+    aw(CDS[breakIdx].x+20,pivotY,up,sc);
+    badge(CDS[breakIdx].x+28,pivotY+(up?-2:10),'BoS',sc,9);
+    tx(16,16,'BoS','#F59E0B',9);
+    return svg;
+  }
+
+  // ═══ SMART MONEY: CHoCH ═══
+  if(indId==='choch'){
+    const prices=up?[30,36,28,40,34,44,48,42,50,38,54,32]:[80,74,82,70,76,66,62,68,60,72,56,78];
+    drawCds(CDS,0.3);
+    // Structure level
+    const lvl=up?44:66;
+    ln(8,lvl,W-8,lvl,'#EF4444',1,'4,3');
+    tx(W-8,lvl-4,'ESTRUTURA','#EF4444',7,'end');
+    // CHoCH break
+    ci(CDS[8].x+6,lvl,'#F59E0B',6);
+    aw(CDS[8].x+20,lvl,up,'#F59E0B');
+    badge(CDS[8].x+28,lvl+(up?-2:10),'CHoCH','#F59E0B',9);
+    tx(16,16,'CHoCH','#F59E0B',9);
+    return svg;
+  }
+
+  // ═══ SMART MONEY: Order Block ═══
+  if(indId==='ob'){
+    drawCds(CDS.slice(0,5),0.4);
+    // OB candle (opposite direction)
+    const obCd=up?{x:112,o:48,c:58,h:44,l:62}:{x:112,o:62,c:52,h:48,l:66};
+    ln(obCd.x+6,obCd.h,obCd.x+6,obCd.l,up?'#EF4444':'#10B981',1);
+    rc(obCd.x,Math.min(obCd.o,obCd.c),12,Math.abs(obCd.o-obCd.c),up?'#EF4444':'#10B981',0.85,1);
+    // OB zone
+    rc(obCd.x-2,Math.min(obCd.o,obCd.c)-2,W-obCd.x-6,Math.abs(obCd.o-obCd.c)+4,'#6366F1',0.12,3);
+    ln(obCd.x-2,obCd.o,W-10,obCd.o,'#6366F1',1,'3,2');
+    ln(obCd.x-2,obCd.c,W-10,obCd.c,'#6366F1',1,'3,2');
+    // Impulse after OB
+    const imp=up?[{x:132,o:46,c:32,h:28,l:50},{x:152,o:32,c:22,h:18,l:36}]:[{x:132,o:64,c:78,h:60,l:82},{x:152,o:78,c:88,h:74,l:92}];
+    imp.forEach(cd=>{ln(cd.x+6,cd.h,cd.x+6,cd.l,sc,1);rc(cd.x,Math.min(cd.o,cd.c),12,Math.abs(cd.o-cd.c),sc,0.7,1);});
+    // Retest
+    if(ct.includes('retest')){
+      const ret=up?[{x:172,o:24,c:36,h:20,l:40},{x:192,o:36,c:48,h:32,l:52}]:[{x:172,o:86,c:74,h:70,l:90},{x:192,o:74,c:62,h:58,l:78}];
+      ret.forEach(cd=>{ln(cd.x+6,cd.h,cd.x+6,cd.l,'#8888A0',1);rc(cd.x,Math.min(cd.o,cd.c),12,Math.abs(cd.o-cd.c),'#8888A0',0.5,1);});
+      ci(ret[1].x+6,(obCd.o+obCd.c)/2,'#00D4AA',6);
+    }
+    badge(obCd.x+2,(Math.min(obCd.o,obCd.c))-8,'OB','#6366F1',9);
+    tx(16,16,'ORDER BLOCK','#6366F1',9);
+    return svg;
+  }
+
+  // ═══ SMART MONEY: Liquidity Sweep ═══
+  if(indId==='sweep'){
+    drawCds(CDS.slice(0,8),0.3);
+    // Liquidity level
+    const lvlY=up?92:18;
+    ln(8,lvlY,W-8,lvlY,'#F59E0B',1,'4,3');
+    tx(8,lvlY+(up?10:-6),'LIQUIDEZ','#F59E0B',7);
+    // Sweep wick
+    const sweepCd=up?{x:192,o:86,c:74,h:70,l:100}:{x:192,o:24,c:36,h:10,l:40};
+    ln(sweepCd.x+6,sweepCd.h,sweepCd.x+6,sweepCd.l,sc,1.5);
+    rc(sweepCd.x,Math.min(sweepCd.o,sweepCd.c),12,Math.abs(sweepCd.o-sweepCd.c),sc,0.85,1);
+    // Arrow showing reversal
+    aw(sweepCd.x+20,(sweepCd.o+sweepCd.c)/2,!up,sc);
+    // Reversal candles
+    const revCds=up?[{x:212,o:76,c:64,h:60,l:80},{x:232,o:64,c:54,h:50,l:68}]:[{x:212,o:34,c:46,h:30,l:50},{x:232,o:46,c:56,h:42,l:60}];
+    revCds.forEach(cd=>{ln(cd.x+6,cd.h,cd.x+6,cd.l,up?'#10B981':'#EF4444',1);rc(cd.x,Math.min(cd.o,cd.c),12,Math.abs(cd.o-cd.c),up?'#10B981':'#EF4444',0.7,1);});
+    badge(sweepCd.x+6,lvlY+(up?-10:6),'SWEEP',sc,9,'middle');
+    tx(16,16,'SWEEP','#F59E0B',9);
+    return svg;
+  }
+
   // ═══ FALLBACK ═══
   drawCds(CDS,0.5);ci(CDS[6].x+6,60,sc,6);aw(CDS[6].x+22,60,up,sc);tx(16,16,indId.toUpperCase(),'#44445A',9);
   return svg;
@@ -1590,6 +1721,12 @@ function renderModal() {
           };
           if(['sma','ema'].includes(ind.id)){ ms.params.per=200; }
           if(ind.id==='bb'){ ms.params.per=20; ms.params.dev=2; }
+          // Smart Money Concepts — custom param init
+          if(ind.id==='fvg')  ms.params={dir:'Bullish',val:50,fill:'Parcial',cond:FVG_CONDS[1]};
+          if(ind.id==='bos')  ms.params={dir:'Bullish',per:10,conf:'fechamento',cond:BOS_CONDS[0]};
+          if(ind.id==='choch')ms.params={dir:'Bullish',per:10,conf:'fechamento',cond:CHOCH_CONDS[0]};
+          if(ind.id==='ob')   ms.params={dir:'Bullish',val:150,bodyOnly:'Corpo',cond:OB_CONDS[1]};
+          if(ind.id==='sweep')ms.params={dir:'de alta',per:20,val:10,confCandles:3,cond:SWEEP_CONDS[0]};
           ms.page=1;
           renderModal();
         });
@@ -1651,6 +1788,100 @@ function renderModal() {
         renderModal();
       });
       frag.appendChild(crossCard);
+      body.appendChild(frag);
+
+    // ── SMART MONEY CONCEPTS CONFIG ──
+    } else if(SMC_IDS.includes(ind.id)){
+      const frag=div('');frag.style.cssText='display:flex;flex-direction:column;gap:16px';
+      const conds=getCondsFor(ind.id);
+      const smcId=ind.id;
+
+      // Helper: pills selector
+      const pills=(label,tip,options,current,onChange)=>{
+        const block=div('');
+        block.appendChild(slabel(label,tip));
+        const row=div('');row.style.cssText='display:flex;gap:7px;flex-wrap:wrap';
+        options.forEach(opt=>{
+          const c=div('chip'+(opt===current?' on':''));
+          c.textContent=opt;
+          c.addEventListener('click',()=>{onChange(opt);renderModal();});
+          row.appendChild(c);
+        });
+        block.appendChild(row);return block;
+      };
+
+      // CHoCH info banner
+      if(smcId==='choch'){
+        const banner=div('banner warn');
+        banner.innerHTML=`<span style="color:#F59E0B;flex-shrink:0">${IC.warn}</span><div style="font-size:12px;color:#8888A0;line-height:1.5"><strong style="color:#F59E0B">Atenção:</strong> CHoCH detecta possível <strong style="color:#E8E8ED">reversão</strong> de tendência. Diferente do BoS que confirma continuação.</div>`;
+        frag.appendChild(banner);
+      }
+
+      // ── FVG config ──
+      if(smcId==='fvg'){
+        frag.appendChild(pills('Direção','Bullish = gap de alta (preço subiu rápido). Bearish = gap de baixa (preço caiu rápido).',['Bullish','Bearish'],ms.params.dir,v=>{ms.params.dir=v;}));
+        const vRow=div('');vRow.appendChild(slabel('Tamanho mínimo do gap','O gap precisa ter pelo menos este tamanho em pontos para ser considerado. Gaps pequenos são ignorados.'));
+        vRow.appendChild(stepper(ms.params.val,1,5000,'pts',v=>{ms.params.val=v;}));
+        frag.appendChild(vRow);
+        frag.appendChild(pills('Preenchimento','Parcial = preço precisa tocar a zona do FVG. Total = preço precisa preencher todo o gap.',['Parcial','Total'],ms.params.fill,v=>{ms.params.fill=v;}));
+      }
+
+      // ── BoS config ──
+      if(smcId==='bos'){
+        frag.appendChild(pills('Direção','Bullish = rompe o último topo (tendência de alta). Bearish = rompe o último fundo (tendência de baixa).',['Bullish','Bearish'],ms.params.dir,v=>{ms.params.dir=v;}));
+        const pRow=div('');pRow.appendChild(slabel('Candles para swing','Quantos candles olhar pra trás para identificar o topo ou fundo que será rompido.'));
+        pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;}));
+        frag.appendChild(pRow);
+        frag.appendChild(pills('Confirmação','Fechamento = o candle precisa fechar além do nível. Sombra = basta a sombra ultrapassar.',['Por fechamento','Por sombra'],ms.params.conf==='sombra'?'Por sombra':'Por fechamento',v=>{ms.params.conf=v==='Por sombra'?'sombra':'fechamento';}));
+      }
+
+      // ── CHoCH config ──
+      if(smcId==='choch'){
+        frag.appendChild(pills('Direção','Bullish = possível reversão para alta. Bearish = possível reversão para baixa.',['Bullish','Bearish'],ms.params.dir,v=>{ms.params.dir=v;}));
+        const pRow=div('');pRow.appendChild(slabel('Candles para swing','Quantos candles olhar pra trás para identificar a estrutura que será rompida.'));
+        pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;}));
+        frag.appendChild(pRow);
+        frag.appendChild(pills('Confirmação','Fechamento = o candle precisa fechar além do nível. Sombra = basta a sombra ultrapassar.',['Por fechamento','Por sombra'],ms.params.conf==='sombra'?'Por sombra':'Por fechamento',v=>{ms.params.conf=v==='Por sombra'?'sombra':'fechamento';}));
+      }
+
+      // ── OB config ──
+      if(smcId==='ob'){
+        frag.appendChild(pills('Direção','Bullish = último candle de baixa antes de impulso de alta. Bearish = último candle de alta antes de impulso de baixa.',['Bullish','Bearish'],ms.params.dir,v=>{ms.params.dir=v;}));
+        const vRow=div('');vRow.appendChild(slabel('Impulso mínimo','O movimento após o order block precisa ter pelo menos este tamanho em pontos.'));
+        vRow.appendChild(stepper(ms.params.val,10,10000,'pts',v=>{ms.params.val=v;}));
+        frag.appendChild(vRow);
+        frag.appendChild(pills('Considerar','Corpo = apenas o corpo do candle define a zona. Corpo + sombras = inclui as sombras na zona.',['Corpo','Corpo + sombras'],ms.params.bodyOnly,v=>{ms.params.bodyOnly=v;}));
+      }
+
+      // ── Sweep config ──
+      if(smcId==='sweep'){
+        frag.appendChild(pills('Direção','Sweep de alta = varre mínimas e reverte pra cima. Sweep de baixa = varre máximas e reverte pra baixo.',['Sweep de alta','Sweep de baixa'],ms.params.dir,v=>{ms.params.dir=v;}));
+        const pRow=div('');pRow.appendChild(slabel('Candles para nível','Quantos candles olhar pra trás para identificar o nível de liquidez.'));
+        pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;}));
+        frag.appendChild(pRow);
+        const vRow=div('');vRow.appendChild(slabel('Ultrapassagem mínima','O preço precisa ultrapassar o nível por pelo menos estes pontos antes de reverter.'));
+        vRow.appendChild(stepper(ms.params.val,1,1000,'pts',v=>{ms.params.val=v;}));
+        frag.appendChild(vRow);
+        const cRow=div('');cRow.appendChild(slabel('Candles de confirmação','Quantos candles o preço precisa fechar na direção oposta para confirmar o sweep.'));
+        cRow.appendChild(stepper(ms.params.confCandles,1,20,'candles',v=>{ms.params.confCandles=v;}));
+        frag.appendChild(cRow);
+      }
+
+      // ── Conditions radio list (common to all SMC) ──
+      if(conds.length>0){
+        const row=div('');
+        row.appendChild(slabel('Condição'));
+        conds.forEach(c=>{
+          const r=div('radio-row'+(ms.params.cond===c?' on':''));
+          r.appendChild(cring(ms.params.cond===c));
+          const t=div('');t.style.cssText='font-size:13px;color:#E8E8ED';t.textContent=c;
+          r.appendChild(t);
+          r.addEventListener('click',()=>{ms.params.cond=c;renderModal();});
+          row.appendChild(r);
+        });
+        frag.appendChild(row);
+      }
+
       body.appendChild(frag);
 
     // ── STANDARD CONFIG PAGE (all indicators + MA with mode selected) ──
