@@ -562,7 +562,7 @@ const FIB_CONDS = ['Preço toca nível 23.6%','Preço toca nível 38.2%','Preço
 const CANDLE_CONDS = ['Martelo (alta)','Martelo Invertido (alta)','Engolfo de Alta','Engolfo de Baixa','Doji','Estrela da Manhã (alta)','Estrela da Noite (baixa)','Harami de Alta','Harami de Baixa','Marubozu de Alta','Marubozu de Baixa','Spinning Top'];
 
 // Smart Money Concepts
-const FVG_CONDS   = ['FVG detectado','Preço retorna ao FVG','Preço preenche parcialmente'];
+const FVG_CONDS   = ['FVG detectado','Preço retorna ao FVG'];
 const BOS_CONDS   = ['BoS detectado'];
 const CHOCH_CONDS = ['CHoCH detectado'];
 const OB_CONDS    = ['Order Block detectado','Preço retesta Order Block'];
@@ -1723,7 +1723,7 @@ function renderModal() {
           if(['sma','ema'].includes(ind.id)){ ms.params.per=200; }
           if(ind.id==='bb'){ ms.params.per=20; ms.params.dev=2; }
           // Smart Money Concepts — custom param init
-          if(ind.id==='fvg')  ms.params={dir:'Compra',val:50,fill:'Parcial',cond:FVG_CONDS[1]};
+          if(ind.id==='fvg')  ms.params={dir:'Compra',val:50,cond:FVG_CONDS[1]};
           if(ind.id==='bos')  ms.params={dir:'Compra',per:10,conf:'fechamento',cond:BOS_CONDS[0]};
           if(ind.id==='choch')ms.params={dir:'Compra',per:10,conf:'fechamento',cond:CHOCH_CONDS[0]};
           if(ind.id==='ob')   ms.params={dir:'Compra',val:150,bodyOnly:'Corpo',cond:OB_CONDS[1]};
@@ -1817,6 +1817,20 @@ function renderModal() {
       };
       const SMC_DIRS=['Compra','Venda','Compra e Venda'];
 
+      // Helper: mini inline SVG diagram
+      const miniSVG=(w,h,drawFn)=>{
+        const s=hsvg('svg',{width:'100%',viewBox:`0 0 ${w} ${h}`,style:'max-width:'+w+'px'});
+        s.appendChild(hsvg('rect',{x:0,y:0,width:w,height:h,rx:6,fill:'#0E0E14'}));
+        const _ln=(x1,y1,x2,y2,c,sw,d)=>{const a={x1,y1,x2,y2,stroke:c,'stroke-width':sw||1};if(d)a['stroke-dasharray']=d;s.appendChild(hsvg('line',a));};
+        const _rc=(x,y,rw,rh,c,o,r)=>s.appendChild(hsvg('rect',{x,y,width:rw,height:rh,fill:c,'fill-opacity':o!=null?o:1,rx:r||0}));
+        const _tx=(x,y,t,c,sz,a)=>{const e=hsvg('text',{x,y,fill:c,'font-size':sz||7,'font-family':'JetBrains Mono','font-weight':600,'text-anchor':a||'start'});e.textContent=t;s.appendChild(e);};
+        const _cd=(x,o,c,hi,lo,op)=>{const bull=c<o;const col=bull?'#10B981':'#EF4444';_ln(x+5,hi,x+5,lo,col,1);_rc(x,Math.min(o,c),10,Math.max(2,Math.abs(o-c)),col,op||0.8,1);};
+        const _ci=(x,y,c,r)=>s.appendChild(hsvg('circle',{cx:x,cy:y,r:r||4,fill:c,'fill-opacity':0.25,stroke:c,'stroke-width':1.5}));
+        drawFn(_ln,_rc,_tx,_cd,_ci);
+        const wrap=div('');wrap.style.cssText='margin:8px 0 4px;border-radius:8px;overflow:hidden';
+        wrap.appendChild(s);return wrap;
+      };
+
       // CHoCH info banner
       if(smcId==='choch'){
         const banner=div('banner warn');
@@ -1827,10 +1841,28 @@ function renderModal() {
       // ── FVG config ──
       if(smcId==='fvg'){
         frag.appendChild(pills('Direção','Compra = gap de alta (preço subiu rápido). Venda = gap de baixa (preço caiu rápido). Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
-        const vRow=div('');vRow.appendChild(slabel('Tamanho mínimo do gap','O gap precisa ter pelo menos este tamanho em pontos para ser considerado. Gaps pequenos são ignorados.'));
+        const vRow=div('');vRow.appendChild(slabel('Tamanho mínimo do gap','O gap precisa ter pelo menos este tamanho em pontos para ser considerado.'));
         vRow.appendChild(stepper(ms.params.val,1,5000,'pts',v=>{ms.params.val=v;}));
         frag.appendChild(vRow);
-        frag.appendChild(pills('Preenchimento','Parcial = preço precisa tocar a zona do FVG. Total = preço precisa preencher todo o gap.',['Parcial','Total'],ms.params.fill,v=>{ms.params.fill=v;}));
+        // Visual: what is an FVG
+        frag.appendChild(miniSVG(280,70,(ln,rc,tx,cd,ci)=>{
+          // Before impulse
+          cd(10,40,36,32,44,0.5);cd(28,36,30,26,40,0.5);
+          // Impulse candles leaving gap
+          cd(48,30,14,8,34,0.8);cd(66,14,8,4,18,0.8);
+          // Gap zone
+          rc(44,18,140,12,'#6366F1',0.18,2);
+          ln(44,18,184,18,'#6366F1',1,'3,2');ln(44,30,184,30,'#6366F1',1,'3,2');
+          tx(100,27,'FVG','#6366F1',9,'middle');
+          // After
+          cd(88,10,16,6,20,0.6);cd(106,16,22,12,26,0.6);
+          // Arrow showing return
+          ln(140,14,140,22,'#00D4AA',1.5);ln(137,19,140,22,'#00D4AA',1.5);ln(143,19,140,22,'#00D4AA',1.5);
+          tx(148,20,'retorno','#00D4AA',7);
+          cd(130,22,26,18,30,0.6);
+          tx(230,12,'Gap = zona','#6B6B80',6);
+          tx(230,22,'sem negociação','#6B6B80',6);
+        }));
       }
 
       // ── BoS config ──
@@ -1839,7 +1871,28 @@ function renderModal() {
         const pRow=div('');pRow.appendChild(slabel('Candles para swing','Quantos candles olhar pra trás para identificar o topo ou fundo que será rompido.'));
         pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;}));
         frag.appendChild(pRow);
+        // Confirmation pills with visual
         frag.appendChild(pills('Confirmação','Fechamento = o candle precisa fechar além do nível. Sombra = basta a sombra ultrapassar.',['Por fechamento','Por sombra'],ms.params.conf==='sombra'?'Por sombra':'Por fechamento',v=>{ms.params.conf=v==='Por sombra'?'sombra':'fechamento';}));
+        frag.appendChild(miniSVG(280,65,(ln,rc,tx,cd,ci)=>{
+          // --- "Por fechamento" side ---
+          ln(4,32,130,32,'#F59E0B',0.8,'3,2');
+          tx(8,28,'nível','#F59E0B',6);
+          // Candle body closes beyond
+          rc(50,14,10,16,'#10B981',0.8,1);ln(55,12,55,30,'#10B981',1);
+          tx(68,20,'corpo fecha','#8888A0',6);
+          tx(68,28,'além ✓','#10B981',6);
+          tx(40,58,'POR FECHAMENTO','#E8E8ED',7,'middle');
+          // Divider
+          ln(140,8,140,55,'#2A2A3C',0.5);
+          // --- "Por sombra" side ---
+          ln(148,32,276,32,'#F59E0B',0.8,'3,2');
+          tx(152,28,'nível','#F59E0B',6);
+          // Candle wick beyond but body stays
+          rc(196,34,10,14,'#10B981',0.8,1);ln(201,16,201,48,'#10B981',1);
+          tx(212,20,'sombra passa','#8888A0',6);
+          tx(212,28,'corpo fica ✓','#10B981',6);
+          tx(212,58,'POR SOMBRA','#E8E8ED',7,'middle');
+        }));
       }
 
       // ── CHoCH config ──
@@ -1849,6 +1902,18 @@ function renderModal() {
         pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;}));
         frag.appendChild(pRow);
         frag.appendChild(pills('Confirmação','Fechamento = o candle precisa fechar além do nível. Sombra = basta a sombra ultrapassar.',['Por fechamento','Por sombra'],ms.params.conf==='sombra'?'Por sombra':'Por fechamento',v=>{ms.params.conf=v==='Por sombra'?'sombra':'fechamento';}));
+        // Same confirmation visual as BoS
+        frag.appendChild(miniSVG(280,65,(ln,rc,tx,cd,ci)=>{
+          ln(4,32,130,32,'#F59E0B',0.8,'3,2');tx(8,28,'nível','#F59E0B',6);
+          rc(50,14,10,16,'#10B981',0.8,1);ln(55,12,55,30,'#10B981',1);
+          tx(68,20,'corpo fecha','#8888A0',6);tx(68,28,'além ✓','#10B981',6);
+          tx(40,58,'POR FECHAMENTO','#E8E8ED',7,'middle');
+          ln(140,8,140,55,'#2A2A3C',0.5);
+          ln(148,32,276,32,'#F59E0B',0.8,'3,2');tx(152,28,'nível','#F59E0B',6);
+          rc(196,34,10,14,'#10B981',0.8,1);ln(201,16,201,48,'#10B981',1);
+          tx(212,20,'sombra passa','#8888A0',6);tx(212,28,'corpo fica ✓','#10B981',6);
+          tx(212,58,'POR SOMBRA','#E8E8ED',7,'middle');
+        }));
       }
 
       // ── OB config ──
@@ -1858,6 +1923,31 @@ function renderModal() {
         vRow.appendChild(stepper(ms.params.val,10,10000,'pts',v=>{ms.params.val=v;}));
         frag.appendChild(vRow);
         frag.appendChild(pills('Considerar','Corpo = apenas o corpo do candle define a zona. Corpo + sombras = inclui as sombras na zona.',['Corpo','Corpo + sombras'],ms.params.bodyOnly,v=>{ms.params.bodyOnly=v;}));
+        // OB visual: detected + retest
+        frag.appendChild(miniSVG(280,75,(ln,rc,tx,cd,ci)=>{
+          // --- "Detectado" side ---
+          cd(10,40,46,36,50,0.4);cd(28,46,42,38,52,0.4);
+          // OB candle (opposite direction before impulse)
+          rc(46,34,10,12,'#EF4444',0.85,1);ln(51,30,51,50,'#EF4444',1);
+          tx(40,28,'OB','#6366F1',7,'middle');
+          // Zone
+          rc(44,34,40,12,'#6366F1',0.12,2);
+          // Impulse
+          cd(66,32,16,10,36,0.8);cd(84,16,10,6,20,0.8);
+          tx(70,68,'DETECTADO','#E8E8ED',7);
+          // Divider
+          ln(140,8,140,68,'#2A2A3C',0.5);
+          // --- "Retesta" side ---
+          cd(150,40,46,36,50,0.3);cd(168,46,42,38,52,0.3);
+          rc(186,34,10,12,'#EF4444',0.7,1);ln(191,30,191,50,'#EF4444',1);
+          rc(184,34,80,12,'#6366F1',0.1,2);
+          ln(184,34,264,34,'#6366F1',0.8,'3,2');ln(184,46,264,46,'#6366F1',0.8,'3,2');
+          cd(206,32,16,10,36,0.6);cd(224,16,10,6,20,0.6);
+          // Return
+          cd(242,12,24,8,28,0.5);cd(256,24,36,20,40,0.5);
+          ci(256,40,'#00D4AA',5);
+          tx(208,68,'RETESTA','#E8E8ED',7);
+        }));
       }
 
       // ── Sweep config ──
@@ -1872,6 +1962,29 @@ function renderModal() {
         const cRow=div('');cRow.appendChild(slabel('Candles de confirmação','Quantos candles o preço precisa fechar na direção oposta para confirmar o sweep.'));
         cRow.appendChild(stepper(ms.params.confCandles,1,20,'candles',v=>{ms.params.confCandles=v;}));
         frag.appendChild(cRow);
+        // Sweep visual
+        frag.appendChild(miniSVG(280,80,(ln,rc,tx,cd,ci)=>{
+          // Price action approaching level
+          cd(10,30,36,26,40,0.4);cd(28,36,32,28,42,0.4);cd(46,32,28,24,38,0.4);cd(64,28,24,20,34,0.4);
+          // Liquidity level
+          ln(4,44,276,44,'#F59E0B',1,'4,3');
+          tx(8,54,'nível de liquidez','#F59E0B',6);
+          // Sweep candle: wick goes below, body stays above
+          rc(90,34,10,8,'#EF4444',0.85,1);ln(95,30,95,60,'#EF4444',1.5);
+          // Sweep zone
+          rc(88,44,14,16,'#EF4444',0.08,2);
+          tx(108,56,'sweep!','#EF4444',7);
+          // Arrow down then up
+          ln(120,48,120,56,'#EF4444',1);ln(130,56,130,38,'#10B981',1.5);
+          ln(127,42,130,38,'#10B981',1.5);ln(133,42,130,38,'#10B981',1.5);
+          // Reversal candles
+          cd(140,36,24,20,40,0.7);cd(158,24,18,14,28,0.7);cd(176,18,12,10,22,0.7);
+          tx(142,74,'confirmação →','#10B981',6);
+          // Summary
+          tx(200,20,'1. Preço toca nível','#6B6B80',6);
+          tx(200,30,'2. Varre além (sweep)','#6B6B80',6);
+          tx(200,40,'3. Reverte e confirma','#6B6B80',6);
+        }));
       }
 
       // ── Conditions radio list (common to all SMC, local update) ──
