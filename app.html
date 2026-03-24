@@ -1648,10 +1648,213 @@ function buildCondPreview(indId, condText) {
   return svg;
 }
 
+// ─── VALIDATION ENGINE ────────────────────────────────────────
+const OSC_IDS = ['rsi','stoch','cci','williams'];
+const MA_IDS  = ['sma','ema'];
+
+function oscZone(id, cond, val) {
+  if (!OSC_IDS.includes(id)) return null;
+  const mid = (id==='rsi'||id==='stoch') ? 50 : (id==='cci' ? 0 : -50);
+  if (cond==='cruza acima de'||cond==='está acima de') return val <= mid ? 'sobrevenda' : 'sobrecompra';
+  if (cond==='cruza abaixo de'||cond==='está abaixo de') return val >= mid ? 'sobrecompra' : 'sobrevenda';
+  return null;
+}
+
+function validateNewCondition(newCond, existingConds) {
+  const issues = [];
+  const p = newCond.params, id = newCond.id;
+
+  // R27-R31: Valores inválidos
+  if ((id==='rsi'||id==='stoch') && p.val!=null && (p.val<0||p.val>100))
+    issues.push({type:'block',rule:'R27',msg:'Este oscilador opera entre 0 e 100.'});
+  if (id==='williams' && p.val!=null && (p.val<-100||p.val>0))
+    issues.push({type:'block',rule:'R29',msg:'O Williams %R opera entre -100 e 0.'});
+  if (id==='cci' && p.val!=null && Math.abs(p.val)>300)
+    issues.push({type:'warn',rule:'R30',msg:'Valores de CCI nesta faixa são muito raros. O backtest pode não encontrar sinais suficientes no histórico.'});
+  if (['vol','avgvol','range'].includes(id) && p.val!=null && p.val<=0)
+    issues.push({type:'block',rule:'R31',msg:'O valor de referência deve ser maior que zero.'});
+
+  // R26: 4+ condições simultâneas
+  if (existingConds.length >= 3)
+    issues.push({type:'warn',rule:'R26',msg:'Com 4 ou mais condições simultâneas, o número de sinais pode ser insuficiente para análise estatística confiável.'});
+
+  for (const ex of existingConds) {
+    const ep = ex.params;
+
+    // R01: Condição idêntica
+    if (id===ex.id && JSON.stringify(p)===JSON.stringify(ep))
+      { issues.push({type:'block',rule:'R01',msg:'Esta condição já foi adicionada.'}); continue; }
+
+    // R02-R04: Osciladores
+    if (OSC_IDS.includes(id) && id===ex.id && p.per===ep.per) {
+      if (p.cond==='está acima de' && ep.cond==='está abaixo de' && ep.val<=p.val)
+        issues.push({type:'block',rule:'R02',msg:`${newCond.name}(${p.per}) não pode estar acima de ${p.val} e abaixo de ${ep.val} ao mesmo tempo.`});
+      if (p.cond==='está abaixo de' && ep.cond==='está acima de' && p.val<=ep.val)
+        issues.push({type:'block',rule:'R02',msg:`${newCond.name}(${p.per}) não pode estar abaixo de ${p.val} e acima de ${ep.val} ao mesmo tempo.`});
+      if ((p.cond==='cruza acima de'&&ep.cond==='cruza abaixo de')||(p.cond==='cruza abaixo de'&&ep.cond==='cruza acima de'))
+        issues.push({type:'block',rule:'R03',msg:`${newCond.name}(${p.per}) não pode cruzar para cima e para baixo no mesmo candle.`});
+      if (p.cond==='cruza acima de' && ep.cond==='está abaixo de' && ep.val<=p.val)
+        issues.push({type:'block',rule:'R04',msg:`Se ${newCond.name}(${p.per}) cruzou acima de ${p.val}, não pode estar abaixo de ${ep.val}.`});
+      if (p.cond==='está abaixo de' && ep.cond==='cruza acima de' && p.val<=ep.val)
+        issues.push({type:'block',rule:'R04',msg:`Se ${newCond.name}(${p.per}) cruzou acima de ${ep.val}, não pode estar abaixo de ${p.val}.`});
+      if (p.cond==='cruza abaixo de' && ep.cond==='está acima de' && ep.val>=p.val)
+        issues.push({type:'block',rule:'R04',msg:`Se ${newCond.name}(${p.per}) cruzou abaixo de ${p.val}, não pode estar acima de ${ep.val}.`});
+      if (p.cond==='está acima de' && ep.cond==='cruza abaixo de' && p.val>=ep.val)
+        issues.push({type:'block',rule:'R04',msg:`Se ${newCond.name}(${p.per}) cruzou abaixo de ${ep.val}, não pode estar acima de ${p.val}.`});
+    }
+
+    // R05-R07, R19, R22: Médias móveis
+    if (MA_IDS.includes(id) && MA_IDS.includes(ex.id)) {
+      if (id===ex.id && p.per===ep.per && !p.per2 && !ep.per2) {
+        if ((p.cond==='Preço está acima'&&ep.cond==='Preço está abaixo')||(p.cond==='Preço está abaixo'&&ep.cond==='Preço está acima'))
+          issues.push({type:'block',rule:'R05',msg:`Preço não pode estar acima e abaixo da ${id.toUpperCase()}(${p.per}) ao mesmo tempo.`});
+        if ((p.cond==='Preço cruza acima'&&ep.cond==='Preço cruza abaixo')||(p.cond==='Preço cruza abaixo'&&ep.cond==='Preço cruza acima'))
+          issues.push({type:'block',rule:'R06',msg:`Preço não pode cruzar a ${id.toUpperCase()}(${p.per}) para cima e para baixo no mesmo candle.`});
+        if ((p.cond==='Preço cruza acima'&&ep.cond==='Preço está abaixo')||(p.cond==='Preço está abaixo'&&ep.cond==='Preço cruza acima'))
+          issues.push({type:'block',rule:'R07',msg:`Se o preço cruzou acima da ${id.toUpperCase()}(${p.per}), por definição está acima dela.`});
+        if ((p.cond==='Preço cruza abaixo'&&ep.cond==='Preço está acima')||(p.cond==='Preço está acima'&&ep.cond==='Preço cruza abaixo'))
+          issues.push({type:'block',rule:'R07',msg:`Se o preço cruzou abaixo da ${id.toUpperCase()}(${p.per}), por definição está abaixo dela.`});
+      }
+      if (id===ex.id && p.per!==ep.per && !p.per2 && !ep.per2 && Math.abs((p.per||200)-(ep.per||200))<10)
+        issues.push({type:'warn',rule:'R22',msg:`${id.toUpperCase()}(${p.per}) e ${ex.id.toUpperCase()}(${ep.per}) têm períodos muito próximos e produzem resultados quase idênticos.`});
+      if (id!==ex.id && (p.per||200)===(ep.per||200) && p.cond===ep.cond && !p.per2 && !ep.per2)
+        issues.push({type:'warn',rule:'R19',msg:`SMA e EMA com mesmo período e condição produzem sinais quase idênticos. Considere usar apenas uma.`});
+    }
+
+    // R08-R10: VWAP
+    if (id==='vwap' && ex.id==='vwap') {
+      if ((p.cond==='Preço está acima do VWAP'&&ep.cond==='Preço está abaixo do VWAP')||(p.cond==='Preço está abaixo do VWAP'&&ep.cond==='Preço está acima do VWAP'))
+        issues.push({type:'block',rule:'R08',msg:'Preço não pode estar acima e abaixo do VWAP ao mesmo tempo.'});
+      if ((p.cond==='Preço cruza acima do VWAP'&&ep.cond==='Preço cruza abaixo do VWAP')||(p.cond==='Preço cruza abaixo do VWAP'&&ep.cond==='Preço cruza acima do VWAP'))
+        issues.push({type:'block',rule:'R09',msg:'Preço não pode cruzar o VWAP para cima e para baixo no mesmo candle.'});
+      if ((p.cond==='Preço cruza acima do VWAP'&&ep.cond==='Preço está abaixo do VWAP')||(p.cond==='Preço está abaixo do VWAP'&&ep.cond==='Preço cruza acima do VWAP'))
+        issues.push({type:'block',rule:'R10',msg:'Se o preço cruzou acima do VWAP, por definição está acima dele.'});
+      if ((p.cond==='Preço cruza abaixo do VWAP'&&ep.cond==='Preço está acima do VWAP')||(p.cond==='Preço está acima do VWAP'&&ep.cond==='Preço cruza abaixo do VWAP'))
+        issues.push({type:'block',rule:'R10',msg:'Se o preço cruzou abaixo do VWAP, por definição está abaixo dele.'});
+    }
+
+    // R11: MACD
+    if (id==='macd' && ex.id==='macd') {
+      if ((p.cond==='MACD cruza acima do sinal'&&ep.cond==='MACD cruza abaixo do sinal')||(p.cond==='MACD cruza abaixo do sinal'&&ep.cond==='MACD cruza acima do sinal'))
+        issues.push({type:'block',rule:'R11',msg:'MACD não pode cruzar o sinal para cima e para baixo no mesmo candle.'});
+      if ((p.cond==='MACD acima de zero'&&ep.cond==='MACD abaixo de zero')||(p.cond==='MACD abaixo de zero'&&ep.cond==='MACD acima de zero'))
+        issues.push({type:'block',rule:'R11',msg:'MACD não pode estar acima e abaixo de zero ao mesmo tempo.'});
+    }
+
+    // R12: OBV
+    if (id==='obv' && ex.id==='obv') {
+      if ((p.cond==='está subindo'&&ep.cond==='está caindo')||(p.cond==='está caindo'&&ep.cond==='está subindo'))
+        issues.push({type:'block',rule:'R12',msg:'OBV não pode estar subindo e caindo ao mesmo tempo.'});
+    }
+
+    // R13, R23: Volume
+    if (['vol','avgvol'].includes(id) && ['vol','avgvol'].includes(ex.id)) {
+      if (id===ex.id) {
+        if ((p.cond==='é maior que'&&ep.cond==='é menor que'&&ep.val<=p.val)||(p.cond==='é menor que'&&ep.cond==='é maior que'&&p.val<=ep.val))
+          issues.push({type:'block',rule:'R13',msg:`Volume não pode ser maior que ${Math.max(p.val,ep.val)} e menor que ${Math.min(p.val,ep.val)} ao mesmo tempo.`});
+      } else {
+        if ((p.cond==='é maior que'&&ep.cond==='é maior que')||(p.cond==='é menor que'&&ep.cond==='é menor que'))
+          issues.push({type:'warn',rule:'R23',msg:'Volume Médio já incorpora a lógica do volume absoluto de forma dinâmica. Considere usar apenas o Volume Médio.'});
+      }
+    }
+
+    // R14: Range
+    if (id==='range' && ex.id==='range') {
+      if ((p.cond==='é maior que'&&ep.cond==='é menor que'&&ep.val<=p.val)||(p.cond==='é menor que'&&ep.cond==='é maior que'&&p.val<=ep.val))
+        issues.push({type:'block',rule:'R14',msg:`Range não pode ser maior que ${Math.max(p.val,ep.val)} e menor que ${Math.min(p.val,ep.val)} ao mesmo tempo.`});
+    }
+
+    // R15-R17: Preço
+    if (id==='price' && ex.id==='price') {
+      if (((p.cond==='está acima de'&&ep.cond==='está abaixo de')||(p.cond==='está abaixo de'&&ep.cond==='está acima de'))&&p.val===ep.val)
+        issues.push({type:'block',rule:'R15',msg:`Preço não pode estar acima e abaixo de ${p.val} ao mesmo tempo.`});
+      if ((p.cond==='cruza acima de'&&ep.cond==='cruza abaixo de')||(p.cond==='cruza abaixo de'&&ep.cond==='cruza acima de'))
+        issues.push({type:'block',rule:'R16',msg:'Preço não pode cruzar para cima e para baixo no mesmo candle.'});
+      if ((p.cond==='cruza acima de'&&ep.cond==='está abaixo de'&&ep.val<=p.val)||(p.cond==='está abaixo de'&&ep.cond==='cruza acima de'&&p.val<=ep.val))
+        issues.push({type:'block',rule:'R17',msg:`Se o preço cruzou acima de ${Math.max(p.val,ep.val)}, não pode estar abaixo de ${Math.min(p.val,ep.val)}.`});
+      if ((p.cond==='cruza abaixo de'&&ep.cond==='está acima de'&&ep.val>=p.val)||(p.cond==='está acima de'&&ep.cond==='cruza abaixo de'&&p.val>=ep.val))
+        issues.push({type:'block',rule:'R17',msg:`Se o preço cruzou abaixo de ${Math.min(p.val,ep.val)}, não pode estar acima de ${Math.max(p.val,ep.val)}.`});
+    }
+
+    // R18: Bollinger bandas opostas
+    if (id==='bb' && ex.id==='bb' && (p.per||20)===(ep.per||20)) {
+      const sup=['Preço toca banda sup.','Preço cruza banda sup.'];
+      const inf=['Preço toca banda inf.','Preço sai da banda inf.'];
+      if ((sup.includes(p.cond)&&inf.includes(ep.cond))||(inf.includes(p.cond)&&sup.includes(ep.cond)))
+        issues.push({type:'block',rule:'R18',msg:'Banda superior e inferior ao mesmo tempo não define um setup claro. Separe em condições distintas.'});
+    }
+  }
+
+  // R20/R21: Múltiplos osciladores mesma zona
+  if (OSC_IDS.includes(id)) {
+    const newZone = oscZone(id, p.cond, p.val);
+    if (newZone) {
+      const sameZone = existingConds.filter(c => OSC_IDS.includes(c.id) && oscZone(c.id,c.params.cond,c.params.val)===newZone);
+      if (sameZone.length >= 2)
+        issues.push({type:'warn',rule:'R21',msg:'Três osciladores de sobrecompra/sobrevenda combinados podem gerar sinais insuficientes para análise estatística.'});
+      else if (sameZone.length === 1)
+        issues.push({type:'warn',rule:'R20',msg:'Dois osciladores de sobrecompra/sobrevenda combinados tendem a gerar poucos sinais. Verifique se o histórico terá operações suficientes.'});
+    }
+  }
+
+  // R24: Cruzamento + posição incompatível
+  if (OSC_IDS.includes(id) && p.cond==='está acima de') {
+    existingConds.filter(c=>c.id===id&&c.params.per===p.per&&c.params.cond==='cruza acima de').forEach(cross=>{
+      if (p.val > cross.params.val + 20)
+        issues.push({type:'warn',rule:'R24',msg:`'Cruzar acima de ${cross.params.val}' e 'estar acima de ${p.val}' raramente ocorrem no mesmo candle. O backtest pode gerar pouquíssimos sinais.`});
+    });
+  }
+
+  return issues;
+}
+
+function validateExitCondition(exitCond, entryConds) {
+  for (const ec of entryConds) {
+    if (exitCond.id===ec.id && JSON.stringify(exitCond.params)===JSON.stringify(ec.params))
+      return [{type:'block',rule:'R32',msg:'A condição de saída não pode ser idêntica a uma condição de entrada.'}];
+  }
+  return [];
+}
+
+function validateStep1(cfg) {
+  const issues = [];
+  if (cfg.tStart >= cfg.tEnd)
+    issues.push({type:'block',rule:'R34',msg:'O horário de início deve ser anterior ao horário de fim.'});
+  const tfMin={'1m':1,'2m':2,'5m':5,'10m':10,'15m':15,'30m':30,'60m':60,'D':480};
+  const [sh,sm]=cfg.tStart.split(':').map(Number);
+  const [eh,em]=cfg.tEnd.split(':').map(Number);
+  const win=(eh*60+em)-(sh*60+sm);
+  if (win>0 && tfMin[cfg.tf] && win<tfMin[cfg.tf])
+    issues.push({type:'warn',rule:'R35',msg:`A janela operacional (${win} min) é menor que o timeframe selecionado (${cfg.tf}). Nenhum candle completo caberá neste período.`});
+  return issues;
+}
+
+function renderIssues(issues) {
+  const wrap = div('');
+  issues.forEach(issue => {
+    const el = div('');
+    el.style.cssText = `display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border-radius:8px;margin-top:7px;font-size:12px;line-height:1.5;${
+      issue.type==='block'
+        ? 'background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#EF4444'
+        : 'background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);color:#F59E0B'
+    }`;
+    const icEl = div('');icEl.style.cssText='flex-shrink:0;margin-top:1px';
+    icEl.innerHTML = issue.type==='block'
+      ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>`
+      : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>`;
+    const txt = div('');txt.textContent = issue.msg;
+    el.append(icEl,txt);wrap.appendChild(el);
+  });
+  return wrap;
+}
+
+let modalWarnOverride = false;
+
 let modalState = { open:false, page:0, tab:'Osciladores', ind:null, params:{} };
 
 function openModal(forExitCond=false) {
   modalState = { open:true, page:0, tab:'Osciladores', ind:null, params:{}, forExitCond };
+  modalWarnOverride = false;
   renderModal();
 }
 function closeModal() { modalState.open=false; const m=document.getElementById('modal-container'); if(m) m.remove(); }
@@ -2093,16 +2296,40 @@ function renderModal() {
   // Footer (page 1, but not MA mode selection)
   const showFooter=ms.page===1&&!(ms.ind&&['sma','ema'].includes(ms.ind.id)&&!ms.maMode);
   if(showFooter){
+    // Run validation
+    const tempCond={id:ms.ind.id,name:ms.ind.name,params:{...ms.params}};
+    const valIssues = ms.forExitCond
+      ? validateExitCondition(tempCond, state.cfg.conditions)
+      : validateNewCondition(tempCond, state.cfg.conditions);
+    const hasBlock = valIssues.some(i=>i.type==='block');
+    const hasWarn  = valIssues.some(i=>i.type==='warn');
+
+    // Show issues above footer inside body
+    if(valIssues.length>0) body.appendChild(renderIssues(valIssues));
+
     const foot=div('modal-footer');
-    const cancelBtn=h('button',{class:'btn btnS',onclick:closeModal});cancelBtn.textContent='Cancelar';
-    const confirmBtn=h('button',{class:'btn btnP',onclick:()=>{
-      const newCond={id:ms.ind.id,name:ms.ind.name,params:{...ms.params}};
-      if(ms.forExitCond) { state.cfg.exitCondition=newCond; }
-      else { state.cfg.conditions.push(newCond); }
-      closeModal();
-      renderApp();
-    }});
-    confirmBtn.innerHTML=IC.check+' Confirmar';
+    const cancelBtn=h('button',{class:'btn btnS',onclick:()=>{modalWarnOverride=false;closeModal();}});cancelBtn.textContent='Cancelar';
+
+    let confirmBtn;
+    if(hasBlock){
+      confirmBtn=h('button',{class:'btn btnP'});
+      confirmBtn.disabled=true;
+      confirmBtn.style.cssText='opacity:0.4;cursor:not-allowed;background:var(--bd);color:var(--txm)';
+      confirmBtn.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Condição inválida`;
+    } else if(hasWarn && !modalWarnOverride){
+      confirmBtn=h('button',{class:'btn',style:{background:'rgba(245,158,11,.15)',color:'#F59E0B',border:'1px solid rgba(245,158,11,.3)',padding:'11px 22px',fontWeight:'700'},onclick:()=>{modalWarnOverride=true;renderModal();}});
+      confirmBtn.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg> Confirmar assim mesmo`;
+    } else {
+      confirmBtn=h('button',{class:'btn btnP',onclick:()=>{
+        const newCond={id:ms.ind.id,name:ms.ind.name,params:{...ms.params}};
+        if(ms.forExitCond) { state.cfg.exitCondition=newCond; }
+        else { state.cfg.conditions.push(newCond); }
+        modalWarnOverride=false;
+        closeModal();
+        renderApp();
+      }});
+      confirmBtn.innerHTML=IC.check+' Confirmar';
+    }
     foot.appendChild(cancelBtn);foot.appendChild(confirmBtn);
     modal.appendChild(foot);
   }
@@ -2229,6 +2456,9 @@ function renderStep1() {
   dtBlock.appendChild(dtRow);
   el.appendChild(dtBlock);
 
+  // Validation: janela operacional
+  const s1issues=validateStep1(cfg);
+  if(s1issues.length>0) el.appendChild(renderIssues(s1issues));
   return el;
 }
 
@@ -2824,6 +3054,7 @@ function renderApp() {
   }});
   if(state.step<4) fwdBtn.innerHTML='Avançar '+IC.fwd;
   else fwdBtn.innerHTML='Confirmar estratégia '+IC.fwd;
+  if(state.step===0 && validateStep1(state.cfg).some(i=>i.type==='block')){fwdBtn.disabled=true;fwdBtn.style.opacity='0.35';fwdBtn.style.cursor='not-allowed';fwdBtn.style.pointerEvents='none';}
   if(state.step===1 && state.cfg.conditions.length===0){fwdBtn.disabled=true;fwdBtn.style.opacity='0.35';fwdBtn.style.cursor='not-allowed';fwdBtn.style.pointerEvents='none';}
 
   nav.append(backBtn,fwdBtn);left.appendChild(nav);
