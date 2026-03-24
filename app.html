@@ -2049,7 +2049,7 @@ function renderModal() {
       if(smcId==='fvg'){
         frag.appendChild(pills('Direção','Compra = gap de alta (preço subiu rápido). Venda = gap de baixa (preço caiu rápido). Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
         const vRow=div('');vRow.appendChild(slabel('Tamanho mínimo do gap','O gap precisa ter pelo menos este tamanho em pontos para ser considerado.'));
-        vRow.appendChild(stepper(ms.params.val,1,5000,'pts',v=>{ms.params.val=v;}));
+        vRow.appendChild(stepper(ms.params.val,1,5000,'pts',v=>{ms.params.val=v;if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(vRow);
         // Visual: what is an FVG
         frag.appendChild(miniSVG(500,130,(ln,rc,tx,cd,ci)=>{
@@ -2077,7 +2077,7 @@ function renderModal() {
       if(smcId==='bos'){
         frag.appendChild(pills('Direção','Compra = rompe o último topo (tendência de alta). Venda = rompe o último fundo (tendência de baixa). Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
         const pRow=div('');pRow.appendChild(slabel('Candles para swing','Quantos candles olhar pra trás para identificar o topo ou fundo que será rompido.'));
-        pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;}));
+        pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(pRow);
         // Confirmation pills with visual
         frag.appendChild(pills('Confirmação','Fechamento = o candle precisa fechar além do nível. Sombra = basta a sombra ultrapassar.',['Por fechamento','Por sombra'],ms.params.conf==='sombra'?'Por sombra':'Por fechamento',v=>{ms.params.conf=v==='Por sombra'?'sombra':'fechamento';}));
@@ -2105,7 +2105,7 @@ function renderModal() {
       if(smcId==='choch'){
         frag.appendChild(pills('Direção','Compra = possível reversão para alta. Venda = possível reversão para baixa. Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
         const pRow=div('');pRow.appendChild(slabel('Candles para swing','Quantos candles olhar pra trás para identificar a estrutura que será rompida.'));
-        pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;}));
+        pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(pRow);
         frag.appendChild(pills('Confirmação','Fechamento = o candle precisa fechar além do nível. Sombra = basta a sombra ultrapassar.',['Por fechamento','Por sombra'],ms.params.conf==='sombra'?'Por sombra':'Por fechamento',v=>{ms.params.conf=v==='Por sombra'?'sombra':'fechamento';}));
         // Same confirmation visual as BoS
@@ -2126,7 +2126,7 @@ function renderModal() {
       if(smcId==='ob'){
         frag.appendChild(pills('Direção','Compra = último candle de baixa antes de impulso de alta. Venda = último candle de alta antes de impulso de baixa. Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
         const vRow=div('');vRow.appendChild(slabel('Impulso mínimo','O movimento após o order block precisa ter pelo menos este tamanho em pontos.'));
-        vRow.appendChild(stepper(ms.params.val,10,10000,'pts',v=>{ms.params.val=v;}));
+        vRow.appendChild(stepper(ms.params.val,10,10000,'pts',v=>{ms.params.val=v;if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(vRow);
         frag.appendChild(pills('Considerar','Corpo = apenas o corpo do candle define a zona. Corpo + sombras = inclui as sombras na zona.',['Corpo','Corpo + sombras'],ms.params.bodyOnly,v=>{ms.params.bodyOnly=v;}));
         // OB visual: detected + retest
@@ -2159,13 +2159,13 @@ function renderModal() {
       if(smcId==='sweep'){
         frag.appendChild(pills('Direção','Compra = varre mínimas e reverte pra cima. Venda = varre máximas e reverte pra baixo. Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
         const pRow=div('');pRow.appendChild(slabel('Candles para nível','Quantos candles olhar pra trás para identificar o nível de liquidez.'));
-        pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;}));
+        pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(pRow);
         const vRow=div('');vRow.appendChild(slabel('Ultrapassagem mínima','O preço precisa ultrapassar o nível por pelo menos estes pontos antes de reverter.'));
-        vRow.appendChild(stepper(ms.params.val,1,1000,'pts',v=>{ms.params.val=v;}));
+        vRow.appendChild(stepper(ms.params.val,1,1000,'pts',v=>{ms.params.val=v;if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(vRow);
         const cRow=div('');cRow.appendChild(slabel('Candles de confirmação','Quantos candles o preço precisa fechar na direção oposta para confirmar o sweep.'));
-        cRow.appendChild(stepper(ms.params.confCandles,1,20,'candles',v=>{ms.params.confCandles=v;}));
+        cRow.appendChild(stepper(ms.params.confCandles,1,20,'candles',v=>{ms.params.confCandles=v;if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(cRow);
         // Sweep visual
         frag.appendChild(miniSVG(500,150,(ln,rc,tx,cd,ci)=>{
@@ -2206,6 +2206,7 @@ function renderModal() {
           radios.push({el:r,ring,cond:c});
           r.addEventListener('click',()=>{
             ms.params.cond=c;
+            if(window.refreshModalValidation)refreshModalValidation();
             radios.forEach(rd=>{
               const isOn=rd.cond===c;
               rd.el.className='radio-row'+(isOn?' on':'');
@@ -2240,7 +2241,7 @@ function renderModal() {
         const isCross=isMA&&isMACrossover(ms.params.cond);
         const row=div('');
         row.appendChild(slabel(isCross?'Período da média curta':'Período'));
-        row.appendChild(stepper(ms.params.per,1,500,'',v=>{ms.params.per=v;}));
+        row.appendChild(stepper(ms.params.per,1,500,'',v=>{ms.params.per=v;if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(row);
 
         // Second period (MA crossover only)
@@ -2254,7 +2255,7 @@ function renderModal() {
       if(ind.id==='bb' && ms.params.dev!==undefined) {
         const row=div('');
         row.appendChild(slabel('Desvio padrão','Quantidade de desvios padrão para as bandas superior e inferior. Padrão: 2. Valores maiores = bandas mais largas.'));
-        row.appendChild(stepper(ms.params.dev,1,5,'σ',v=>{ms.params.dev=v;}));
+        row.appendChild(stepper(ms.params.dev,1,5,'σ',v=>{ms.params.dev=v;if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(row);
       }
       if(conds.length>0){
@@ -2270,6 +2271,7 @@ function renderModal() {
           radios.push({el:r,ring,cond:c});
           r.addEventListener('click',()=>{
             ms.params.cond=c;
+            if(window.refreshModalValidation)refreshModalValidation();
             radios.forEach(rd=>{
               const isOn=rd.cond===c;
               rd.el.className='radio-row'+(isOn?' on':'');
@@ -2295,47 +2297,64 @@ function renderModal() {
     }
   }
 
+  // Validation feedback div (always present on config page)
+  if(ms.page===1){
+    const vfDiv=div('');vfDiv.id='val-feedback';vfDiv.style.padding='0 20px';
+    body.appendChild(vfDiv);
+  }
+
   modal.appendChild(body);
 
   // Footer (page 1, but not MA mode selection)
   const showFooter=ms.page===1&&!(ms.ind&&['sma','ema'].includes(ms.ind.id)&&!ms.maMode);
   if(showFooter){
-    // Run validation
-    const tempCond={id:ms.ind.id,name:ms.ind.name,params:{...ms.params}};
-    const valIssues = ms.forExitCond
-      ? validateExitCondition(tempCond, state.cfg.conditions)
-      : validateNewCondition(tempCond, state.cfg.conditions);
-    const hasBlock = valIssues.some(i=>i.type==='block');
-    const hasWarn  = valIssues.some(i=>i.type==='warn');
-
-    // Show issues above footer inside body
-    if(valIssues.length>0) body.appendChild(renderIssues(valIssues));
-
     const foot=div('modal-footer');
     const cancelBtn=h('button',{class:'btn btnS',onclick:()=>{modalWarnOverride=false;closeModal();}});cancelBtn.textContent='Cancelar';
-
-    let confirmBtn;
-    if(hasBlock){
-      confirmBtn=h('button',{class:'btn btnP'});
-      confirmBtn.disabled=true;
-      confirmBtn.style.cssText='opacity:0.4;cursor:not-allowed;background:var(--bd);color:var(--txm)';
-      confirmBtn.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Condição inválida`;
-    } else if(hasWarn && !modalWarnOverride){
-      confirmBtn=h('button',{class:'btn',style:{background:'rgba(245,158,11,.15)',color:'#F59E0B',border:'1px solid rgba(245,158,11,.3)',padding:'11px 22px',fontWeight:'700'},onclick:()=>{modalWarnOverride=true;renderModal();}});
-      confirmBtn.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg> Confirmar assim mesmo`;
-    } else {
-      confirmBtn=h('button',{class:'btn btnP',onclick:()=>{
-        const newCond={id:ms.ind.id,name:ms.ind.name,params:{...ms.params}};
-        if(ms.forExitCond) { state.cfg.exitCondition=newCond; }
-        else { state.cfg.conditions.push(newCond); }
-        modalWarnOverride=false;
-        closeModal();
-        renderApp();
-      }});
-      confirmBtn.innerHTML=IC.check+' Confirmar';
-    }
+    const confirmBtn=h('button',{class:'btn btnP'});
+    confirmBtn.id='modal-confirm-btn';
+    confirmBtn.innerHTML=IC.check+' Confirmar';
     foot.appendChild(cancelBtn);foot.appendChild(confirmBtn);
     modal.appendChild(foot);
+
+    // refreshModalValidation: called on every param change
+    window.refreshModalValidation = function() {
+      const tempCond={id:ms.ind.id,name:ms.ind.name,params:{...ms.params}};
+      const valIssues = ms.forExitCond
+        ? validateExitCondition(tempCond, state.cfg.conditions)
+        : validateNewCondition(tempCond, state.cfg.conditions);
+      const hasBlock = valIssues.some(i=>i.type==='block');
+      const hasWarn  = valIssues.some(i=>i.type==='warn');
+      // Update feedback div
+      const vfEl=document.getElementById('val-feedback');
+      if(vfEl){vfEl.innerHTML='';if(valIssues.length>0)vfEl.appendChild(renderIssues(valIssues));}
+      // Update confirm button
+      const btn=document.getElementById('modal-confirm-btn');
+      if(!btn) return;
+      if(hasBlock){
+        btn.disabled=true;
+        btn.style.cssText='opacity:0.4;cursor:not-allowed;background:var(--bd);color:var(--txm);display:inline-flex;align-items:center;gap:6px;border:none;padding:11px 22px;font-weight:700;border-radius:8px';
+        btn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Condição inválida';
+        btn.onclick=null;
+      } else if(hasWarn && !modalWarnOverride){
+        btn.disabled=false;
+        btn.style.cssText='background:rgba(245,158,11,.15);color:#F59E0B;border:1px solid rgba(245,158,11,.3);padding:11px 22px;font-weight:700;display:inline-flex;align-items:center;gap:6px;border-radius:8px;cursor:pointer';
+        btn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg> Confirmar assim mesmo';
+        btn.onclick=()=>{modalWarnOverride=true;refreshModalValidation();};
+      } else {
+        btn.disabled=false;
+        btn.style.cssText='';
+        btn.className='btn btnP';
+        btn.innerHTML=IC.check+' Confirmar';
+        btn.onclick=()=>{
+          const newCond={id:ms.ind.id,name:ms.ind.name,params:{...ms.params}};
+          if(ms.forExitCond){state.cfg.exitCondition=newCond;}
+          else{state.cfg.conditions.push(newCond);}
+          modalWarnOverride=false;closeModal();renderApp();
+        };
+      }
+    };
+    // Run on open
+    refreshModalValidation();
   }
 
   modalEl.appendChild(modal);
@@ -2468,10 +2487,59 @@ function renderStep1() {
 
 function renderStep2() {
   const cfg=state.cfg;
-  const el=div(state.animate?'aFwd':'');el.style.cssText='display:flex;flex-direction:column;gap:13px';
-  const desc=div('');desc.style.cssText='font-size:13px;color:#8888A0;line-height:1.6';
-  desc.innerHTML='Quando <strong style="color:#E8E8ED">TODAS</strong> estas condições forem verdadeiras simultaneamente:';
-  el.appendChild(desc);
+  const el=div(state.animate?'aFwd':'');el.style.cssText='display:flex;flex-direction:column;gap:18px';
+
+  // ── Direção (primeiro) ──
+  const inferred=inferDirection(cfg.conditions);
+  if(inferred.dir==='long') cfg.direction='long';
+  else if(inferred.dir==='short') cfg.direction='short';
+  else if(inferred.dir==='both') cfg.direction='both';
+
+  const dirBlock=div('');
+  dirBlock.appendChild(slabel('Direção da operação','Define se o sistema deve procurar setups de Compra, Venda, ou ambos simultaneamente.'));
+  const dirRow=div('');dirRow.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
+  const isLong=cfg.direction==='long'||cfg.direction==='both';
+  const isShort=cfg.direction==='short'||cfg.direction==='both';
+  const locked=inferred.dir!==null;
+
+  // Compra
+  const longCard=div('card pick'+(isLong?' selp':''));
+  longCard.style.cssText='padding:12px 16px;display:flex;align-items:center;gap:10px;flex:1;min-width:120px'+(locked?';opacity:0.7;pointer-events:none':'');
+  longCard.innerHTML='<span style="font-size:18px">▲</span><span style="font-size:13px;font-weight:700;color:'+(isLong?'#10B981':'#8888A0')+'">Compra</span>';
+  if(!locked) longCard.addEventListener('click',()=>{cfg.direction=(isLong&&isShort)?'short':(!isLong?'both':'short');renderApp();});
+
+  // Venda
+  const shortCard=div('card pick'+(isShort?' seld':''));
+  shortCard.style.cssText='padding:12px 16px;display:flex;align-items:center;gap:10px;flex:1;min-width:120px'+(locked?';opacity:0.7;pointer-events:none':'');
+  shortCard.innerHTML='<span style="font-size:18px">▼</span><span style="font-size:13px;font-weight:700;color:'+(isShort?'#EF4444':'#8888A0')+'">Venda</span>';
+  if(!locked) shortCard.addEventListener('click',()=>{cfg.direction=(isShort&&isLong)?'long':(!isShort?'both':'long');renderApp();});
+
+  dirRow.append(longCard,shortCard);
+  dirBlock.appendChild(dirRow);
+
+  // Hint / lock banner
+  if(locked && inferred.dir!=='conflict'){
+    const hint=div('');hint.style.cssText='font-size:11px;color:#00D4AA;margin-top:6px;display:flex;align-items:center;gap:5px';
+    hint.innerHTML=IC.act+' Direção definida automaticamente pelas condições';
+    dirBlock.appendChild(hint);
+  } else if(locked && inferred.dir==='conflict'){
+    const hint=div('');hint.style.cssText='font-size:11px;color:#EF4444;margin-top:6px;display:flex;align-items:center;gap:5px';
+    hint.innerHTML=IC.warn+' Conflito de direção nas condições — revise';
+    dirBlock.appendChild(hint);
+  } else {
+    const hint=div('');hint.style.cssText='font-size:11px;color:#6B6B80;margin-top:4px';
+    hint.textContent=(cfg.direction==='long'?'Apenas compra':cfg.direction==='short'?'Apenas venda':'Compra e venda')+' · Selecione um ou ambos';
+    dirBlock.appendChild(hint);
+  }
+  el.appendChild(dirBlock);
+
+  // Divider
+  const div2=document.createElement('div');div2.style.cssText='height:1px;background:var(--bd)';el.appendChild(div2);
+
+  // ── Condições ──
+  const condTitle=div('');condTitle.style.cssText='font-size:13px;color:#8888A0;line-height:1.6';
+  condTitle.innerHTML='Quando <strong style="color:#E8E8ED">TODAS</strong> estas condições forem verdadeiras simultaneamente:';
+  el.appendChild(condTitle);
 
   if(cfg.conditions.length===0){
     const empty=div('');
@@ -2507,66 +2575,13 @@ function renderStep3() {
   const cfg=state.cfg;
   const el=div(state.animate?'aFwd':'');el.style.cssText='display:flex;flex-direction:column;gap:24px';
 
-  // Infer direction from conditions
-  const inferred=inferDirection(cfg.conditions);
-  const locked=inferred.dir!==null;
-
-  // Auto-set direction when implied by conditions
-  if(inferred.dir==='long') cfg.direction='long';
-  else if(inferred.dir==='short') cfg.direction='short';
-  else if(inferred.dir==='both') cfg.direction='both';
-
-  const isLong=cfg.direction==='long'||cfg.direction==='both';
-  const isShort=cfg.direction==='short'||cfg.direction==='both';
-
-  // Direction
-  const dBlock=div('');
-  dBlock.appendChild(slabel('Direção da operação','Defina se o sistema deve operar comprado (long), vendido (short) ou ambos.'));
-
-  // Show banner when direction is locked by conditions
-  if(locked){
-    const banner=div('banner');
-    banner.style.cssText='display:flex;align-items:flex-start;gap:9px;padding:10px 13px;border-radius:9px;margin-bottom:10px;background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.15)';
-    const ic=div('');ic.style.cssText='color:#00D4AA;flex-shrink:0;margin-top:1px';ic.innerHTML=IC.act;
-    const txt=div('');txt.style.cssText='font-size:12px;color:#8888A0;line-height:1.5';
-    if(inferred.dir==='conflict'){
-      banner.style.background='rgba(239,68,68,.06)';banner.style.borderColor='rgba(239,68,68,.15)';
-      ic.style.color='#EF4444';ic.innerHTML=IC.warn;
-      txt.innerHTML='<strong style="color:#EF4444">Conflito de direção.</strong> Suas condições implicam compra e venda ao mesmo tempo de forma contraditória. Revise as condições no passo anterior.';
-    } else {
-      const dirLabel=inferred.dir==='long'?'compra':inferred.dir==='short'?'venda':'compra e venda';
-      txt.innerHTML=`<strong style="color:#00D4AA">Direção definida automaticamente:</strong> ${dirLabel}.<br><span style="color:#6B6B80">Baseado em: ${inferred.reasons.map(r=>r.label).join(', ')}</span>`;
-    }
-    banner.append(ic,txt);dBlock.appendChild(banner);
-  }
-
-  const dg=div('');dg.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:8px';
-  const makeDir=(label,arrow,active,cls,onClick)=>{
-    const c=div('card pick'+cls);c.style.cssText='padding:15px;text-align:center';
-    if(locked){c.style.opacity='0.5';c.style.cursor='not-allowed';c.style.pointerEvents='none';}
-    c.innerHTML=`<div style="font-size:22px;margin-bottom:5px">${arrow}</div><div style="font-size:13px;font-weight:700;color:${active?'inherit':'#8888A0'}">${label}</div>`;
-    if(!locked) c.addEventListener('click',onClick);
-    return c;
-  };
-  const longCard=makeDir('COMPRA (Long)','▲',isLong,(isLong?' selp':''),()=>{
-    if(isLong&&isShort) cfg.direction='short';
-    else if(!isLong) cfg.direction='both';
-    else cfg.direction='short';
-    renderApp();
-  });
-  const shortCard=makeDir('VENDA (Short)','▼',isShort,(isShort?' seld':''),()=>{
-    if(isShort&&isLong) cfg.direction='long';
-    else if(!isShort) cfg.direction='both';
-    else cfg.direction='long';
-    renderApp();
-  });
-  dg.append(longCard,shortCard);
-  const hint=div('');hint.style.cssText='font-size:11px;color:#6B6B80';
-  hint.textContent=locked
-    ?'Direção determinada pelas condições configuradas'
-    :'Ativo: '+(cfg.direction==='long'?'Apenas compra':cfg.direction==='short'?'Apenas venda':'Compra e venda')+' · Selecione um ou ambos';
-  dBlock.appendChild(dg);dBlock.appendChild(hint);
-  el.appendChild(dBlock);
+  // Direction summary (configured in step 2)
+  const dirSummary=div('');
+  const dirColor=cfg.direction==='long'?'#10B981':cfg.direction==='short'?'#EF4444':'#6366F1';
+  const dirLabel=cfg.direction==='long'?'▲ Apenas Compra':cfg.direction==='short'?'▼ Apenas Venda':'▲▼ Compra e Venda';
+  dirSummary.style.cssText='background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:11px 15px;display:flex;align-items:center;gap:10px';
+  dirSummary.innerHTML=`<span style="font-size:11px;color:#8888A0">Direção:</span> <span style="font-size:13px;font-weight:700;color:${dirColor}">${dirLabel}</span> <span style="font-size:11px;color:#44445A;margin-left:auto">← definido no Passo 2</span>`;
+  el.appendChild(dirSummary);
 
   // Entry type
   const eBlock=div('');
