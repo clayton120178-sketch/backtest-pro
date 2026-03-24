@@ -60,7 +60,7 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .card.sel{border-color:var(--ac)!important;background:var(--acd)!important}
 .card.seld{border-color:var(--dg)!important;background:var(--dgd)!important}
 .card.selp{border-color:var(--pr)!important;background:var(--prd)!important}
-.card.pick{cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s,transform .15s}.card.pick:hover{border-color:var(--ac);background:rgba(0,212,170,.04);box-shadow:0 0 20px rgba(0,212,170,.1);transform:translateY(-1px)}
+.card.pick{cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s,transform .15s}.card.pick:hover{border-color:var(--ac);background:rgba(0,212,170,.04);box-shadow:0 0 20px rgba(0,212,170,.1);transform:translateY(-1px)}.card.pick.dir-venda:hover{border-color:#EF4444;background:rgba(239,68,68,.04);box-shadow:0 0 20px rgba(239,68,68,.1)}
 
 /* Buttons */
 .btn{display:inline-flex;align-items:center;gap:6px;border:none;cursor:pointer;font-weight:500;transition:all .16s;border-radius:8px;white-space:nowrap;font-size:14px}
@@ -2509,7 +2509,7 @@ function renderStep2() {
   if(!locked) longCard.addEventListener('click',()=>{cfg.direction=(isLong&&isShort)?'short':(!isLong?'both':'short');renderApp();});
 
   // Venda
-  const shortCard=div('card pick'+(isShort?' seld':''));
+  const shortCard=div('card pick dir-venda'+(isShort?' seld':''));
   shortCard.style.cssText='padding:12px 16px;display:flex;align-items:center;gap:10px;flex:1;min-width:120px'+(locked?';opacity:0.7;pointer-events:none':'');
   shortCard.innerHTML='<span style="font-size:18px">▼</span><span style="font-size:13px;font-weight:700;color:'+(isShort?'#EF4444':'#8888A0')+'">Venda</span>';
   if(!locked) shortCard.addEventListener('click',()=>{cfg.direction=(isShort&&isLong)?'long':(!isShort?'both':'long');renderApp();});
@@ -2528,7 +2528,12 @@ function renderStep2() {
     dirBlock.appendChild(hint);
   } else {
     const hint=div('');hint.style.cssText='font-size:11px;color:#6B6B80;margin-top:4px';
-    hint.textContent=(cfg.direction==='long'?'Apenas compra':cfg.direction==='short'?'Apenas venda':'Compra e venda')+' · Selecione um ou ambos';
+    if(cfg.direction==='both'){
+      hint.style.color='#6366F1';
+      hint.textContent='✓ Compra e Venda — ambas direções ativas';
+    } else {
+      hint.textContent=(cfg.direction==='long'?'▲ Apenas Compra ativa':'▼ Apenas Venda ativa')+' · Clique no outro botão para adicionar';
+    }
     dirBlock.appendChild(hint);
   }
   el.appendChild(dirBlock);
