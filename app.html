@@ -361,7 +361,7 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 
 <script>
 // ─── STATE ────────────────────────────────────────────────────
-const APP_VERSION = '1.1.1'; // Versão do produto — atualizar a cada release
+const APP_VERSION = '1.1.2'; // Versão do produto — atualizar a cada release
 
 const state = {
   screen: 'wizard', // wizard|confirm|loading|results
@@ -2317,6 +2317,8 @@ function renderModal() {
     modal.appendChild(foot);
 
     // refreshModalValidation: called on every param change
+    // refreshModalValidation: usa referência direta ao confirmBtn (não getElementById)
+    // pois é chamada antes e depois do modal entrar no DOM
     window.refreshModalValidation = function() {
       const tempCond={id:ms.ind.id,name:ms.ind.name,params:{...ms.params}};
       const valIssues = ms.forExitCond
@@ -2327,25 +2329,23 @@ function renderModal() {
       // Update feedback div
       const vfEl=document.getElementById('val-feedback');
       if(vfEl){vfEl.innerHTML='';if(valIssues.length>0)vfEl.appendChild(renderIssues(valIssues));}
-      // Update confirm button
-      const btn=document.getElementById('modal-confirm-btn');
-      if(!btn) return;
+      // Update confirm button via direct reference
       if(hasBlock){
-        btn.disabled=true;
-        btn.style.cssText='opacity:0.4;cursor:not-allowed;background:var(--bd);color:var(--txm);display:inline-flex;align-items:center;gap:6px;border:none;padding:11px 22px;font-weight:700;border-radius:8px';
-        btn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Condição inválida';
-        btn.onclick=null;
+        confirmBtn.disabled=true;
+        confirmBtn.style.cssText='opacity:0.4;cursor:not-allowed;background:var(--bd);color:var(--txm);display:inline-flex;align-items:center;gap:6px;border:none;padding:11px 22px;font-weight:700;border-radius:8px';
+        confirmBtn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Condição inválida';
+        confirmBtn.onclick=null;
       } else if(hasWarn && !modalWarnOverride){
-        btn.disabled=false;
-        btn.style.cssText='background:rgba(245,158,11,.15);color:#F59E0B;border:1px solid rgba(245,158,11,.3);padding:11px 22px;font-weight:700;display:inline-flex;align-items:center;gap:6px;border-radius:8px;cursor:pointer';
-        btn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg> Confirmar assim mesmo';
-        btn.onclick=()=>{modalWarnOverride=true;refreshModalValidation();};
+        confirmBtn.disabled=false;
+        confirmBtn.style.cssText='background:rgba(245,158,11,.15);color:#F59E0B;border:1px solid rgba(245,158,11,.3);padding:11px 22px;font-weight:700;display:inline-flex;align-items:center;gap:6px;border-radius:8px;cursor:pointer';
+        confirmBtn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg> Confirmar assim mesmo';
+        confirmBtn.onclick=()=>{modalWarnOverride=true;refreshModalValidation();};
       } else {
-        btn.disabled=false;
-        btn.style.cssText='';
-        btn.className='btn btnP';
-        btn.innerHTML=IC.check+' Confirmar';
-        btn.onclick=()=>{
+        confirmBtn.disabled=false;
+        confirmBtn.style.cssText='';
+        confirmBtn.className='btn btnP';
+        confirmBtn.innerHTML=IC.check+' Confirmar';
+        confirmBtn.onclick=()=>{
           const newCond={id:ms.ind.id,name:ms.ind.name,params:{...ms.params}};
           if(ms.forExitCond){state.cfg.exitCondition=newCond;}
           else{state.cfg.conditions.push(newCond);}
@@ -2353,12 +2353,12 @@ function renderModal() {
         };
       }
     };
-    // Run on open
-    refreshModalValidation();
   }
 
   modalEl.appendChild(modal);
   document.body.appendChild(modalEl);
+  // Chamar APÓS inserção no DOM (para val-feedback estar acessível)
+  if(window.refreshModalValidation) refreshModalValidation();
 }
 
 // ─── STEP RENDERERS ───────────────────────────────────────────
