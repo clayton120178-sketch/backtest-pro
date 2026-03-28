@@ -2379,9 +2379,9 @@ function renderModal() {
         row.appendChild(slabel('Multiplicador da média','O ATR atual será comparado com este múltiplo da sua própria média. Ex: 1.5× significa que a volatilidade precisa estar 50% acima da média.'));
         const multVal=div('step-val mono');
         multVal.textContent=ms.params.mult.toFixed(1);
-        const dec=h('button',{class:'step-btn',onclick:()=>{ms.params.mult=Math.max(0.1,+(ms.params.mult-0.1).toFixed(1));renderModal();}});
+        const dec=h('button',{class:'step-btn',onclick:()=>{ms.params.mult=Math.max(0.1,+(ms.params.mult-0.1).toFixed(1));multVal.textContent=ms.params.mult.toFixed(1);if(window.refreshModalValidation)refreshModalValidation();}});
         dec.textContent='−';
-        const inc=h('button',{class:'step-btn',onclick:()=>{ms.params.mult=Math.min(10,+(ms.params.mult+0.1).toFixed(1));renderModal();}});
+        const inc=h('button',{class:'step-btn',onclick:()=>{ms.params.mult=Math.min(10,+(ms.params.mult+0.1).toFixed(1));multVal.textContent=ms.params.mult.toFixed(1);if(window.refreshModalValidation)refreshModalValidation();}});
         inc.textContent='+';
         const wrap=div('stepper',dec,multVal,inc);
         const unit=div('step-unit');unit.textContent='× a média';wrap.appendChild(unit);
