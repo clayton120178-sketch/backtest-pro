@@ -1257,7 +1257,8 @@ function buildPreview(step,cfg) {
   // ── Step 0: time window ──
   if(step===0){
     const toMin=s=>{const p=(s||'00:00').split(':');return(parseInt(p[0],10)||0)*60+(parseInt(p[1],10)||0);};
-    const dayStart=toMin('08:00'), dayEnd=toMin('18:30'), dayRange=dayEnd-dayStart||1;
+    const isLocal=cfg.market==='local';
+    const dayStart=toMin(isLocal?'08:00':'00:00'), dayEnd=toMin(isLocal?'18:30':'23:59'), dayRange=dayEnd-dayStart||1;
     const timeX=s=>{const m=toMin(s);return 6+((Math.max(dayStart,Math.min(dayEnd,m))-dayStart)/dayRange)*(W-12);};
     const x1=timeX(cfg.tStart), x2=timeX(cfg.tLastEntry), x3=timeX(cfg.tEnd);
     rc(x1,0,Math.max(1,x2-x1),chartH,'#00D4AA',0.03,0);
