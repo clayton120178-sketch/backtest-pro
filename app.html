@@ -3416,14 +3416,14 @@ function renderResults() {
     const backBtn=h('button',{class:'btn btnP',style:{flex:'1 1 auto',justifyContent:'center'},onclick:exitHistoryDetail});
     backBtn.innerHTML=IC.back+' Voltar ao histórico';
     const dlBtn=h('button',{class:'btn btnS'});dlBtn.innerHTML=IC.dl+' Exportar PDF';
-    const shBtn=h('button',{class:'btn btnS'});shBtn.innerHTML=IC.share+' Compartilhar';
+    const shBtn=h('button',{class:'btn btnS',onclick:shareResult});shBtn.innerHTML=IC.share+' Compartilhar';
     acts.append(backBtn,dlBtn,shBtn);
   } else {
     const resetBtn=h('button',{class:'btn btnP',style:{flex:'1 1 auto',justifyContent:'center'},onclick:()=>{state.animate=true;state.screen='wizard';state.step=0;state.maxDone=0;renderApp();}});
     resetBtn.innerHTML=IC.ref+' Ajustar e testar novamente';
     const dlBtn=h('button',{class:'btn btnS'});dlBtn.innerHTML=IC.dl+' Exportar PDF';
     const svBtn=h('button',{class:'btn btnS'});svBtn.innerHTML=IC.save+' Salvar';
-    const shBtn=h('button',{class:'btn btnS'});shBtn.innerHTML=IC.share+' Compartilhar';
+    const shBtn=h('button',{class:'btn btnS',onclick:shareResult});shBtn.innerHTML=IC.share+' Compartilhar';
     acts.append(resetBtn,dlBtn,svBtn,shBtn);
   }
   el.appendChild(acts);
@@ -4124,6 +4124,146 @@ db.auth.onAuthStateChange(async (event, session) => {
     showAuthModal('login');
   }
 });
+
+// ─── SHARE CARD GENERATOR ──────────────────────────────────────
+function rrect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
+
+async function generateShareCard(){
+  const A=EQ_ANALYSIS,last=EQ[EQ.length-1].v,ok=last>0,cfg=state.cfg;
+  const S=1080,cv=document.createElement('canvas');cv.width=S;cv.height=S;
+  const cx=cv.getContext('2d');
+  const sc=v=>Math.round(v*2);
+  const mn=sz=>sc(sz)+'px "JetBrains Mono",monospace';
+  const sn=(wt,sz)=>wt+' '+sc(sz)+'px "DM Sans",sans-serif';
+  const fr=v=>(v>=0?'+':'\u2212')+'R$ '+Math.abs(v).toLocaleString('pt-BR');
+
+  cx.fillStyle='#0A0A0F';cx.fillRect(0,0,S,S);
+  cx.strokeStyle='rgba(0,212,170,0.018)';cx.lineWidth=1;
+  for(let i=0;i<S;i+=sc(30)){cx.beginPath();cx.moveTo(i,0);cx.lineTo(i,S);cx.stroke();cx.beginPath();cx.moveTo(0,i);cx.lineTo(S,i);cx.stroke();}
+  const gd=cx.createLinearGradient(0,0,S,0);
+  gd.addColorStop(0,'transparent');gd.addColorStop(.2,ok?'#10B981':'#EF4444');gd.addColorStop(.5,ok?'#00D4AA':'#F87171');gd.addColorStop(.8,ok?'#10B981':'#EF4444');gd.addColorStop(1,'transparent');
+  cx.fillStyle=gd;cx.fillRect(0,0,S,sc(2));
+  const gG=cx.createRadialGradient(S/2,sc(120),0,S/2,sc(120),sc(250));
+  gG.addColorStop(0,ok?'rgba(16,185,129,0.05)':'rgba(239,68,68,0.05)');gG.addColorStop(1,'transparent');
+  cx.fillStyle=gG;cx.fillRect(0,0,S,sc(300));
+
+  // Header
+  const lx=sc(28),ly=sc(22);
+  cx.fillStyle='rgba(0,212,170,0.12)';cx.strokeStyle='rgba(0,212,170,0.3)';cx.lineWidth=1;
+  rrect(cx,lx,ly,sc(24),sc(24),sc(6));cx.fill();cx.stroke();
+  cx.strokeStyle='#00D4AA';cx.lineWidth=sc(1.5);cx.lineCap='round';
+  cx.beginPath();cx.moveTo(lx+sc(6),ly+sc(4));cx.lineTo(lx+sc(6),ly+sc(18));cx.lineTo(lx+sc(18),ly+sc(18));cx.stroke();
+  cx.beginPath();cx.moveTo(lx+sc(9),ly+sc(14));cx.lineTo(lx+sc(12),ly+sc(10));cx.lineTo(lx+sc(15),ly+sc(12));cx.lineTo(lx+sc(18),ly+sc(8));cx.stroke();
+  cx.textBaseline='middle';cx.fillStyle='#E8E8ED';cx.font=sn(800,13);
+  cx.fillText('Backtest',lx+sc(30),ly+sc(12));
+  const bw=cx.measureText('Backtest').width;cx.fillStyle='#00D4AA';cx.fillText(' Pro',lx+sc(30)+bw,ly+sc(12));
+  cx.fillStyle='#44445A';cx.font=sn(500,8.5);cx.textAlign='right';
+  cx.fillText('Backtest automatizado',S-sc(28),sc(30));
+  cx.fillText('gerado pelo Backtest Pro',S-sc(28),sc(42));cx.textAlign='left';
+
+  // Strategy bar
+  const bY=sc(58);
+  cx.fillStyle='#12121A';cx.strokeStyle='#1E1E2E';cx.lineWidth=1;
+  rrect(cx,sc(28),bY,S-sc(56),sc(38),sc(8));cx.fill();cx.stroke();
+  const si=[['ATIVO',cfg.asset],['TIMEFRAME',cfg.tf],['PER\u00cdODO','Jan/2021 \u2013 Mar/2026'],['OPERA\u00c7\u00d5ES',EQ.length.toLocaleString('pt-BR')]];
+  let sx=sc(42);
+  si.forEach((it,i)=>{
+    if(i>0){cx.fillStyle='#1E1E2E';cx.fillRect(sx-sc(10),bY+sc(8),1,sc(22));sx+=sc(6);}
+    cx.fillStyle='#44445A';cx.font=sn(700,7.5);cx.fillText(it[0],sx,bY+sc(15));
+    cx.fillStyle='#8888A0';cx.font=mn(9.5);cx.fillText(it[1],sx,bY+sc(28));
+    sx+=cx.measureText(it[1]).width+sc(28);
+  });
+
+  // Verdict
+  const vY=sc(116);
+  cx.fillStyle=ok?'#10B981':'#EF4444';cx.font=sn(800,9);
+  cx.fillText(ok?'ESTRAT\u00c9GIA LUCRATIVA':'ESTRAT\u00c9GIA DEFICIT\u00c1RIA',sc(28),vY);
+  cx.font='800 '+sc(38)+'px "JetBrains Mono",monospace';
+  cx.fillText(fr(last),sc(28),vY+sc(38));
+  cx.fillStyle='#44445A';cx.font=mn(10);
+  cx.fillText('5 anos \u00b7 '+EQ.length.toLocaleString('pt-BR')+' trades \u00b7 340.000+ candles',sc(28),vY+sc(54));
+  cx.font=sn(700,10);const bt=ok?'Lucrativa':'Deficit\u00e1ria';
+  const bW2=cx.measureText(bt).width+sc(30),bX2=S-sc(28)-bW2;
+  cx.fillStyle=ok?'rgba(16,185,129,0.1)':'rgba(239,68,68,0.08)';cx.strokeStyle=ok?'rgba(16,185,129,0.25)':'rgba(239,68,68,0.2)';cx.lineWidth=1;
+  rrect(cx,bX2,vY+sc(14),bW2,sc(26),sc(13));cx.fill();cx.stroke();
+  cx.fillStyle=ok?'#10B981':'#EF4444';cx.textAlign='center';cx.fillText(bt,bX2+bW2/2,vY+sc(31));cx.textAlign='left';
+
+  // Metrics
+  const mY=sc(188),mW=(S-sc(56)-sc(24))/4;
+  [{l:'TAXA DE ACERTO',v:A.winRate.toFixed(1)+'%',c:'#F59E0B',p:A.winRate},{l:'PROFIT FACTOR',v:A.profitFactor.toFixed(2),c:A.profitFactor>1?'#00D4AA':'#EF4444'},{l:'RESULTADO/TRADE',v:'R$'+(last/EQ.length).toFixed(2),c:last>=0?'#10B981':'#EF4444'},{l:'MAX DRAWDOWN',v:'\u2212R$'+A.maxDDVal.toLocaleString('pt-BR',{maximumFractionDigits:0}),c:'#EF4444'}].forEach((m,i)=>{
+    const mx=sc(28)+i*(mW+sc(8));
+    cx.fillStyle='#12121A';cx.strokeStyle='#1E1E2E';cx.lineWidth=1;
+    rrect(cx,mx,mY,mW,sc(58),sc(8));cx.fill();cx.stroke();
+    cx.fillStyle='#44445A';cx.font=sn(700,7);cx.fillText(m.l,mx+sc(11),mY+sc(16));
+    cx.fillStyle=m.c;cx.font='700 '+sc(16)+'px "JetBrains Mono",monospace';cx.fillText(m.v,mx+sc(11),mY+sc(38));
+    if(m.p!==undefined){cx.fillStyle='#1A1A28';rrect(cx,mx+sc(11),mY+sc(46),mW-sc(22),sc(2),1);cx.fill();cx.fillStyle='#F59E0B';rrect(cx,mx+sc(11),mY+sc(46),(mW-sc(22))*m.p/100,sc(2),1);cx.fill();}
+  });
+
+  // Equity chart
+  const cY2=sc(262);
+  cx.fillStyle='#0E0E16';cx.strokeStyle='#1A1A28';cx.lineWidth=1;
+  rrect(cx,sc(28),cY2,S-sc(56),sc(108),sc(8));cx.fill();cx.stroke();
+  cx.fillStyle='#44445A';cx.font=sn(700,7.5);cx.fillText('CURVA DE EQUITY',sc(42),cY2+sc(16));
+  const chX=sc(42),chY=cY2+sc(24),chW=S-sc(84),chH=sc(72);
+  const vs=EQ.map(d=>d.v),mnV=Math.min(...vs,0),mxV=Math.max(...vs),rgV=mxV-mnV||1;
+  const px=i=>chX+(i/(EQ.length-1))*chW,py=v=>chY+(1-(v-mnV)/rgV)*chH;
+  if(mnV<0){const zy=py(0);cx.strokeStyle='#1E1E2E';cx.lineWidth=.5;cx.setLineDash([sc(3),sc(4)]);cx.beginPath();cx.moveTo(chX,zy);cx.lineTo(chX+chW,zy);cx.stroke();cx.setLineDash([]);}
+  const aG=cx.createLinearGradient(0,chY,0,chY+chH);
+  aG.addColorStop(0,ok?'rgba(16,185,129,0.2)':'rgba(239,68,68,0.15)');aG.addColorStop(1,ok?'rgba(16,185,129,0.01)':'rgba(239,68,68,0.01)');
+  cx.fillStyle=aG;cx.beginPath();cx.moveTo(px(0),chY+chH);EQ.forEach((d,i)=>cx.lineTo(px(i),py(d.v)));cx.lineTo(px(EQ.length-1),chY+chH);cx.closePath();cx.fill();
+  cx.strokeStyle=ok?'#10B981':'#EF4444';cx.lineWidth=sc(1.5);cx.lineCap='round';cx.lineJoin='round';
+  cx.beginPath();EQ.forEach((d,i)=>{if(i===0)cx.moveTo(px(i),py(d.v));else cx.lineTo(px(i),py(d.v));});cx.stroke();
+  const lp2={x:px(EQ.length-1),y:py(last)};
+  cx.fillStyle=ok?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)';cx.beginPath();cx.arc(lp2.x,lp2.y,sc(5),0,Math.PI*2);cx.fill();
+  cx.fillStyle=ok?'#10B981':'#EF4444';cx.beginPath();cx.arc(lp2.x,lp2.y,sc(2.5),0,Math.PI*2);cx.fill();
+
+  // Message
+  const msY=sc(384);
+  cx.fillStyle=ok?'rgba(16,185,129,0.06)':'rgba(239,68,68,0.05)';cx.strokeStyle=ok?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.12)';cx.lineWidth=1;
+  rrect(cx,sc(28),msY,S-sc(56),sc(64),sc(8));cx.fill();cx.stroke();
+  cx.font=sn(500,11);
+  if(ok){
+    cx.fillStyle='#8888A0';const t1='Essa estrat\u00e9gia produziu ';cx.fillText(t1,sc(42),msY+sc(22));
+    const w1=cx.measureText(t1).width;cx.fillStyle='#10B981';cx.font=sn(700,11);
+    const vt='lucro de '+fr(last).replace('+','');cx.fillText(vt,sc(42)+w1,msY+sc(22));
+    const w2=cx.measureText(vt).width;cx.fillStyle='#8888A0';cx.font=sn(500,11);
+    cx.fillText(' em 5 anos',sc(42)+w1+w2,msY+sc(22));
+    cx.fillText('de backtest com '+EQ.length.toLocaleString('pt-BR')+' opera\u00e7\u00f5es analisadas em dados hist\u00f3ricos reais.',sc(42),msY+sc(42));
+  }else{
+    cx.fillStyle='#8888A0';const t1='Esse backtest evitou que voc\u00ea ';cx.fillText(t1,sc(42),msY+sc(22));
+    const w1=cx.measureText(t1).width;cx.fillStyle='#EF4444';cx.font=sn(700,11);
+    cx.fillText('perca '+fr(last).replace('\u2212','R$ '),sc(42)+w1,msY+sc(22));
+    cx.fillStyle='#8888A0';cx.font=sn(500,11);
+    cx.fillText('operando uma estrat\u00e9gia ineficiente em 5 anos de dados. Teste antes. Opere com dados.',sc(42),msY+sc(42));
+  }
+
+  // Footer
+  const fG2=cx.createLinearGradient(0,S-sc(60),0,S);fG2.addColorStop(0,'transparent');fG2.addColorStop(.4,'rgba(10,10,15,0.95)');
+  cx.fillStyle=fG2;cx.fillRect(0,S-sc(60),S,sc(60));
+  cx.fillStyle='#00D4AA';cx.font=sn(700,11);
+  cx.fillText('Teste suas estrat\u00e9gias gratuitamente agora  \u2192',sc(28),S-sc(20));
+
+  return new Promise(r=>cv.toBlob(r,'image/png'));
+}
+
+async function shareResult(evt){
+  const btn=evt?evt.currentTarget:event.currentTarget;
+  const orig=btn.innerHTML;
+  btn.innerHTML='<span style="display:inline-flex;animation:spin .6s linear infinite">\u27f3</span> Gerando...';btn.disabled=true;
+  try{
+    const blob=await generateShareCard();
+    const file=new File([blob],'backtest-pro-resultado.png',{type:'image/png'});
+    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:'Resultado do Backtest Pro'});
+    }else{
+      const url=URL.createObjectURL(blob);const a=document.createElement('a');
+      a.href=url;a.download='backtest-pro-resultado.png';
+      document.body.appendChild(a);a.click();document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  }catch(e){if(e.name!=='AbortError')console.error('Share error:',e);}
+  btn.innerHTML=orig;btn.disabled=false;
+}
 </script>
 </body>
 </html>
