@@ -627,7 +627,7 @@ const INDS_BY_TAB = {
     { id:'hilo', name:'HiLo Activator',    desc:'Linha de suporte/resistência baseada em máximas e mínimas de N períodos',hasPer:true,hasVal:false,defCond:'HiLo virou compra',defVal:0,defPer:6 },
   ],
   'Volume': [
-    { id:'obv',    name:'OBV',          desc:'On Balance Volume',            hasPer:false,hasVal:false,defCond:'está subindo', defVal:0 },
+    { id:'obv',    name:'OBV',          desc:'On Balance Volume — acumulador de volume por direção do preço',hasPer:true,hasVal:false,defCond:'OBV está acima da sua média',defVal:0,defPer:21 },
     { id:'avgvol', name:'Volume Médio', desc:'Volume vs média histórica',    hasPer:true, hasVal:true, defCond:'é maior que', defVal:1000 },
   ],
   'Preço': [
@@ -661,7 +661,7 @@ const BB_CONDS   = ['Preço toca banda superior','Preço toca banda inferior','P
 const VWAP_CONDS = ['Preço está acima do VWAP','Preço está abaixo do VWAP','Preço cruza acima do VWAP','Preço cruza abaixo do VWAP'];
 const MACD_CONDS = ['MACD cruza acima do sinal','MACD cruza abaixo do sinal','MACD acima de zero','MACD abaixo de zero'];
 const VOL_CONDS  = ['é maior que','é menor que'];
-const TRD_CONDS  = ['está subindo','está caindo'];
+const OBV_CONDS  = ['OBV está acima da sua média','OBV está abaixo da sua média','OBV cruza acima da sua média','OBV cruza abaixo da sua média'];
 const PRC_CONDS  = ['está acima de','está abaixo de','cruza acima de','cruza abaixo de'];
 const RNG_CONDS  = ['é maior que','é menor que'];
 const ADX_CONDS  = ['está acima de','está abaixo de','cruza acima de','cruza abaixo de'];
@@ -703,7 +703,7 @@ function getCondsFor(id) {
   if (id==='ob')      return OB_CONDS;
   if (id==='sweep')   return SWEEP_CONDS;
   if (id==='avgvol') return VOL_CONDS;
-  if (id==='obv')     return TRD_CONDS;
+  if (id==='obv')     return OBV_CONDS;
   if (id==='price')   return PRC_CONDS;
   if (id==='range')   return RNG_CONDS;
   return [];
@@ -795,7 +795,7 @@ function condLabel(c) {
     case 'prevday':  return p.cond;
     case 'fib':      return `Fibo(${p.per||50}) — ${p.cond}`;
     case 'candle':   return `Padrão: ${p.cond}`;
-    case 'obv':      return `OBV ${p.cond}`;
+    case 'obv':      return `OBV(${p.per||21}) — ${p.cond}`;
     case 'avgvol':   return `Volume ${p.cond} Vol.Médio(${p.per||20})`;
     case 'price':    return `Preço ${p.cond} ${p.val}`;
     case 'range':    return `Range ${p.cond} ${p.val} pts`;
@@ -1855,8 +1855,10 @@ function validateNewCondition(newCond, existingConds) {
 
     // R12: OBV
     if (id==='obv' && ex.id==='obv') {
-      if ((p.cond==='está subindo'&&ep.cond==='está caindo')||(p.cond==='está caindo'&&ep.cond==='está subindo'))
-        issues.push({type:'block',rule:'R12',msg:'OBV não pode estar subindo e caindo ao mesmo tempo.'});
+      const above=['OBV está acima da sua média','OBV cruza acima da sua média'];
+      const below=['OBV está abaixo da sua média','OBV cruza abaixo da sua média'];
+      if ((above.includes(p.cond)&&below.includes(ep.cond))||(below.includes(p.cond)&&above.includes(ep.cond)))
+        issues.push({type:'block',rule:'R12',msg:'OBV não pode estar acima e abaixo da média ao mesmo tempo.'});
     }
 
     // R13: Volume Médio
