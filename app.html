@@ -2720,7 +2720,7 @@ function renderStep3() {
   ];
   const eList=div('');eList.style.cssText='display:flex;flex-direction:column;gap:8px';
   ENTRY.forEach(e=>{
-    const c=div('card pick'+(cfg.entryType===e.id?' sel':''));c.style.cssText='padding:14px 16px;display:flex;align-items:flex-start;gap:12px';
+    const c=div('card pick'+(cfg.entryType===e.id?' selp':''));c.style.cssText='padding:14px 16px;display:flex;align-items:flex-start;gap:12px';
     c.appendChild(cring(cfg.entryType===e.id));
     const info=div('');
     const nm=div('');nm.style.cssText='font-size:13px;font-weight:600;color:#E8E8ED;margin-bottom:3px';nm.textContent=e.label;
@@ -2786,7 +2786,7 @@ function renderStep4() {
   ];
   const tList=div('');tList.style.cssText='display:flex;flex-direction:column;gap:7px';
   TP_TYPES.forEach(t=>{
-    const c=div('card pick'+(cfg.tpType===t.id?' sel':''));c.style.padding='14px 16px';
+    const c=div('card pick'+(cfg.tpType===t.id?' selp':''));c.style.padding='14px 16px';
     const row=div('');row.style.cssText='display:flex;align-items:center;gap:12px';
     row.appendChild(cring(cfg.tpType===t.id));
     const nm=div('');nm.style.cssText='font-size:13px;font-weight:600;color:#E8E8ED';nm.textContent=t.label;
