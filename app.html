@@ -715,6 +715,187 @@ const OB_CONDS    = ['Order Block detectado','Preço retesta Order Block'];
 const SWEEP_CONDS = ['Liquidity Sweep detectado'];
 const SMC_IDS     = ['fvg','bos','choch','ob','sweep'];
 
+// ─── ESTRATÉGIAS FAMOSAS (templates) ─────────────────────────
+const FAMOUS_STRATEGIES = [
+  {
+    name:'IFR2 (Larry Connors)',
+    desc:'Compra quando IFR de 2 períodos indica sobrevenda extrema, com filtro de tendência pela SMA(200).',
+    direction:'long',
+    conditions:[
+      {id:'rsi',name:'IFR (RSI)',params:{per:2,cond:'cruza abaixo de',val:10}},
+      {id:'sma',name:'SMA',params:{per:200,cond:'Preço está acima'}},
+    ],
+    entryType:'next_open',validity:3,
+    stopType:'fixed',stopPts:200,tpType:'rr',tpRR:2,
+  },
+  {
+    name:'Setup 9.1 (Larry Williams)',
+    desc:'Entrada no rompimento quando a EMA(9) vira a favor da tendência. O setup mais popular do Brasil.',
+    direction:'both',
+    conditions:[
+      {id:'ema',name:'EMA',params:{per:9,cond:'Preço cruza acima'}},
+    ],
+    entryType:'breakout',validity:3,
+    stopType:'hl_candle',stopOffset:10,tpType:'rr',tpRR:2,
+  },
+  {
+    name:'Cruzamento de Médias 9/21',
+    desc:'O clássico dos clássicos. EMA curta cruza a EMA longa sinalizando mudança de tendência.',
+    direction:'both',
+    conditions:[
+      {id:'ema',name:'EMA',params:{per:9,per2:21,cond:'Cruzamento de médias (compra e venda)'}},
+    ],
+    entryType:'next_open',validity:3,
+    stopType:'fixed',stopPts:200,tpType:'rr',tpRR:2,
+  },
+  {
+    name:'IFR Sobrevendido + SMA(200)',
+    desc:'Compra quando RSI(14) indica sobrevenda com confirmação de tendência de alta pela SMA(200).',
+    direction:'long',
+    conditions:[
+      {id:'rsi',name:'IFR (RSI)',params:{per:14,cond:'cruza acima de',val:30}},
+      {id:'sma',name:'SMA',params:{per:200,cond:'Preço está acima'}},
+    ],
+    entryType:'next_open',validity:3,
+    stopType:'fixed',stopPts:200,tpType:'rr',tpRR:2,
+  },
+  {
+    name:'IFR Sobrecomprado + SMA(200)',
+    desc:'Venda quando RSI(14) indica sobrecompra com confirmação de tendência de baixa pela SMA(200).',
+    direction:'short',
+    conditions:[
+      {id:'rsi',name:'IFR (RSI)',params:{per:14,cond:'cruza abaixo de',val:70}},
+      {id:'sma',name:'SMA',params:{per:200,cond:'Preço está abaixo'}},
+    ],
+    entryType:'next_open',validity:3,
+    stopType:'fixed',stopPts:200,tpType:'rr',tpRR:2,
+  },
+  {
+    name:'Bandas de Bollinger (John Bollinger)',
+    desc:'Operação de reversão à média quando o preço toca as bandas extremas.',
+    direction:'both',
+    conditions:[
+      {id:'bb',name:'Bandas de Bollinger',params:{per:20,dev:2,cond:'Preço toca banda inferior'}},
+    ],
+    entryType:'next_open',validity:3,
+    stopType:'fixed',stopPts:200,tpType:'rr',tpRR:2,
+  },
+  {
+    name:'MACD Cruzamento + Tendência',
+    desc:'MACD cruza acima do sinal com filtro de tendência pela EMA(21).',
+    direction:'long',
+    conditions:[
+      {id:'macd',name:'MACD',params:{cond:'MACD cruza acima do sinal'}},
+      {id:'ema',name:'EMA',params:{per:21,cond:'Preço está acima'}},
+    ],
+    entryType:'next_open',validity:3,
+    stopType:'fixed',stopPts:200,tpType:'rr',tpRR:2,
+  },
+  {
+    name:'Estocástico Sobrevendido',
+    desc:'Compra quando o Estocástico indica sobrevenda e cruza para cima.',
+    direction:'long',
+    conditions:[
+      {id:'stoch',name:'Estocástico',params:{per:14,cond:'cruza acima de',val:20}},
+    ],
+    entryType:'next_open',validity:3,
+    stopType:'fixed',stopPts:200,tpType:'rr',tpRR:2,
+  },
+  {
+    name:'Estocástico Sobrecomprado',
+    desc:'Venda quando o Estocástico indica sobrecompra e cruza para baixo.',
+    direction:'short',
+    conditions:[
+      {id:'stoch',name:'Estocástico',params:{per:14,cond:'cruza abaixo de',val:80}},
+    ],
+    entryType:'next_open',validity:3,
+    stopType:'fixed',stopPts:200,tpType:'rr',tpRR:2,
+  },
+];
+
+function applyStrategy(strategy) {
+  const cfg=state.cfg;
+  // Apply conditions
+  cfg.conditions=strategy.conditions.map(c=>({id:c.id,name:c.name,params:{...c.params}}));
+  // Apply direction
+  cfg.direction=strategy.direction;
+  // Apply trigger
+  cfg.entryType=strategy.entryType;
+  cfg.validity=strategy.validity;
+  // Apply risk
+  cfg.stopType=strategy.stopType;
+  cfg.stopPts=strategy.stopPts||200;
+  cfg.stopOffset=strategy.stopOffset||10;
+  cfg.tpType=strategy.tpType;
+  cfg.tpRR=strategy.tpRR||2;
+  cfg.tpPts=strategy.tpPts||400;
+  // Reset management to defaults
+  cfg.trailing=false;cfg.partial=false;cfg.exitCond=false;cfg.exitCondition=null;
+  // Render
+  renderApp();
+}
+
+function openStrategiesModal() {
+  let existing=document.getElementById('strategies-modal');
+  if(existing) existing.remove();
+
+  const overlay=div('overlay');
+  overlay.id='strategies-modal';
+  overlay.addEventListener('click',e=>{if(e.target===overlay){overlay.remove();}});
+
+  const modal=div('modal');
+  modal.style.maxWidth='640px';
+
+  // Header
+  const hdr=div('modal-header');
+  const htitle=div('');htitle.style.cssText='font-size:16px;font-weight:700;color:var(--tx)';htitle.textContent='Estratégias Famosas';
+  const hsub=div('');hsub.style.cssText='font-size:12px;color:var(--txs);margin-top:3px';hsub.textContent='Selecione uma estratégia para preencher o wizard com os parâmetros originais. Você pode ajustar tudo antes de rodar.';
+  const hWrap=div('');hWrap.append(htitle,hsub);
+  const xBtn=h('button',{class:'btnGh',onclick:()=>overlay.remove()});
+  xBtn.innerHTML=IC.x;
+  hdr.append(hWrap,xBtn);
+  modal.appendChild(hdr);
+
+  // Body
+  const body=div('modal-body');
+  body.style.paddingTop='12px';
+
+  const grid=div('');grid.style.cssText='display:flex;flex-direction:column;gap:8px';
+
+  FAMOUS_STRATEGIES.forEach(strat=>{
+    const dirColor=strat.direction==='long'?'#10B981':strat.direction==='short'?'#EF4444':'#6366F1';
+    const dirLabel=strat.direction==='long'?'▲ Compra':strat.direction==='short'?'▼ Venda':'▲▼ Compra e Venda';
+    const card=div('card pick');
+    card.style.cssText='padding:14px 16px;cursor:pointer';
+
+    const top=div('');top.style.cssText='display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px';
+    const nm=div('');nm.style.cssText='font-size:14px;font-weight:700;color:var(--tx)';nm.textContent=strat.name;
+    const dirBadge=div('');dirBadge.style.cssText=`font-size:10px;font-weight:700;color:${dirColor};padding:2px 8px;border-radius:4px;background:${dirColor}15;border:1px solid ${dirColor}30;white-space:nowrap;flex-shrink:0`;dirBadge.textContent=dirLabel;
+    top.append(nm,dirBadge);
+
+    const ds=div('');ds.style.cssText='font-size:12px;color:var(--txs);line-height:1.5;margin-bottom:8px';ds.textContent=strat.desc;
+
+    const tags=div('');tags.style.cssText='display:flex;gap:5px;flex-wrap:wrap';
+    strat.conditions.forEach(c=>{
+      const tag=div('');tag.style.cssText='font-size:10px;font-weight:600;color:var(--txm);padding:2px 8px;border-radius:4px;background:var(--bg2);font-family:JetBrains Mono';
+      tag.textContent=condLabel(c);
+      tags.appendChild(tag);
+    });
+
+    card.append(top,ds,tags);
+    card.addEventListener('click',()=>{
+      applyStrategy(strat);
+      overlay.remove();
+    });
+    grid.appendChild(card);
+  });
+
+  body.appendChild(grid);
+  modal.appendChild(body);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+}
+
 function getCondsFor(id) {
   if (['rsi','stoch','cci','williams'].includes(id)) return OSC_CONDS;
   if (['sma','ema'].includes(id)) return MA_CONDS;
@@ -2709,9 +2890,16 @@ function renderStep2() {
     el.appendChild(list);
   }
 
-  const addBtn=h('button',{class:'btn btnS',style:{justifyContent:'center',border:'1px dashed #3A3A52',borderRadius:'10px',padding:'11px',width:'100%'},onclick:()=>openModal(false)});
+  const btnRow=div('');btnRow.style.cssText='display:flex;gap:8px';
+
+  const stratBtn=h('button',{class:'btn btnS',style:{justifyContent:'center',borderRadius:'10px',padding:'11px',flex:'1',background:'var(--acd)',borderColor:'var(--ac)',color:'var(--ac)'},onclick:()=>openStrategiesModal()});
+  stratBtn.innerHTML='⚡ Estratégias Famosas';
+
+  const addBtn=h('button',{class:'btn btnS',style:{justifyContent:'center',border:'1px dashed var(--bdh)',borderRadius:'10px',padding:'11px',flex:'1'},onclick:()=>openModal(false)});
   addBtn.innerHTML=IC.plus+' Adicionar condição';
-  el.appendChild(addBtn);
+
+  btnRow.append(stratBtn,addBtn);
+  el.appendChild(btnRow);
   return el;
 }
 
