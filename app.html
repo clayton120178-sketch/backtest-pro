@@ -2879,13 +2879,69 @@ function renderStep2() {
         andBadge.innerHTML=`<span style="display:inline-block;padding:2px 15px;background:var(--bg3);border:1px solid var(--bd);border-radius:20px;font-size:10px;font-weight:800;color:#00D4AA;letter-spacing:.08em">E</span>`;
         list.appendChild(andBadge);
       }
-      const row=div('card');row.style.cssText='padding:11px 14px;display:flex;align-items:center;gap:11px';
+      const card=div('card');card.style.cssText='padding:12px 14px';
+
+      // Top row: icon + label + remove
+      const topRow=div('');topRow.style.cssText='display:flex;align-items:center;gap:11px';
       const ic=div('');ic.style.cssText='width:26px;height:26px;border-radius:6px;background:rgba(0,212,170,.08);border:1px solid rgba(0,212,170,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#00D4AA';
       ic.innerHTML=IC.act;
-      const lbl=div('');lbl.style.cssText='flex:1;font-size:13px;color:var(--tx)';lbl.textContent=condLabel(c);
+      const lbl=div('');lbl.style.cssText='flex:1;font-size:13px;font-weight:600;color:var(--tx)';lbl.textContent=condLabel(c);
       const rmBtn=h('button',{class:'btnGh',onclick:()=>{cfg.conditions.splice(i,1);renderApp();}});
       rmBtn.innerHTML=IC.x;
-      row.append(ic,lbl,rmBtn);list.appendChild(row);
+      topRow.append(ic,lbl,rmBtn);
+      card.appendChild(topRow);
+
+      // Inline editable params
+      const p=c.params;
+      const hasEditableParams=(p.per!==undefined)||(p.val!==undefined)||(p.mult!==undefined)||(p.per2!==undefined);
+      if(hasEditableParams){
+        const paramsRow=div('');paramsRow.style.cssText='display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--bd);align-items:center';
+
+        if(p.per!==undefined){
+          const g=div('');g.style.cssText='display:flex;flex-direction:column;gap:3px';
+          const lb=div('');lb.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';
+          lb.textContent=p.per2!==undefined?'Período curta':'Período';
+          g.appendChild(lb);
+          g.appendChild(stepper(p.per,1,500,'',v=>{p.per=v;renderApp();}));
+          paramsRow.appendChild(g);
+        }
+        if(p.per2!==undefined){
+          const g=div('');g.style.cssText='display:flex;flex-direction:column;gap:3px';
+          const lb=div('');lb.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';lb.textContent='Período longa';
+          g.appendChild(lb);
+          g.appendChild(stepper(p.per2,1,500,'',v=>{p.per2=v;renderApp();}));
+          paramsRow.appendChild(g);
+        }
+        if(p.val!==undefined){
+          const g=div('');g.style.cssText='display:flex;flex-direction:column;gap:3px';
+          const lb=div('');lb.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';lb.textContent='Valor';
+          g.appendChild(lb);
+          g.appendChild(stepper(p.val,-999,99999,'',v=>{p.val=v;renderApp();}));
+          paramsRow.appendChild(g);
+        }
+        if(p.dev!==undefined){
+          const g=div('');g.style.cssText='display:flex;flex-direction:column;gap:3px';
+          const lb=div('');lb.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';lb.textContent='Desvio';
+          g.appendChild(lb);
+          g.appendChild(stepper(p.dev,1,5,'σ',v=>{p.dev=v;renderApp();}));
+          paramsRow.appendChild(g);
+        }
+        if(p.mult!==undefined){
+          const g=div('');g.style.cssText='display:flex;flex-direction:column;gap:3px';
+          const lb=div('');lb.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';lb.textContent='Multiplicador';
+          g.appendChild(lb);
+          const multVal=div('step-val mono');multVal.textContent=p.mult.toFixed(1);
+          const dec=h('button',{class:'step-btn',onclick:()=>{p.mult=Math.max(0.1,+(p.mult-0.1).toFixed(1));renderApp();}});dec.textContent='−';
+          const inc=h('button',{class:'step-btn',onclick:()=>{p.mult=Math.min(10,+(p.mult+0.1).toFixed(1));renderApp();}});inc.textContent='+';
+          const wrap=div('stepper',dec,multVal,inc);
+          const unit=div('step-unit');unit.textContent='×';wrap.appendChild(unit);
+          g.appendChild(wrap);
+          paramsRow.appendChild(g);
+        }
+        card.appendChild(paramsRow);
+      }
+
+      list.appendChild(card);
     });
     el.appendChild(list);
   }
