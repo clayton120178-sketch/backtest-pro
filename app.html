@@ -196,10 +196,13 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .cring{width:17px;height:17px;border-radius:50%;border:1.5px solid var(--bd);background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all var(--t2) var(--smooth)}
 .cring.on{background:var(--pr);border-color:var(--pr)}
 .cring.dg.on{background:var(--dg);border-color:var(--dg)}
-.toggle{width:40px;height:22px;border-radius:11px;border:0.5px solid var(--bd);cursor:pointer;position:relative;background:var(--bg3);transition:background var(--t2) var(--smooth),border-color var(--t2);flex-shrink:0}
+.toggle{width:44px;height:24px;border-radius:12px;border:1.5px solid var(--bd);cursor:pointer;position:relative;background:var(--bg3);transition:all var(--t2) var(--smooth);flex-shrink:0}
 .toggle.on{background:var(--pr);border-color:var(--pr)}
-.toggle-thumb{position:absolute;top:3px;width:16px;height:16px;border-radius:8px;background:var(--txs);transition:left var(--t2) var(--spring),background var(--t2)}
-.toggle.on .toggle-thumb{background:#fff}
+.toggle-thumb{position:absolute;top:3px;width:16px;height:16px;border-radius:8px;background:var(--txm);transition:left var(--t2) var(--spring),background var(--t2);box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle.on .toggle-thumb{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+[data-theme="light"] .toggle{border-color:rgba(0,0,0,.18);background:#D8D5CC}
+[data-theme="light"] .toggle-thumb{background:#fff}
+[data-theme="light"] .toggle.on{background:var(--pr);border-color:var(--pr)}
 
 /* ── TABS ────────────────────────────────────────────────── */
 .tabs{display:flex;border-bottom:0.5px solid var(--bd);gap:0;overflow-x:auto}
@@ -986,9 +989,9 @@ function cring(on,isDanger=false) {
   return b;
 }
 function toggle(on,onChange) {
-  const t=h('button',{class:'toggle',style:{background:on?'#00D4AA':'#1E1E2E'},onclick:()=>onChange(!on)});
+  const t=h('button',{class:'toggle'+(on?' on':''),onclick:()=>onChange(!on)});
   const thumb=div('toggle-thumb');
-  thumb.style.left=on?'21px':'3px';
+  thumb.style.left=on?'24px':'3px';
   t.appendChild(thumb);
   return t;
 }
