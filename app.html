@@ -441,11 +441,11 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
         <div class="theme-opt" id="themeL" onclick="setAppTheme('light')">Light</div>
       </div>
       <button class="tour-help-btn" id="tour-help-btn" onclick="startTourForCurrentScreen()" title="Tour guiado">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8888A0" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--txs)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3"/></svg>
       </button>
       <div class="avatar-wrap" id="avatar-wrap">
       <div class="avatar" id="avatar-btn" style="cursor:pointer" onclick="toggleAvatarMenu()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8888A0" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--txs)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
       </div>
       <div class="avatar-menu" id="avatar-menu">
         <div class="avatar-name" id="avatar-name">—</div>
@@ -534,7 +534,7 @@ const IC = {
   play:   `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`,
   back:   `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`,
   fwd:    `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`,
-  help:   `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B6B80" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3"/></svg>`,
+  help:   `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--txm)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3"/></svg>`,
   trend:  `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`,
   act:    `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
   warn:   `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3"/></svg>`,
@@ -1030,6 +1030,7 @@ function chipsWrap(items,active,onChange) {
 
 // ─── SVG CHARTS ───────────────────────────────────────────────
 function buildEquityChart() {
+  const TH=svgTheme();
   const A=EQ_ANALYSIS;
   const W=560,H=170,PL=45,PR=10,PT=8,PB=24;
   const vals=EQ.map(d=>d.v);
@@ -1041,7 +1042,7 @@ function buildEquityChart() {
   const areaPath=`M${txf(0).toFixed(1)},${(PT+iH).toFixed(1)} L`+pts.join(' L')+` L${txf(n).toFixed(1)},${(PT+iH).toFixed(1)} Z`;
   const svgEl=hsvg('svg',{width:'100%',viewBox:`0 0 ${W} ${H}`});
   // Grid
-  for(let i=0;i<4;i++){const y=PT+i*(iH/3);svgEl.appendChild(hsvg('line',{x1:PL,y1:y,x2:W-PR,y2:y,stroke:'#2A2A3C','stroke-width':'0.5','stroke-dasharray':'3,3'}));}
+  for(let i=0;i<4;i++){const y=PT+i*(iH/3);svgEl.appendChild(hsvg('line',{x1:PL,y1:y,x2:W-PR,y2:y,stroke:TH.grid,'stroke-width':'0.5','stroke-dasharray':'3,3'}));}
   // Zero line
   const zy=tyf(0);
   if(zy>PT&&zy<PT+iH) svgEl.appendChild(hsvg('line',{x1:PL,y1:zy,x2:W-PR,y2:zy,stroke:'#3A3A52','stroke-width':'1'}));
@@ -1076,14 +1077,15 @@ function buildEquityChart() {
   }
   // X labels
   [0,12,24,36,48,60,72,84].forEach(i=>{
-    if(i<EQ.length){const t=hsvg('text',{x:txf(i),y:H-6,'text-anchor':'middle',fill:'#44445A','font-size':'9','font-family':'JetBrains Mono'});t.textContent=EQ[i].t.split(' ')[1];svgEl.appendChild(t);}
+    if(i<EQ.length){const t=hsvg('text',{x:txf(i),y:H-6,'text-anchor':'middle',fill:TH.txm,'font-size':'9','font-family':'JetBrains Mono'});t.textContent=EQ[i].t.split(' ')[1];svgEl.appendChild(t);}
   });
   // Y labels
-  [0,0.5,1].forEach(f=>{const v=min+f*rng;const t=hsvg('text',{x:PL-4,y:tyf(v)+4,'text-anchor':'end',fill:'#44445A','font-size':'9','font-family':'JetBrains Mono'});t.textContent=(v>=0?'+':'')+Math.round(v/1000)+'k';svgEl.appendChild(t);});
+  [0,0.5,1].forEach(f=>{const v=min+f*rng;const t=hsvg('text',{x:PL-4,y:tyf(v)+4,'text-anchor':'end',fill:TH.txm,'font-size':'9','font-family':'JetBrains Mono'});t.textContent=(v>=0?'+':'')+Math.round(v/1000)+'k';svgEl.appendChild(t);});
   return svgEl;
 }
 
 function buildTUWChart() {
+  const TH=svgTheme();
   const A=EQ_ANALYSIS;
   const W=560,H=170,PL=45,PR=10,PT=8,PB=24;
   const vals=EQ.map(d=>d.v);
@@ -1094,7 +1096,7 @@ function buildTUWChart() {
   const linePath='M'+pts.join(' L');
   const svgEl=hsvg('svg',{width:'100%',viewBox:`0 0 ${W} ${H}`});
   // Grid
-  for(let i=0;i<4;i++){const y=PT+i*(iH/3);svgEl.appendChild(hsvg('line',{x1:PL,y1:y,x2:W-PR,y2:y,stroke:'#2A2A3C','stroke-width':'0.5','stroke-dasharray':'3,3'}));}
+  for(let i=0;i<4;i++){const y=PT+i*(iH/3);svgEl.appendChild(hsvg('line',{x1:PL,y1:y,x2:W-PR,y2:y,stroke:TH.grid,'stroke-width':'0.5','stroke-dasharray':'3,3'}));}
   // TUW shading
   A.uwPeriods.forEach(p=>{
     const x1=txf(p.s),x2=txf(p.e);
@@ -1108,14 +1110,15 @@ function buildTUWChart() {
   EQ.forEach((d,i)=>{if(d.v>=peak){peak=d.v;svgEl.appendChild(hsvg('circle',{cx:txf(i),cy:tyf(d.v),r:2.5,fill:'#10B981'}));}});
   // X labels
   [0,12,24,36,48,60,72,84].forEach(i=>{
-    if(i<EQ.length){const t=hsvg('text',{x:txf(i),y:H-6,'text-anchor':'middle',fill:'#44445A','font-size':'9','font-family':'JetBrains Mono'});t.textContent=EQ[i].t.split(' ')[1];svgEl.appendChild(t);}
+    if(i<EQ.length){const t=hsvg('text',{x:txf(i),y:H-6,'text-anchor':'middle',fill:TH.txm,'font-size':'9','font-family':'JetBrains Mono'});t.textContent=EQ[i].t.split(' ')[1];svgEl.appendChild(t);}
   });
   // Y labels
-  [0,0.5,1].forEach(f=>{const v=min+f*rng;const t=hsvg('text',{x:PL-4,y:tyf(v)+4,'text-anchor':'end',fill:'#44445A','font-size':'9','font-family':'JetBrains Mono'});t.textContent=(v>=0?'+':'')+Math.round(v/1000)+'k';svgEl.appendChild(t);});
+  [0,0.5,1].forEach(f=>{const v=min+f*rng;const t=hsvg('text',{x:PL-4,y:tyf(v)+4,'text-anchor':'end',fill:TH.txm,'font-size':'9','font-family':'JetBrains Mono'});t.textContent=(v>=0?'+':'')+Math.round(v/1000)+'k';svgEl.appendChild(t);});
   return svgEl;
 }
 
 function buildDDChart() {
+  const TH=svgTheme();
   const W=560,H=80,PL=45,PR=10,PT=4,PB=18;
   const vals=EQ.map(d=>d.dd);
   const min=Math.min(...vals,0),rng=-min||1;
@@ -1133,6 +1136,7 @@ function buildDDChart() {
   return svgEl;
 }
 function buildHistChart() {
+  const TH=svgTheme();
   const W=520,H=90,PL=10,PT=8,PB=22;
   const maxC=Math.max(...HIST.map(d=>d.c));
   const barW=(W-PL*2)/HIST.length-4;
@@ -1141,9 +1145,9 @@ function buildHistChart() {
     const x=PL+i*(W-PL*2)/HIST.length;
     const bh=(d.c/maxC)*(H-PT-PB);
     const by=H-PB-bh;
-    const fill=d.t==='profit'?'#10B981':d.t==='loss'?'#EF4444':'#2A2A3C';
+    const fill=d.t==='profit'?'#10B981':d.t==='loss'?'#EF4444':TH.grid;
     svgEl.appendChild(hsvg('rect',{x,y:by,width:barW,height:Math.max(0,bh),rx:'2',fill,opacity:'0.82'}));
-    const lbl=hsvg('text',{x:x+barW/2,y:H-5,'text-anchor':'middle',fill:'#44445A','font-size':'8.5','font-family':'JetBrains Mono'});
+    const lbl=hsvg('text',{x:x+barW/2,y:H-5,'text-anchor':'middle',fill:TH.txm,'font-size':'8.5','font-family':'JetBrains Mono'});
     lbl.textContent=d.r;svgEl.appendChild(lbl);
   });
   return svgEl;
@@ -1943,7 +1947,7 @@ function renderModal() {
   // Header
   const hdr=div('modal-header');
   const htitle=div('');
-  htitle.style.cssText='font-size:15px;font-weight:700;color:#E8E8ED';
+  htitle.style.cssText='font-size:15px;font-weight:700;color:var(--tx)';
   const isMAInd=ms.ind&&['sma','ema'].includes(ms.ind.id);
   const isMAModeSelect=ms.page===1&&isMAInd&&!ms.maMode;
   htitle.textContent=ms.page===0?'Adicionar Condição':isMAModeSelect?ms.ind.name+' — Tipo de uso':'Configurar: '+ms.ind?.name+(isMAInd&&ms.maMode==='crossover'?' (cruzamento)':isMAInd&&ms.maMode==='filter'?' (filtro)':'');
@@ -1978,8 +1982,8 @@ function renderModal() {
       inds.forEach(ind=>{
         const card=div('card pick');
         card.style.padding='13px 15px';
-        const nm=div('');nm.style.cssText='font-size:13px;font-weight:600;color:#E8E8ED;margin-bottom:4px';nm.textContent=ind.name;
-        const ds=div('');ds.style.cssText='font-size:11px;color:#8888A0;line-height:1.4';ds.textContent=ind.desc;
+        const nm=div('');nm.style.cssText='font-size:13px;font-weight:600;color:var(--tx);margin-bottom:4px';nm.textContent=ind.name;
+        const ds=div('');ds.style.cssText='font-size:11px;color:var(--txs);line-height:1.4';ds.textContent=ind.desc;
         card.appendChild(nm);card.appendChild(ds);
         card.addEventListener('click',()=>{
           const conds=getCondsFor(ind.id);
@@ -2032,15 +2036,15 @@ function renderModal() {
     // ── MA MODE SELECTION (sub-page before config) ──
     if(isMA && !ms.maMode){
       const frag=div('');frag.style.cssText='display:flex;flex-direction:column;gap:14px';
-      const desc=div('');desc.style.cssText='font-size:13px;color:#8888A0;margin-bottom:4px';
+      const desc=div('');desc.style.cssText='font-size:13px;color:var(--txs);margin-bottom:4px';
       desc.textContent=`Como você quer usar a ${ind.name}?`;
       frag.appendChild(desc);
 
       // Filter card
       const filterCard=div('card pick');filterCard.style.cssText='padding:18px;cursor:pointer';
-      filterCard.innerHTML=`<div style="font-size:14px;font-weight:700;color:#E8E8ED;margin-bottom:6px">📊 Filtro de Tendência</div>
-        <div style="font-size:12px;color:#8888A0;line-height:1.5">Usar a média como referência para o preço. Ex: "Preço está acima da ${ind.name}(200)".</div>
-        <div style="font-size:11px;color:#6B6B80;margin-top:6px">→ Um período · Preço vs Média</div>`;
+      filterCard.innerHTML=`<div style="font-size:14px;font-weight:700;color:var(--tx);margin-bottom:6px">📊 Filtro de Tendência</div>
+        <div style="font-size:12px;color:var(--txs);line-height:1.5">Usar a média como referência para o preço. Ex: "Preço está acima da ${ind.name}(200)".</div>
+        <div style="font-size:11px;color:var(--txm);margin-top:6px">→ Um período · Preço vs Média</div>`;
       filterCard.addEventListener('click',()=>{
         ms.maMode='filter';
         ms.params={per:200,cond:'Preço está acima',per2:undefined};
@@ -2050,9 +2054,9 @@ function renderModal() {
 
       // Crossover card
       const crossCard=div('card pick');crossCard.style.cssText='padding:18px;cursor:pointer';
-      crossCard.innerHTML=`<div style="font-size:14px;font-weight:700;color:#E8E8ED;margin-bottom:6px">✕ Cruzamento de Médias</div>
-        <div style="font-size:12px;color:#8888A0;line-height:1.5">Usar o cruzamento de uma média curta com uma longa como sinal de entrada. Padrão clássico de trading.</div>
-        <div style="font-size:11px;color:#6B6B80;margin-top:6px">→ Dois períodos · Média curta vs Média longa</div>`;
+      crossCard.innerHTML=`<div style="font-size:14px;font-weight:700;color:var(--tx);margin-bottom:6px">✕ Cruzamento de Médias</div>
+        <div style="font-size:12px;color:var(--txs);line-height:1.5">Usar o cruzamento de uma média curta com uma longa como sinal de entrada. Padrão clássico de trading.</div>
+        <div style="font-size:11px;color:var(--txm);margin-top:6px">→ Dois períodos · Média curta vs Média longa</div>`;
       crossCard.addEventListener('click',()=>{
         ms.maMode='crossover';
         ms.params={per:9,per2:200,cond:'Cruzamento de médias (compra e venda)'};
@@ -2105,7 +2109,7 @@ function renderModal() {
       // CHoCH info banner
       if(smcId==='choch'){
         const banner=div('banner warn');
-        banner.innerHTML=`<span style="color:#F59E0B;flex-shrink:0">${IC.warn}</span><div style="font-size:12px;color:#8888A0;line-height:1.5"><strong style="color:#F59E0B">Atenção:</strong> CHoCH detecta possível <strong style="color:#E8E8ED">reversão</strong> de tendência. Diferente do BoS que confirma continuação.</div>`;
+        banner.innerHTML=`<span style="color:#F59E0B;flex-shrink:0">${IC.warn}</span><div style="font-size:12px;color:var(--txs);line-height:1.5"><strong style="color:#F59E0B">Atenção:</strong> CHoCH detecta possível <strong style="color:var(--tx)">reversão</strong> de tendência. Diferente do BoS que confirma continuação.</div>`;
         frag.appendChild(banner);
       }
 
@@ -2131,9 +2135,9 @@ function renderModal() {
           ln(240,24,240,42,'#00D4AA',2);ln(235,37,240,42,'#00D4AA',2);ln(245,37,240,42,'#00D4AA',2);
           tx(252,38,'retorno','#00D4AA',12);
           cd(220,42,48,34,56,0.6);
-          tx(370,24,'Gap = zona sem','#8888A0',11);
-          tx(370,40,'negociação. O preço','#8888A0',11);
-          tx(370,56,'costuma voltar.','#8888A0',11);
+          tx(370,24,'Gap = zona sem',_TH.txs,11);
+          tx(370,40,'negociação. O preço',_TH.txs,11);
+          tx(370,56,'costuma voltar.',_TH.txs,11);
         }));
       }
 
@@ -2150,18 +2154,18 @@ function renderModal() {
           ln(8,60,235,60,'#F59E0B',1,'4,3');
           tx(14,54,'nível','#F59E0B',11);
           rc(85,24,18,32,'#10B981',0.8,2);ln(94,18,94,56,'#10B981',1.5);
-          tx(114,40,'corpo fecha','#8888A0',11);
+          tx(114,40,'corpo fecha',_TH.txs,11);
           tx(114,54,'além do nível ✓','#10B981',11);
-          tx(120,108,'POR FECHAMENTO','#E8E8ED',12,'middle');
+          tx(120,108,'POR FECHAMENTO',_TH.tx,12,'middle');
           // Divider
           ln(250,12,250,105,'#2A2A3C',1);
           // --- "Por sombra" side ---
           ln(260,60,490,60,'#F59E0B',1,'4,3');
           tx(266,54,'nível','#F59E0B',11);
           rc(340,64,18,26,'#10B981',0.8,2);ln(349,26,349,90,'#10B981',1.5);
-          tx(368,40,'sombra passa','#8888A0',11);
+          tx(368,40,'sombra passa',_TH.txs,11);
           tx(368,54,'corpo fica acima ✓','#10B981',11);
-          tx(375,108,'POR SOMBRA','#E8E8ED',12,'middle');
+          tx(375,108,'POR SOMBRA',_TH.tx,12,'middle');
         }));
       }
 
@@ -2176,13 +2180,13 @@ function renderModal() {
         frag.appendChild(miniSVG(500,120,(ln,rc,tx,cd,ci)=>{
           ln(8,60,235,60,'#F59E0B',1,'4,3');tx(14,54,'nível','#F59E0B',11);
           rc(85,24,18,32,'#10B981',0.8,2);ln(94,18,94,56,'#10B981',1.5);
-          tx(114,40,'corpo fecha','#8888A0',11);tx(114,54,'além do nível ✓','#10B981',11);
-          tx(120,108,'POR FECHAMENTO','#E8E8ED',12,'middle');
+          tx(114,40,'corpo fecha',_TH.txs,11);tx(114,54,'além do nível ✓','#10B981',11);
+          tx(120,108,'POR FECHAMENTO',_TH.tx,12,'middle');
           ln(250,12,250,105,'#2A2A3C',1);
           ln(260,60,490,60,'#F59E0B',1,'4,3');tx(266,54,'nível','#F59E0B',11);
           rc(340,64,18,26,'#10B981',0.8,2);ln(349,26,349,90,'#10B981',1.5);
-          tx(368,40,'sombra passa','#8888A0',11);tx(368,54,'corpo fica acima ✓','#10B981',11);
-          tx(375,108,'POR SOMBRA','#E8E8ED',12,'middle');
+          tx(368,40,'sombra passa',_TH.txs,11);tx(368,54,'corpo fica acima ✓','#10B981',11);
+          tx(375,108,'POR SOMBRA',_TH.tx,12,'middle');
         }));
       }
 
@@ -2203,7 +2207,7 @@ function renderModal() {
           rc(76,60,80,24,'#6366F1',0.12,3);
           // Impulse
           cd(110,56,28,16,64,0.8);cd(140,28,16,10,36,0.8);
-          tx(60,128,'DETECTADO','#E8E8ED',12,'middle');
+          tx(60,128,'DETECTADO',_TH.tx,12,'middle');
           // Divider
           ln(245,14,245,125,'#2A2A3C',1);
           // --- "Retesta" side ---
@@ -2215,7 +2219,7 @@ function renderModal() {
           // Return to OB zone
           cd(414,18,42,12,48,0.5);cd(440,42,66,36,72,0.5);
           ci(445,72,'#00D4AA',6);
-          tx(380,128,'RETESTA OB','#E8E8ED',12,'middle');
+          tx(380,128,'RETESTA OB',_TH.tx,12,'middle');
         }));
       }
 
@@ -2249,10 +2253,10 @@ function renderModal() {
           cd(230,64,42,34,72,0.7);cd(260,42,30,24,48,0.7);cd(290,30,18,14,36,0.7);
           tx(240,140,'confirmação →','#10B981',11);
           // Summary steps
-          tx(340,36,'1. Preço se aproxima do nível','#8888A0',12);
-          tx(340,56,'2. Varre além (sweep)','#8888A0',12);
-          tx(340,76,'3. Reverte e confirma','#8888A0',12);
-          tx(340,100,'Falso rompimento institucional','#6B6B80',10);
+          tx(340,36,'1. Preço se aproxima do nível',_TH.txs,12);
+          tx(340,56,'2. Varre além (sweep)',_TH.txs,12);
+          tx(340,76,'3. Reverte e confirma',_TH.txs,12);
+          tx(340,100,'Falso rompimento institucional',_TH.txm,10);
         }));
       }
 
@@ -2265,7 +2269,7 @@ function renderModal() {
           const r=div('radio-row'+(ms.params.cond===c?' on':''));
           const ring=cring(ms.params.cond===c);
           r.appendChild(ring);
-          const t=div('');t.style.cssText='font-size:13px;color:#E8E8ED';t.textContent=c;
+          const t=div('');t.style.cssText='font-size:13px;color:var(--tx)';t.textContent=c;
           r.appendChild(t);
           radios.push({el:r,ring,cond:c});
           r.addEventListener('click',()=>{
@@ -2366,7 +2370,7 @@ function renderModal() {
             const r=div('radio-row'+(ms.params.cond===c?' on':''));
             const ring=cring(ms.params.cond===c);
             r.appendChild(ring);
-            const t=div('');t.style.cssText='font-size:13px;color:#E8E8ED';t.textContent=c;
+            const t=div('');t.style.cssText='font-size:13px;color:var(--tx)';t.textContent=c;
             r.appendChild(t);
             radios.push({el:r,ring,cond:c});
             r.addEventListener('click',()=>{
@@ -2537,7 +2541,7 @@ function renderStep1() {
       });
     }
     if(!hasResults){
-      const empty=div('');empty.style.cssText='padding:16px;text-align:center;font-size:12px;color:#6B6B80';
+      const empty=div('');empty.style.cssText='padding:16px;text-align:center;font-size:12px;color:var(--txm)';
       empty.textContent='Nenhum ativo encontrado';
       dropdown.appendChild(empty);
     }
@@ -2579,17 +2583,17 @@ function renderStep1() {
   wBlock.appendChild(slabel('Janela Operacional','Define três momentos: início da leitura de sinais, horário máximo para abrir novas posições, e horário de encerramento forçado de posições abertas.'));
 
   const r1=div('');r1.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:10px;flex-wrap:wrap';
-  const lb1=div('');lb1.style.cssText='font-size:13px;color:#8888A0;min-width:120px';lb1.textContent='Início da leitura';
+  const lb1=div('');lb1.style.cssText='font-size:13px;color:var(--txs);min-width:120px';lb1.textContent='Início da leitura';
   r1.append(lb1,timeStepper(cfg.tStart,v=>{cfg.tStart=v;renderApp();}));
 
   const r2=div('');r2.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:10px;flex-wrap:wrap';
-  const lb2=div('');lb2.style.cssText='font-size:13px;color:#8888A0;min-width:120px';lb2.textContent='Última abertura';
-  const tip2=div('');tip2.style.cssText='font-size:11px;color:#6B6B80';tip2.textContent='Nenhuma operação nova após este horário';
+  const lb2=div('');lb2.style.cssText='font-size:13px;color:var(--txs);min-width:120px';lb2.textContent='Última abertura';
+  const tip2=div('');tip2.style.cssText='font-size:11px;color:var(--txm)';tip2.textContent='Nenhuma operação nova após este horário';
   r2.append(lb2,timeStepper(cfg.tLastEntry,v=>{cfg.tLastEntry=v;renderApp();}),tip2);
 
   const r3=div('');r3.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:4px;flex-wrap:wrap';
-  const lb3=div('');lb3.style.cssText='font-size:13px;color:#8888A0;min-width:120px';lb3.textContent='Encerramento';
-  const tip3=div('');tip3.style.cssText='font-size:11px;color:#6B6B80';tip3.textContent='Posições abertas são encerradas neste horário';
+  const lb3=div('');lb3.style.cssText='font-size:13px;color:var(--txs);min-width:120px';lb3.textContent='Encerramento';
+  const tip3=div('');tip3.style.cssText='font-size:11px;color:var(--txm)';tip3.textContent='Posições abertas são encerradas neste horário';
   r3.append(lb3,timeStepper(cfg.tEnd,v=>{cfg.tEnd=v;renderApp();}),tip3);
 
   wBlock.append(r1,r2,r3);
@@ -2599,7 +2603,7 @@ function renderStep1() {
   const dtBlock=div('');
   dtBlock.appendChild(slabel('Operações por dia','Limite máximo de operações que podem ser abertas no mesmo dia. Zero = sem limite.'));
   const dtRow=div('');dtRow.style.cssText='display:flex;align-items:center;gap:9px;flex-wrap:wrap';
-  const dtHint=div('');dtHint.style.cssText='font-size:11px;color:#6B6B80';
+  const dtHint=div('');dtHint.style.cssText='font-size:11px;color:var(--txm)';
   function updateDtHint(v){dtHint.textContent=v===0?'Sem limite':'Máximo de '+v+(v>1?' operações':' operação')+' por dia';}
   updateDtHint(cfg.maxDailyTrades);
   dtRow.appendChild(stepper(cfg.maxDailyTrades,0,100,'',v=>{cfg.maxDailyTrades=v;renderApp();}));
@@ -2633,13 +2637,13 @@ function renderStep2() {
   // Compra
   const longCard=div('card pick'+(isLong?' selp':''));
   longCard.style.cssText='padding:12px 16px;display:flex;align-items:center;gap:10px;flex:1;min-width:120px'+(locked?';opacity:0.7;pointer-events:none':'');
-  longCard.innerHTML='<span style="font-size:18px">▲</span><span style="font-size:13px;font-weight:700;color:'+(isLong?'#10B981':'#8888A0')+'">Compra</span>';
+  longCard.innerHTML='<span style="font-size:18px">▲</span><span style="font-size:13px;font-weight:700;color:'+(isLong?'#10B981':TH.txs)+'">Compra</span>';
   if(!locked) longCard.addEventListener('click',()=>{cfg.direction=(isLong&&isShort)?'short':(!isLong?'both':'short');renderApp();});
 
   // Venda
   const shortCard=div('card pick dir-venda'+(isShort?' seld':''));
   shortCard.style.cssText='padding:12px 16px;display:flex;align-items:center;gap:10px;flex:1;min-width:120px'+(locked?';opacity:0.7;pointer-events:none':'');
-  shortCard.innerHTML='<span style="font-size:18px">▼</span><span style="font-size:13px;font-weight:700;color:'+(isShort?'#EF4444':'#8888A0')+'">Venda</span>';
+  shortCard.innerHTML='<span style="font-size:18px">▼</span><span style="font-size:13px;font-weight:700;color:'+(isShort?'#EF4444':TH.txs)+'">Venda</span>';
   if(!locked) shortCard.addEventListener('click',()=>{cfg.direction=(isShort&&isLong)?'long':(!isShort?'both':'long');renderApp();});
 
   dirRow.append(longCard,shortCard);
@@ -2655,7 +2659,7 @@ function renderStep2() {
     hint.innerHTML=IC.warn+' Conflito de direção nas condições — revise';
     dirBlock.appendChild(hint);
   } else {
-    const hint=div('');hint.style.cssText='font-size:11px;color:#6B6B80;margin-top:4px';
+    const hint=div('');hint.style.cssText='font-size:11px;color:var(--txm);margin-top:4px';
     if(cfg.direction==='both'){
       hint.style.color='#6366F1';
       hint.textContent='✓ Compra e Venda — ambas direções ativas';
@@ -2670,27 +2674,27 @@ function renderStep2() {
   const div2=document.createElement('div');div2.style.cssText='height:1px;background:var(--bd)';el.appendChild(div2);
 
   // ── Condições ──
-  const condTitle=div('');condTitle.style.cssText='font-size:13px;color:#8888A0;line-height:1.6';
-  condTitle.innerHTML='Quando <strong style="color:#E8E8ED">TODAS</strong> estas condições forem verdadeiras simultaneamente:';
+  const condTitle=div('');condTitle.style.cssText='font-size:13px;color:var(--txs);line-height:1.6';
+  condTitle.innerHTML='Quando <strong style="color:var(--tx)">TODAS</strong> estas condições forem verdadeiras simultaneamente:';
   el.appendChild(condTitle);
 
   if(cfg.conditions.length===0){
     const empty=div('');
-    empty.style.cssText='border:1px dashed #2A2A3C;border-radius:11px;padding:32px 18px;text-align:center';
-    empty.innerHTML=`${IC.search}<div style="font-size:13px;color:#8888A0;margin-top:9px;margin-bottom:3px">Nenhuma condição adicionada</div><div style="font-size:11px;color:#6B6B80">Adicione pelo menos uma condição para definir seu setup</div>`;
+    empty.style.cssText='border:1px dashed var(--bd);border-radius:11px;padding:32px 18px;text-align:center';
+    empty.innerHTML=`${IC.search}<div style="font-size:13px;color:var(--txs);margin-top:9px;margin-bottom:3px">Nenhuma condição adicionada</div><div style="font-size:11px;color:var(--txm)">Adicione pelo menos uma condição para definir seu setup</div>`;
     el.appendChild(empty);
   } else {
     const list=div('');list.style.cssText='display:flex;flex-direction:column;gap:5px';
     cfg.conditions.forEach((c,i)=>{
       if(i>0){
         const andBadge=div('');andBadge.style.cssText='text-align:center;margin-bottom:3px';
-        andBadge.innerHTML=`<span style="display:inline-block;padding:2px 15px;background:#1E1E2E;border:1px solid #2A2A3C;border-radius:20px;font-size:10px;font-weight:800;color:#00D4AA;letter-spacing:.08em">E</span>`;
+        andBadge.innerHTML=`<span style="display:inline-block;padding:2px 15px;background:var(--bg3);border:1px solid var(--bd);border-radius:20px;font-size:10px;font-weight:800;color:#00D4AA;letter-spacing:.08em">E</span>`;
         list.appendChild(andBadge);
       }
       const row=div('card');row.style.cssText='padding:11px 14px;display:flex;align-items:center;gap:11px';
       const ic=div('');ic.style.cssText='width:26px;height:26px;border-radius:6px;background:rgba(0,212,170,.08);border:1px solid rgba(0,212,170,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#00D4AA';
       ic.innerHTML=IC.act;
-      const lbl=div('');lbl.style.cssText='flex:1;font-size:13px;color:#E8E8ED';lbl.textContent=condLabel(c);
+      const lbl=div('');lbl.style.cssText='flex:1;font-size:13px;color:var(--tx)';lbl.textContent=condLabel(c);
       const rmBtn=h('button',{class:'btnGh',onclick:()=>{cfg.conditions.splice(i,1);renderApp();}});
       rmBtn.innerHTML=IC.x;
       row.append(ic,lbl,rmBtn);list.appendChild(row);
@@ -2713,7 +2717,7 @@ function renderStep3() {
   const dirColor=cfg.direction==='long'?'#10B981':cfg.direction==='short'?'#EF4444':'#6366F1';
   const dirLabel=cfg.direction==='long'?'▲ Apenas Compra':cfg.direction==='short'?'▼ Apenas Venda':'▲▼ Compra e Venda';
   dirSummary.style.cssText='background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:11px 15px;display:flex;align-items:center;gap:10px';
-  dirSummary.innerHTML=`<span style="font-size:11px;color:#8888A0">Direção:</span> <span style="font-size:13px;font-weight:700;color:${dirColor}">${dirLabel}</span> <span style="font-size:11px;color:#44445A;margin-left:auto">← definido no Passo 2</span>`;
+  dirSummary.innerHTML=`<span style="font-size:11px;color:var(--txs)">Direção:</span> <span style="font-size:13px;font-weight:700;color:${dirColor}">${dirLabel}</span> <span style="font-size:11px;color:var(--txm);margin-left:auto">← definido no Passo 2</span>`;
   el.appendChild(dirSummary);
 
   // Entry type
@@ -2729,8 +2733,8 @@ function renderStep3() {
     const c=div('card pick'+(cfg.entryType===e.id?' selp':''));c.style.cssText='padding:14px 16px;display:flex;align-items:flex-start;gap:12px';
     c.appendChild(cring(cfg.entryType===e.id));
     const info=div('');
-    const nm=div('');nm.style.cssText='font-size:13px;font-weight:600;color:#E8E8ED;margin-bottom:3px';nm.textContent=e.label;
-    const ds=div('');ds.style.cssText='font-size:12px;color:#8888A0;line-height:1.45';ds.textContent=e.desc;
+    const nm=div('');nm.style.cssText='font-size:13px;font-weight:600;color:var(--tx);margin-bottom:3px';nm.textContent=e.label;
+    const ds=div('');ds.style.cssText='font-size:12px;color:var(--txs);line-height:1.45';ds.textContent=e.desc;
     info.append(nm,ds);c.appendChild(info);
     c.addEventListener('click',()=>{cfg.entryType=e.id;renderApp();});
     eList.appendChild(c);
@@ -2741,8 +2745,8 @@ function renderStep3() {
   const vBlock=div('');
   vBlock.appendChild(slabel('Validade do sinal','Se o sinal não for executado em N candles, ele é automaticamente descartado.'));
   const vRow=div('');vRow.style.cssText='display:flex;align-items:center;gap:9px;flex-wrap:wrap';
-  const vLabel=div('');vLabel.style.cssText='font-size:13px;color:#8888A0';vLabel.textContent='Cancelar após';
-  const vUnit=div('');vUnit.style.cssText='font-size:13px;color:#8888A0';vUnit.textContent='candles sem execução';
+  const vLabel=div('');vLabel.style.cssText='font-size:13px;color:var(--txs)';vLabel.textContent='Cancelar após';
+  const vUnit=div('');vUnit.style.cssText='font-size:13px;color:var(--txs)';vUnit.textContent='candles sem execução';
   vRow.append(vLabel,stepper(cfg.validity,1,20,'',v=>{cfg.validity=v;}),vUnit);
   vBlock.appendChild(vRow);el.appendChild(vBlock);
   return el;
@@ -2766,8 +2770,8 @@ function renderStep4() {
     const row=div('');row.style.cssText='display:flex;align-items:flex-start;gap:12px';
     row.appendChild(cring(cfg.stopType===s.id,true));
     const info=div('');
-    const nm=div('');nm.style.cssText='font-size:13px;font-weight:600;color:#E8E8ED';nm.textContent=s.label;
-    const ds=div('');ds.style.cssText='font-size:11px;color:#8888A0;margin-top:2px';ds.textContent=s.desc;
+    const nm=div('');nm.style.cssText='font-size:13px;font-weight:600;color:var(--tx)';nm.textContent=s.label;
+    const ds=div('');ds.style.cssText='font-size:11px;color:var(--txs);margin-top:2px';ds.textContent=s.desc;
     info.append(nm,ds);row.appendChild(info);c.appendChild(row);
     if(cfg.stopType===s.id){
       const sub=div('');sub.style.cssText='padding-left:29px;margin-top:11px;display:flex;gap:12px;flex-wrap:wrap';
@@ -2795,17 +2799,17 @@ function renderStep4() {
     const c=div('card pick'+(cfg.tpType===t.id?' selp':''));c.style.padding='14px 16px';
     const row=div('');row.style.cssText='display:flex;align-items:center;gap:12px';
     row.appendChild(cring(cfg.tpType===t.id));
-    const nm=div('');nm.style.cssText='font-size:13px;font-weight:600;color:#E8E8ED';nm.textContent=t.label;
+    const nm=div('');nm.style.cssText='font-size:13px;font-weight:600;color:var(--tx)';nm.textContent=t.label;
     row.appendChild(nm);c.appendChild(row);
     if(cfg.tpType===t.id){
       const sub=div('');sub.style.cssText='padding-left:29px;margin-top:11px';
       if(t.id==='fixed') sub.appendChild(stepper(cfg.tpPts,1,10000,'pts',v=>{cfg.tpPts=v;}));
       if(t.id==='rr'){
         const rrow=div('');rrow.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:6px';
-        const rl=div('');rl.style.cssText='font-size:13px;color:#8888A0';rl.textContent='×  risco';
+        const rl=div('');rl.style.cssText='font-size:13px;color:var(--txs)';rl.textContent='×  risco';
         rrow.append(stepper(cfg.tpRR,1,20,'',v=>{cfg.tpRR=v;}),rl);
         sub.appendChild(rrow);
-        if(cfg.stopType==='fixed'){const hint=div('');hint.style.cssText='font-size:11px;color:#6B6B80;font-family:JetBrains Mono';hint.textContent=`Stop ${cfg.stopPts} pts → alvo = ${(cfg.tpRR*cfg.stopPts).toLocaleString('pt-BR')} pts`;sub.appendChild(hint);}
+        if(cfg.stopType==='fixed'){const hint=div('');hint.style.cssText='font-size:11px;color:var(--txm);font-family:JetBrains Mono';hint.textContent=`Stop ${cfg.stopPts} pts → alvo = ${(cfg.tpRR*cfg.stopPts).toLocaleString('pt-BR')} pts`;sub.appendChild(hint);}
       }
       if(t.id==='fib_ext'){
         const fibLevels=['100','127.2','161.8','200','261.8'];
@@ -2817,11 +2821,11 @@ function renderStep4() {
           fibRow.appendChild(chip);
         });
         sub.appendChild(fibRow);
-        const hint=div('');hint.style.cssText='font-size:11px;color:#6B6B80;line-height:1.5';
+        const hint=div('');hint.style.cssText='font-size:11px;color:var(--txm);line-height:1.5';
         hint.textContent=`Alvo na extensão de ${cfg.tpFibLevel}% da perna anterior ao ponto de entrada.`;
         sub.appendChild(hint);
       }
-      if(t.id==='none'&&t.desc){const ds=div('');ds.style.cssText='font-size:11px;color:#8888A0';ds.textContent=t.desc;sub.appendChild(ds);}
+      if(t.id==='none'&&t.desc){const ds=div('');ds.style.cssText='font-size:11px;color:var(--txs)';ds.textContent=t.desc;sub.appendChild(ds);}
       c.appendChild(sub);
     }
     c.addEventListener('click',()=>{cfg.tpType=t.id;renderApp();});
@@ -2837,15 +2841,15 @@ function renderStep5() {
 
   // Banner
   const banner=div('banner warn');
-  banner.innerHTML=`<span style="color:#F59E0B;flex-shrink:0">${IC.warn}</span><div style="font-size:12px;color:#8888A0;line-height:1.5"><strong style="color:#F59E0B">Passo opcional.</strong> Se não alterar nada, a operação usará stop e alvo fixos do passo anterior.</div>`;
+  banner.innerHTML=`<span style="color:#F59E0B;flex-shrink:0">${IC.warn}</span><div style="font-size:12px;color:var(--txs);line-height:1.5"><strong style="color:#F59E0B">Passo opcional.</strong> Se não alterar nada, a operação usará stop e alvo fixos do passo anterior.</div>`;
   el.appendChild(banner);
 
   function mgmtBlock(title,sub,tip,isOn,onToggle,bodyFn) {
     const blk=div('mgmt-block');
     const hdr=div('mgmt-header');
     const info=div('');info.style.flex='1';
-    const t=div('');t.style.cssText='font-size:14px;font-weight:600;color:#E8E8ED;margin-bottom:3px';t.textContent=title;
-    const s=div('');s.style.cssText='font-size:11px;color:#8888A0;line-height:1.4';s.textContent=sub;
+    const t=div('');t.style.cssText='font-size:14px;font-weight:600;color:var(--tx);margin-bottom:3px';t.textContent=title;
+    const s=div('');s.style.cssText='font-size:11px;color:var(--txs);line-height:1.4';s.textContent=sub;
     info.append(t,s);
     hdr.append(info,toggle(isOn,onToggle));
     blk.appendChild(hdr);
@@ -2876,7 +2880,7 @@ function renderStep5() {
     if(cfg.exitCondition){
       const row=div('card');row.style.cssText='padding:10px 13px;display:flex;align-items:center;gap:9px';
       const ic=div('');ic.style.cssText='color:#00D4AA;flex-shrink:0';ic.innerHTML=IC.act;
-      const lbl=div('');lbl.style.cssText='flex:1;font-size:12px;color:#E8E8ED';lbl.textContent=condLabel(cfg.exitCondition);
+      const lbl=div('');lbl.style.cssText='flex:1;font-size:12px;color:var(--tx)';lbl.textContent=condLabel(cfg.exitCondition);
       const rmBtn=h('button',{class:'btnGh',onclick:()=>{cfg.exitCondition=null;renderApp();}});rmBtn.innerHTML=IC.x;
       row.append(ic,lbl,rmBtn);body.appendChild(row);
     } else {
@@ -2904,8 +2908,8 @@ function renderConfirm() {
 
   const el=div(state.animate?'aUp':'');el.style.maxWidth='660px';
 
-  const title=div('');title.style.cssText='font-size:19px;font-weight:700;color:#E8E8ED;margin-bottom:5px';title.textContent='Confirmar e Rodar';
-  const sub=div('');sub.style.cssText='font-size:13px;color:#8888A0;margin-bottom:20px';sub.textContent='Revise as configurações antes de iniciar o backtest.';
+  const title=div('');title.style.cssText='font-size:19px;font-weight:700;color:var(--tx);margin-bottom:5px';title.textContent='Confirmar e Rodar';
+  const sub=div('');sub.style.cssText='font-size:13px;color:var(--txs);margin-bottom:20px';sub.textContent='Revise as configurações antes de iniciar o backtest.';
   el.append(title,sub);
 
   const box=div('card');box.style.padding='20px 24px';
@@ -2916,7 +2920,7 @@ function renderConfirm() {
     r.append(k,v);return r;
   }
   const dirText=cfg.direction==='long'?'Apenas compra':cfg.direction==='short'?'Apenas venda':'Compra e venda';
-  const condText=cfg.conditions.length===0?'<span style="color:#6B6B80">Sem condições configuradas</span>':cfg.conditions.map((c,i)=>(i>0?`<strong style="color:#00D4AA"> E </strong>`:'')+condLabel(c)).join('');
+  const condText=cfg.conditions.length===0?'<span style="color:var(--txm)">Sem condições configuradas</span>':cfg.conditions.map((c,i)=>(i>0?`<strong style="color:#00D4AA"> E </strong>`:'')+condLabel(c)).join('');
   box.append(
     row('Mercado',`<span style="color:#00D4AA">${asset?.n||cfg.asset} (${cfg.asset})</span> · ${cfg.tf} · Leitura ${cfg.tStart} · Última abertura ${cfg.tLastEntry} · Encerramento ${cfg.tEnd}${cfg.maxDailyTrades>0?' · Máx '+cfg.maxDailyTrades+' ops/dia':''}`),
     row('Condições de entrada',condText),
@@ -2930,8 +2934,8 @@ function renderConfirm() {
   lastRow.append(lk,lv);box.appendChild(lastRow);
   el.appendChild(box);
 
-  const period=div('');period.style.cssText='background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.14);border-radius:9px;padding:10px 13px;margin:16px 0 22px;display:flex;align-items:center;gap:8px;font-size:12px;color:#8888A0';
-  period.innerHTML=`<span style="color:#00D4AA;flex-shrink:0">${IC.act}</span> Período: <strong style="color:#E8E8ED">Janeiro 2019 — Março 2026</strong> <span style="color:#6B6B80">(todo o histórico disponível)</span>`;
+  const period=div('');period.style.cssText='background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.14);border-radius:9px;padding:10px 13px;margin:16px 0 22px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--txs)';
+  period.innerHTML=`<span style="color:#00D4AA;flex-shrink:0">${IC.act}</span> Período: <strong style="color:var(--tx)">Janeiro 2019 — Março 2026</strong> <span style="color:var(--txm)">(todo o histórico disponível)</span>`;
   el.appendChild(period);
 
   const btns=div('');btns.style.cssText='display:flex;gap:9px';
@@ -2960,8 +2964,8 @@ function renderLoading() {
   const el=div('loading-screen');
   const spin=div('spinner');
   spin.innerHTML=`<div class="spinner-ring"></div><div class="spinner-inner"></div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`;
-  const title=div('');title.style.cssText='font-size:19px;font-weight:700;color:#E8E8ED;margin-bottom:9px';title.textContent='Rodando backtest';
-  const msg=div('');msg.id='load-msg';msg.style.cssText='font-size:13px;color:#8888A0;margin-bottom:20px;min-height:20px';msg.textContent=LOAD_MSGS[0];
+  const title=div('');title.style.cssText='font-size:19px;font-weight:700;color:var(--tx);margin-bottom:9px';title.textContent='Rodando backtest';
+  const msg=div('');msg.id='load-msg';msg.style.cssText='font-size:13px;color:var(--txs);margin-bottom:20px;min-height:20px';msg.textContent=LOAD_MSGS[0];
   const barWrap=div('load-bar');const fill=div('load-fill');barWrap.appendChild(fill);
   el.append(spin,div('',title,msg,barWrap));
   return el;
@@ -2971,7 +2975,7 @@ function renderLoading() {
 function getMetrics(){
   const A=EQ_ANALYSIS,last=EQ[EQ.length-1].v;
   return[
-    {label:'Total de Trades',val:String(EQ.length),color:'#E8E8ED'},
+    {label:'Total de Trades',val:String(EQ.length),color:'var(--tx)'},
     {label:'Taxa de Acerto',val:A.winRate.toFixed(1)+'%',color:'#F59E0B',pct:A.winRate},
     {label:'Lucro Total',val:(last>=0?'+':'')+'R$ '+Math.abs(last).toLocaleString('pt-BR'),color:last>=0?'#10B981':'#EF4444'},
     {label:'Max Drawdown',val:'−'+A.maxDDPct.toFixed(2)+'%',color:'#EF4444'},
@@ -3004,6 +3008,7 @@ function exitHistoryDetail(){
 }
 
 function renderResults() {
+  const TH=svgTheme();
   const A=EQ_ANALYSIS;const METRICS=getMetrics();
   const last=EQ[EQ.length-1].v;const ok=last>0;
   const el=div(state.animate?'aUp':'');el.style.maxWidth='860px';
@@ -3015,12 +3020,12 @@ function renderResults() {
     const backBtn=h('button',{class:'history-back',onclick:exitHistoryDetail});
     backBtn.innerHTML=IC.back+' Voltar ao histórico';
     const info=div('');info.style.cssText='display:flex;align-items:center;gap:12px;flex-wrap:wrap';
-    const title=div('');title.style.cssText='font-size:18px;font-weight:700;color:#E8E8ED';title.textContent=`${bt.asset} · ${bt.tf}`;
-    const dir=div('');dir.style.cssText='font-size:12px;color:#8888A0';dir.textContent=bt.direction==='long'?'Compra':bt.direction==='short'?'Venda':'Compra e Venda';
-    const date=div('');date.style.cssText='font-size:11px;color:#6B6B80;font-family:JetBrains Mono';date.textContent=bt.date;
+    const title=div('');title.style.cssText='font-size:18px;font-weight:700;color:var(--tx)';title.textContent=`${bt.asset} · ${bt.tf}`;
+    const dir=div('');dir.style.cssText='font-size:12px;color:var(--txs)';dir.textContent=bt.direction==='long'?'Compra':bt.direction==='short'?'Venda':'Compra e Venda';
+    const date=div('');date.style.cssText='font-size:11px;color:var(--txm);font-family:JetBrains Mono';date.textContent=bt.date;
     info.append(title,dir,date);
     const conds=div('');conds.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin-top:8px';
-    bt.conditions.forEach(c=>{const tag=div('');tag.style.cssText='font-size:10px;padding:2px 8px;border-radius:4px;background:#1A1A28;border:1px solid #2A2A3C;color:#8888A0;font-family:JetBrains Mono';tag.textContent=c;conds.appendChild(tag);});
+    bt.conditions.forEach(c=>{const tag=div('');tag.style.cssText='font-size:10px;padding:2px 8px;border-radius:4px;background:var(--bg2);border:1px solid var(--bd);color:var(--txs);font-family:JetBrains Mono';tag.textContent=c;conds.appendChild(tag);});
     hdr.append(backBtn,info,conds);
     el.appendChild(hdr);
   }
@@ -3032,7 +3037,7 @@ function renderResults() {
   const vText=div('');
   const vLabel=div('');vLabel.style.cssText=`font-size:10px;font-weight:800;color:${ok?'#10B981':'#EF4444'};letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px`;vLabel.textContent='Resultado: '+(ok?'LUCRATIVA':'DEFICITÁRIA');
   const vVal=div('');vVal.style.cssText=`font-size:34px;font-weight:700;color:${ok?'#10B981':'#EF4444'};font-family:'JetBrains Mono';line-height:1`;vVal.textContent=(ok?'+':'−')+'R$ '+Math.abs(last).toLocaleString('pt-BR');
-  const vSub=div('');vSub.style.cssText='font-size:11px;color:#8888A0;margin-top:5px';vSub.textContent=`Jan 2019 – Mar 2026 · 87 meses · ${EQ.length} operações`;
+  const vSub=div('');vSub.style.cssText='font-size:11px;color:var(--txs);margin-top:5px';vSub.textContent=`Jan 2019 – Mar 2026 · 87 meses · ${EQ.length} operações`;
   vText.append(vLabel,vVal,vSub);verdict.append(vIco,vText);el.appendChild(verdict);
 
   // ── Metrics Grid (4 columns) ──
@@ -3042,7 +3047,7 @@ function renderResults() {
     const lb=div('metric-label');lb.textContent=m.label;
     const vl=div('metric-val');vl.style.color=m.color;vl.textContent=m.val;
     c.append(lb,vl);
-    if(m.pct!==undefined){const bar=div('');bar.style.cssText='margin-top:8px;height:3px;background:#1A1A28;border-radius:2px';const fill=div('');fill.style.cssText=`height:100%;width:${m.pct}%;background:#F59E0B;border-radius:2px`;bar.appendChild(fill);c.appendChild(bar);}
+    if(m.pct!==undefined){const bar=div('');bar.style.cssText='margin-top:8px;height:3px;background:var(--bg2);border-radius:2px';const fill=div('');fill.style.cssText=`height:100%;width:${m.pct}%;background:#F59E0B;border-radius:2px`;bar.appendChild(fill);c.appendChild(bar);}
     mg.appendChild(c);
   });
   el.appendChild(mg);
@@ -3054,7 +3059,7 @@ function renderResults() {
   const statsGrid=div('');statsGrid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:12px';
 
   const leftCol=div('');leftCol.style.cssText='display:flex;flex-direction:column;gap:8px';
-  const statRow=(label,val,color)=>{const r=div('');r.style.cssText='display:flex;justify-content:space-between;align-items:center';const l=div('');l.style.cssText='font-size:12px;color:#8888A0';l.textContent=label;const v=div('');v.style.cssText=`font-size:13px;font-weight:600;color:${color||'#E8E8ED'};font-family:'JetBrains Mono'`;v.textContent=val;r.append(l,v);return r;};
+  const statRow=(label,val,color)=>{const r=div('');r.style.cssText='display:flex;justify-content:space-between;align-items:center';const l=div('');l.style.cssText='font-size:12px;color:var(--txs)';l.textContent=label;const v=div('');v.style.cssText=`font-size:13px;font-weight:600;color:${color||TH.tx};font-family:'JetBrains Mono'`;v.textContent=val;r.append(l,v);return r;};
   leftCol.append(
     statRow('Gains',String(A.wins),'#10B981'),
     statRow('Losses',String(A.losses),'#EF4444'),
@@ -3078,8 +3083,8 @@ function renderResults() {
 
   // DD analysis below equity chart
   if(A.maxDDPct>0){
-    const ddInfo=div('');ddInfo.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px;padding-top:12px;border-top:1px solid #2A2A3C';
-    const ddCard=(label,val,sub,color)=>{const c=div('');const l=div('');l.style.cssText='font-size:9px;font-weight:700;color:#8888A0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px';l.textContent=label;const v=div('');v.style.cssText=`font-size:16px;font-weight:700;color:${color||'#E8E8ED'};font-family:'JetBrains Mono'`;v.textContent=val;c.append(l,v);if(sub){const s=div('');s.style.cssText='font-size:10px;color:#6B6B80;margin-top:2px';s.textContent=sub;c.appendChild(s);}return c;};
+    const ddInfo=div('');ddInfo.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)';
+    const ddCard=(label,val,sub,color)=>{const c=div('');const l=div('');l.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px';l.textContent=label;const v=div('');v.style.cssText=`font-size:16px;font-weight:700;color:${color||TH.tx};font-family:'JetBrains Mono'`;v.textContent=val;c.append(l,v);if(sub){const s=div('');s.style.cssText='font-size:10px;color:var(--txm);margin-top:2px';s.textContent=sub;c.appendChild(s);}return c;};
     const ddDuration=A.maxDDIdx-A.maxDDPeakIdx;
     ddInfo.append(
       ddCard('Max Drawdown','-'+A.maxDDPct.toFixed(2)+'%','R$ '+A.maxDDVal.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#EF4444'),
@@ -3091,8 +3096,8 @@ function renderResults() {
 
   // Losing streak info
   if(A.maxStreak>0){
-    const lsInfo=div('');lsInfo.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px;padding-top:10px;border-top:1px solid #2A2A3C';
-    const lsCard=(label,val,color)=>{const c=div('');const l=div('');l.style.cssText='font-size:9px;font-weight:700;color:#8888A0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px';l.textContent=label;const v=div('');v.style.cssText=`font-size:16px;font-weight:700;color:${color||'#E8E8ED'};font-family:'JetBrains Mono'`;v.textContent=val;c.append(l,v);return c;};
+    const lsInfo=div('');lsInfo.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)';
+    const lsCard=(label,val,color)=>{const c=div('');const l=div('');l.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px';l.textContent=label;const v=div('');v.style.cssText=`font-size:16px;font-weight:700;color:${color||TH.tx};font-family:'JetBrains Mono'`;v.textContent=val;c.append(l,v);return c;};
     lsInfo.append(
       lsCard('Max Sequência Negativa',A.maxStreak+' operações','#F59E0B'),
       lsCard('Período',EQ[A.mStreakS].t+' → '+EQ[A.mStreakE].t,'#F59E0B')
@@ -3107,8 +3112,8 @@ function renderResults() {
   tuw.append(tuwl,buildTUWChart());
 
   // TUW stats
-  const tuwStats=div('');tuwStats.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px;padding-top:12px;border-top:1px solid #2A2A3C';
-  const tuwCard=(label,val,color)=>{const c=div('');const l=div('');l.style.cssText='font-size:9px;font-weight:700;color:#8888A0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px';l.textContent=label;const v=div('');v.style.cssText=`font-size:16px;font-weight:700;color:${color||'#E8E8ED'};font-family:'JetBrains Mono'`;v.textContent=val;c.append(l,v);return c;};
+  const tuwStats=div('');tuwStats.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)';
+  const tuwCard=(label,val,color)=>{const c=div('');const l=div('');l.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px';l.textContent=label;const v=div('');v.style.cssText=`font-size:16px;font-weight:700;color:${color||TH.tx};font-family:'JetBrains Mono'`;v.textContent=val;c.append(l,v);return c;};
   tuwStats.append(
     tuwCard('Períodos TUW',String(A.uwPeriods.length),'#1E90FF'),
     tuwCard('TUW Máximo',A.tuwMax+' operações','#EF4444'),
@@ -3117,7 +3122,7 @@ function renderResults() {
   tuw.appendChild(tuwStats);
 
   // Legend
-  const legend=div('');legend.style.cssText='display:flex;gap:16px;margin-top:10px;font-size:10px;color:#6B6B80';
+  const legend=div('');legend.style.cssText='display:flex;gap:16px;margin-top:10px;font-size:10px;color:var(--txm)';
   legend.innerHTML='<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:rgba(239,68,68,0.15)"></span> Período underwater</span><span style="display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:3px;background:#10B981"></span> Nova máxima</span>';
   tuw.appendChild(legend);
   el.appendChild(tuw);
@@ -3147,7 +3152,7 @@ function renderProgressBar() {
   const pb=document.getElementById('prog-bar');
   pb.innerHTML='';
   if(state.screen!=='wizard') {
-    const lbl=div('');lbl.style.cssText='font-size:13px;color:#8888A0;font-weight:500';
+    const lbl=div('');lbl.style.cssText='font-size:13px;color:var(--txs);font-weight:500';
     lbl.textContent=state.screen==='confirm'?'Confirmar estratégia':state.screen==='loading'?'Processando...':'Resultado do backtest';
     pb.appendChild(lbl);return;
   }
@@ -3158,7 +3163,7 @@ function renderProgressBar() {
     const circle=div('prog-circle'+(done?' done':active?' active':''));
     if(done) circle.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`;
     else circle.innerHTML=IC[s.icon]||'';
-    if(circle.querySelector('svg')){const sv=circle.querySelector('svg');sv.style.color=active?'#0A0A0F':done?'white':'#44445A';}
+    if(circle.querySelector('svg')){const sv=circle.querySelector('svg');sv.style.color=active?'#0A0A0F':done?'white':TH.txm;}
     const label=div('prog-label'+(done?' done':active?' active':''));label.textContent=s.label;
     btn_.append(circle,label);
     pb.appendChild(btn_);
@@ -3221,7 +3226,7 @@ function renderApp() {
   previewCard.appendChild(buildPreview(state.step,state.cfg));
 
   // Mini summary
-  const summ=div('');summ.style.cssText='margin-top:14px;border-top:1px solid #2A2A3C;padding-top:13px;display:flex;flex-direction:column;gap:6px';
+  const summ=div('');summ.style.cssText='margin-top:14px;border-top:1px solid var(--bd);padding-top:13px;display:flex;flex-direction:column;gap:6px';
   const pending='a definir';
   const md=state.maxDone, sc2=state.cfg;
   const summRows=[
@@ -3235,10 +3240,10 @@ function renderApp() {
   ];
   summRows.forEach(([k,v])=>{
     const r=div('');r.style.cssText='display:flex;justify-content:space-between';
-    const kEl=div('');kEl.style.cssText='font-size:11px;color:#6B6B80';kEl.textContent=k;
+    const kEl=div('');kEl.style.cssText='font-size:11px;color:var(--txm)';kEl.textContent=k;
     const vEl=div('');
     const isPending=v===pending;
-    vEl.style.cssText=`font-size:11px;font-family:JetBrains Mono;${isPending?'color:#3A3A52;font-style:italic':'color:#E8E8ED'}`;
+    vEl.style.cssText=`font-size:11px;font-family:JetBrains Mono;${isPending?'color:var(--txm);font-style:italic':'color:var(--tx)'}`;
     vEl.textContent=v;
     r.append(kEl,vEl);summ.appendChild(r);
   });
@@ -3291,7 +3296,7 @@ function updateAvatarUI() {
   if (btn) btn.innerHTML = `<span style="font-size:11px;font-weight:700;color:#00D4AA;font-family:'JetBrains Mono'">${name.slice(0,2).toUpperCase()}</span>`;
   const verEl = document.getElementById('avatar-version');
   if (verEl) verEl.textContent = 'v' + APP_VERSION;
-  if (nameEl) nameEl.innerHTML = `<div style="font-weight:600;color:#E8E8ED;font-size:13px">${name}</div><div style="font-size:11px;color:#6B6B80;margin-top:2px">${email}</div>${currentSub?`<div style="margin-top:5px;font-size:11px;color:#00D4AA;font-weight:700">${currentSub.plan.toUpperCase()} · ativo até ${new Date(currentSub.expires_at).toLocaleDateString('pt-BR')}</div>`:'<div style="margin-top:5px;font-size:11px;color:#EF4444">Sem assinatura ativa</div>'}`;
+  if (nameEl) nameEl.innerHTML = `<div style="font-weight:600;color:var(--tx);font-size:13px">${name}</div><div style="font-size:11px;color:var(--txm);margin-top:2px">${email}</div>${currentSub?`<div style="margin-top:5px;font-size:11px;color:#00D4AA;font-weight:700">${currentSub.plan.toUpperCase()} · ativo até ${new Date(currentSub.expires_at).toLocaleDateString('pt-BR')}</div>`:'<div style="margin-top:5px;font-size:11px;color:#EF4444">Sem assinatura ativa</div>'}`;
 }
 async function handleLogout() {
   await db.auth.signOut();
@@ -3528,7 +3533,7 @@ async function submitPix() {
     area.innerHTML = `
       <div class="pix-box">
         ${data.pix_qr_base64?`<img class="pix-qr" src="data:image/png;base64,${data.pix_qr_base64}" alt="QR Pix">`:''}
-        <div style="font-size:13px;font-weight:600;color:#E8E8ED;margin-bottom:10px">Escaneie o QR Code ou copie o código</div>
+        <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:10px">Escaneie o QR Code ou copie o código</div>
         <button class="pix-copy" id="pix-btn" onclick="navigator.clipboard.writeText('${data.pix_copy_paste}');this.textContent='✓ Copiado!';this.style.color='#10B981'">${data.pix_copy_paste}</button>
         <div class="pix-note">Após o pagamento aguarde até 1 minuto. O código expira em 30 minutos.</div>
       </div>
@@ -3583,8 +3588,8 @@ function renderHistory() {
       <div style="width:56px;height:56px;border-radius:14px;background:var(--acd2);border:1px solid rgba(0,212,170,.2);display:flex;align-items:center;justify-content:center;margin-bottom:20px">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       </div>
-      <div style="font-size:16px;font-weight:600;color:#E8E8ED;margin-bottom:6px">Nenhum backtest realizado</div>
-      <div style="font-size:13px;color:#8888A0;max-width:320px;line-height:1.5">Monte sua primeira estratégia no wizard e rode um backtest para ver os resultados aqui.</div>
+      <div style="font-size:16px;font-weight:600;color:var(--tx);margin-bottom:6px">Nenhum backtest realizado</div>
+      <div style="font-size:13px;color:var(--txs);max-width:320px;line-height:1.5">Monte sua primeira estratégia no wizard e rode um backtest para ver os resultados aqui.</div>
     `;
     el.appendChild(empty);
     return el;
