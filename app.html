@@ -638,7 +638,7 @@ const INDS_BY_TAB = {
     { id:'fib',    name:'Retração de Fibonacci', desc:'Níveis de retração baseados no swing de N períodos',hasPer:true,hasVal:false,defCond:'Preço toca nível 61.8%',defVal:0,defPer:50 },
   ],
   'Volatilidade': [
-    { id:'atr',    name:'ATR',              desc:'Average True Range — mede volatilidade média',hasPer:true,hasVal:true,defCond:'está acima de',defVal:100,defPer:14 },
+    { id:'atr',    name:'ATR',              desc:'Average True Range — filtra por volatilidade relativa à média',hasPer:true,hasVal:false,defCond:'ATR está acima de X× a média',defVal:0,defPer:14 },
   ],
   'Padrões': [
     { id:'candle', name:'Padrão de Candle', desc:'Identifica formações clássicas de candlestick',hasPer:false,hasVal:false,defCond:'Martelo (alta)',defVal:0 },
@@ -665,7 +665,7 @@ const RNG_CONDS  = ['é maior que','é menor que'];
 const ADX_CONDS  = ['está acima de','está abaixo de','cruza acima de','cruza abaixo de'];
 const SAR_CONDS  = ['Preço está acima do SAR','Preço está abaixo do SAR','Preço cruza acima do SAR','Preço cruza abaixo do SAR'];
 const HILO_CONDS = ['HiLo virou compra','HiLo virou venda','Preço está acima do HiLo','Preço está abaixo do HiLo'];
-const ATR_CONDS  = ['está acima de','está abaixo de','é maior que a média'];
+const ATR_CONDS  = ['ATR está acima de X× a média','ATR está abaixo de X× a média','ATR cruza acima de X× a média','ATR cruza abaixo de X× a média'];
 const HILON_CONDS = ['Preço rompe máxima de N períodos','Preço rompe mínima de N períodos','Preço está acima da máxima de N','Preço está abaixo da mínima de N'];
 const GAP_CONDS  = ['Gap de alta','Gap de baixa','Gap de alta maior que','Gap de baixa maior que'];
 const PREVDAY_CONDS = ['Preço está acima da máxima de ontem','Preço está abaixo da mínima de ontem','Preço cruza acima da máxima de ontem','Preço cruza abaixo da mínima de ontem','Preço está entre máxima e mínima de ontem'];
@@ -786,7 +786,7 @@ function condLabel(c) {
     case 'adx':      return `ADX(${p.per||14}) ${p.cond} ${p.val}`;
     case 'sar':      return `SAR — ${p.cond}`;
     case 'hilo':     return `HiLo(${p.per||6}) — ${p.cond}`;
-    case 'atr':      return `ATR(${p.per||14}) ${p.cond} ${p.val||''}`;
+    case 'atr':      return `ATR(${p.per||14}) ${p.cond.replace('X×',((p.mult||1.0).toFixed(1))+'×')}`;
     case 'hilon':    return `${p.cond} (${p.per||20})`;
     case 'gap':      return `${p.cond}${p.val?' > '+p.val+' pts':''}`;
     case 'prevday':  return p.cond;
@@ -2008,6 +2008,7 @@ function renderModal() {
           };
           if(['sma','ema'].includes(ind.id)){ ms.params.per=200; }
           if(ind.id==='bb'){ ms.params.per=20; ms.params.dev=2; }
+          if(ind.id==='atr'){ ms.params={per:14,mult:1.0,cond:ATR_CONDS[0]}; }
           // Smart Money Concepts — custom param init
           if(ind.id==='fvg')  ms.params={dir:'Compra',val:50,cond:FVG_CONDS[1]};
           if(ind.id==='bos')  ms.params={dir:'Compra',per:10,conf:'fechamento',cond:BOS_CONDS[0]};
@@ -2367,9 +2368,24 @@ function renderModal() {
       }
       if(ind.hasVal!==false && ms.params.val!==undefined) {
         const row=div('');
-        const valLabel = ind.id==='gap' ? 'Tamanho mínimo (pontos)' : ind.id==='atr' ? 'Valor em pontos' : 'Valor de referência';
+        const valLabel = ind.id==='gap' ? 'Tamanho mínimo (pontos)' : 'Valor de referência';
         row.appendChild(slabel(valLabel));
-        row.appendChild(stepper(ms.params.val,-999,99999, ind.id==='gap'||ind.id==='atr'?'pts':'', v=>{ms.params.val=v;}));
+        row.appendChild(stepper(ms.params.val,-999,99999, ind.id==='gap'?'pts':'', v=>{ms.params.val=v;}));
+        frag.appendChild(row);
+      }
+      // ATR multiplier field
+      if(ind.id==='atr' && ms.params.mult!==undefined) {
+        const row=div('');
+        row.appendChild(slabel('Multiplicador da média','O ATR atual será comparado com este múltiplo da sua própria média. Ex: 1.5× significa que a volatilidade precisa estar 50% acima da média.'));
+        const multVal=div('step-val mono');
+        multVal.textContent=ms.params.mult.toFixed(1);
+        const dec=h('button',{class:'step-btn',onclick:()=>{ms.params.mult=Math.max(0.1,+(ms.params.mult-0.1).toFixed(1));renderModal();}});
+        dec.textContent='−';
+        const inc=h('button',{class:'step-btn',onclick:()=>{ms.params.mult=Math.min(10,+(ms.params.mult+0.1).toFixed(1));renderModal();}});
+        inc.textContent='+';
+        const wrap=div('stepper',dec,multVal,inc);
+        const unit=div('step-unit');unit.textContent='× a média';wrap.appendChild(unit);
+        row.appendChild(wrap);
         frag.appendChild(row);
       }
       body.appendChild(frag);
