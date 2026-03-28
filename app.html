@@ -627,7 +627,6 @@ const INDS_BY_TAB = {
     { id:'hilo', name:'HiLo Activator',    desc:'Linha de suporte/resistência baseada em máximas e mínimas de N períodos',hasPer:true,hasVal:false,defCond:'HiLo virou compra',defVal:0,defPer:6 },
   ],
   'Volume': [
-    { id:'vol',    name:'Volume',       desc:'Volume total do candle',       hasPer:false,hasVal:true, defCond:'é maior que', defVal:1000 },
     { id:'obv',    name:'OBV',          desc:'On Balance Volume',            hasPer:false,hasVal:false,defCond:'está subindo', defVal:0 },
     { id:'avgvol', name:'Volume Médio', desc:'Volume vs média histórica',    hasPer:true, hasVal:true, defCond:'é maior que', defVal:1000 },
   ],
@@ -703,7 +702,7 @@ function getCondsFor(id) {
   if (id==='choch')   return CHOCH_CONDS;
   if (id==='ob')      return OB_CONDS;
   if (id==='sweep')   return SWEEP_CONDS;
-  if (['vol','avgvol'].includes(id)) return VOL_CONDS;
+  if (id==='avgvol') return VOL_CONDS;
   if (id==='obv')     return TRD_CONDS;
   if (id==='price')   return PRC_CONDS;
   if (id==='range')   return RNG_CONDS;
@@ -796,7 +795,6 @@ function condLabel(c) {
     case 'prevday':  return p.cond;
     case 'fib':      return `Fibo(${p.per||50}) — ${p.cond}`;
     case 'candle':   return `Padrão: ${p.cond}`;
-    case 'vol':      return `Volume ${p.cond} ${p.val}`;
     case 'obv':      return `OBV ${p.cond}`;
     case 'avgvol':   return `Volume ${p.cond} Vol.Médio(${p.per||20})`;
     case 'price':    return `Preço ${p.cond} ${p.val}`;
@@ -1132,7 +1130,7 @@ function buildPreview(step,cfg) {
   // Classify conditions
   const overlayConds=conds.filter(c=>['sma','ema','bb','vwap','sar','hilo','prevday','hilon','fib'].includes(c.id));
   const oscConds=conds.filter(c=>['rsi','stoch','cci','williams','macd','adx','atr'].includes(c.id));
-  const volConds=conds.filter(c=>['vol','avgvol','obv'].includes(c.id));
+  const volConds=conds.filter(c=>['avgvol','obv'].includes(c.id));
   const otherConds=conds.filter(c=>['price','range','gap','candle'].includes(c.id));
 
   const panelCount=Math.min(oscConds.length+volConds.length,2);
@@ -1377,7 +1375,7 @@ function buildPreview(step,cfg) {
 
   const allPanelConds=[...oscConds,...volConds].slice(0,2);
   allPanelConds.forEach((cond,i)=>{
-    if(cond.id==='vol'||cond.id==='avgvol'){
+    if(cond.id==='avgvol'){
       // Volume bars panel
       const yOff=panelY;
       rc(5,yOff,290,panelH,'#1A1A28',1,3);
@@ -1552,7 +1550,7 @@ function buildCondPreview(indId, condText) {
   }
 
   // ═══ VOLUME ═══
-  if(['vol','avgvol'].includes(indId)){
+  if(indId==='avgvol'){
     const bars=[30,45,35,55,40,60,85,50,65,42,38,48];const avgY=50;
     bars.forEach((v,i)=>{const x=18+i*22,h=v,y=H-10-h;rc(x,y,14,h,v>avgY?'#10B981':'#44445A',v>avgY?0.7:0.4,2);});
     if(indId==='avgvol'){ln(15,H-10-avgY,W-15,H-10-avgY,'#F59E0B',1,'4,3');tx(W-10,H-10-avgY-4,'MÉD','#F59E0B',7,'end');}
@@ -1785,7 +1783,7 @@ function validateNewCondition(newCond, existingConds) {
     issues.push({type:'block',rule:'R29',msg:'O Williams %R opera entre -100 e 0.'});
   if (id==='cci' && p.val!=null && Math.abs(p.val)>300)
     issues.push({type:'warn',rule:'R30',msg:'Valores de CCI nesta faixa são muito raros. O backtest pode não encontrar sinais suficientes no histórico.'});
-  if (['vol','avgvol','range'].includes(id) && p.val!=null && p.val<=0)
+  if (['avgvol','range'].includes(id) && p.val!=null && p.val<=0)
     issues.push({type:'block',rule:'R31',msg:'O valor de referência deve ser maior que zero.'});
 
   // R26: 4+ condições simultâneas
@@ -1861,15 +1859,10 @@ function validateNewCondition(newCond, existingConds) {
         issues.push({type:'block',rule:'R12',msg:'OBV não pode estar subindo e caindo ao mesmo tempo.'});
     }
 
-    // R13, R23: Volume
-    if (['vol','avgvol'].includes(id) && ['vol','avgvol'].includes(ex.id)) {
-      if (id===ex.id) {
-        if ((p.cond==='é maior que'&&ep.cond==='é menor que'&&ep.val<=p.val)||(p.cond==='é menor que'&&ep.cond==='é maior que'&&p.val<=ep.val))
-          issues.push({type:'block',rule:'R13',msg:`Volume não pode ser maior que ${Math.max(p.val,ep.val)} e menor que ${Math.min(p.val,ep.val)} ao mesmo tempo.`});
-      } else {
-        if ((p.cond==='é maior que'&&ep.cond==='é maior que')||(p.cond==='é menor que'&&ep.cond==='é menor que'))
-          issues.push({type:'warn',rule:'R23',msg:'Volume Médio já incorpora a lógica do volume absoluto de forma dinâmica. Considere usar apenas o Volume Médio.'});
-      }
+    // R13: Volume Médio
+    if (id==='avgvol' && ex.id==='avgvol') {
+      if ((p.cond==='é maior que'&&ep.cond==='é menor que'&&ep.val<=p.val)||(p.cond==='é menor que'&&ep.cond==='é maior que'&&p.val<=ep.val))
+        issues.push({type:'block',rule:'R13',msg:`Volume não pode ser maior que ${Math.max(p.val,ep.val)} e menor que ${Math.min(p.val,ep.val)} ao mesmo tempo.`});
     }
 
     // R14: Range
