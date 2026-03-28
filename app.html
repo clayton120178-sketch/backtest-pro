@@ -479,7 +479,10 @@ function setAppTheme(t){
   const d=document.getElementById('themeD'),l=document.getElementById('themeL');
   if(d){d.classList.toggle('on',t==='dark');l.classList.toggle('on',t==='light');}
   try{localStorage.setItem('bp-theme',t);}catch(e){}
-  renderApp();
+  // Re-render only if app is already booted (renderApp exists and main has content)
+  if(typeof renderApp==='function'&&document.getElementById('main')?.children.length>0){
+    try{renderApp();}catch(e){}
+  }
 }
 (function(){try{const t=localStorage.getItem('bp-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 
@@ -1177,10 +1180,11 @@ function buildPreview(step,cfg) {
   const tx=(x,y,t,c,s,a)=>{const e=hsvg('text',{x,y,fill:c,'font-size':s||7,'font-family':'JetBrains Mono','font-weight':500,'text-anchor':a||'start'});e.textContent=t;svgEl.appendChild(e);};
   const pa=(d,c,o)=>svgEl.appendChild(hsvg('path',{d,fill:c,'fill-opacity':o||0.12}));
   const cir=(x,y,c,r)=>svgEl.appendChild(hsvg('circle',{cx:x,cy:y,r:r||2.5,fill:c,'fill-opacity':0.3,stroke:c,'stroke-width':0.8}));
-  const badge=(x,y,t,c,s,a)=>{const fs=s||7;const tw=t.length*(fs*0.58);const ax=a==='end'?x-tw-3:a==='middle'?x-tw/2-1.5:x-1.5;rc(ax,y-fs+1,tw+3,fs+2,TH.badgeBg,0.92,2);tx(x,y,t,c,fs,a);};
 
   // Theme colors for SVG
   const TH=svgTheme();
+
+  const badge=(x,y,t,c,s,a)=>{const fs=s||7;const tw=t.length*(fs*0.58);const ax=a==='end'?x-tw-3:a==='middle'?x-tw/2-1.5:x-1.5;rc(ax,y-fs+1,tw+3,fs+2,TH.badgeBg,0.92,2);tx(x,y,t,c,fs,a);};
 
   // Professional candle data — 20 candles with realistic price action
   const rawPrices=[130,128,132,134,131,136,138,135,140,142,139,144,146,143,148,150,147,152,149,154];
@@ -2637,13 +2641,13 @@ function renderStep2() {
   // Compra
   const longCard=div('card pick'+(isLong?' selp':''));
   longCard.style.cssText='padding:12px 16px;display:flex;align-items:center;gap:10px;flex:1;min-width:120px'+(locked?';opacity:0.7;pointer-events:none':'');
-  longCard.innerHTML='<span style="font-size:18px">▲</span><span style="font-size:13px;font-weight:700;color:'+(isLong?'#10B981':TH.txs)+'">Compra</span>';
+  longCard.innerHTML='<span style="font-size:18px">▲</span><span style="font-size:13px;font-weight:700;color:'+(isLong?'#10B981':'var(--txs)')+'">Compra</span>';
   if(!locked) longCard.addEventListener('click',()=>{cfg.direction=(isLong&&isShort)?'short':(!isLong?'both':'short');renderApp();});
 
   // Venda
   const shortCard=div('card pick dir-venda'+(isShort?' seld':''));
   shortCard.style.cssText='padding:12px 16px;display:flex;align-items:center;gap:10px;flex:1;min-width:120px'+(locked?';opacity:0.7;pointer-events:none':'');
-  shortCard.innerHTML='<span style="font-size:18px">▼</span><span style="font-size:13px;font-weight:700;color:'+(isShort?'#EF4444':TH.txs)+'">Venda</span>';
+  shortCard.innerHTML='<span style="font-size:18px">▼</span><span style="font-size:13px;font-weight:700;color:'+(isShort?'#EF4444':'var(--txs)')+'">Venda</span>';
   if(!locked) shortCard.addEventListener('click',()=>{cfg.direction=(isShort&&isLong)?'long':(!isShort?'both':'long');renderApp();});
 
   dirRow.append(longCard,shortCard);
@@ -3163,7 +3167,7 @@ function renderProgressBar() {
     const circle=div('prog-circle'+(done?' done':active?' active':''));
     if(done) circle.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`;
     else circle.innerHTML=IC[s.icon]||'';
-    if(circle.querySelector('svg')){const sv=circle.querySelector('svg');sv.style.color=active?'#0A0A0F':done?'white':TH.txm;}
+    if(circle.querySelector('svg')){const sv=circle.querySelector('svg');sv.style.color=active?'var(--action-t)':done?'white':'var(--txm)';}
     const label=div('prog-label'+(done?' done':active?' active':''));label.textContent=s.label;
     btn_.append(circle,label);
     pb.appendChild(btn_);
