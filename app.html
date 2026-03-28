@@ -2449,7 +2449,12 @@ function renderModal() {
         confirmBtn.disabled=false;
         confirmBtn.style.cssText='background:rgba(245,158,11,.15);color:#F59E0B;border:1px solid rgba(245,158,11,.3);padding:11px 22px;font-weight:700;display:inline-flex;align-items:center;gap:6px;border-radius:8px;cursor:pointer';
         confirmBtn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg> Confirmar assim mesmo';
-        confirmBtn.onclick=()=>{modalWarnOverride=true;refreshModalValidation();};
+        confirmBtn.onclick=()=>{
+          const newCond={id:ms.ind.id,name:ms.ind.name,params:{...ms.params}};
+          if(ms.forExitCond){state.cfg.exitCondition=newCond;}
+          else{state.cfg.conditions.push(newCond);}
+          modalWarnOverride=false;closeModal();renderApp();
+        };
       } else {
         confirmBtn.disabled=false;
         confirmBtn.style.cssText='';
