@@ -620,7 +620,7 @@ const INDS_BY_TAB = {
   'Tendência': [
     { id:'sma',  name:'SMA',                 desc:'Média aritmética N períodos',   hasPer:true, hasVal:false,defCond:'Preço está acima',       defVal:0, defPer:200 },
     { id:'ema',  name:'EMA',                 desc:'Média exponencial N períodos',  hasPer:true, hasVal:false,defCond:'Preço está acima',       defVal:0, defPer:200 },
-    { id:'bb',   name:'Bandas de Bollinger', desc:'Canal dinâmico de volatilidade',hasPer:true, hasVal:false,defCond:'Preço toca banda sup.', defVal:0 },
+    { id:'bb',   name:'Bandas de Bollinger', desc:'Canal dinâmico de volatilidade',hasPer:true, hasVal:false,defCond:'Preço toca banda superior', defVal:0 },
     { id:'vwap', name:'VWAP',               desc:'Preço médio ponderado por volume',hasPer:false,hasVal:false,defCond:'Preço está acima do VWAP',defVal:0 },
     { id:'adx',  name:'ADX',                desc:'Força da tendência (0–100)',     hasPer:true, hasVal:true, defCond:'está acima de', defVal:25 },
     { id:'sar',  name:'SAR Parabólico',     desc:'Indicador de reversão de tendência',hasPer:false,hasVal:false,defCond:'Preço está acima do SAR',defVal:0 },
@@ -658,7 +658,7 @@ const OSC_CONDS  = ['cruza acima de','cruza abaixo de','está acima de','está a
 const MA_CONDS   = ['Preço cruza acima','Preço cruza abaixo','Preço está acima','Preço está abaixo','Média curta cruza acima da longa','Média curta cruza abaixo da longa','Cruzamento de médias (compra e venda)'];
 function isMACrossover(c){return c&&(c.startsWith('Média curta')||c.startsWith('Cruzamento de médias'));}
 function isMACrossoverBoth(c){return c&&c.startsWith('Cruzamento de médias');}
-const BB_CONDS   = ['Preço toca banda sup.','Preço toca banda inf.','Preço cruza banda sup.','Preço sai da banda inf.'];
+const BB_CONDS   = ['Preço toca banda superior','Preço toca banda inferior','Preço cruza banda superior','Preço cruza banda inferior'];
 const VWAP_CONDS = ['Preço está acima do VWAP','Preço está abaixo do VWAP','Preço cruza acima do VWAP','Preço cruza abaixo do VWAP'];
 const MACD_CONDS = ['MACD cruza acima do sinal','MACD cruza abaixo do sinal','MACD acima de zero','MACD abaixo de zero'];
 const VOL_CONDS  = ['é maior que','é menor que'];
@@ -1892,8 +1892,8 @@ function validateNewCondition(newCond, existingConds) {
 
     // R18: Bollinger bandas opostas
     if (id==='bb' && ex.id==='bb' && (p.per||20)===(ep.per||20)) {
-      const sup=['Preço toca banda sup.','Preço cruza banda sup.'];
-      const inf=['Preço toca banda inf.','Preço sai da banda inf.'];
+      const sup=['Preço toca banda superior','Preço cruza banda superior'];
+      const inf=['Preço toca banda inferior','Preço cruza banda inferior'];
       if ((sup.includes(p.cond)&&inf.includes(ep.cond))||(inf.includes(p.cond)&&sup.includes(ep.cond)))
         issues.push({type:'block',rule:'R18',msg:'Banda superior e inferior ao mesmo tempo não define um setup claro. Separe em condições distintas.'});
     }
@@ -3553,7 +3553,7 @@ function showPaySuccess() {
 // ─── HISTORY SCREEN ──────────────────────────────────────────
 const MOCK_HISTORY = [
   {id:1,date:'21/03/2026 14:32',asset:'WIN$N',tf:'5m',conditions:['RSI(14) cruza acima de 30','SMA(200) — Preço está acima'],direction:'long',entryType:'Rompimento',stopPts:200,tpRR:2,result:42380,trades:3847,winRate:42.3,maxDD:-8.2,profitFactor:1.34,payoff:1.62,recoveryFactor:3.42},
-  {id:2,date:'20/03/2026 09:15',asset:'WDO$N',tf:'15m',conditions:['Bollinger(20, 2σ) — Preço toca banda inf.','Volume > Média'],direction:'long',entryType:'Abertura próximo candle',stopPts:150,tpRR:3,result:-18720,trades:2156,winRate:38.1,maxDD:-15.4,profitFactor:0.87,payoff:1.41,recoveryFactor:0.8},
+  {id:2,date:'20/03/2026 09:15',asset:'WDO$N',tf:'15m',conditions:['Bollinger(20, 2σ) — Preço toca banda inferior','Volume > Média'],direction:'long',entryType:'Abertura próximo candle',stopPts:150,tpRR:3,result:-18720,trades:2156,winRate:38.1,maxDD:-15.4,profitFactor:0.87,payoff:1.41,recoveryFactor:0.8},
   {id:3,date:'19/03/2026 16:48',asset:'WIN$N',tf:'5m',conditions:['MACD — cruza acima do sinal','EMA(21) — Preço cruza acima'],direction:'both',entryType:'Rompimento',stopPts:300,tpRR:2,result:67450,trades:5210,winRate:44.7,maxDD:-6.1,profitFactor:1.52,payoff:1.38,recoveryFactor:5.1},
   {id:4,date:'18/03/2026 11:20',asset:'EURUSD',tf:'60m',conditions:['RSI(14) cruza abaixo de 70'],direction:'short',entryType:'Fechamento do candle',stopPts:500,tpRR:2,result:12890,trades:890,winRate:40.5,maxDD:-11.3,profitFactor:1.18,payoff:1.72,recoveryFactor:1.9},
   {id:5,date:'17/03/2026 08:45',asset:'WIN$N',tf:'2m',conditions:['Estocástico(14) cruza acima de 20','VWAP — Preço está acima'],direction:'long',entryType:'Rompimento',stopPts:100,tpRR:3,result:-31200,trades:6820,winRate:35.2,maxDD:-18.7,profitFactor:0.78,payoff:1.65,recoveryFactor:0.5},
