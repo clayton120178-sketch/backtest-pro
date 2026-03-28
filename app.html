@@ -519,8 +519,8 @@ const state = {
     asset:'WIN$N', market:'local', tf:'5m', tStart:'09:00', tLastEntry:'17:00', tEnd:'17:30', maxDailyTrades:0,
     conditions:[],
     direction:'long', entryType:'breakout', validity:3,
-    stopType:'fixed', stopPts:200, stopOffset:10, stopCandles:5,
-    tpType:'rr', tpPts:400, tpRR:2, tpFibLevel:'161.8',
+    stopType:'fixed', stopPts:200, stopOffset:10, stopCandles:5, stopAtrPer:14, stopAtrMult:1.5,
+    tpType:'rr', tpPts:400, tpRR:2, tpFibLevel:'161.8', tpAtrPer:14, tpAtrMult:2.0,
     trailing:false, trailAct:100, trailDist:100, trailStep:50,
     partial:false, partPct:50, partAt:200, partMoveStop:true,
     exitCond:false, exitCondition:null,
@@ -3014,6 +3014,7 @@ function renderStep4() {
     {id:'fixed',label:'Stop fixo em pontos',desc:'Stop a distância fixa do preço de entrada.'},
     {id:'hl_candle',label:'Stop na máx/mín do candle de sinal',desc:'Stop na mínima (compra) ou máxima (venda) do candle de sinal.'},
     {id:'n_candles',label:'Stop na máx/mín dos últimos N candles',desc:'Stop na mínima mais baixa ou máxima mais alta de N candles.'},
+    {id:'atr',label:'Stop em múltiplo de ATR',desc:'Stop baseado na volatilidade — se adapta automaticamente ao ativo e timeframe.'},
   ];
   const sList=div('');sList.style.cssText='display:flex;flex-direction:column;gap:7px';
   SL_TYPES.forEach(s=>{
@@ -3029,6 +3030,21 @@ function renderStep4() {
       if(s.id==='fixed') sub.appendChild(stepper(cfg.stopPts,1,5000,'pts',v=>{cfg.stopPts=v;}));
       if(s.id==='hl_candle') sub.appendChild(stepper(cfg.stopOffset,0,1000,'pts offset',v=>{cfg.stopOffset=v;}));
       if(s.id==='n_candles'){sub.appendChild(stepper(cfg.stopCandles,1,50,'candles',v=>{cfg.stopCandles=v;}));sub.appendChild(stepper(cfg.stopOffset,0,1000,'pts offset',v=>{cfg.stopOffset=v;}));}
+      if(s.id==='atr'){
+        const atrRow=div('');atrRow.style.cssText='display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end';
+        const perG=div('');const perL=div('');perL.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px';perL.textContent='Período ATR';
+        perG.append(perL,stepper(cfg.stopAtrPer,1,100,'',v=>{cfg.stopAtrPer=v;}));
+        const multG=div('');const multL=div('');multL.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px';multL.textContent='Multiplicador';
+        const multVal=div('step-val mono');multVal.textContent=cfg.stopAtrMult.toFixed(1);
+        const dec=h('button',{class:'step-btn',onclick:()=>{cfg.stopAtrMult=Math.max(0.1,+(cfg.stopAtrMult-0.1).toFixed(1));renderApp();}});dec.textContent='−';
+        const inc=h('button',{class:'step-btn',onclick:()=>{cfg.stopAtrMult=Math.min(10,+(cfg.stopAtrMult+0.1).toFixed(1));renderApp();}});inc.textContent='+';
+        const mWrap=div('stepper',dec,multVal,inc);const mUnit=div('step-unit');mUnit.textContent='× ATR';mWrap.appendChild(mUnit);
+        multG.append(multL,mWrap);
+        atrRow.append(perG,multG);sub.appendChild(atrRow);
+        const hint=div('');hint.style.cssText='font-size:11px;color:var(--txm);margin-top:6px';
+        hint.textContent=`Stop = ${cfg.stopAtrMult.toFixed(1)} × ATR(${cfg.stopAtrPer}) do preço de entrada`;
+        sub.appendChild(hint);
+      }
       c.appendChild(sub);
     }
     c.addEventListener('click',()=>{cfg.stopType=s.id;renderApp();});
@@ -3042,6 +3058,7 @@ function renderStep4() {
   const TP_TYPES=[
     {id:'fixed',label:'Alvo fixo em pontos',desc:''},
     {id:'rr',label:'Alvo em múltiplo do risco (R:R)',desc:''},
+    {id:'atr',label:'Alvo em múltiplo de ATR',desc:'Alvo baseado na volatilidade — se adapta automaticamente ao ativo e timeframe.'},
     {id:'fib_ext',label:'Extensão de Fibonacci',desc:'Alvo baseado na projeção de Fibonacci da perna anterior.'},
     {id:'none',label:'Sem alvo fixo',desc:'A operação será encerrada pela gestão configurada no próximo passo.'},
   ];
@@ -3061,6 +3078,21 @@ function renderStep4() {
         rrow.append(stepper(cfg.tpRR,1,20,'',v=>{cfg.tpRR=v;}),rl);
         sub.appendChild(rrow);
         if(cfg.stopType==='fixed'){const hint=div('');hint.style.cssText='font-size:11px;color:var(--txm);font-family:JetBrains Mono';hint.textContent=`Stop ${cfg.stopPts} pts → alvo = ${(cfg.tpRR*cfg.stopPts).toLocaleString('pt-BR')} pts`;sub.appendChild(hint);}
+      }
+      if(t.id==='atr'){
+        const atrRow=div('');atrRow.style.cssText='display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end';
+        const perG=div('');const perL=div('');perL.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px';perL.textContent='Período ATR';
+        perG.append(perL,stepper(cfg.tpAtrPer,1,100,'',v=>{cfg.tpAtrPer=v;}));
+        const multG=div('');const multL=div('');multL.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px';multL.textContent='Multiplicador';
+        const multVal=div('step-val mono');multVal.textContent=cfg.tpAtrMult.toFixed(1);
+        const dec=h('button',{class:'step-btn',onclick:()=>{cfg.tpAtrMult=Math.max(0.1,+(cfg.tpAtrMult-0.1).toFixed(1));renderApp();}});dec.textContent='−';
+        const inc=h('button',{class:'step-btn',onclick:()=>{cfg.tpAtrMult=Math.min(20,+(cfg.tpAtrMult+0.1).toFixed(1));renderApp();}});inc.textContent='+';
+        const mWrap=div('stepper',dec,multVal,inc);const mUnit=div('step-unit');mUnit.textContent='× ATR';mWrap.appendChild(mUnit);
+        multG.append(multL,mWrap);
+        atrRow.append(perG,multG);sub.appendChild(atrRow);
+        const hint=div('');hint.style.cssText='font-size:11px;color:var(--txm);margin-top:6px';
+        hint.textContent=`Alvo = ${cfg.tpAtrMult.toFixed(1)} × ATR(${cfg.tpAtrPer}) do preço de entrada`;
+        sub.appendChild(hint);
       }
       if(t.id==='fib_ext'){
         const fibLevels=['100','127.2','161.8','200','261.8'];
@@ -3149,8 +3181,8 @@ function renderConfirm() {
   const cfg=state.cfg;
   const asset=findAsset(cfg.asset);
   const entryMap={breakout:'Rompimento da máx/mín do candle de sinal',next_open:'Abertura do próximo candle',sig_close:'Fechamento do candle de sinal'};
-  const stopDesc={fixed:`${cfg.stopPts} pts abaixo/acima da entrada`,hl_candle:`Máx/Mín do candle de sinal (+${cfg.stopOffset} pts)`,n_candles:`Máx/Mín dos últimos ${cfg.stopCandles} candles (+${cfg.stopOffset} pts)`}[cfg.stopType];
-  const tpDesc={fixed:`${cfg.tpPts} pts`,rr:`${cfg.tpRR}× o risco${cfg.stopType==='fixed'?' = '+(cfg.tpRR*cfg.stopPts).toLocaleString('pt-BR')+' pts':''}`,fib_ext:`Extensão Fibonacci ${cfg.tpFibLevel}%`,none:'Sem alvo fixo'}[cfg.tpType];
+  const stopDesc={fixed:`${cfg.stopPts} pts abaixo/acima da entrada`,hl_candle:`Máx/Mín do candle de sinal (+${cfg.stopOffset} pts)`,n_candles:`Máx/Mín dos últimos ${cfg.stopCandles} candles (+${cfg.stopOffset} pts)`,atr:`${cfg.stopAtrMult.toFixed(1)}× ATR(${cfg.stopAtrPer})`}[cfg.stopType];
+  const tpDesc={fixed:`${cfg.tpPts} pts`,rr:`${cfg.tpRR}× o risco${cfg.stopType==='fixed'?' = '+(cfg.tpRR*cfg.stopPts).toLocaleString('pt-BR')+' pts':''}`,atr:`${cfg.tpAtrMult.toFixed(1)}× ATR(${cfg.tpAtrPer})`,fib_ext:`Extensão Fibonacci ${cfg.tpFibLevel}%`,none:'Sem alvo fixo'}[cfg.tpType];
   const mgmt=[];
   if(cfg.trailing) mgmt.push(`Trailing após ${cfg.trailAct} pts (dist.${cfg.trailDist}, step ${cfg.trailStep})`);
   if(cfg.partial)  mgmt.push(`Parcial ${cfg.partPct}% aos ${cfg.partAt} pts${cfg.partMoveStop?', move stop':''}` );
@@ -3486,8 +3518,8 @@ function renderApp() {
     ['Ops/dia', sc2.maxDailyTrades>0?sc2.maxDailyTrades+' máx':'Sem limite'],
     ['Condições', md>=1?(sc2.conditions.length===0?'Nenhuma':sc2.conditions.length+' condição'+(sc2.conditions.length>1?'ões':'')):pending],
     ['Gatilho', md>=2?((sc2.direction==='long'?'Compra':sc2.direction==='short'?'Venda':'Ambos')+' · '+{breakout:'Rompimento',next_open:'Próx. abertura',sig_close:'Fechamento'}[sc2.entryType]):pending],
-    ['Stop', md>=3?({fixed:sc2.stopPts+' pts',hl_candle:'Candle signal',n_candles:sc2.stopCandles+' candles'}[sc2.stopType]):pending],
-    ['Alvo', md>=3?({fixed:sc2.tpPts+' pts',rr:sc2.tpRR+'× risco',fib_ext:'Fibo '+sc2.tpFibLevel+'%',none:'Por gestão'}[sc2.tpType]):pending],
+    ['Stop', md>=3?({fixed:sc2.stopPts+' pts',hl_candle:'Candle signal',n_candles:sc2.stopCandles+' candles',atr:sc2.stopAtrMult.toFixed(1)+'× ATR'}[sc2.stopType]):pending],
+    ['Alvo', md>=3?({fixed:sc2.tpPts+' pts',rr:sc2.tpRR+'× risco',atr:sc2.tpAtrMult.toFixed(1)+'× ATR',fib_ext:'Fibo '+sc2.tpFibLevel+'%',none:'Por gestão'}[sc2.tpType]):pending],
   ];
   summRows.forEach(([k,v])=>{
     const r=div('');r.style.cssText='display:flex;justify-content:space-between';
