@@ -473,6 +473,15 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 // ─── STATE ────────────────────────────────────────────────────
 const APP_VERSION = '2.0.0'; // Versão do produto — atualizar a cada release
 
+// ─── THEME ───────────────────────────────────────────────────
+function setAppTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  const d=document.getElementById('themeD'),l=document.getElementById('themeL');
+  if(d){d.classList.toggle('on',t==='dark');l.classList.toggle('on',t==='light');}
+  try{localStorage.setItem('bp-theme',t);}catch(e){}
+}
+(function(){try{const t=localStorage.getItem('bp-theme');if(t)setAppTheme(t);}catch(e){}})();
+
 const state = {
   screen: 'wizard', // wizard|confirm|loading|results
   step: 0,
