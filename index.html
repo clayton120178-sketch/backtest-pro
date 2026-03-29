@@ -44,9 +44,37 @@ a{color:var(--ac);text-decoration:none;transition:opacity .15s}a:hover{opacity:.
 @keyframes chartDraw{from{stroke-dashoffset:800}to{stroke-dashoffset:0}}
 @keyframes counterUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes typeReveal{from{max-width:0}to{max-width:100%}}
+@keyframes blinkCaret{0%,100%{border-color:var(--ac)}50%{border-color:transparent}}
+@keyframes slideInLeft{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideInRight{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+@keyframes particleFloat{
+  0%{transform:translateY(0) translateX(0);opacity:0}
+  10%{opacity:.6}
+  90%{opacity:.6}
+  100%{transform:translateY(-100vh) translateX(30px);opacity:0}
+}
+@keyframes candlePulse{0%,100%{opacity:.85}50%{opacity:1}}
+@keyframes gridPulse{0%,100%{opacity:.03}50%{opacity:.06}}
+@keyframes accentSweep{
+  0%{left:-30%;opacity:0}
+  20%{opacity:1}
+  80%{opacity:1}
+  100%{left:130%;opacity:0}
+}
+@keyframes borderGlow{
+  0%,100%{border-color:var(--bd)}
+  50%{border-color:rgba(0,212,170,.25)}
+}
 
-.reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .7s cubic-bezier(.23,1,.32,1),transform .7s cubic-bezier(.23,1,.32,1)}
 .reveal.visible{opacity:1;transform:translateY(0)}
+.reveal.visible.delay-1{transition-delay:.1s}
+.reveal.visible.delay-2{transition-delay:.2s}
+.reveal.visible.delay-3{transition-delay:.3s}
+.reveal.visible.delay-4{transition-delay:.4s}
 
 /* ── NAV ── */
 nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88);backdrop-filter:blur(16px);border-bottom:1px solid rgba(42,42,60,.5);transition:background .3s}
@@ -68,25 +96,36 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88
 .hero-grid{position:absolute;inset:0;background-image:
   linear-gradient(rgba(0,212,170,.03) 1px,transparent 1px),
   linear-gradient(90deg,rgba(0,212,170,.03) 1px,transparent 1px);
-  background-size:60px 60px;mask-image:radial-gradient(ellipse 70% 60% at 50% 45%,black 20%,transparent 70%)}
+  background-size:60px 60px;mask-image:radial-gradient(ellipse 70% 60% at 50% 45%,black 20%,transparent 70%);
+  animation:gridPulse 8s ease-in-out infinite}
 .hero-glow{position:absolute;top:15%;left:50%;transform:translateX(-50%);width:700px;height:700px;background:radial-gradient(circle,rgba(0,212,170,.06) 0%,transparent 65%);pointer-events:none}
-.hero-content{position:relative;z-index:2;text-align:center;max-width:740px;animation:fadeUp .8s ease-out}
-.hero-badge{display:inline-flex;align-items:center;gap:7px;background:var(--bg2);border:1px solid var(--bd);border-radius:20px;padding:5px 16px 5px 8px;font-size:12px;color:var(--txs);font-weight:500;margin-bottom:28px}
+.hero-glow-2{position:absolute;top:30%;left:20%;width:400px;height:400px;background:radial-gradient(circle,rgba(99,102,241,.03) 0%,transparent 65%);pointer-events:none;animation:float 12s ease-in-out infinite}
+.hero-glow-3{position:absolute;top:25%;right:15%;width:350px;height:350px;background:radial-gradient(circle,rgba(239,68,68,.02) 0%,transparent 65%);pointer-events:none;animation:float 15s ease-in-out infinite reverse}
+.hero-particles{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:1}
+.particle{position:absolute;width:2px;height:2px;background:var(--ac);border-radius:50%;animation:particleFloat linear infinite;opacity:0}
+.particle:nth-child(odd){background:rgba(99,102,241,.5);width:1.5px;height:1.5px}
+.hero-content{position:relative;z-index:2;text-align:center;max-width:740px}
+.hero-content>*{opacity:0;animation:fadeUp .8s cubic-bezier(.23,1,.32,1) forwards}
+.hero-badge{display:inline-flex;align-items:center;gap:7px;background:var(--bg2);border:1px solid var(--bd);border-radius:20px;padding:5px 16px 5px 8px;font-size:12px;color:var(--txs);font-weight:500;margin-bottom:28px;animation-delay:.1s}
 .hero-badge-dot{width:7px;height:7px;border-radius:50%;background:var(--ac);animation:pulse 2s infinite}
-.hero h1{font-size:clamp(32px,5.5vw,56px);font-weight:900;line-height:1.08;letter-spacing:-.03em;margin-bottom:20px;color:var(--tx)}
-.hero h1 .hl{color:var(--ac);position:relative}
-.hero-sub{font-size:clamp(16px,2.2vw,19px);color:var(--txs);max-width:560px;margin:0 auto 36px;line-height:1.55;font-weight:400}
-.hero-cta{display:inline-flex;align-items:center;gap:10px;background:var(--ac);color:var(--bg0);padding:16px 36px;border-radius:12px;font-weight:800;font-size:17px;border:none;cursor:pointer;transition:all .2s;animation:glow 3s ease-in-out infinite}
+.hero h1{font-size:clamp(32px,5.5vw,56px);font-weight:900;line-height:1.08;letter-spacing:-.03em;margin-bottom:20px;color:var(--tx);animation-delay:.25s}
+.hero h1 .hl{color:var(--ac);position:relative;display:inline-block}
+.hero h1 .hl::after{content:'';position:absolute;bottom:-4px;left:0;width:100%;height:3px;background:linear-gradient(90deg,var(--ac),rgba(0,212,170,.2));border-radius:2px;transform:scaleX(0);transform-origin:left;animation:lineGrow .6s cubic-bezier(.23,1,.32,1) forwards .9s}
+@keyframes lineGrow{to{transform:scaleX(1)}}
+.hero-sub{font-size:clamp(16px,2.2vw,19px);color:var(--txs);max-width:560px;margin:0 auto 36px;line-height:1.55;font-weight:400;animation-delay:.4s}
+.hero-cta{display:inline-flex;align-items:center;gap:10px;background:var(--ac);color:var(--bg0);padding:16px 36px;border-radius:12px;font-weight:800;font-size:17px;border:none;cursor:pointer;transition:all .2s;animation-delay:.55s;position:relative;overflow:hidden}
+.hero-cta::before{content:'';position:absolute;top:0;left:-30%;width:30%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);animation:accentSweep 4s ease-in-out infinite 2s}
 .hero-cta:hover{background:#00ecc0;transform:translateY(-2px);box-shadow:0 0 40px rgba(0,212,170,.35)}
 .hero-cta svg{flex-shrink:0}
-.hero-hint{font-size:13px;color:var(--txm);margin-top:14px}
+.hero-hint{font-size:13px;color:var(--txm);margin-top:14px;animation-delay:.65s}
 .hero-hint strong{color:var(--txs)}
 
 /* ── SOCIAL PROOF BAR ── */
 .proof-bar{border-top:1px solid var(--bd);border-bottom:1px solid var(--bd);background:var(--bg1);padding:20px 0;overflow:hidden}
 .proof-inner{display:flex;align-items:center;justify-content:center;gap:48px;flex-wrap:wrap}
 .proof-item{display:flex;align-items:center;gap:10px;white-space:nowrap}
-.proof-num{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--ac)}
+.proof-num{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--ac);opacity:0;transform:translateY(12px);transition:opacity .6s,transform .6s}
+.proof-num.counted{opacity:1;transform:translateY(0)}
 .proof-label{font-size:13px;color:var(--txs);line-height:1.3}
 
 /* ── PRODUCT PREVIEW ── */
@@ -110,8 +149,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88
 /* ── PROBLEM SECTION ── */
 .problem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px}
 @media(max-width:700px){.problem-grid{grid-template-columns:1fr}}
-.problem-card{background:var(--bg1);border:1px solid var(--bd);border-radius:14px;padding:28px 24px;transition:border-color .2s,transform .2s}
-.problem-card:hover{border-color:var(--bdh);transform:translateY(-2px)}
+.problem-card{background:var(--bg1);border:1px solid var(--bd);border-radius:14px;padding:28px 24px;transition:border-color .3s,transform .3s,box-shadow .3s}
+.problem-card:hover{border-color:var(--bdh);transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.3)}
 .problem-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px}
 .problem-card h3{font-size:16px;font-weight:700;margin-bottom:8px;color:var(--tx)}
 .problem-card p{font-size:14px;color:var(--txs);line-height:1.55}
@@ -133,8 +172,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88
 /* ── FEATURES ── */
 .features-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:40px}
 @media(max-width:600px){.features-grid{grid-template-columns:1fr}}
-.feature{display:flex;gap:14px;background:var(--bg1);border:1px solid var(--bd);border-radius:12px;padding:20px;transition:border-color .2s}
-.feature:hover{border-color:var(--bdh)}
+.feature{display:flex;gap:14px;background:var(--bg1);border:1px solid var(--bd);border-radius:12px;padding:20px;transition:border-color .3s,transform .3s,box-shadow .3s}
+.feature:hover{border-color:var(--bdh);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.25)}
 .feature-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .feature h4{font-size:14px;font-weight:700;margin-bottom:4px;color:var(--tx)}
 .feature p{font-size:13px;color:var(--txs);line-height:1.5}
@@ -208,6 +247,9 @@ footer a{color:var(--txs)}
   <div class="hero-bg">
     <div class="hero-grid"></div>
     <div class="hero-glow"></div>
+    <div class="hero-glow-2"></div>
+    <div class="hero-glow-3"></div>
+    <div class="hero-particles" id="hero-particles"></div>
   </div>
   <div class="hero-content">
     <div class="hero-badge">
@@ -659,24 +701,104 @@ footer a{color:var(--txs)}
 </footer>
 
 <script>
-// Scroll reveal
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
+// ── Particles ──
+(function(){
+  const container=document.getElementById('hero-particles');
+  if(!container)return;
+  for(let i=0;i<20;i++){
+    const p=document.createElement('div');p.className='particle';
+    p.style.left=Math.random()*100+'%';
+    p.style.bottom='-10px';
+    p.style.animationDuration=(12+Math.random()*18)+'s';
+    p.style.animationDelay=(Math.random()*10)+'s';
+    p.style.width=(1+Math.random()*2)+'px';
+    p.style.height=p.style.width;
+    container.appendChild(p);
+  }
+})();
+
+// ── Counter animation for proof numbers ──
+function animateCounter(el){
+  const text=el.textContent.trim();
+  const match=text.match(/^([\d,.]+)(\+?)(.*)$/);
+  if(!match)return el.classList.add('counted');
+  const numStr=match[1].replace(/[,.]/g,'');
+  const target=parseInt(numStr)||0;
+  const suffix=(match[2]||'')+(match[3]||'');
+  const duration=1200;
+  const start=performance.now();
+  el.classList.add('counted');
+  function tick(now){
+    const p=Math.min((now-start)/duration,1);
+    const ease=1-Math.pow(1-p,3); // easeOutCubic
+    const current=Math.round(target*ease);
+    el.textContent=current.toLocaleString('pt-BR')+suffix;
+    if(p<1)requestAnimationFrame(tick);
+    else el.textContent=text; // restore original with formatting
+  }
+  requestAnimationFrame(tick);
+}
+
+// ── Scroll reveal with stagger ──
+const revealObserver=new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){
+      // Find siblings for stagger
+      const parent=entry.target.parentElement;
+      if(parent){
+        const siblings=Array.from(parent.querySelectorAll(':scope > .reveal'));
+        const idx=siblings.indexOf(entry.target);
+        if(idx>0)entry.target.style.transitionDelay=(idx*0.08)+'s';
+      }
       entry.target.classList.add('visible');
     }
   });
-}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+},{threshold:0.08,rootMargin:'0px 0px -30px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>revealObserver.observe(el));
 
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-
-// Smooth scroll for nav links
-document.querySelectorAll('a[href^="#"]').forEach(a => {
-  a.addEventListener('click', e => {
-    e.preventDefault();
-    const target = document.querySelector(a.getAttribute('href'));
-    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+// ── Proof bar counter trigger ──
+const proofObserver=new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){
+      const nums=entry.target.querySelectorAll('.proof-num:not(.counted)');
+      nums.forEach((n,i)=>setTimeout(()=>animateCounter(n),i*150));
+      proofObserver.unobserve(entry.target);
+    }
   });
+},{threshold:0.3});
+const proofBar=document.querySelector('.proof-bar');
+if(proofBar)proofObserver.observe(proofBar);
+
+// ── Parallax on hero grid ──
+let ticking=false;
+window.addEventListener('scroll',()=>{
+  if(!ticking){
+    requestAnimationFrame(()=>{
+      const scrollY=window.scrollY;
+      const grid=document.querySelector('.hero-grid');
+      const glow=document.querySelector('.hero-glow');
+      if(grid)grid.style.transform='translateY('+scrollY*0.15+'px)';
+      if(glow)glow.style.transform='translateX(-50%) translateY('+scrollY*0.08+'px)';
+      ticking=false;
+    });
+    ticking=true;
+  }
+});
+
+// ── Smooth scroll ──
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    e.preventDefault();
+    const target=document.querySelector(a.getAttribute('href'));
+    if(target)target.scrollIntoView({behavior:'smooth',block:'start'});
+  });
+});
+
+// ── Nav background on scroll ──
+const nav=document.querySelector('nav');
+window.addEventListener('scroll',()=>{
+  if(window.scrollY>50)nav.style.background='rgba(10,10,15,.95)';
+  else nav.style.background='rgba(10,10,15,.88)';
 });
 </script>
 
