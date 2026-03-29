@@ -3587,14 +3587,12 @@ async function handleLogout() {
 }
 
 // ─── SUBSCRIPTION ─────────────────────────────────────────────
-async function loadSubscription(accessToken) {
-  // SDK do Supabase — seguro contra SQL injection, garante RLS
+async function loadSubscription() {
+  // Reutiliza o client global 'db' — sessão já está no contexto via onAuthStateChange
+  // Não criar novo createClient() aqui: cria nova conexão WebSocket e atrasa o boot
   try {
-    const sessionDb = window.supabase.createClient(SUPA_URL, SUPA_KEY, {
-      global: { headers: { Authorization: 'Bearer ' + accessToken } }
-    });
     const now = new Date().toISOString();
-    const { data, error } = await sessionDb
+    const { data, error } = await db
       .from('subscriptions')
       .select('id, plan, cycle, expires_at, status, payment_method')
       .eq('user_id', currentUser.id)
@@ -3790,7 +3788,7 @@ async function renderCardBrick() {
             if (!res.ok || data.error) { showPayError(data.error||'Erro no pagamento.'); return; }
             if (data.status==='approved') {
               const { data: { session: s } } = await db.auth.getSession();
-              await loadSubscription(s.access_token);
+              await loadSubscription();
               updateAvatarUI();
               showPaySuccess();
             } else {
@@ -3872,7 +3870,7 @@ async function submitPix() {
 async function checkPix(paymentId) {
   const btn = event.target; btn.disabled=true; btn.textContent='Verificando...';
   const { data: { session } } = await db.auth.getSession();
-  await loadSubscription(session.access_token);
+  await loadSubscription();
   if (currentSub) { updateAvatarUI(); showPaySuccess(); }
   else { btn.disabled=false; btn.textContent='Verificar novamente'; showPayError('Pagamento ainda não confirmado. Aguarde e tente novamente.'); }
 }
@@ -4163,7 +4161,7 @@ db.auth.onAuthStateChange(async (event, session) => {
   
   if (event === 'SIGNED_IN' && session?.user) {
     currentUser = session.user;
-    await loadSubscription(session.access_token);
+    await loadSubscription();
     updateAvatarUI();
     document.getElementById('auth-overlay')?.remove();
     // Don't override if user is already on plans/payment screens
@@ -4173,7 +4171,7 @@ db.auth.onAuthStateChange(async (event, session) => {
   if (event === 'INITIAL_SESSION') {
     if (session?.user) {
       currentUser = session.user;
-      await loadSubscription(session.access_token);
+      await loadSubscription();
       updateAvatarUI();
       if (currentSub) { renderApp(); maybeAutoTour(); } else { showScreen('nosub'); }
     } else {
