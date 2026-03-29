@@ -69,12 +69,21 @@ a{color:var(--ac);text-decoration:none;transition:opacity .15s}a:hover{opacity:.
   50%{border-color:rgba(0,212,170,.25)}
 }
 
-.reveal{opacity:0;transform:translateY(28px);transition:opacity .7s cubic-bezier(.23,1,.32,1),transform .7s cubic-bezier(.23,1,.32,1)}
-.reveal.visible{opacity:1;transform:translateY(0)}
+@keyframes highlightPaint{from{background-size:0% 100%}to{background-size:100% 100%}}
+@keyframes borderGradientSpin{0%{--angle:0deg}100%{--angle:360deg}}
+@keyframes countTick{from{opacity:0;transform:translateY(8px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+.reveal{opacity:0;transform:translateY(28px) scale(.97);transition:opacity .7s cubic-bezier(.23,1,.32,1),transform .7s cubic-bezier(.23,1,.32,1)}
+.reveal.visible{opacity:1;transform:translateY(0) scale(1)}
 .reveal.visible.delay-1{transition-delay:.1s}
 .reveal.visible.delay-2{transition-delay:.2s}
 .reveal.visible.delay-3{transition-delay:.3s}
 .reveal.visible.delay-4{transition-delay:.4s}
+
+/* Gradient border hover for cards */
+.glow-border{position:relative;overflow:hidden}
+.glow-border::before{content:'';position:absolute;inset:-1px;border-radius:inherit;padding:1px;background:conic-gradient(from var(--border-angle,0deg),transparent 40%,var(--ac) 50%,transparent 60%);mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;-webkit-mask-composite:xor;opacity:0;transition:opacity .4s}
+.glow-border:hover::before{opacity:1}
 
 /* ── NAV ── */
 nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88);backdrop-filter:blur(16px);border-bottom:1px solid rgba(42,42,60,.5);transition:background .3s}
@@ -109,8 +118,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88
 .hero-badge{display:inline-flex;align-items:center;gap:7px;background:var(--bg2);border:1px solid var(--bd);border-radius:20px;padding:5px 16px 5px 8px;font-size:12px;color:var(--txs);font-weight:500;margin-bottom:28px;animation-delay:.1s}
 .hero-badge-dot{width:7px;height:7px;border-radius:50%;background:var(--ac);animation:pulse 2s infinite}
 .hero h1{font-size:clamp(32px,5.5vw,56px);font-weight:900;line-height:1.08;letter-spacing:-.03em;margin-bottom:20px;color:var(--tx);animation-delay:.25s}
-.hero h1 .hl{color:var(--ac);position:relative;display:inline-block}
-.hero h1 .hl::after{content:'';position:absolute;bottom:-4px;left:0;width:100%;height:3px;background:linear-gradient(90deg,var(--ac),rgba(0,212,170,.2));border-radius:2px;transform:scaleX(0);transform-origin:left;animation:lineGrow .6s cubic-bezier(.23,1,.32,1) forwards .9s}
+.hero h1 .hl{color:#fff;position:relative;display:inline-block;padding:0 8px;margin:0 -4px;background:linear-gradient(90deg,rgba(0,212,170,.25),rgba(0,212,170,.15));background-repeat:no-repeat;background-position:left center;background-size:0% 100%;animation:highlightPaint .7s cubic-bezier(.23,1,.32,1) forwards .9s;border-radius:4px}
+.hero h1 .hl::after{content:'';position:absolute;bottom:-4px;left:8px;right:8px;height:3px;background:linear-gradient(90deg,var(--ac),rgba(0,212,170,.2));border-radius:2px;transform:scaleX(0);transform-origin:left;animation:lineGrow .6s cubic-bezier(.23,1,.32,1) forwards 1.3s}
 @keyframes lineGrow{to{transform:scaleX(1)}}
 .hero-sub{font-size:clamp(16px,2.2vw,19px);color:var(--txs);max-width:560px;margin:0 auto 36px;line-height:1.55;font-weight:400;animation-delay:.4s}
 .hero-cta{display:inline-flex;align-items:center;gap:10px;background:var(--ac);color:var(--bg0);padding:16px 36px;border-radius:12px;font-weight:800;font-size:17px;border:none;cursor:pointer;transition:all .2s;animation-delay:.55s;position:relative;overflow:hidden}
@@ -119,6 +128,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88
 .hero-cta svg{flex-shrink:0}
 .hero-hint{font-size:13px;color:var(--txm);margin-top:14px;animation-delay:.65s}
 .hero-hint strong{color:var(--txs)}
+.hero-counter{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--txm);margin-top:20px;animation-delay:.75s;padding:6px 16px;background:rgba(18,18,26,.6);border:1px solid rgba(42,42,60,.4);border-radius:8px;backdrop-filter:blur(8px)}
+.hero-counter-num{color:var(--ac);font-weight:700;font-size:15px;min-width:70px;text-align:right}
+.hero-counter-dot{width:5px;height:5px;border-radius:50%;background:var(--ac);animation:pulse 1.5s infinite}
 
 /* ── SOCIAL PROOF BAR ── */
 .proof-bar{border-top:1px solid var(--bd);border-bottom:1px solid var(--bd);background:var(--bg1);padding:20px 0;overflow:hidden}
@@ -158,8 +170,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88
 /* ── HOW IT WORKS ── */
 .steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:40px;counter-reset:step}
 @media(max-width:700px){.steps-grid{grid-template-columns:1fr}}
-.step-card{background:var(--bg1);border:1px solid var(--bd);border-radius:14px;padding:28px 24px;position:relative;counter-increment:step}
-.step-num{font-family:'JetBrains Mono',monospace;font-size:48px;font-weight:700;color:rgba(0,212,170,.1);position:absolute;top:14px;right:18px;line-height:1}
+.step-card{background:var(--bg1);border:1px solid var(--bd);border-radius:14px;padding:28px 24px;position:relative;counter-increment:step;transition:border-color .3s,transform .3s,box-shadow .3s}
+.step-card:hover{border-color:rgba(0,212,170,.2);transform:translateY(-3px);box-shadow:0 10px 36px rgba(0,0,0,.25)}
+.step-num{font-family:'JetBrains Mono',monospace;font-size:48px;font-weight:700;color:rgba(0,212,170,.1);position:absolute;top:14px;right:18px;line-height:1;transition:color .3s}
+.step-card:hover .step-num{color:rgba(0,212,170,.2)}
 .step-card h3{font-size:16px;font-weight:700;margin-bottom:8px;color:var(--tx);position:relative}
 .step-card p{font-size:14px;color:var(--txs);line-height:1.55;position:relative}
 
@@ -263,6 +277,11 @@ footer a{color:var(--txs)}
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </a>
     <p class="hero-hint"><strong>3 backtests grátis</strong> · Ativos nacionais e internacionais · 5 anos de dados</p>
+    <div class="hero-counter">
+      <span class="hero-counter-dot"></span>
+      <span id="hero-counter-num" class="hero-counter-num">0</span>
+      <span>candles analisados</span>
+    </div>
   </div>
 </section>
 
@@ -440,14 +459,14 @@ footer a{color:var(--txs)}
     <p class="section-sub reveal">Você estuda estratégias, aprende indicadores, assiste horas de conteúdo. Mas na hora de operar, está chutando — porque nunca testou se aquilo funciona de verdade.</p>
     
     <div class="problem-grid" style="grid-template-columns:repeat(2,1fr)">
-      <div class="problem-card reveal">
+      <div class="problem-card glow-border reveal">
         <div class="problem-icon" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2)">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9" stroke-width="3"/><line x1="15" y1="9" x2="15.01" y2="9" stroke-width="3"/></svg>
         </div>
         <h3>Gurus vendem narrativa, não dados</h3>
         <p>99% dos cursos e mentorias ensinam análise técnica de forma subjetiva. Mostram 3 trades que deram certo e nunca apresentam os números reais — porque não resistem a um backtest.</p>
       </div>
-      <div class="problem-card reveal">
+      <div class="problem-card glow-border reveal">
         <div class="problem-icon" style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2)">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r=".5" fill="#6366F1"/></svg>
         </div>
@@ -466,17 +485,17 @@ footer a{color:var(--txs)}
     <p class="section-sub reveal">Sem código, sem instalação, sem complexidade. Você monta sua estratégia em poucos cliques e o Backtest Pro faz o resto.</p>
     
     <div class="steps-grid">
-      <div class="step-card reveal">
+      <div class="step-card glow-border reveal">
         <div class="step-num">01</div>
         <h3>Monte sua estratégia</h3>
         <p>Selecione indicadores, condições de entrada, stop loss e alvo em 5 passos simples. Exatamente como você descreveria para outro trader.</p>
       </div>
-      <div class="step-card reveal">
+      <div class="step-card glow-border reveal">
         <div class="step-num">02</div>
         <h3>Rode o backtest</h3>
         <p>O motor analisa 5+ anos de dados históricos reais do mercado, simulando cada operação que sua estratégia teria executado.</p>
       </div>
-      <div class="step-card reveal">
+      <div class="step-card glow-border reveal">
         <div class="step-num">03</div>
         <h3>Veja a verdade</h3>
         <p>Resultado completo: lucro/prejuízo total, curva de equity, drawdown, taxa de acerto, profit factor. Números reais, não promessas.</p>
@@ -558,7 +577,7 @@ footer a{color:var(--txs)}
     <h2 class="section-title reveal">Tudo que você aprendeu.<br>Agora com <span class="accent">números reais</span>.</h2>
     
     <div class="features-grid">
-      <div class="feature reveal">
+      <div class="feature glow-border reveal">
         <div class="feature-icon" style="background:rgba(0,212,170,.08);border:1px solid rgba(0,212,170,.2)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         </div>
@@ -567,7 +586,7 @@ footer a{color:var(--txs)}
           <p>RSI, MACD, Bollinger, Estocástico, Médias Móveis, VWAP, CCI, Williams %R, OBV e mais.</p>
         </div>
       </div>
-      <div class="feature reveal">
+      <div class="feature glow-border reveal">
         <div class="feature-icon" style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
         </div>
@@ -576,7 +595,7 @@ footer a{color:var(--txs)}
           <p>FVG, Break of Structure, CHoCH, Order Block, Liquidity Sweep — SMC com dados reais.</p>
         </div>
       </div>
-      <div class="feature reveal">
+      <div class="feature glow-border reveal">
         <div class="feature-icon" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         </div>
@@ -585,7 +604,7 @@ footer a{color:var(--txs)}
           <p>Mini Índice (WIN), Mini Dólar (WDO), Índice Cheio e Dólar Cheio, além de ativos internacionais, com 5+ anos de dados históricos.</p>
         </div>
       </div>
-      <div class="feature reveal">
+      <div class="feature glow-border reveal">
         <div class="feature-icon" style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
@@ -594,7 +613,7 @@ footer a{color:var(--txs)}
           <p>Stop loss, take profit, trailing stop, realização parcial, saída por condição — configure como você opera.</p>
         </div>
       </div>
-      <div class="feature reveal">
+      <div class="feature glow-border reveal">
         <div class="feature-icon" style="background:rgba(236,72,153,.08);border:1px solid rgba(236,72,153,.2)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EC4899" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="m9 17 3-5 3 3 3-5"/></svg>
         </div>
@@ -603,7 +622,7 @@ footer a{color:var(--txs)}
           <p>Martelo, Engolfo, Doji, Estrela da Manhã e mais — valide se os padrões clássicos realmente funcionam.</p>
         </div>
       </div>
-      <div class="feature reveal">
+      <div class="feature glow-border reveal">
         <div class="feature-icon" style="background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.2)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         </div>
@@ -717,6 +736,31 @@ footer a{color:var(--txs)}
   }
 })();
 
+// ── Live counter ticker in hero ──
+(function(){
+  const el=document.getElementById('hero-counter-num');
+  if(!el)return;
+  let val=287432;
+  function format(n){return n.toLocaleString('pt-BR');}
+  el.textContent=format(val);
+  // Count up gradually to simulate live analysis
+  setInterval(()=>{
+    val+=Math.floor(Math.random()*12)+3;
+    el.textContent=format(val);
+  },800);
+})();
+
+// ── Rotating border angle for glow-border cards ──
+(function(){
+  let angle=0;
+  function tick(){
+    angle=(angle+0.8)%360;
+    document.documentElement.style.setProperty('--border-angle',angle+'deg');
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+
 // ── Counter animation for proof numbers ──
 function animateCounter(el){
   const text=el.textContent.trim();
@@ -730,11 +774,11 @@ function animateCounter(el){
   el.classList.add('counted');
   function tick(now){
     const p=Math.min((now-start)/duration,1);
-    const ease=1-Math.pow(1-p,3); // easeOutCubic
+    const ease=1-Math.pow(1-p,3);
     const current=Math.round(target*ease);
     el.textContent=current.toLocaleString('pt-BR')+suffix;
     if(p<1)requestAnimationFrame(tick);
-    else el.textContent=text; // restore original with formatting
+    else el.textContent=text;
   }
   requestAnimationFrame(tick);
 }
@@ -743,12 +787,11 @@ function animateCounter(el){
 const revealObserver=new IntersectionObserver((entries)=>{
   entries.forEach(entry=>{
     if(entry.isIntersecting){
-      // Find siblings for stagger
       const parent=entry.target.parentElement;
       if(parent){
         const siblings=Array.from(parent.querySelectorAll(':scope > .reveal'));
         const idx=siblings.indexOf(entry.target);
-        if(idx>0)entry.target.style.transitionDelay=(idx*0.08)+'s';
+        if(idx>0)entry.target.style.transitionDelay=(idx*0.1)+'s';
       }
       entry.target.classList.add('visible');
     }
@@ -761,7 +804,7 @@ const proofObserver=new IntersectionObserver((entries)=>{
   entries.forEach(entry=>{
     if(entry.isIntersecting){
       const nums=entry.target.querySelectorAll('.proof-num:not(.counted)');
-      nums.forEach((n,i)=>setTimeout(()=>animateCounter(n),i*150));
+      nums.forEach((n,i)=>setTimeout(()=>animateCounter(n),i*200));
       proofObserver.unobserve(entry.target);
     }
   });
@@ -779,6 +822,13 @@ window.addEventListener('scroll',()=>{
       const glow=document.querySelector('.hero-glow');
       if(grid)grid.style.transform='translateY('+scrollY*0.15+'px)';
       if(glow)glow.style.transform='translateX(-50%) translateY('+scrollY*0.08+'px)';
+      // Fade hero content on scroll
+      const hero=document.querySelector('.hero-content');
+      if(hero){
+        const opacity=Math.max(0,1-scrollY/600);
+        hero.style.opacity=opacity;
+        hero.style.transform='translateY('+scrollY*0.12+'px)';
+      }
       ticking=false;
     });
     ticking=true;
