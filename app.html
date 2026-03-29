@@ -3002,7 +3002,7 @@ function renderStep3() {
   const vRow=div('');vRow.style.cssText='display:flex;align-items:center;gap:9px;flex-wrap:wrap';
   const vLabel=div('');vLabel.style.cssText='font-size:13px;color:var(--txs)';vLabel.textContent='Cancelar após';
   const vUnit=div('');vUnit.style.cssText='font-size:13px;color:var(--txs)';vUnit.textContent='candles sem execução';
-  vRow.append(vLabel,stepper(cfg.validity,1,20,'',v=>{cfg.validity=v;}),vUnit);
+  vRow.append(vLabel,stepper(cfg.validity,1,20,'',v=>{cfg.validity=v;updateSentence();}),vUnit);
   vBlock.appendChild(vRow);el.appendChild(vBlock);
   return el;
 }
@@ -3031,13 +3031,13 @@ function renderStep4() {
     info.append(nm,ds);row.appendChild(info);c.appendChild(row);
     if(cfg.stopType===s.id){
       const sub=div('');sub.style.cssText='padding-left:29px;margin-top:11px;display:flex;gap:12px;flex-wrap:wrap';
-      if(s.id==='fixed') sub.appendChild(stepper(cfg.stopPts,1,5000,'pts',v=>{cfg.stopPts=v;}));
-      if(s.id==='hl_candle') sub.appendChild(stepper(cfg.stopOffset,0,1000,'pts offset',v=>{cfg.stopOffset=v;}));
-      if(s.id==='n_candles'){sub.appendChild(stepper(cfg.stopCandles,1,50,'candles',v=>{cfg.stopCandles=v;}));sub.appendChild(stepper(cfg.stopOffset,0,1000,'pts offset',v=>{cfg.stopOffset=v;}));}
+      if(s.id==='fixed') sub.appendChild(stepper(cfg.stopPts,1,5000,'pts',v=>{cfg.stopPts=v;updateSentence();}));
+      if(s.id==='hl_candle') sub.appendChild(stepper(cfg.stopOffset,0,1000,'pts offset',v=>{cfg.stopOffset=v;updateSentence();}));
+      if(s.id==='n_candles'){sub.appendChild(stepper(cfg.stopCandles,1,50,'candles',v=>{cfg.stopCandles=v;updateSentence();}));sub.appendChild(stepper(cfg.stopOffset,0,1000,'pts offset',v=>{cfg.stopOffset=v;updateSentence();}));}
       if(s.id==='atr'){
         const atrRow=div('');atrRow.style.cssText='display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end';
         const perG=div('');const perL=div('');perL.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px';perL.textContent='Período ATR';
-        perG.append(perL,stepper(cfg.stopAtrPer,1,100,'',v=>{cfg.stopAtrPer=v;}));
+        perG.append(perL,stepper(cfg.stopAtrPer,1,100,'',v=>{cfg.stopAtrPer=v;updateSentence();}));
         const multG=div('');const multL=div('');multL.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px';multL.textContent='Multiplicador';
         const multVal=div('step-val mono');multVal.textContent=cfg.stopAtrMult.toFixed(1);
         const dec=h('button',{class:'step-btn',onclick:()=>{cfg.stopAtrMult=Math.max(0.1,+(cfg.stopAtrMult-0.1).toFixed(1));renderApp();}});dec.textContent='−';
@@ -3075,18 +3075,18 @@ function renderStep4() {
     row.appendChild(nm);c.appendChild(row);
     if(cfg.tpType===t.id){
       const sub=div('');sub.style.cssText='padding-left:29px;margin-top:11px';
-      if(t.id==='fixed') sub.appendChild(stepper(cfg.tpPts,1,10000,'pts',v=>{cfg.tpPts=v;}));
+      if(t.id==='fixed') sub.appendChild(stepper(cfg.tpPts,1,10000,'pts',v=>{cfg.tpPts=v;updateSentence();}));
       if(t.id==='rr'){
         const rrow=div('');rrow.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:6px';
         const rl=div('');rl.style.cssText='font-size:13px;color:var(--txs)';rl.textContent='×  risco';
-        rrow.append(stepper(cfg.tpRR,1,20,'',v=>{cfg.tpRR=v;}),rl);
+        rrow.append(stepper(cfg.tpRR,1,20,'',v=>{cfg.tpRR=v;updateSentence();}),rl);
         sub.appendChild(rrow);
         if(cfg.stopType==='fixed'){const hint=div('');hint.style.cssText='font-size:11px;color:var(--txm);font-family:JetBrains Mono';hint.textContent=`Stop ${cfg.stopPts} pts → alvo = ${(cfg.tpRR*cfg.stopPts).toLocaleString('pt-BR')} pts`;sub.appendChild(hint);}
       }
       if(t.id==='atr'){
         const atrRow=div('');atrRow.style.cssText='display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end';
         const perG=div('');const perL=div('');perL.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px';perL.textContent='Período ATR';
-        perG.append(perL,stepper(cfg.tpAtrPer,1,100,'',v=>{cfg.tpAtrPer=v;}));
+        perG.append(perL,stepper(cfg.tpAtrPer,1,100,'',v=>{cfg.tpAtrPer=v;updateSentence();}));
         const multG=div('');const multL=div('');multL.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px';multL.textContent='Multiplicador';
         const multVal=div('step-val mono');multVal.textContent=cfg.tpAtrMult.toFixed(1);
         const dec=h('button',{class:'step-btn',onclick:()=>{cfg.tpAtrMult=Math.max(0.1,+(cfg.tpAtrMult-0.1).toFixed(1));renderApp();}});dec.textContent='−';
@@ -3147,17 +3147,17 @@ function renderStep5() {
   el.appendChild(mgmtBlock('Trailing Stop','O stop se move a favor da operação conforme o preço avança.','Trailing stop protege lucros acumulados movendo o stop automaticamente.',cfg.trailing,v=>{cfg.trailing=v;renderApp();},body=>{
     const r1=div('');r1.style.cssText='margin-bottom:12px';
     r1.appendChild(slabel('Ativar trailing após'));
-    r1.appendChild(stepper(cfg.trailAct,1,5000,'pts de lucro',v=>{cfg.trailAct=v;}));
+    r1.appendChild(stepper(cfg.trailAct,1,5000,'pts de lucro',v=>{cfg.trailAct=v;updateSentence();}));
     const r2=div('');r2.style.cssText='display:flex;gap:16px;flex-wrap:wrap';
-    const d=div('');d.appendChild(slabel('Distância'));d.appendChild(stepper(cfg.trailDist,1,2000,'pts',v=>{cfg.trailDist=v;}));
-    const s=div('');s.appendChild(slabel('Step'));s.appendChild(stepper(cfg.trailStep,1,1000,'pts',v=>{cfg.trailStep=v;}));
+    const d=div('');d.appendChild(slabel('Distância'));d.appendChild(stepper(cfg.trailDist,1,2000,'pts',v=>{cfg.trailDist=v;updateSentence();}));
+    const s=div('');s.appendChild(slabel('Step'));s.appendChild(stepper(cfg.trailStep,1,1000,'pts',v=>{cfg.trailStep=v;updateSentence();}));
     r2.append(d,s);body.append(r1,r2);
   }));
 
   el.appendChild(mgmtBlock('Realização Parcial','Parte da posição é encerrada com lucro e o restante continua rodando.','Parcial realiza ganho antes do alvo principal, reduzindo o risco residual.',cfg.partial,v=>{cfg.partial=v;renderApp();},body=>{
     const r1=div('');r1.style.cssText='display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px';
-    const p=div('');p.appendChild(slabel('Realizar'));p.appendChild(stepper(cfg.partPct,10,90,'% da posição',v=>{cfg.partPct=v;}));
-    const a=div('');a.appendChild(slabel('Ao atingir'));a.appendChild(stepper(cfg.partAt,1,5000,'pts de lucro',v=>{cfg.partAt=v;}));
+    const p=div('');p.appendChild(slabel('Realizar'));p.appendChild(stepper(cfg.partPct,10,90,'% da posição',v=>{cfg.partPct=v;updateSentence();}));
+    const a=div('');a.appendChild(slabel('Ao atingir'));a.appendChild(stepper(cfg.partAt,1,5000,'pts de lucro',v=>{cfg.partAt=v;updateSentence();}));
     r1.append(p,a);
     body.appendChild(r1);
     body.appendChild(ckbox(cfg.partMoveStop,'Mover stop para a entrada após a parcial',v=>{cfg.partMoveStop=v;renderApp();}));
@@ -3483,6 +3483,12 @@ function buildStrategySentence(cfg) {
   return parts.filter(Boolean).join(' · ');
 }
 
+// Atualiza só a frase sem re-renderizar o DOM inteiro
+function updateSentence() {
+  const el = document.getElementById('strategy-sentence-el');
+  if(el) el.innerHTML = buildStrategySentence(state.cfg);
+}
+
 // ─── PROGRESS BAR ─────────────────────────────────────────────
 function renderProgressBar() {
   const pb=document.getElementById('prog-bar');
@@ -3567,6 +3573,7 @@ function renderApp() {
   const sentLabel=div('');sentLabel.style.cssText='font-size:9px;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px;display:flex;align-items:center;gap:5px';
   sentLabel.innerHTML=`<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--txm)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16" stroke-width="3"/></svg> Sua estratégia em português`;
   const sentEl=div('strategy-sentence');
+  sentEl.id='strategy-sentence-el';
   sentEl.innerHTML=buildStrategySentence(state.cfg);
   sentWrap.append(sentLabel,sentEl);
   previewCard.appendChild(sentWrap);
