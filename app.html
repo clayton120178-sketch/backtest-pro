@@ -93,6 +93,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;b
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes lprog{0%{width:0}15%{width:18%}40%{width:50%}70%{width:75%}95%{width:93%}100%{width:93%}}
+@keyframes stepDone{0%{transform:scale(1)}35%{transform:scale(1.25)}65%{transform:scale(0.92)}100%{transform:scale(1)}}
 @keyframes breathe{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.72)}}
 .aFwd{animation:sright .2s var(--out) both}
 .aBwd{animation:sleft .2s var(--out) both}
@@ -398,6 +399,9 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 /* Tooltip */
 .tip-wrap{position:relative;display:inline-flex}
 .tip-box{position:absolute;bottom:130%;left:50%;transform:translateX(-50%);background:var(--bg3);border:0.5px solid var(--bdh);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--tx);line-height:1.5;width:210px;z-index:500;box-shadow:0 6px 24px rgba(0,0,0,.6);pointer-events:none;font-weight:400}
+.strategy-sentence{font-size:12px;color:var(--txs);line-height:1.75;animation:fadeUp .2s ease-out}
+.strategy-sentence strong{color:var(--tx);font-weight:600}
+.strategy-sentence .hl{color:#00D4AA;font-weight:600}
 
 /* Direction section labels */
 .section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:7px 0 10px;display:flex;align-items:center;gap:8px}
@@ -3231,7 +3235,13 @@ function renderConfirm() {
 }
 
 // ─── LOADING ─────────────────────────────────────────────────
-const LOAD_MSGS=['Analisando 7 anos de histórico...','Processando 48.000 candles...','Calculando drawdowns e métricas...','Simulando execução das operações...','Gerando relatório de performance...'];
+const LOAD_MSGS=[
+  'Analisando 7 anos de dados reais do mercado...',
+  'Simulando cada operação, candle por candle...',
+  'Calculando o que teria acontecido com o seu dinheiro...',
+  'Medindo drawdowns — os momentos difíceis também contam...',
+  'Quase lá. A verdade sobre esse setup está chegando...',
+];
 
 function startLoading() {
   state.animate=true;state.screen='loading';state.loadMsg=0;renderApp();
@@ -3247,10 +3257,11 @@ function renderLoading() {
   const el=div('loading-screen');
   const spin=div('spinner');
   spin.innerHTML=`<div class="spinner-ring"></div><div class="spinner-inner"></div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`;
-  const title=div('');title.style.cssText='font-size:19px;font-weight:700;color:var(--tx);margin-bottom:9px';title.textContent='Rodando backtest';
+  const title=div('');title.style.cssText='font-size:19px;font-weight:700;color:var(--tx);margin-bottom:5px';title.textContent='Rodando backtest';
+  const tagline=div('');tagline.style.cssText='font-size:12px;color:var(--txm);margin-bottom:14px;font-style:italic';tagline.textContent='Se o assunto for o seu dinheiro, não chute. Teste.';
   const msg=div('');msg.id='load-msg';msg.style.cssText='font-size:13px;color:var(--txs);margin-bottom:20px;min-height:20px';msg.textContent=LOAD_MSGS[0];
   const barWrap=div('load-bar');const fill=div('load-fill');barWrap.appendChild(fill);
-  el.append(spin,div('',title,msg,barWrap));
+  el.append(spin,div('',title,tagline,msg,barWrap));
   return el;
 }
 
@@ -3430,6 +3441,48 @@ function renderResults() {
   return el;
 }
 
+// ─── STRATEGY SENTENCE ────────────────────────────────────────
+function buildStrategySentence(cfg) {
+  const asset = findAsset(cfg.asset);
+  const assetName = asset ? asset.n : cfg.asset;
+  const dirText = cfg.direction==='long'
+    ? '<span class="hl">comprar</span>'
+    : cfg.direction==='short'
+    ? '<span class="hl">vender</span>'
+    : '<span class="hl">comprar e vender</span>';
+  const entryMap = {
+    breakout: 'entrando no rompimento da máx/mín do candle de sinal',
+    next_open: 'entrando na abertura do próximo candle',
+    sig_close: 'entrando no fechamento do candle de sinal',
+  };
+  const stopMap = {
+    fixed: `stop fixo de <strong>${cfg.stopPts} pts</strong>`,
+    hl_candle: `stop na máx/mín do candle de sinal`,
+    n_candles: `stop na máx/mín dos últimos <strong>${cfg.stopCandles} candles</strong>`,
+    atr: `stop de <strong>${cfg.stopAtrMult}× ATR(${cfg.stopAtrPer})</strong>`,
+  };
+  const tpMap = {
+    fixed: `alvo de <strong>${cfg.tpPts} pts</strong>`,
+    rr: `alvo de <strong>${cfg.tpRR}× o risco</strong>`,
+    atr: `alvo de <strong>${cfg.tpAtrMult}× ATR(${cfg.tpAtrPer})</strong>`,
+    fib_ext: `alvo na extensão de Fibonacci <strong>${cfg.tpFibLevel}%</strong>`,
+    none: 'sem alvo fixo',
+  };
+  const conds = cfg.conditions.length === 0
+    ? '<span style="color:var(--txm)">nenhuma condição definida ainda</span>'
+    : cfg.conditions.map(c => `<strong>${condLabel(c)}</strong>`).join(' <span class="hl">e</span> ');
+
+  const parts = [];
+  parts.push(`Sistema vai ${dirText} <strong>${assetName}</strong> no <strong>${cfg.tf}</strong>`);
+  parts.push(`quando ${conds}`);
+  if(cfg.conditions.length > 0) parts.push(entryMap[cfg.entryType] || '');
+  const risk = [stopMap[cfg.stopType], tpMap[cfg.tpType]].filter(Boolean);
+  if(risk.length) parts.push(risk.join(', '));
+  if(cfg.trailing) parts.push(`trailing após <strong>${cfg.trailAct} pts</strong>`);
+  if(cfg.partial) parts.push(`parcial de <strong>${cfg.partPct}%</strong> aos <strong>${cfg.partAt} pts</strong>`);
+  return parts.filter(Boolean).join(' · ');
+}
+
 // ─── PROGRESS BAR ─────────────────────────────────────────────
 function renderProgressBar() {
   const pb=document.getElementById('prog-bar');
@@ -3447,6 +3500,7 @@ function renderProgressBar() {
     if(done) circle.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`;
     else circle.innerHTML=IC[s.icon]||'';
     if(circle.querySelector('svg')){const sv=circle.querySelector('svg');sv.style.color=active?'var(--action-t)':done?'white':'var(--txm)';}
+    if(done && i===state.maxDone-1 && state.dir==='fwd'){circle.style.animation='stepDone .36s ease-out';}
     const label=div('prog-label'+(done?' done':active?' active':''));label.textContent=s.label;
     btn_.append(circle,label);
     pb.appendChild(btn_);
@@ -3508,29 +3562,14 @@ function renderApp() {
   previewCard.appendChild(pLabel);
   previewCard.appendChild(buildPreview(state.step,state.cfg));
 
-  // Mini summary
-  const summ=div('');summ.style.cssText='margin-top:14px;border-top:1px solid var(--bd);padding-top:13px;display:flex;flex-direction:column;gap:6px';
-  const pending='a definir';
-  const md=state.maxDone, sc2=state.cfg;
-  const summRows=[
-    ['Ativo', sc2.asset+' · '+sc2.tf],
-    ['Janela', sc2.tStart+' → '+sc2.tLastEntry+' → '+sc2.tEnd],
-    ['Ops/dia', sc2.maxDailyTrades>0?sc2.maxDailyTrades+' máx':'Sem limite'],
-    ['Condições', md>=1?(sc2.conditions.length===0?'Nenhuma':sc2.conditions.length+' condição'+(sc2.conditions.length>1?'ões':'')):pending],
-    ['Gatilho', md>=2?((sc2.direction==='long'?'Compra':sc2.direction==='short'?'Venda':'Ambos')+' · '+{breakout:'Rompimento',next_open:'Próx. abertura',sig_close:'Fechamento'}[sc2.entryType]):pending],
-    ['Stop', md>=3?({fixed:sc2.stopPts+' pts',hl_candle:'Candle signal',n_candles:sc2.stopCandles+' candles',atr:sc2.stopAtrMult.toFixed(1)+'× ATR'}[sc2.stopType]):pending],
-    ['Alvo', md>=3?({fixed:sc2.tpPts+' pts',rr:sc2.tpRR+'× risco',atr:sc2.tpAtrMult.toFixed(1)+'× ATR',fib_ext:'Fibo '+sc2.tpFibLevel+'%',none:'Por gestão'}[sc2.tpType]):pending],
-  ];
-  summRows.forEach(([k,v])=>{
-    const r=div('');r.style.cssText='display:flex;justify-content:space-between';
-    const kEl=div('');kEl.style.cssText='font-size:11px;color:var(--txm)';kEl.textContent=k;
-    const vEl=div('');
-    const isPending=v===pending;
-    vEl.style.cssText=`font-size:11px;font-family:JetBrains Mono;${isPending?'color:var(--txm);font-style:italic':'color:var(--tx)'}`;
-    vEl.textContent=v;
-    r.append(kEl,vEl);summ.appendChild(r);
-  });
-  previewCard.appendChild(summ);
+  // Strategy sentence — linguagem natural em tempo real
+  const sentWrap=div('');sentWrap.style.cssText='margin-top:14px;border-top:1px solid var(--bd);padding-top:13px';
+  const sentLabel=div('');sentLabel.style.cssText='font-size:9px;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px;display:flex;align-items:center;gap:5px';
+  sentLabel.innerHTML=`<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--txm)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16" stroke-width="3"/></svg> Sua estratégia em português`;
+  const sentEl=div('strategy-sentence');
+  sentEl.innerHTML=buildStrategySentence(state.cfg);
+  sentWrap.append(sentLabel,sentEl);
+  previewCard.appendChild(sentWrap);
   right.appendChild(previewCard);
   two.appendChild(right);
 
