@@ -3079,9 +3079,17 @@ function renderStep4() {
       if(t.id==='rr'){
         const rrow=div('');rrow.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:6px';
         const rl=div('');rl.style.cssText='font-size:13px;color:var(--txs)';rl.textContent='×  risco';
-        rrow.append(stepper(cfg.tpRR,1,20,'',v=>{cfg.tpRR=v;updateSentence();}),rl);
+        const rrVal=div('step-val mono');rrVal.textContent=cfg.tpRR.toFixed(1);
+        const rrDec=h('button',{class:'step-btn',type:'button'});rrDec.textContent='−';
+        rrDec.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();cfg.tpRR=Math.max(0.1,+(cfg.tpRR-0.1).toFixed(1));rrVal.textContent=cfg.tpRR.toFixed(1);updateSentence();if(cfg.stopType==='fixed')updateRRHint();});
+        const rrInc=h('button',{class:'step-btn',type:'button'});rrInc.textContent='+';
+        rrInc.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();cfg.tpRR=Math.min(20,+(cfg.tpRR+0.1).toFixed(1));rrVal.textContent=cfg.tpRR.toFixed(1);updateSentence();if(cfg.stopType==='fixed')updateRRHint();});
+        const rrWrap=div('stepper',rrDec,rrVal,rrInc);
+        rrow.append(rrWrap,rl);
         sub.appendChild(rrow);
-        if(cfg.stopType==='fixed'){const hint=div('');hint.style.cssText='font-size:11px;color:var(--txm);font-family:JetBrains Mono';hint.textContent=`Stop ${cfg.stopPts} pts → alvo = ${(cfg.tpRR*cfg.stopPts).toLocaleString('pt-BR')} pts`;sub.appendChild(hint);}
+        const rrHint=div('');rrHint.style.cssText='font-size:11px;color:var(--txm);font-family:JetBrains Mono';
+        function updateRRHint(){rrHint.textContent=`Stop ${cfg.stopPts} pts → alvo = ${(cfg.tpRR*cfg.stopPts).toLocaleString('pt-BR')} pts`;}
+        if(cfg.stopType==='fixed'){updateRRHint();sub.appendChild(rrHint);}
       }
       if(t.id==='atr'){
         const atrRow=div('');atrRow.style.cssText='display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end';
