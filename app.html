@@ -3586,22 +3586,18 @@ async function handleLogout() {
 }
 
 // ─── SUBSCRIPTION ─────────────────────────────────────────────
-async function loadSubscription() {
-  // Reutiliza o client global 'db' — sessão já está no contexto via onAuthStateChange
-  // Não criar novo createClient() aqui: cria nova conexão WebSocket e atrasa o boot
-  try {
-    const now = new Date().toISOString();
-    const { data, error } = await db
-      .from('subscriptions')
-      .select('id, plan, cycle, expires_at, status, payment_method')
-      .eq('user_id', currentUser.id)
-      .eq('status', 'active')
-      .gt('expires_at', now)
-      .order('expires_at', { ascending: false })
-      .limit(1);
-    if (error) { currentSub = null; return; }
-    currentSub = (Array.isArray(data) && data.length > 0) ? data[0] : null;
-  } catch { currentSub = null; }
+async function loadSubscription(accessToken) {
+  const now = new Date().toISOString();
+  const res = await fetch(`${SUPA_URL}/rest/v1/subscriptions?select=*&user_id=eq.${currentUser.id}&status=eq.active&expires_at=gt.${encodeURIComponent(now)}&order=expires_at.desc&limit=1`, {
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    }
+  });
+  if (!res.ok) { currentSub = null; return; }
+  const data = await res.json();
+  currentSub = (Array.isArray(data) && data.length > 0) ? data[0] : null;
 }
 
 // ─── SCREENS ──────────────────────────────────────────────────
@@ -3763,7 +3759,6 @@ async function renderCardBrick() {
       callbacks: {
         onReady: () => {},
         onSubmit: async (formData) => {
-          
           try {
             const { data: { session } } = await db.auth.getSession();
             const res = await fetch(`${SUPA_URL}/functions/v1/create-payment`, {
@@ -3787,7 +3782,7 @@ async function renderCardBrick() {
             if (!res.ok || data.error) { showPayError(data.error||'Erro no pagamento.'); return; }
             if (data.status==='approved') {
               const { data: { session: s } } = await db.auth.getSession();
-              await loadSubscription();
+              await loadSubscription(s.access_token);
               updateAvatarUI();
               showPaySuccess();
             } else {
@@ -3798,8 +3793,7 @@ async function renderCardBrick() {
         onError: () => {},
       },
     });
-    
-  } catch(e) { showPayError('Erro ao inicializar formulário de pagamento.'); }
+  } catch(e) { console.error('MP Brick init error:', e); }
 }
 
 async function submitPix() {
@@ -3816,60 +3810,21 @@ async function submitPix() {
     const data = await res.json();
     if (!res.ok || data.error) { showPayError(data.error||'Erro ao gerar Pix.'); btn.disabled=false; btn.textContent='Gerar QR Code Pix'; return; }
     const area = document.getElementById('pix-form-area');
-
-    // XSS-safe: DOM API em vez de innerHTML com dados da API externa
-    area.innerHTML = '';
-
-    const pixBox = document.createElement('div');
-    pixBox.className = 'pix-box';
-
-    if (data.pix_qr_base64) {
-      const img = document.createElement('img');
-      img.className = 'pix-qr';
-      img.alt = 'QR Pix';
-      const b64safe = String(data.pix_qr_base64).replace(/[^A-Za-z0-9+/=]/g, '');
-      img.src = 'data:image/png;base64,' + b64safe;
-      pixBox.appendChild(img);
-    }
-
-    const instrLabel = document.createElement('div');
-    instrLabel.style.cssText = 'font-size:13px;font-weight:600;color:var(--tx);margin-bottom:10px';
-    instrLabel.textContent = 'Escaneie o QR Code ou copie o código';
-    pixBox.appendChild(instrLabel);
-
-    const pixCodeStr = String(data.pix_copy_paste ?? '');
-    const pixCopyBtn = document.createElement('button');
-    pixCopyBtn.className = 'pix-copy';
-    pixCopyBtn.id = 'pix-btn';
-    pixCopyBtn.textContent = pixCodeStr;
-    pixCopyBtn.addEventListener('click', function() {
-      navigator.clipboard.writeText(pixCodeStr).then(() => {
-        this.textContent = '✓ Copiado!';
-        this.style.color = '#10B981';
-      });
-    });
-    pixBox.appendChild(pixCopyBtn);
-
-    const pixNote = document.createElement('div');
-    pixNote.className = 'pix-note';
-    pixNote.textContent = 'Após o pagamento aguarde até 1 minuto. O código expira em 30 minutos.';
-    pixBox.appendChild(pixNote);
-    area.appendChild(pixBox);
-
-    const verifyBtn = document.createElement('button');
-    verifyBtn.className = 'pay-btn';
-    verifyBtn.textContent = 'Já paguei — Verificar acesso';
-    verifyBtn.dataset.paymentId = String(data.payment_id ?? '');
-    verifyBtn.addEventListener('click', function() { checkPix(this.dataset.paymentId); });
-    area.appendChild(verifyBtn);
-
-  } catch(e) { showPayError('Erro ao gerar Pix. Tente novamente.'); btn.disabled=false; btn.textContent='Gerar QR Code Pix'; }
+    area.innerHTML = `
+      <div class="pix-box">
+        ${data.pix_qr_base64?`<img class="pix-qr" src="data:image/png;base64,${data.pix_qr_base64}" alt="QR Pix">`:''}
+        <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:10px">Escaneie o QR Code ou copie o código</div>
+        <button class="pix-copy" id="pix-btn" onclick="navigator.clipboard.writeText('${data.pix_copy_paste}');this.textContent='✓ Copiado!';this.style.color='#10B981'">${data.pix_copy_paste}</button>
+        <div class="pix-note">Após o pagamento aguarde até 1 minuto. O código expira em 30 minutos.</div>
+      </div>
+      <button class="pay-btn" onclick="checkPix('${data.payment_id}')">Já paguei — Verificar acesso</button>`;
+  } catch(e) { console.error(e); showPayError('Erro ao gerar Pix.'); btn.disabled=false; btn.textContent='Gerar QR Code Pix'; }
 }
 
 async function checkPix(paymentId) {
   const btn = event.target; btn.disabled=true; btn.textContent='Verificando...';
   const { data: { session } } = await db.auth.getSession();
-  await loadSubscription();
+  await loadSubscription(session.access_token);
   if (currentSub) { updateAvatarUI(); showPaySuccess(); }
   else { btn.disabled=false; btn.textContent='Verificar novamente'; showPayError('Pagamento ainda não confirmado. Aguarde e tente novamente.'); }
 }
@@ -4112,23 +4067,18 @@ function showAuthModal(mode) {
   setTimeout(()=>document.getElementById('auth-email')?.focus(),100);
 }
 
-// Rate limiting simples no cliente — impede brute force básico
+// Rate limiting simples no cliente
 const _authAttempts = { count: 0, resetAt: 0 };
-const AUTH_MAX_ATTEMPTS = 5;
-const AUTH_WINDOW_MS    = 60_000; // 1 minuto
-
 async function handleAuth(mode) {
-  // Verificar rate limit
   const now = Date.now();
-  if (now > _authAttempts.resetAt) { _authAttempts.count = 0; _authAttempts.resetAt = now + AUTH_WINDOW_MS; }
-  _authAttempts.count++;
-  if (_authAttempts.count > AUTH_MAX_ATTEMPTS) {
-    const wait = Math.ceil((_authAttempts.resetAt - now) / 1000);
-    const errEl = document.getElementById('auth-error');
-    if (errEl) { errEl.textContent = `Muitas tentativas. Aguarde ${wait}s.`; errEl.classList.add('show'); }
+  if (now > _authAttempts.resetAt) { _authAttempts.count = 0; _authAttempts.resetAt = now + 60000; }
+  if (++_authAttempts.count > 5) {
+    const w = Math.ceil((_authAttempts.resetAt - now) / 1000);
+    const e = document.getElementById('auth-error');
+    if (e) { e.textContent = `Muitas tentativas. Aguarde ${w}s.`; e.classList.add('show'); }
+    _authAttempts.count--;
     return;
   }
-
   const email=document.getElementById('auth-email')?.value?.trim();
   const pass=document.getElementById('auth-pass')?.value;
   const name=document.getElementById('auth-name')?.value?.trim();
@@ -4160,7 +4110,7 @@ db.auth.onAuthStateChange(async (event, session) => {
   
   if (event === 'SIGNED_IN' && session?.user) {
     currentUser = session.user;
-    await loadSubscription();
+    await loadSubscription(session.access_token);
     updateAvatarUI();
     document.getElementById('auth-overlay')?.remove();
     // Don't override if user is already on plans/payment screens
@@ -4170,7 +4120,7 @@ db.auth.onAuthStateChange(async (event, session) => {
   if (event === 'INITIAL_SESSION') {
     if (session?.user) {
       currentUser = session.user;
-      await loadSubscription();
+      await loadSubscription(session.access_token);
       updateAvatarUI();
       if (currentSub) { renderApp(); maybeAutoTour(); } else { showScreen('nosub'); }
     } else {
