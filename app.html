@@ -572,66 +572,80 @@ const STEP_SUBS = [
 const ASSETS_DATA = {
   local: {
     futuros: [
-      {t:'WIN$N',n:'Mini Índice Bovespa'},{t:'WDO$N',n:'Mini Dólar'},{t:'IND$N',n:'Índice Bovespa Cheio'},{t:'DOL$N',n:'Dólar Cheio'},
-      {t:'DI1$N',n:'DI Futuro (Juros)'},{t:'BGI$N',n:'Boi Gordo'},{t:'CCM$N',n:'Milho'},{t:'ICF$N',n:'Café Arábica'},
-      {t:'SFI$N',n:'Soja'},{t:'ETH$N',n:'Ethereum Futuro'},{t:'BIT$N',n:'Bitcoin Futuro'},{t:'OZ1D$N',n:'Ouro'},{t:'ISP$N',n:'S&P 500 Futuro (B3)'}
+      {t:'WIN$N',n:'Mini Índice Bovespa',  tick:5,   tickVal:0.20,  unit:'pts', currency:'R$'},
+      {t:'WDO$N',n:'Mini Dólar',           tick:0.5, tickVal:5.00,  unit:'pts', currency:'R$'},
+      {t:'IND$N',n:'Índice Bovespa Cheio', tick:5,   tickVal:1.00,  unit:'pts', currency:'R$'},
+      {t:'DOL$N',n:'Dólar Cheio',          tick:0.5, tickVal:50.00, unit:'pts', currency:'R$'},
+      {t:'DI1$N',n:'DI Futuro (Juros)',    tick:0.01,tickVal:null,  unit:'pts', currency:'R$'},
+      {t:'BGI$N',n:'Boi Gordo',            tick:0.1, tickVal:null,  unit:'pts', currency:'R$'},
+      {t:'CCM$N',n:'Milho',               tick:0.1, tickVal:null,  unit:'pts', currency:'R$'},
+      {t:'ICF$N',n:'Café Arábica',         tick:0.5, tickVal:null,  unit:'pts', currency:'R$'},
+      {t:'SFI$N',n:'Soja',                tick:0.1, tickVal:null,  unit:'pts', currency:'R$'},
+      {t:'ETH$N',n:'Ethereum Futuro',      tick:5,   tickVal:null,  unit:'pts', currency:'R$'},
+      {t:'BIT$N',n:'Bitcoin Futuro',       tick:5,   tickVal:null,  unit:'pts', currency:'R$'},
+      {t:'OZ1D$N',n:'Ouro',               tick:0.1, tickVal:null,  unit:'pts', currency:'R$'},
+      {t:'ISP$N',n:'S&P 500 Futuro (B3)', tick:5,   tickVal:null,  unit:'pts', currency:'R$'},
     ],
     acoes: [
-      {t:'PETR4',n:'Petrobras PN'},{t:'PETR3',n:'Petrobras ON'},{t:'VALE3',n:'Vale ON'},{t:'ITUB4',n:'Itaú Unibanco PN'},{t:'BBDC4',n:'Bradesco PN'},
-      {t:'BBAS3',n:'Banco do Brasil ON'},{t:'B3SA3',n:'B3 ON'},{t:'ABEV3',n:'Ambev ON'},{t:'WEGE3',n:'WEG ON'},{t:'RENT3',n:'Localiza ON'},
-      {t:'SUZB3',n:'Suzano ON'},{t:'JBSS3',n:'JBS ON'},{t:'GGBR4',n:'Gerdau PN'},{t:'RDOR3',n:'Rede D\'Or ON'},{t:'EQTL3',n:'Equatorial ON'},
-      {t:'LREN3',n:'Lojas Renner ON'},{t:'RADL3',n:'RaiaDrogasil ON'},{t:'RAIL3',n:'Rumo ON'},{t:'PRIO3',n:'PRIO ON'},{t:'MGLU3',n:'Magazine Luiza ON'},
-      {t:'HAPV3',n:'Hapvida ON'},{t:'TOTS3',n:'Totvs ON'},{t:'VIVT3',n:'Vivo ON'},{t:'CMIG4',n:'Cemig PN'},{t:'CSNA3',n:'CSN ON'},
-      {t:'CPLE6',n:'Copel PNB'},{t:'ENEV3',n:'Eneva ON'},{t:'BRFS3',n:'BRF ON'},{t:'CSAN3',n:'Cosan ON'},{t:'KLBN11',n:'Klabin Unit'},
-      {t:'SBSP3',n:'Sabesp ON'},{t:'CCRO3',n:'CCR ON'},{t:'ELET3',n:'Eletrobras ON'},{t:'ELET6',n:'Eletrobras PNB'},{t:'BBSE3',n:'BB Seguridade ON'},
-      {t:'NTCO3',n:'Natura ON'},{t:'UGPA3',n:'Ultrapar ON'},{t:'EMBR3',n:'Embraer ON'},{t:'CYRE3',n:'Cyrela ON'},{t:'MRFG3',n:'Marfrig ON'},
-      {t:'COGN3',n:'Cogna ON'},{t:'AZUL4',n:'Azul PN'},{t:'GOAU4',n:'Metalúrgica Gerdau PN'},{t:'USIM5',n:'Usiminas PNA'},{t:'IRBR3',n:'IRB Brasil ON'},
-      {t:'MULT3',n:'Multiplan ON'},{t:'MRVE3',n:'MRV ON'},{t:'YDUQ3',n:'Yduqs ON'},{t:'VBBR3',n:'Vibra ON'},{t:'HYPE3',n:'Hypera ON'},
-      {t:'TIMS3',n:'TIM ON'},{t:'ENGI11',n:'Energisa Unit'},{t:'TAEE11',n:'Taesa Unit'},{t:'ASAI3',n:'Assaí ON'},{t:'POMO4',n:'Marcopolo PN'},
-      {t:'PSSA3',n:'Porto Seguro ON'},{t:'SANB11',n:'Santander Unit'},{t:'ITSA4',n:'Itaúsa PN'},{t:'BPAC11',n:'BTG Pactual Unit'},{t:'CMIN3',n:'CSN Mineração ON'},
-      {t:'LWSA3',n:'Locaweb ON'},{t:'SMTO3',n:'São Martinho ON'},{t:'ALOS3',n:'Allos ON'},{t:'ARZZ3',n:'Arezzo ON'},{t:'RECV3',n:'PetroReconcavo ON'},
-      {t:'FLRY3',n:'Fleury ON'},{t:'SLCE3',n:'SLC Agrícola ON'},{t:'BEEF3',n:'Minerva ON'},{t:'RAIZ4',n:'Raízen PN'},{t:'CRFB3',n:'Carrefour ON'},
-      {t:'SOMA3',n:'Grupo Soma ON'}
+      {t:'PETR4',n:'Petrobras PN',       tick:0.01,tickVal:null,unit:'R$',currency:'R$'},
+      {t:'PETR3',n:'Petrobras ON',       tick:0.01,tickVal:null,unit:'R$',currency:'R$'},
+      {t:'VALE3',n:'Vale ON',            tick:0.01,tickVal:null,unit:'R$',currency:'R$'},
+      {t:'ITUB4',n:'Itaú Unibanco PN',  tick:0.01,tickVal:null,unit:'R$',currency:'R$'},
+      {t:'BBDC4',n:'Bradesco PN',        tick:0.01,tickVal:null,unit:'R$',currency:'R$'},
+      {t:'BBAS3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Banco do Brasil ON'},{t:'B3SA3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'B3 ON'},{t:'ABEV3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Ambev ON'},{t:'WEGE3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'WEG ON'},{t:'RENT3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Localiza ON'},
+      {t:'SUZB3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Suzano ON'},{t:'JBSS3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'JBS ON'},{t:'GGBR4',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Gerdau PN'},{t:'RDOR3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Rede D\'Or ON'},{t:'EQTL3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Equatorial ON'},
+      {t:'LREN3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Lojas Renner ON'},{t:'RADL3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'RaiaDrogasil ON'},{t:'RAIL3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Rumo ON'},{t:'PRIO3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'PRIO ON'},{t:'MGLU3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Magazine Luiza ON'},
+      {t:'HAPV3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Hapvida ON'},{t:'TOTS3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Totvs ON'},{t:'VIVT3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Vivo ON'},{t:'CMIG4',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Cemig PN'},{t:'CSNA3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'CSN ON'},
+      {t:'CPLE6',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Copel PNB'},{t:'ENEV3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Eneva ON'},{t:'BRFS3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'BRF ON'},{t:'CSAN3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Cosan ON'},{t:'KLBN11',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Klabin Unit'},
+      {t:'SBSP3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Sabesp ON'},{t:'CCRO3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'CCR ON'},{t:'ELET3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Eletrobras ON'},{t:'ELET6',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Eletrobras PNB'},{t:'BBSE3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'BB Seguridade ON'},
+      {t:'NTCO3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Natura ON'},{t:'UGPA3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Ultrapar ON'},{t:'EMBR3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Embraer ON'},{t:'CYRE3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Cyrela ON'},{t:'MRFG3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Marfrig ON'},
+      {t:'COGN3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Cogna ON'},{t:'AZUL4',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Azul PN'},{t:'GOAU4',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Metalúrgica Gerdau PN'},{t:'USIM5',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Usiminas PNA'},{t:'IRBR3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'IRB Brasil ON'},
+      {t:'MULT3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Multiplan ON'},{t:'MRVE3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'MRV ON'},{t:'YDUQ3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Yduqs ON'},{t:'VBBR3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Vibra ON'},{t:'HYPE3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Hypera ON'},
+      {t:'TIMS3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'TIM ON'},{t:'ENGI11',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Energisa Unit'},{t:'TAEE11',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Taesa Unit'},{t:'ASAI3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Assaí ON'},{t:'POMO4',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Marcopolo PN'},
+      {t:'PSSA3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Porto Seguro ON'},{t:'SANB11',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Santander Unit'},{t:'ITSA4',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Itaúsa PN'},{t:'BPAC11',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'BTG Pactual Unit'},{t:'CMIN3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'CSN Mineração ON'},
+      {t:'LWSA3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Locaweb ON'},{t:'SMTO3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'São Martinho ON'},{t:'ALOS3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Allos ON'},{t:'ARZZ3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Arezzo ON'},{t:'RECV3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'PetroReconcavo ON'},
+      {t:'FLRY3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Fleury ON'},{t:'SLCE3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'SLC Agrícola ON'},{t:'BEEF3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Minerva ON'},{t:'RAIZ4',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Raízen PN'},{t:'CRFB3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Carrefour ON'},
+      {t:'SOMA3',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'Grupo Soma ON'}
     ],
     etfs: [
-      {t:'BOVA11',n:'ETF Ibovespa'},{t:'IVVB11',n:'ETF S&P 500 (BRL)'},{t:'SMAL11',n:'ETF Small Cap'},{t:'HASH11',n:'ETF Crypto'},
-      {t:'XFIX11',n:'ETF Fundos Imobiliários'},{t:'DIVO11',n:'ETF Dividendos'},{t:'NASD11',n:'ETF Nasdaq 100 (BRL)'},{t:'MATB11',n:'ETF Materiais Básicos'},
-      {t:'GOLD11',n:'ETF Ouro'},{t:'EURP11',n:'ETF Europa'}
+      {t:'BOVA11',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'ETF Ibovespa'},{t:'IVVB11',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'ETF S&P 500 (BRL)'},{t:'SMAL11',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'ETF Small Cap'},{t:'HASH11',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'ETF Crypto'},
+      {t:'XFIX11',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'ETF Fundos Imobiliários'},{t:'DIVO11',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'ETF Dividendos'},{t:'NASD11',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'ETF Nasdaq 100 (BRL)'},{t:'MATB11',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'ETF Materiais Básicos'},
+      {t:'GOLD11',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'ETF Ouro'},{t:'EURP11',tick:0.01,tickVal:null,unit:'R$',currency:'R$',n:'ETF Europa'}
     ]
   },
   internacional: {
     forex: [
-      {t:'EURUSD',n:'Euro / Dólar'},{t:'GBPUSD',n:'Libra / Dólar'},{t:'USDJPY',n:'Dólar / Iene'},{t:'USDCHF',n:'Dólar / Franco Suíço'},
-      {t:'AUDUSD',n:'Dólar Australiano / Dólar'},{t:'USDCAD',n:'Dólar / Dólar Canadense'},{t:'NZDUSD',n:'Dólar Neozelandês / Dólar'},
-      {t:'EURGBP',n:'Euro / Libra'},{t:'EURJPY',n:'Euro / Iene'},{t:'GBPJPY',n:'Libra / Iene'},{t:'AUDJPY',n:'Dólar Australiano / Iene'},
-      {t:'EURCHF',n:'Euro / Franco Suíço'},{t:'EURAUD',n:'Euro / Dólar Australiano'},{t:'CADJPY',n:'Dólar Canadense / Iene'},
-      {t:'GBPCHF',n:'Libra / Franco Suíço'},{t:'USDBRL',n:'Dólar / Real'},{t:'EURCAD',n:'Euro / Dólar Canadense'},
-      {t:'AUDCAD',n:'Dólar Australiano / Dólar Canadense'},{t:'GBPAUD',n:'Libra / Dólar Australiano'},{t:'NZDJPY',n:'Dólar Neozelandês / Iene'},
-      {t:'USDMXN',n:'Dólar / Peso Mexicano'},{t:'USDZAR',n:'Dólar / Rand Sul-Africano'},{t:'USDTRY',n:'Dólar / Lira Turca'},{t:'USDCNH',n:'Dólar / Yuan Chinês'}
+      {t:'EURUSD',tick:0.0001,tickVal:null,unit:'pips',currency:'USD',n:'Euro / Dólar'},{t:'GBPUSD',tick:0.0001,tickVal:null,unit:'pips',currency:'USD',n:'Libra / Dólar'},{t:'USDJPY',tick:0.01,tickVal:null,unit:'pips',currency:'USD',n:'Dólar / Iene'},{t:'USDCHF',tick:0.0001,tickVal:null,unit:'pips',currency:'USD',n:'Dólar / Franco Suíço'},
+      {t:'AUDUSD',tick:0.0001,tickVal:null,unit:'pips',currency:'USD',n:'Dólar Australiano / Dólar'},{t:'USDCAD',tick:0.0001,tickVal:null,unit:'pips',currency:'USD',n:'Dólar / Dólar Canadense'},{t:'NZDUSD',tick:0.0001,tickVal:null,unit:'pips',currency:'USD',n:'Dólar Neozelandês / Dólar'},
+      {t:'EURGBP',tick:0.0001,tickVal:null,unit:'pips',currency:'USD',n:'Euro / Libra'},{t:'EURJPY',tick:0.01,tickVal:null,unit:'pips',currency:'USD',n:'Euro / Iene'},{t:'GBPJPY',tick:0.01,tickVal:null,unit:'pips',currency:'USD',n:'Libra / Iene'},{t:'AUDJPY',tick:0.01,tickVal:null,unit:'pips',currency:'USD',n:'Dólar Australiano / Iene'},
+      {t:'EURCHF',tick:0.0001,tickVal:null,unit:'pips',currency:'USD',n:'Euro / Franco Suíço'},{t:'EURAUD',tick:0.0001,tickVal:null,unit:'pips',currency:'USD',n:'Euro / Dólar Australiano'},{t:'CADJPY',tick:0.01,tickVal:null,unit:'pips',currency:'USD',n:'Dólar Canadense / Iene'},
+      {t:'GBPCHF',tick:0.0001,tickVal:null,unit:'pips',currency:'USD',n:'Libra / Franco Suíço'},{t:'USDBRL',tick:0.0001,tickVal:null,unit:'pips',currency:'USD',n:'Dólar / Real'},{t:'EURCAD',tick:0.0001,tickVal:null,unit:'pips',currency:'USD',n:'Euro / Dólar Canadense'},
+      {t:'AUDCAD',tick:0.0001,tickVal:null,unit:'pips',currency:'USD',n:'Dólar Australiano / Dólar Canadense'},{t:'GBPAUD',tick:0.0001,tickVal:null,unit:'pips',currency:'USD',n:'Libra / Dólar Australiano'},{t:'NZDJPY',tick:0.01,tickVal:null,unit:'pips',currency:'USD',n:'Dólar Neozelandês / Iene'},
+      {t:'USDMXN',tick:0.0001,tickVal:null,unit:'pips',currency:'USD',n:'Dólar / Peso Mexicano'},{t:'USDZAR',tick:0.0001,tickVal:null,unit:'pips',currency:'USD',n:'Dólar / Rand Sul-Africano'},{t:'USDTRY',tick:0.0001,tickVal:null,unit:'pips',currency:'USD',n:'Dólar / Lira Turca'},{t:'USDCNH',tick:0.0001,tickVal:null,unit:'pips',currency:'USD',n:'Dólar / Yuan Chinês'}
     ],
     indices: [
-      {t:'US500',n:'S&P 500'},{t:'US30',n:'Dow Jones 30'},{t:'NAS100',n:'Nasdaq 100'},{t:'DE40',n:'DAX 40 (Alemanha)'},
-      {t:'UK100',n:'FTSE 100 (Reino Unido)'},{t:'FR40',n:'CAC 40 (França)'},{t:'JP225',n:'Nikkei 225 (Japão)'},{t:'AU200',n:'ASX 200 (Austrália)'},
-      {t:'HK50',n:'Hang Seng 50 (Hong Kong)'},{t:'EU50',n:'Euro Stoxx 50'},{t:'CHINA50',n:'FTSE China 50'},{t:'VIX',n:'Índice de Volatilidade'}
+      {t:'US500',tick:0.1,tickVal:null,unit:'pts',currency:'USD',n:'S&P 500'},{t:'US30',tick:1,tickVal:null,unit:'pts',currency:'USD',n:'Dow Jones 30'},{t:'NAS100',tick:0.1,tickVal:null,unit:'pts',currency:'USD',n:'Nasdaq 100'},{t:'DE40',tick:0.1,tickVal:null,unit:'pts',currency:'EUR',n:'DAX 40 (Alemanha)'},
+      {t:'UK100',tick:0.1,tickVal:null,unit:'pts',currency:'GBP',n:'FTSE 100 (Reino Unido)'},{t:'FR40',tick:0.1,tickVal:null,unit:'pts',currency:'EUR',n:'CAC 40 (França)'},{t:'JP225',tick:1,tickVal:null,unit:'pts',currency:'JPY',n:'Nikkei 225 (Japão)'},{t:'AU200',tick:0.1,tickVal:null,unit:'pts',currency:'AUD',n:'ASX 200 (Austrália)'},
+      {t:'HK50',tick:1,tickVal:null,unit:'pts',currency:'HKD',n:'Hang Seng 50 (Hong Kong)'},{t:'EU50',tick:0.1,tickVal:null,unit:'pts',currency:'EUR',n:'Euro Stoxx 50'},{t:'CHINA50',tick:0.1,tickVal:null,unit:'pts',currency:'USD',n:'FTSE China 50'},{t:'VIX',tick:0.01,tickVal:null,unit:'pts',currency:'USD',n:'Índice de Volatilidade'}
     ],
     commodities: [
-      {t:'XAUUSD',n:'Ouro'},{t:'XAGUSD',n:'Prata'},{t:'XPTUSD',n:'Platina'},{t:'WTICOUSD',n:'Petróleo WTI'},
-      {t:'BRENTCMDUSD',n:'Petróleo Brent'},{t:'NATGASUSD',n:'Gás Natural'},{t:'COPPERUSD',n:'Cobre'}
+      {t:'XAUUSD',tick:0.01,tickVal:null,unit:'pts',currency:'USD',n:'Ouro'},{t:'XAGUSD',tick:0.001,tickVal:null,unit:'pts',currency:'USD',n:'Prata'},{t:'XPTUSD',tick:0.01,tickVal:null,unit:'pts',currency:'USD',n:'Platina'},{t:'WTICOUSD',tick:0.01,tickVal:null,unit:'pts',currency:'USD',n:'Petróleo WTI'},
+      {t:'BRENTCMDUSD',tick:0.01,tickVal:null,unit:'pts',currency:'USD',n:'Petróleo Brent'},{t:'NATGASUSD',tick:0.001,tickVal:null,unit:'pts',currency:'USD',n:'Gás Natural'},{t:'COPPERUSD',tick:0.0001,tickVal:null,unit:'pts',currency:'USD',n:'Cobre'}
     ],
     acoes_us: [
-      {t:'AAPL',n:'Apple'},{t:'MSFT',n:'Microsoft'},{t:'AMZN',n:'Amazon'},{t:'GOOGL',n:'Alphabet (Google)'},{t:'META',n:'Meta (Facebook)'},
-      {t:'TSLA',n:'Tesla'},{t:'NVDA',n:'Nvidia'},{t:'JPM',n:'JPMorgan Chase'},{t:'V',n:'Visa'},{t:'MA',n:'Mastercard'},
-      {t:'JNJ',n:'Johnson & Johnson'},{t:'WMT',n:'Walmart'},{t:'PG',n:'Procter & Gamble'},{t:'UNH',n:'UnitedHealth'},{t:'HD',n:'Home Depot'},
-      {t:'BAC',n:'Bank of America'},{t:'DIS',n:'Walt Disney'},{t:'NFLX',n:'Netflix'},{t:'ADBE',n:'Adobe'},{t:'CRM',n:'Salesforce'},
-      {t:'AMD',n:'AMD'},{t:'INTC',n:'Intel'},{t:'PYPL',n:'PayPal'},{t:'BA',n:'Boeing'},{t:'NKE',n:'Nike'},
-      {t:'KO',n:'Coca-Cola'},{t:'PEP',n:'PepsiCo'},{t:'MCD',n:'McDonald\'s'},{t:'COST',n:'Costco'},{t:'ABNB',n:'Airbnb'},
-      {t:'UBER',n:'Uber'},{t:'SQ',n:'Block (Square)'},{t:'COIN',n:'Coinbase'},{t:'SNAP',n:'Snap'},{t:'PLTR',n:'Palantir'},
-      {t:'RIVN',n:'Rivian'},{t:'XOM',n:'ExxonMobil'},{t:'CVX',n:'Chevron'},{t:'GS',n:'Goldman Sachs'},{t:'MS',n:'Morgan Stanley'},
-      {t:'T',n:'AT&T'},{t:'VZ',n:'Verizon'},{t:'PFE',n:'Pfizer'},{t:'MRNA',n:'Moderna'},{t:'LLY',n:'Eli Lilly'},
-      {t:'AVGO',n:'Broadcom'},{t:'ORCL',n:'Oracle'},{t:'IBM',n:'IBM'},{t:'QCOM',n:'Qualcomm'},{t:'ARM',n:'ARM Holdings'}
+      {t:'AAPL',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Apple'},{t:'MSFT',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Microsoft'},{t:'AMZN',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Amazon'},{t:'GOOGL',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Alphabet (Google)'},{t:'META',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Meta (Facebook)'},
+      {t:'TSLA',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Tesla'},{t:'NVDA',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Nvidia'},{t:'JPM',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'JPMorgan Chase'},{t:'V',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Visa'},{t:'MA',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Mastercard'},
+      {t:'JNJ',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Johnson & Johnson'},{t:'WMT',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Walmart'},{t:'PG',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Procter & Gamble'},{t:'UNH',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'UnitedHealth'},{t:'HD',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Home Depot'},
+      {t:'BAC',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Bank of America'},{t:'DIS',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Walt Disney'},{t:'NFLX',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Netflix'},{t:'ADBE',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Adobe'},{t:'CRM',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Salesforce'},
+      {t:'AMD',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'AMD'},{t:'INTC',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Intel'},{t:'PYPL',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'PayPal'},{t:'BA',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Boeing'},{t:'NKE',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Nike'},
+      {t:'KO',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Coca-Cola'},{t:'PEP',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'PepsiCo'},{t:'MCD',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'McDonald\'s'},{t:'COST',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Costco'},{t:'ABNB',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Airbnb'},
+      {t:'UBER',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Uber'},{t:'SQ',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Block (Square)'},{t:'COIN',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Coinbase'},{t:'SNAP',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Snap'},{t:'PLTR',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Palantir'},
+      {t:'RIVN',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Rivian'},{t:'XOM',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'ExxonMobil'},{t:'CVX',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Chevron'},{t:'GS',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Goldman Sachs'},{t:'MS',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Morgan Stanley'},
+      {t:'T',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'AT&T'},{t:'VZ',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Verizon'},{t:'PFE',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Pfizer'},{t:'MRNA',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Moderna'},{t:'LLY',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Eli Lilly'},
+      {t:'AVGO',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Broadcom'},{t:'ORCL',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Oracle'},{t:'IBM',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'IBM'},{t:'QCOM',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'Qualcomm'},{t:'ARM',tick:0.01,tickVal:null,unit:'USD',currency:'USD',n:'ARM Holdings'}
     ],
     crypto: [
-      {t:'BTCUSD',n:'Bitcoin'},{t:'ETHUSD',n:'Ethereum'},{t:'SOLUSD',n:'Solana'},{t:'XRPUSD',n:'Ripple'},{t:'ADAUSD',n:'Cardano'},{t:'BNBUSD',n:'Binance Coin'}
+      {t:'BTCUSD',tick:1,tickVal:null,unit:'pts',currency:'USD',n:'Bitcoin'},{t:'ETHUSD',tick:0.1,tickVal:null,unit:'pts',currency:'USD',n:'Ethereum'},{t:'SOLUSD',tick:0.01,tickVal:null,unit:'pts',currency:'USD',n:'Solana'},{t:'XRPUSD',tick:0.0001,tickVal:null,unit:'pts',currency:'USD',n:'Ripple'},{t:'ADAUSD',tick:0.0001,tickVal:null,unit:'pts',currency:'USD',n:'Cardano'},{t:'BNBUSD',tick:0.01,tickVal:null,unit:'pts',currency:'USD',n:'Binance Coin'}
     ]
   }
 };
@@ -1109,6 +1123,61 @@ function icon(name,color='currentColor') {
   if(color!=='currentColor'&&wrap.firstChild) wrap.firstChild.style.color=color;
   return wrap.firstChild;
 }
+// ─── TICK HELPERS ─────────────────────────────────────────────
+function getAssetTick(ticker) {
+  const a = findAsset(ticker);
+  if (!a) return { tick:1, unit:'pts', currency:'R$', tickVal:null };
+  return { tick: a.tick||1, unit: a.unit||'pts', currency: a.currency||'R$', tickVal: a.tickVal||null };
+}
+
+// Snap value to nearest valid tick multiple
+function snapToTick(val, tick) {
+  const decimals = tick.toString().includes('.') ? tick.toString().split('.')[1].length : 0;
+  return +(Math.round(val / tick) * tick).toFixed(decimals);
+}
+
+// Stepper that quantizes to asset tick size
+function stepperPoints(val, min, max, assetTicker, onChange) {
+  const { tick, unit, currency, tickVal } = getAssetTick(assetTicker);
+  const decimals = tick.toString().includes('.') ? tick.toString().split('.')[1].length : 0;
+  val = snapToTick(Math.max(min, val), tick);
+
+  const inp = h('input', {type:'text', inputmode:'decimal', class:'step-val'});
+  inp.value = val.toFixed(decimals);
+
+  function readVal() { const n = parseFloat(inp.value.replace(/[^\d.\-]/g,'')); return isNaN(n) ? val : n; }
+  function clamp(n) { return Math.max(min, Math.min(max, snapToTick(n, tick))); }
+  function commit() { const nv = clamp(readVal()); val = nv; inp.value = nv.toFixed(decimals); onChange(nv); updateTickHint(); }
+  inp.addEventListener('change', commit);
+  inp.addEventListener('blur', commit);
+  inp.addEventListener('keydown', e => { if(e.key==='Enter'){e.preventDefault();inp.blur();} });
+
+  const dec = h('button',{class:'step-btn',type:'button'}); dec.textContent='−';
+  dec.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); const nv=clamp(readVal()-tick); val=nv; inp.value=nv.toFixed(decimals); onChange(nv); updateTickHint(); });
+  const inc = h('button',{class:'step-btn',type:'button'}); inc.textContent='+';
+  inc.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); const nv=clamp(readVal()+tick); val=nv; inp.value=nv.toFixed(decimals); onChange(nv); updateTickHint(); });
+
+  const unitEl = div('step-unit'); unitEl.textContent = unit;
+  const wrap = div('stepper', dec, inp, inc, unitEl);
+
+  // Tick hint — valor financeiro estimado (só pra futuros B3 com tickVal conhecido)
+  const hint = div(''); hint.style.cssText = 'font-size:10px;color:var(--txm);margin-top:4px;font-family:JetBrains Mono';
+  function updateTickHint() {
+    const v = parseFloat(inp.value) || 0;
+    if (tickVal !== null && v > 0) {
+      const ticks = v / tick;
+      const financ = (ticks * tickVal).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+      hint.textContent = `≈ ${currency} ${financ} por contrato`;
+    } else {
+      hint.textContent = `Tick: ${tick} ${unit}`;
+    }
+  }
+  updateTickHint();
+
+  const container = div(''); container.append(wrap, hint);
+  return container;
+}
+
 function stepper(val,min=0,max=9999,unit='',onChange) {
   const inp=h('input',{type:'text',inputmode:'numeric',class:'step-val',value:String(val)});
   function readVal(){const n=parseInt(inp.value.replace(/[^\d\-]/g,''),10);return isNaN(n)?val:n;}
@@ -2736,6 +2805,11 @@ function renderStep1() {
         item.append(tk,nm);
         item.addEventListener('click',()=>{
           cfg.asset=a.t;
+          // Snap existing point values to new asset's tick
+          const {tick} = getAssetTick(a.t);
+          cfg.stopPts   = snapToTick(Math.max(tick, cfg.stopPts),   tick);
+          cfg.stopOffset= snapToTick(cfg.stopOffset,  tick);
+          cfg.tpPts     = snapToTick(Math.max(tick, cfg.tpPts),     tick);
           dropdown.classList.remove('open');
           searchInput.value='';
           renderApp();
@@ -3038,9 +3112,9 @@ function renderStep4() {
     if(cfg.stopType===s.id){
       const sub=div('');sub.style.cssText='padding-left:29px;margin-top:11px;display:flex;gap:12px;flex-wrap:wrap';
       sub.addEventListener('click',e=>e.stopPropagation());
-      if(s.id==='fixed') sub.appendChild(stepper(cfg.stopPts,1,5000,'pts',v=>{cfg.stopPts=v;updateSentence();}));
-      if(s.id==='hl_candle') sub.appendChild(stepper(cfg.stopOffset,0,1000,'pts offset',v=>{cfg.stopOffset=v;updateSentence();}));
-      if(s.id==='n_candles'){sub.appendChild(stepper(cfg.stopCandles,1,50,'candles',v=>{cfg.stopCandles=v;updateSentence();}));sub.appendChild(stepper(cfg.stopOffset,0,1000,'pts offset',v=>{cfg.stopOffset=v;updateSentence();}));}
+      if(s.id==='fixed') sub.appendChild(stepperPoints(cfg.stopPts,1,5000,cfg.asset,v=>{cfg.stopPts=v;updateSentence();}));
+      if(s.id==='hl_candle') sub.appendChild(stepperPoints(cfg.stopOffset,0,1000,cfg.asset,v=>{cfg.stopOffset=v;updateSentence();}));
+      if(s.id==='n_candles'){sub.appendChild(stepper(cfg.stopCandles,1,50,'candles',v=>{cfg.stopCandles=v;updateSentence();}));sub.appendChild(stepperPoints(cfg.stopOffset,0,1000,cfg.asset,v=>{cfg.stopOffset=v;updateSentence();}));}
       if(s.id==='atr'){
         const atrRow=div('');atrRow.style.cssText='display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end';
         const perG=div('');const perL=div('');perL.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px';perL.textContent='Período ATR';
@@ -3080,7 +3154,7 @@ function renderStep4() {
     if(cfg.tpType===t.id){
       const sub=div('');sub.style.cssText='padding-left:29px;margin-top:11px';
       sub.addEventListener('click',e=>e.stopPropagation());
-      if(t.id==='fixed') sub.appendChild(stepper(cfg.tpPts,1,10000,'pts',v=>{cfg.tpPts=v;updateSentence();}));
+      if(t.id==='fixed') sub.appendChild(stepperPoints(cfg.tpPts,1,10000,cfg.asset,v=>{cfg.tpPts=v;updateSentence();}));
       if(t.id==='rr'){
         const rrow=div('');rrow.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:6px';
         const rl=div('');rl.style.cssText='font-size:13px;color:var(--txs)';rl.textContent='×  risco';
