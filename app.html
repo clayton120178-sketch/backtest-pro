@@ -1601,19 +1601,83 @@ function buildPreview(step,cfg) {
 
   // ── Steps 3+: stop/target ──
   if(step>=3){
-    const si=15;const entryY=candles[si].o;
-    const stopDist=cfg.stopType==='fixed'?cfg.stopPts/20:15;
-    const stopY=Math.min(entryY+stopDist,chartH-3);
-    ln(candles[si].x,stopY,W-4,stopY,'#EF4444',0.8,'3,2');
-    badge(W-22,stopY-3,'STOP','#EF4444',6);
-    let targetY=entryY;
-    if(cfg.tpType==='fixed') targetY=Math.max(entryY-cfg.tpPts/20,6);
-    else if(cfg.tpType==='rr') targetY=Math.max(entryY-stopDist*cfg.tpRR,6);
-    else targetY=entryY-20;
-    ln(candles[si].x,targetY,W-4,targetY,'#10B981',0.8,'3,2');
+    const si=15;
+    const entryY=candles[si].o;
+
+    // Scale: convert real pts to preview pixels proportionally
+    // Preview chart spans ~34 "price units" over (chartH-10) pixels
+    // We need to know how many real pts that represents for the selected asset
+    const assetTick=getAssetTick(cfg.asset);
+    // Approximate pts-per-preview-unit by asset category
+    const previewRangePts=(()=>{
+      const t=cfg.asset;
+      if(t==='WIN$N'||t==='IND$N'||t==='ISP$N') return 1700;  // WIN: ~1700 pts/pregão
+      if(t==='WDO$N'||t==='DOL$N') return 170;                 // WDO: ~170 pts
+      if(t==='DI1$N') return 0.5;
+      if(['EURUSD','GBPUSD','AUDUSD','NZDUSD','USDCAD','USDCHF','USDBRL','EURCAD','AUDCAD','GBPAUD','EURGBP','EURCHF','EURAUD'].includes(t)) return 0.02;
+      if(['USDJPY','EURJPY','GBPJPY','AUDJPY','CADJPY','NZDJPY'].includes(t)) return 3;
+      if(t==='XAUUSD') return 50;
+      if(t==='XAGUSD') return 2;
+      if(['WTICOUSD','BRENTCMDUSD'].includes(t)) return 5;
+      if(t==='US500') return 100;
+      if(t==='NAS100') return 400;
+      if(t==='US30') return 800;
+      if(t==='DE40'||t==='GER40') return 300;
+      if(t==='UK100') return 150;
+      if(t==='FR40') return 150;
+      if(t==='JP225') return 500;
+      if(t==='AU200') return 80;
+      if(t==='HK50') return 400;
+      // Ações BR / US / ETFs
+      return 10;
+    })();
+
+    // px per real pt
+    const pxPerPt=(chartH-10)/previewRangePts;
+
+    // Stop distance in pixels
+    const stopDistPts=(()=>{
+      if(cfg.stopType==='fixed') return cfg.stopPts;
+      if(cfg.stopType==='hl_candle') return previewRangePts*0.08+cfg.stopOffset;
+      if(cfg.stopType==='n_candles') return previewRangePts*0.12+cfg.stopOffset;
+      if(cfg.stopType==='atr') return previewRangePts*0.10*cfg.stopAtrMult;
+      return previewRangePts*0.10;
+    })();
+    const stopDistPx=Math.min(stopDistPts*pxPerPt, chartH-entryY-4);
+    const stopY=Math.min(entryY+Math.max(stopDistPx,6), chartH-4);
+
+    // Target distance in pixels
+    const targetDistPts=(()=>{
+      if(cfg.tpType==='fixed') return cfg.tpPts;
+      if(cfg.tpType==='rr') return stopDistPts*cfg.tpRR;
+      if(cfg.tpType==='atr') return previewRangePts*0.10*cfg.tpAtrMult;
+      if(cfg.tpType==='fib_ext') return stopDistPts*(parseFloat(cfg.tpFibLevel)/100);
+      return stopDistPts*2; // fallback for 'none'
+    })();
+    const targetDistPx=Math.min(targetDistPts*pxPerPt, entryY-6);
+    const targetY=Math.max(entryY-Math.max(targetDistPx,8), 6);
+
+    // Draw lines spanning from signal candle to right edge
+    const x0=candles[si].x;
+    ln(x0,stopY,  W-4,stopY,  '#EF4444',0.9,'3,2');
+    ln(x0,targetY,W-4,targetY,'#10B981', 0.9,'3,2');
+    ln(x0,entryY, W-4,entryY, '#00D4AA', 0.7,'3,2');
+
+    // Shaded risk/reward zone
+    if(targetY<entryY) rc(x0,targetY,W-4-x0,entryY-targetY,'#10B981',0.04,0);
+    rc(x0,entryY,W-4-x0,stopY-entryY,'#EF4444',0.04,0);
+
+    // Labels
+    badge(W-22,stopY-3,  'STOP','#EF4444',6);
     badge(W-22,targetY-3,'ALVO','#10B981',6);
-    ln(candles[si].x,entryY,W-4,entryY,'#00D4AA',0.6,'3,2');
-    badge(W-22,entryY-3,'ENTR','#00D4AA',6);
+    badge(W-22,entryY-3, 'ENTR','#00D4AA',6);
+
+    // RR ratio label
+    if(cfg.tpType!=='none'){
+      const rr=(targetDistPts/stopDistPts).toFixed(1);
+      const rrY=(entryY+targetY)/2;
+      badge(x0+2,rrY,'R:'+rr,'#00D4AA',6);
+    }
   }
 
   // ── Step 4: trailing ──
@@ -3112,18 +3176,18 @@ function renderStep4() {
     if(cfg.stopType===s.id){
       const sub=div('');sub.style.cssText='padding-left:29px;margin-top:11px;display:flex;gap:12px;flex-wrap:wrap';
       sub.addEventListener('click',e=>e.stopPropagation());
-      if(s.id==='fixed') sub.appendChild(stepperPoints(cfg.stopPts,1,5000,cfg.asset,v=>{cfg.stopPts=v;updateSentence();}));
-      if(s.id==='hl_candle') sub.appendChild(stepperPoints(cfg.stopOffset,0,1000,cfg.asset,v=>{cfg.stopOffset=v;updateSentence();}));
-      if(s.id==='n_candles'){sub.appendChild(stepper(cfg.stopCandles,1,50,'candles',v=>{cfg.stopCandles=v;updateSentence();}));sub.appendChild(stepperPoints(cfg.stopOffset,0,1000,cfg.asset,v=>{cfg.stopOffset=v;updateSentence();}));}
+      if(s.id==='fixed') sub.appendChild(stepperPoints(cfg.stopPts,1,5000,cfg.asset,v=>{cfg.stopPts=v;updatePreview();}));
+      if(s.id==='hl_candle') sub.appendChild(stepperPoints(cfg.stopOffset,0,1000,cfg.asset,v=>{cfg.stopOffset=v;updatePreview();}));
+      if(s.id==='n_candles'){sub.appendChild(stepper(cfg.stopCandles,1,50,'candles',v=>{cfg.stopCandles=v;updatePreview();}));sub.appendChild(stepperPoints(cfg.stopOffset,0,1000,cfg.asset,v=>{cfg.stopOffset=v;updatePreview();}));}
       if(s.id==='atr'){
         const atrRow=div('');atrRow.style.cssText='display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end';
         const perG=div('');const perL=div('');perL.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px';perL.textContent='Período ATR';
-        perG.append(perL,stepper(cfg.stopAtrPer,1,100,'',v=>{cfg.stopAtrPer=v;updateSentence();}));
+        perG.append(perL,stepper(cfg.stopAtrPer,1,100,'',v=>{cfg.stopAtrPer=v;updatePreview();}));
         const multG=div('');const multL=div('');multL.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px';multL.textContent='Multiplicador';
         const atrHint=div('');atrHint.style.cssText='font-size:11px;color:var(--txm);margin-top:6px';
         function updateStopAtrHint(){atrHint.textContent=`Stop = ${cfg.stopAtrMult.toFixed(1)} × ATR(${cfg.stopAtrPer}) do preço de entrada`;}
         updateStopAtrHint();
-        multG.append(multL,stepperDecimal(cfg.stopAtrMult,0.1,10,0.1,'× ATR',v=>{cfg.stopAtrMult=v;updateSentence();updateStopAtrHint();}));
+        multG.append(multL,stepperDecimal(cfg.stopAtrMult,0.1,10,0.1,'× ATR',v=>{cfg.stopAtrMult=v;updatePreview();updateStopAtrHint();}));
         atrRow.append(perG,multG);sub.appendChild(atrRow);
         sub.appendChild(atrHint);
       }
@@ -3154,25 +3218,25 @@ function renderStep4() {
     if(cfg.tpType===t.id){
       const sub=div('');sub.style.cssText='padding-left:29px;margin-top:11px';
       sub.addEventListener('click',e=>e.stopPropagation());
-      if(t.id==='fixed') sub.appendChild(stepperPoints(cfg.tpPts,1,10000,cfg.asset,v=>{cfg.tpPts=v;updateSentence();}));
+      if(t.id==='fixed') sub.appendChild(stepperPoints(cfg.tpPts,1,10000,cfg.asset,v=>{cfg.tpPts=v;updatePreview();}));
       if(t.id==='rr'){
         const rrow=div('');rrow.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:6px';
         const rl=div('');rl.style.cssText='font-size:13px;color:var(--txs)';rl.textContent='×  risco';
         const rrHint=div('');rrHint.style.cssText='font-size:11px;color:var(--txm);font-family:JetBrains Mono';
         function updateRRHint(){rrHint.textContent=`Stop ${cfg.stopPts} pts → alvo = ${(cfg.tpRR*cfg.stopPts).toLocaleString('pt-BR')} pts`;}
-        rrow.append(stepperDecimal(cfg.tpRR,0.1,20,0.1,'',v=>{cfg.tpRR=v;updateSentence();if(cfg.stopType==='fixed')updateRRHint();}),rl);
+        rrow.append(stepperDecimal(cfg.tpRR,0.1,20,0.1,'',v=>{cfg.tpRR=v;updatePreview();if(cfg.stopType==='fixed')updateRRHint();}),rl);
         sub.appendChild(rrow);
         if(cfg.stopType==='fixed'){updateRRHint();sub.appendChild(rrHint);}
       }
       if(t.id==='atr'){
         const atrRow=div('');atrRow.style.cssText='display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end';
         const perG=div('');const perL=div('');perL.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px';perL.textContent='Período ATR';
-        perG.append(perL,stepper(cfg.tpAtrPer,1,100,'',v=>{cfg.tpAtrPer=v;updateSentence();}));
+        perG.append(perL,stepper(cfg.tpAtrPer,1,100,'',v=>{cfg.tpAtrPer=v;updatePreview();}));
         const multG=div('');const multL=div('');multL.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px';multL.textContent='Multiplicador';
         const tpAtrHint=div('');tpAtrHint.style.cssText='font-size:11px;color:var(--txm);margin-top:6px';
         function updateTpAtrHint(){tpAtrHint.textContent=`Alvo = ${cfg.tpAtrMult.toFixed(1)} × ATR(${cfg.tpAtrPer}) do preço de entrada`;}
         updateTpAtrHint();
-        multG.append(multL,stepperDecimal(cfg.tpAtrMult,0.1,20,0.1,'× ATR',v=>{cfg.tpAtrMult=v;updateSentence();updateTpAtrHint();}));
+        multG.append(multL,stepperDecimal(cfg.tpAtrMult,0.1,20,0.1,'× ATR',v=>{cfg.tpAtrMult=v;updatePreview();updateTpAtrHint();}));
         atrRow.append(perG,multG);sub.appendChild(atrRow);
         sub.appendChild(tpAtrHint);
       }
@@ -3567,6 +3631,16 @@ function updateSentence() {
   if(el) el.innerHTML = buildStrategySentence(state.cfg);
 }
 
+// Atualiza só o preview SVG sem re-renderizar o DOM inteiro
+function updatePreview() {
+  const container = document.getElementById('preview-svg-container');
+  if(container) {
+    container.innerHTML = '';
+    container.appendChild(buildPreview(state.step, state.cfg));
+  }
+  updateSentence();
+}
+
 // ─── PROGRESS BAR ─────────────────────────────────────────────
 function renderProgressBar() {
   const pb=document.getElementById('prog-bar');
@@ -3644,7 +3718,9 @@ function renderApp() {
   const pLabel=div('chart-label');
   pLabel.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Preview da estratégia`;
   previewCard.appendChild(pLabel);
-  previewCard.appendChild(buildPreview(state.step,state.cfg));
+  const previewContainer=div('');previewContainer.id='preview-svg-container';
+  previewContainer.appendChild(buildPreview(state.step,state.cfg));
+  previewCard.appendChild(previewContainer);
 
   // Strategy sentence — linguagem natural em tempo real
   const sentWrap=div('');sentWrap.style.cssText='margin-top:14px;border-top:1px solid var(--bd);padding-top:13px';
