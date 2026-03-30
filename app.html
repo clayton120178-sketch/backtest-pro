@@ -1810,7 +1810,7 @@ function miniCandleIcon(patternName) {
   return svg;
 }
 
-function buildCondPreview(indId, condText) {
+function buildCondPreview(indId, condText, params={}) {
   const W=280,H=120;
   const TH=svgTheme();
   const svg=hsvg('svg',{width:'100%',viewBox:`0 0 ${W} ${H}`});
@@ -1839,9 +1839,15 @@ function buildCondPreview(indId, condText) {
   // ═══ OSCILLATORS ═══
   if(['rsi','stoch','cci','williams','adx','atr'].includes(indId)){
     const labels={rsi:'RSI',stoch:'STOCH',cci:'CCI',williams:'W%R',adx:'ADX',atr:'ATR'};
-    const threshY=up?35:85;
+    // Position threshold proportionally to val
+    const val=params.val!=null?params.val:(up?70:30);
+    const isWide=['cci','williams'].includes(indId);
+    const range=isWide?400:100;
+    const min=isWide?-200:0;
+    const frac=1-((val-min)/range);
+    const threshY=Math.max(15,Math.min(H-15, 15+frac*(H-30)));
     ln(12,threshY,W-12,threshY,'#F59E0B',0.6,'3,3');
-    tx(W-8,threshY-3,up?'70':'30','#F59E0B',6,'end');
+    tx(W-8,threshY-3,String(val),'#F59E0B',6,'end');
     const oscY=[];for(let i=0;i<n;i++){oscY.push(up?82-Math.sin((i/n)*Math.PI)*56:30+Math.sin((i/n)*Math.PI)*56);}
     pl(oscY.map((y,i)=>`${CDS[i].x+cw/2},${y}`).join(' '),'#6366F1',1.2);
     const si=Math.floor(n*0.6);
@@ -1880,7 +1886,9 @@ function buildCondPreview(indId, condText) {
   // ═══ BOLLINGER BANDS ═══
   if(indId==='bb'){
     drawCds(CDS,0.4);
-    const mid=CDS.map(c=>(c.o+c.c)/2),bw=12;
+    const dev=params.dev||2;
+    const bw=5+dev*3.5; // dev 1→8.5, dev 2→12, dev 3→15.5
+    const mid=CDS.map(c=>(c.o+c.c)/2);
     let bp=`M${CDS[0].x+cw/2},${mid[0]-bw}`;for(let i=1;i<n;i++)bp+=` L${CDS[i].x+cw/2},${mid[i]-bw}`;for(let i=n-1;i>=0;i--)bp+=` L${CDS[i].x+cw/2},${mid[i]+bw}`;bp+=' Z';
     pa(bp,'#6366F1',0.06);
     pl(CDS.map((c,i)=>`${c.x+cw/2},${mid[i]-bw}`).join(' '),'#6366F1',0.6,'2,2');
@@ -1888,7 +1896,7 @@ function buildCondPreview(indId, condText) {
     pl(CDS.map((c,i)=>`${c.x+cw/2},${mid[i]}`).join(' '),'#6366F1',0.5);
     const isUpper=ct.includes('sup');const si=8;const bandY=isUpper?mid[si]-bw:mid[si]+bw;
     ci(CDS[si].x+cw/2,bandY,sc,4);
-    tx(10,14,'BOLLINGER','#6366F1',8);
+    tx(10,14,`BOLLINGER (${dev}σ)`,'#6366F1',7);
     return svg;
   }
 
@@ -2673,29 +2681,36 @@ function renderModal() {
       if(ind.id!=='candle'){
         const previewWrap=div('cond-preview');
         previewWrap.id='cond-preview-wrap';
-        previewWrap.appendChild(buildCondPreview(ind.id, ms.params.cond||conds[0]||''));
+        previewWrap.appendChild(buildCondPreview(ind.id, ms.params.cond||conds[0]||'', ms.params));
         frag.appendChild(previewWrap);
+      }
+
+      // Helper: rebuild the modal preview when any param changes
+      function refreshCondPreview(){
+        const pw=document.getElementById('cond-preview-wrap');
+        if(pw){pw.innerHTML='';pw.appendChild(buildCondPreview(ind.id,ms.params.cond||'',ms.params));}
+        if(window.refreshModalValidation)refreshModalValidation();
       }
 
       if(ind.hasPer!==false && ms.params.per!==undefined) {
         const isCross=isMA&&isMACrossover(ms.params.cond);
         const row=div('');
         row.appendChild(slabel(isCross?'Período da média curta':'Período'));
-        row.appendChild(stepper(ms.params.per,1,500,'',v=>{ms.params.per=v;if(window.refreshModalValidation)refreshModalValidation();}));
+        row.appendChild(stepper(ms.params.per,1,500,'',v=>{ms.params.per=v;refreshCondPreview();}));
         frag.appendChild(row);
 
         // Second period (MA crossover only)
         if(isMA && ms.maMode==='crossover'){
           const row2=div('');
           row2.appendChild(slabel('Período da média longa'));
-          row2.appendChild(stepper(ms.params.per2||200,1,500,'',v=>{ms.params.per2=v;}));
+          row2.appendChild(stepper(ms.params.per2||200,1,500,'',v=>{ms.params.per2=v;refreshCondPreview();}));
           frag.appendChild(row2);
         }
       }
       if(ind.id==='bb' && ms.params.dev!==undefined) {
         const row=div('');
-        row.appendChild(slabel('Desvio padrão','Quantidade de desvios padrão para as bandas superior e inferior. Padrão: 2. Valores maiores = bandas mais largas.'));
-        row.appendChild(stepper(ms.params.dev,1,5,'σ',v=>{ms.params.dev=v;if(window.refreshModalValidation)refreshModalValidation();}));
+        row.appendChild(slabel('Desvio padrão','Quantidade de desvios padrão para as bandas. Padrão: 2. Valores maiores = bandas mais largas.'));
+        row.appendChild(stepperDecimal(ms.params.dev,0.5,5,0.5,'σ',v=>{ms.params.dev=v;refreshCondPreview();}));
         frag.appendChild(row);
       }
       if(conds.length>0){
@@ -2754,7 +2769,7 @@ function renderModal() {
               });
               // Update preview SVG
               const pw=document.getElementById('cond-preview-wrap');
-              if(pw){pw.innerHTML='';pw.appendChild(buildCondPreview(ind.id,c));}
+              if(pw){pw.innerHTML='';pw.appendChild(buildCondPreview(ind.id,c,ms.params));}
             });
             row.appendChild(r);
           });
@@ -2765,7 +2780,7 @@ function renderModal() {
         const row=div('');
         const valLabel = ind.id==='gap' ? 'Tamanho mínimo (pontos)' : 'Valor de referência';
         row.appendChild(slabel(valLabel));
-        row.appendChild(stepper(ms.params.val,-999,99999, ind.id==='gap'?'pts':'', v=>{ms.params.val=v;}));
+        row.appendChild(stepper(ms.params.val,-999,99999, ind.id==='gap'?'pts':'', v=>{ms.params.val=v;refreshCondPreview();}));
         frag.appendChild(row);
       }
       // ATR multiplier field
