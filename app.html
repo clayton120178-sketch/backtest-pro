@@ -3118,7 +3118,7 @@ function renderStep2() {
           const g=div('');g.style.cssText='display:flex;flex-direction:column;gap:3px';
           const lb=div('');lb.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';lb.textContent='Desvio';
           g.appendChild(lb);
-          g.appendChild(stepper(p.dev,1,5,'σ',v=>{p.dev=v;updateCondition(lbl,c);}));
+          g.appendChild(stepperDecimal(p.dev,0.5,5,0.5,'σ',v=>{p.dev=v;updateCondition(lbl,c);}));
           paramsRow.appendChild(g);
         }
         if(p.mult!==undefined){
