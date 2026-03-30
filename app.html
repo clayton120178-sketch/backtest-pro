@@ -3037,6 +3037,7 @@ function renderStep4() {
     info.append(nm,ds);row.appendChild(info);c.appendChild(row);
     if(cfg.stopType===s.id){
       const sub=div('');sub.style.cssText='padding-left:29px;margin-top:11px;display:flex;gap:12px;flex-wrap:wrap';
+      sub.addEventListener('click',e=>e.stopPropagation());
       if(s.id==='fixed') sub.appendChild(stepper(cfg.stopPts,1,5000,'pts',v=>{cfg.stopPts=v;updateSentence();}));
       if(s.id==='hl_candle') sub.appendChild(stepper(cfg.stopOffset,0,1000,'pts offset',v=>{cfg.stopOffset=v;updateSentence();}));
       if(s.id==='n_candles'){sub.appendChild(stepper(cfg.stopCandles,1,50,'candles',v=>{cfg.stopCandles=v;updateSentence();}));sub.appendChild(stepper(cfg.stopOffset,0,1000,'pts offset',v=>{cfg.stopOffset=v;updateSentence();}));}
@@ -3078,6 +3079,7 @@ function renderStep4() {
     row.appendChild(nm);c.appendChild(row);
     if(cfg.tpType===t.id){
       const sub=div('');sub.style.cssText='padding-left:29px;margin-top:11px';
+      sub.addEventListener('click',e=>e.stopPropagation());
       if(t.id==='fixed') sub.appendChild(stepper(cfg.tpPts,1,10000,'pts',v=>{cfg.tpPts=v;updateSentence();}));
       if(t.id==='rr'){
         const rrow=div('');rrow.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:6px';
