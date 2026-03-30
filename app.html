@@ -1493,14 +1493,20 @@ function buildPreview(step,cfg) {
       if(isCross){
         svgEl._maCrossover={cond,col};
       } else {
-        const maY=candles.map((c,i)=>{const base=chartH/2+15;return base+Math.sin((i-5)*0.2)*12;});
+        const per=cond.params?.per||20;
+        // Higher period = flatter line (less oscillation)
+        const amplitude=Math.max(2, 14-per*0.04);
+        const freq=Math.max(0.08, 0.25-per*0.001);
+        const maY=candles.map((c,i)=>{const base=chartH/2+15;return base+Math.sin((i-5)*freq)*amplitude;});
         pl(candles.map((c,i)=>`${c.x+c.w/2},${maY[i]}`).join(' '),col,1);
         badge(candles[0].x,maY[0]-6,cond.id.toUpperCase()+(cond.params?.per?'('+cond.params.per+')':''),col,6);
         if(ct.includes('cruza')){cir(candles[13].x+candles[13].w/2,maY[13],'#00D4AA',3);}
       }
     }
     else if(cond.id==='bb'){
-      const mid=candles.map(c=>(c.o+c.c)/2);const bw=10;
+      const dev=cond.params?.dev||2;
+      const bw=5+dev*3; // dev 1→8px, dev 2→11px, dev 3→14px, dev 4→17px
+      const mid=candles.map(c=>(c.o+c.c)/2);
       let bp=`M${candles[0].x+candles[0].w/2},${mid[0]-bw}`;
       for(let i=1;i<candles.length;i++)bp+=` L${candles[i].x+candles[i].w/2},${mid[i]-bw}`;
       for(let i=candles.length-1;i>=0;i--)bp+=` L${candles[i].x+candles[i].w/2},${mid[i]+bw}`;
@@ -1508,7 +1514,7 @@ function buildPreview(step,cfg) {
       pl(candles.map((c,i)=>`${c.x+c.w/2},${mid[i]-bw}`).join(' '),col,0.6,'2,2');
       pl(candles.map((c,i)=>`${c.x+c.w/2},${mid[i]+bw}`).join(' '),col,0.6,'2,2');
       pl(candles.map((c,i)=>`${c.x+c.w/2},${mid[i]}`).join(' '),col,0.5);
-      badge(candles[0].x,mid[0]-bw-4,'BB'+(cond.params?.per?'('+cond.params.per+')':''),col,6);
+      badge(candles[0].x,mid[0]-bw-4,'BB'+(cond.params?.per?'('+cond.params.per+','+dev+'σ)':''),col,6);
     }
     else if(cond.id==='vwap'){
       const vwY=candles.map((c,i)=>{const base=chartH/2+8;return base+Math.sin((i-3)*0.15)*8;});
@@ -1704,12 +1710,32 @@ function buildPreview(step,cfg) {
       const bw=(W-16)/hist.length;
       hist.forEach((v,i)=>{const x=8+i*bw,hgt=Math.abs(v)*1.2,vy=v<0?mid:mid-hgt;rc(x,vy,bw-1,hgt,v>=0?'#10B981':'#EF4444',0.5,0.5);});
     } else {
-      const threshY=yOff+(up?10:panelH-8);
-      ln(4,threshY,W-4,threshY,'#F59E0B',0.3,'2,2');
-      const wave=[];for(let i=0;i<20;i++){wave.push(up?panelH-4-Math.sin((i/20)*Math.PI)*18:4+Math.sin((i/20)*Math.PI)*18);}
-      const bw=(W-16)/wave.length;
-      pl(wave.map((y,i)=>`${8+i*bw},${yOff+y}`).join(' '),col,0.8);
-      cir(8+13*bw,yOff+wave[13],'#00D4AA',2);
+      // threshold line positioned proportionally to val (e.g. RSI 30 = bottom third, RSI 70 = top third)
+      const val=cond.params?.val!=null?cond.params.val:null;
+      let threshFraction=up?0.25:0.75; // default
+      if(val!=null){
+        // RSI/Stoch/Williams: 0-100 range; CCI: -200 to +200
+        const isWide=['cci','williams'].includes(cond.id);
+        const range=isWide?400:100;
+        const min=isWide?-200:0;
+        threshFraction=1-((val-min)/range); // invert: higher val = higher on panel = lower y
+        threshFraction=Math.max(0.1,Math.min(0.9,threshFraction));
+      }
+      const threshY=yOff+threshFraction*panelH;
+      ln(4,threshY,W-4,threshY,'#F59E0B',0.5,'2,2');
+      if(val!=null){const vt=hsvg('text',{x:W-6,y:threshY-2,fill:'#F59E0B','font-size':'6','font-family':'JetBrains Mono','text-anchor':'end'});vt.textContent=val;svgEl.appendChild(vt);}
+      // wave that crosses the threshold
+      const wave=[];const crossAt=13;
+      for(let i=0;i<20;i++){
+        const progress=i/19;
+        const base=up
+          ? panelH-4-progress*(panelH-8)   // rising wave (crosses from below)
+          : 4+progress*(panelH-8);          // falling wave (crosses from above)
+        wave.push(Math.max(2,Math.min(panelH-2,base)));
+      }
+      const bww=(W-16)/wave.length;
+      pl(wave.map((y,i)=>`${8+i*bww},${yOff+y}`).join(' '),col,0.8);
+      cir(8+crossAt*bww,yOff+wave[crossAt],'#00D4AA',2);
     }
   };
 
