@@ -3167,7 +3167,6 @@ function renderStep3() {
   const ENTRY=[
     {id:'breakout',label:'Rompimento da máx/mín do candle de sinal',desc:'Entrada quando o preço romper a máxima (compra) ou mínima (venda) do candle de sinal.'},
     {id:'next_open',label:'Abertura do próximo candle',desc:'A entrada ocorre na abertura do candle imediatamente após as condições serem satisfeitas.'},
-    {id:'sig_close',label:'Fechamento do candle de sinal',desc:'A entrada ocorre no fechamento do mesmo candle que satisfez as condições.'},
   ];
   const eList=div('');eList.style.cssText='display:flex;flex-direction:column;gap:8px';
   ENTRY.forEach(e=>{
@@ -3368,7 +3367,7 @@ function renderStep5() {
 function renderConfirm() {
   const cfg=state.cfg;
   const asset=findAsset(cfg.asset);
-  const entryMap={breakout:'Rompimento da máx/mín do candle de sinal',next_open:'Abertura do próximo candle',sig_close:'Fechamento do candle de sinal'};
+  const entryMap={breakout:'Rompimento da máx/mín do candle de sinal',next_open:'Abertura do próximo candle'};
   const stopDesc={fixed:`${cfg.stopPts} pts abaixo/acima da entrada`,hl_candle:`Máx/Mín do candle de sinal (+${cfg.stopOffset} pts)`,n_candles:`Máx/Mín dos últimos ${cfg.stopCandles} candles (+${cfg.stopOffset} pts)`,atr:`${cfg.stopAtrMult.toFixed(1)}× ATR(${cfg.stopAtrPer})`}[cfg.stopType];
   const tpDesc={fixed:`${cfg.tpPts} pts`,rr:`${cfg.tpRR}× o risco${cfg.stopType==='fixed'?' = '+(cfg.tpRR*cfg.stopPts).toLocaleString('pt-BR')+' pts':''}`,atr:`${cfg.tpAtrMult.toFixed(1)}× ATR(${cfg.tpAtrPer})`,fib_ext:`Extensão Fibonacci ${cfg.tpFibLevel}%`,none:'Sem alvo fixo'}[cfg.tpType];
   const mgmt=[];
@@ -3637,7 +3636,6 @@ function buildStrategySentence(cfg) {
   const entryMap = {
     breakout: 'entrando no rompimento da máx/mín do candle de sinal',
     next_open: 'entrando na abertura do próximo candle',
-    sig_close: 'entrando no fechamento do candle de sinal',
   };
   const stopMap = {
     fixed: `stop fixo de <strong>${cfg.stopPts} pts</strong>`,
