@@ -3049,41 +3049,42 @@ function renderStep2() {
       const hasEditableParams=(p.per!==undefined)||(p.val!==undefined)||(p.mult!==undefined)||(p.per2!==undefined);
       if(hasEditableParams){
         const paramsRow=div('');paramsRow.style.cssText='display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--bd);align-items:center';
+        paramsRow.addEventListener('click',e=>e.stopPropagation());
 
         if(p.per!==undefined){
           const g=div('');g.style.cssText='display:flex;flex-direction:column;gap:3px';
           const lb=div('');lb.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';
           lb.textContent=p.per2!==undefined?'Período curta':'Período';
           g.appendChild(lb);
-          g.appendChild(stepper(p.per,1,500,'',v=>{p.per=v;renderApp();}));
+          g.appendChild(stepper(p.per,1,500,'',v=>{p.per=v;updateCondition(lbl,c);}));
           paramsRow.appendChild(g);
         }
         if(p.per2!==undefined){
           const g=div('');g.style.cssText='display:flex;flex-direction:column;gap:3px';
           const lb=div('');lb.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';lb.textContent='Período longa';
           g.appendChild(lb);
-          g.appendChild(stepper(p.per2,1,500,'',v=>{p.per2=v;renderApp();}));
+          g.appendChild(stepper(p.per2,1,500,'',v=>{p.per2=v;updateCondition(lbl,c);}));
           paramsRow.appendChild(g);
         }
         if(p.val!==undefined){
           const g=div('');g.style.cssText='display:flex;flex-direction:column;gap:3px';
           const lb=div('');lb.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';lb.textContent='Valor';
           g.appendChild(lb);
-          g.appendChild(stepper(p.val,-999,99999,'',v=>{p.val=v;renderApp();}));
+          g.appendChild(stepper(p.val,-999,99999,'',v=>{p.val=v;updateCondition(lbl,c);}));
           paramsRow.appendChild(g);
         }
         if(p.dev!==undefined){
           const g=div('');g.style.cssText='display:flex;flex-direction:column;gap:3px';
           const lb=div('');lb.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';lb.textContent='Desvio';
           g.appendChild(lb);
-          g.appendChild(stepper(p.dev,1,5,'σ',v=>{p.dev=v;renderApp();}));
+          g.appendChild(stepper(p.dev,1,5,'σ',v=>{p.dev=v;updateCondition(lbl,c);}));
           paramsRow.appendChild(g);
         }
         if(p.mult!==undefined){
           const g=div('');g.style.cssText='display:flex;flex-direction:column;gap:3px';
           const lb=div('');lb.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';lb.textContent='Multiplicador';
           g.appendChild(lb);
-          g.appendChild(stepperDecimal(p.mult,0.1,10,0.1,'×',v=>{p.mult=v;renderApp();}));
+          g.appendChild(stepperDecimal(p.mult,0.1,10,0.1,'×',v=>{p.mult=v;updateCondition(lbl,c);}));
           paramsRow.appendChild(g);
         }
         card.appendChild(paramsRow);
@@ -3639,6 +3640,12 @@ function updatePreview() {
     container.appendChild(buildPreview(state.step, state.cfg));
   }
   updateSentence();
+}
+
+// Atualiza label de condição + preview + frase sem re-renderizar o DOM
+function updateCondition(lblEl, c) {
+  if(lblEl) lblEl.textContent = condLabel(c);
+  updatePreview();
 }
 
 // ─── PROGRESS BAR ─────────────────────────────────────────────
