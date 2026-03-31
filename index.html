@@ -349,6 +349,10 @@ footer a{color:var(--txs)}
           <label class="hf-label">E-mail</label>
           <input class="hf-input" id="hf-email" type="email" placeholder="seu@email.com" autocomplete="email">
         </div>
+        <div class="hf-field signup-only">
+          <label class="hf-label">WhatsApp</label>
+          <input class="hf-input" id="hf-whatsapp" type="tel" placeholder="(11) 99999-9999" autocomplete="tel">
+        </div>
         <div class="hf-field">
           <label class="hf-label">Senha</label>
           <input class="hf-input" id="hf-pass" type="password" placeholder="••••••••" autocomplete="current-password">
@@ -1077,26 +1081,93 @@ const heroFormCard=document.getElementById('heroFormCard');
 document.getElementById('hfSwitchLogin').addEventListener('click',()=>{heroFormCard.classList.add('mode-login');hfClearError();});
 document.getElementById('hfSwitchSignup').addEventListener('click',()=>{heroFormCard.classList.remove('mode-login');hfClearError();});
 
-// ── Supabase auth ──
+// ── Supabase ──
 const SUPA_URL='https://lmrpxtshdiwufbfkaymg.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtcnB4dHNoZGl3dWZiZmtheW1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4OTM1MjQsImV4cCI6MjA4OTQ2OTUyNH0.c8giT7wbSAcHecrHR9IMB1x39Uy_TTA5p2-Q_QyQvXs';
 const db=window.supabase.createClient(SUPA_URL,SUPA_KEY);
 
-// Redirect to app after successful auth (Google OAuth callback)
-db.auth.onAuthStateChange((event,session)=>{
+// ── WhatsApp mask ──
+document.addEventListener('DOMContentLoaded',()=>{
+  const waInput=document.getElementById('hf-whatsapp');
+  if(waInput) waInput.addEventListener('input',function(){
+    let v=this.value.replace(/\D/g,'').slice(0,11);
+    if(v.length>6) v=`(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`;
+    else if(v.length>2) v=`(${v.slice(0,2)}) ${v.slice(2)}`;
+    else if(v.length>0) v=`(${v}`;
+    this.value=v;
+  });
+});
+
+// ── Modal WhatsApp pós-Google OAuth ──
+function showWhatsappModal(userId,accessToken){
+  if(document.getElementById('wa-overlay')) return;
+  const overlay=document.createElement('div');
+  overlay.id='wa-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(10px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  overlay.innerHTML=`
+    <div style="background:#12121A;border:1px solid #2A2A3C;border-radius:16px;width:100%;max-width:400px;padding:32px 28px;position:relative;box-shadow:0 32px 80px rgba(0,0,0,.7)">
+      <div style="position:absolute;top:0;left:20px;right:20px;height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,170,.45),transparent)"></div>
+      <div style="font-size:11px;font-weight:700;color:#00D4AA;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Quase lá</div>
+      <div style="font-size:19px;font-weight:800;color:#E8E8ED;margin-bottom:6px;line-height:1.25">Informe seu WhatsApp</div>
+      <div style="font-size:13px;color:#8888A0;margin-bottom:24px;line-height:1.5">Para enviar atualizações e os resultados dos seus backtests.</div>
+      <div id="wa-error" style="display:none;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:9px 12px;font-size:12px;color:#EF4444;margin-bottom:14px"></div>
+      <label style="display:block;font-size:10px;font-weight:700;color:#8888A0;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">WhatsApp</label>
+      <input id="wa-input" type="tel" placeholder="(11) 99999-9999" autocomplete="tel"
+        style="width:100%;background:#1A1A28;border:1px solid #2A2A3C;border-radius:9px;padding:12px 13px;font-size:14px;color:#E8E8ED;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:16px;box-sizing:border-box;transition:border-color .15s,box-shadow .15s"
+        onfocus="this.style.borderColor='#00D4AA';this.style.boxShadow='0 0 0 3px rgba(0,212,170,.1)'"
+        onblur="this.style.borderColor='#2A2A3C';this.style.boxShadow='none'">
+      <button id="wa-btn" onclick="saveWhatsapp('${userId}','${accessToken}')"
+        style="width:100%;background:#00D4AA;color:#0A0A0F;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:800;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .18s">
+        Continuar para a plataforma
+      </button>
+    </div>`;
+  document.body.appendChild(overlay);
+  // Máscara no input do modal
+  const inp=document.getElementById('wa-input');
+  inp.addEventListener('input',function(){
+    let v=this.value.replace(/\D/g,'').slice(0,11);
+    if(v.length>6) v=`(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`;
+    else if(v.length>2) v=`(${v.slice(0,2)}) ${v.slice(2)}`;
+    else if(v.length>0) v=`(${v}`;
+    this.value=v;
+  });
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter') saveWhatsapp(userId,accessToken);});
+  setTimeout(()=>inp.focus(),100);
+}
+
+async function saveWhatsapp(userId,accessToken){
+  const raw=document.getElementById('wa-input')?.value?.trim();
+  const errEl=document.getElementById('wa-error');
+  const btn=document.getElementById('wa-btn');
+  const digits=(raw||'').replace(/\D/g,'');
+  if(digits.length<10){errEl.textContent='Informe um número de WhatsApp válido.';errEl.style.display='block';return;}
+  btn.disabled=true;btn.textContent='Salvando...';
+  await fetch(`${SUPA_URL}/rest/v1/users?id=eq.${userId}`,{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':`Bearer ${accessToken}`},
+    body:JSON.stringify({whatsapp:raw})
+  });
+  document.getElementById('wa-overlay')?.remove();
+  window.location.href='app.html';
+}
+
+// ── onAuthStateChange: verifica WhatsApp antes de redirecionar ──
+db.auth.onAuthStateChange(async(event,session)=>{
   if((event==='SIGNED_IN'||event==='INITIAL_SESSION')&&session?.user){
-    window.location.href='app.html';
+    const res=await fetch(`${SUPA_URL}/rest/v1/users?id=eq.${session.user.id}&select=whatsapp`,{
+      headers:{'apikey':SUPA_KEY,'Authorization':`Bearer ${session.access_token}`}
+    });
+    const rows=await res.json();
+    if(rows?.[0]?.whatsapp){
+      window.location.href='app.html';
+    } else {
+      showWhatsappModal(session.user.id,session.access_token);
+    }
   }
 });
 
-function hfShowError(msg){
-  const el=document.getElementById('hf-error');
-  el.textContent=msg;el.style.display='block';
-}
-function hfClearError(){
-  const el=document.getElementById('hf-error');
-  if(el){el.textContent='';el.style.display='none';}
-}
+function hfShowError(msg){const el=document.getElementById('hf-error');el.textContent=msg;el.style.display='block';}
+function hfClearError(){const el=document.getElementById('hf-error');if(el){el.textContent='';el.style.display='none';}}
 
 const _hfAttempts={count:0,resetAt:0};
 async function hfSubmit(mode){
@@ -1111,12 +1182,20 @@ async function hfSubmit(mode){
   const email=document.getElementById('hf-email')?.value?.trim();
   const pass=document.getElementById('hf-pass')?.value;
   const name=document.getElementById('hf-name')?.value?.trim();
+  const whatsapp=document.getElementById('hf-whatsapp')?.value?.trim();
   if(!email||!pass){hfShowError('Preencha e-mail e senha.');return;}
+  if(mode==='signup'){
+    const digits=(whatsapp||'').replace(/\D/g,'');
+    if(digits.length<10){hfShowError('Informe um WhatsApp válido.');return;}
+  }
   const btn=document.getElementById(mode==='login'?'hf-btn-login':'hf-btn-signup');
   btn.disabled=true;btn.textContent='Aguarde...';
   let result;
-  if(mode==='login') result=await db.auth.signInWithPassword({email,password:pass});
-  else result=await db.auth.signUp({email,password:pass,options:{data:{full_name:name||email.split('@')[0]}}});
+  if(mode==='login'){
+    result=await db.auth.signInWithPassword({email,password:pass});
+  } else {
+    result=await db.auth.signUp({email,password:pass,options:{data:{full_name:name||email.split('@')[0],whatsapp}}});
+  }
   if(result.error){
     const msgs={'Invalid login credentials':'E-mail ou senha incorretos.','User already registered':'E-mail já cadastrado. Faça login.','Password should be at least 6 characters':'Senha deve ter pelo menos 6 caracteres.'};
     hfShowError(msgs[result.error.message]||result.error.message);
@@ -1129,11 +1208,12 @@ async function hfSubmit(mode){
     btn.disabled=false;btn.textContent='Criar conta e testar grátis';
     return;
   }
-  // SIGNED_IN — onAuthStateChange redireciona para app.html
+  // SIGNED_IN — onAuthStateChange cuida do redirect
 }
 
 async function hfGoogle(){
-  await db.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+'/app.html'}});
+  // Redireciona para index.html para capturar WhatsApp se necessário
+  await db.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+'/index.html'}});
 }
 </script>
 
