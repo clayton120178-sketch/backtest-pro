@@ -2,18 +2,21 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // ─── CONSTANTES ──────────────────────────────────────────────────────────────
-const ALLOWED_ORIGIN = "https://backtestpro-app.vercel.app";
+const ALLOWED_ORIGINS = [
+  "https://backtestpro-ashen.vercel.app",
+  "https://backtestpro-app.vercel.app",
+];
 
 // ─── CORS ────────────────────────────────────────────────────────────────────
 function corsHeaders(req: Request) {
   const origin = req.headers.get("origin") ?? "";
   const allowed =
-    origin === ALLOWED_ORIGIN ||
+    ALLOWED_ORIGINS.includes(origin) ||
     origin.startsWith("http://localhost") ||
     origin.startsWith("http://127.0.0.1");
 
   return {
-    "Access-Control-Allow-Origin": allowed ? origin : ALLOWED_ORIGIN,
+    "Access-Control-Allow-Origin": allowed ? origin : ALLOWED_ORIGINS[0],
     "Access-Control-Allow-Headers":
       "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",

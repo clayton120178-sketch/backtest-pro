@@ -3488,9 +3488,10 @@ async function submitBacktestToBackend() {
     return null;
   }
 
-  const session = await db.auth.getSession();
-  const token = session?.data?.session?.access_token;
-  if (!token) {
+  // Refresh para garantir token valido
+  const { data: refreshData, error: refreshErr } = await db.auth.refreshSession();
+  const token = refreshData?.session?.access_token;
+  if (refreshErr || !token) {
     alert('Sessao expirada. Faca login novamente.');
     return null;
   }
@@ -3508,9 +3509,10 @@ async function submitBacktestToBackend() {
     });
 
     const data = await res.json();
+    console.log('submit-backtest response:', res.status, data);
 
     if (!res.ok) {
-      return { error: data.error || 'Erro ao enviar backtest' };
+      return { error: data.error || `Erro ${res.status}: ${JSON.stringify(data)}` };
     }
 
     return { backtest_id: data.backtest_id };
@@ -3600,9 +3602,11 @@ async function startLoading() {
 
   if (!submission || submission.error) {
     // Erro ao submeter: mostrar na tela de loading e voltar
+    const errMsg = submission ? submission.error : 'Erro desconhecido';
+    console.error('submitBacktest error:', errMsg);
     const msgEl = document.getElementById('load-msg');
-    if (msgEl) msgEl.textContent = submission ? submission.error : 'Erro desconhecido';
-    setTimeout(() => { state.animate=true; state.screen='confirm'; renderApp(); }, 3000);
+    if (msgEl) msgEl.textContent = errMsg;
+    setTimeout(() => { state.animate=true; state.screen='confirm'; renderApp(); }, 5000);
     return;
   }
 
