@@ -95,9 +95,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88
 .nav-links{display:flex;align-items:center;gap:28px}
 .nav-links a{color:var(--txs);font-size:14px;font-weight:500;transition:color .15s}
 .nav-links a:hover{color:var(--tx);opacity:1}
-.nav-cta{background:var(--ac);color:var(--bg0);padding:8px 20px;border-radius:8px;font-weight:700;font-size:13px;border:none;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;gap:6px}
-.nav-cta:hover{background:#00ecc0;box-shadow:0 0 20px rgba(0,212,170,.25);transform:translateY(-1px);opacity:1}
-@media(max-width:700px){.nav-links a:not(.nav-cta){display:none}}
+@media(max-width:700px){.nav-links a{display:none}}
 
 /* ── HERO ── */
 .hero{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:80px 24px 60px}
@@ -131,6 +129,45 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88
 .hero-counter{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--txm);margin-top:20px;animation-delay:.75s;padding:6px 16px;background:rgba(18,18,26,.6);border:1px solid rgba(42,42,60,.4);border-radius:8px;backdrop-filter:blur(8px)}
 .hero-counter-num{color:var(--ac);font-weight:700;font-size:15px;min-width:70px;text-align:right}
 .hero-counter-dot{width:5px;height:5px;border-radius:50%;background:var(--ac);animation:pulse 1.5s infinite}
+
+/* ── HERO TWO-COL ── */
+.hero-inner{position:relative;z-index:2;display:grid;grid-template-columns:1fr 400px;gap:52px;align-items:center;max-width:1080px;width:100%;margin:0 auto}
+.hero-content{text-align:left;max-width:none}
+.hero-sub{margin:0 0 36px}
+@media(max-width:920px){
+  .hero-inner{grid-template-columns:1fr;gap:40px}
+  .hero-content{text-align:center}
+  .hero-sub{margin:0 auto 36px}
+  .hero-form-col{max-width:460px;margin:0 auto;width:100%}
+}
+
+/* ── FORM CARD ── */
+.hero-form-card{background:var(--bg1);border:1px solid var(--bd);border-radius:16px;padding:28px 26px;position:relative;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5),0 0 0 1px rgba(0,212,170,.05);animation:fadeUp .8s cubic-bezier(.23,1,.32,1) forwards;animation-delay:.4s;opacity:0}
+.hero-form-card::before{content:'';position:absolute;top:0;left:20px;right:20px;height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,170,.45),transparent)}
+.hero-form-free{display:inline-flex;align-items:center;gap:6px;background:var(--acd);border:1px solid rgba(0,212,170,.2);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;color:var(--ac);letter-spacing:.03em;margin-bottom:16px}
+.hero-form-title{font-size:18px;font-weight:800;color:var(--tx);line-height:1.25;margin-bottom:3px}
+.hero-form-sub{font-size:12px;color:var(--txs);margin-bottom:20px;line-height:1.5}
+.hero-form-card .login-only{display:none}
+.hero-form-card.mode-login .login-only{display:block}
+.hero-form-card.mode-login .signup-only{display:none}
+.hf-field{margin-bottom:12px}
+.hf-label{display:block;font-size:10px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
+.hf-input{width:100%;background:var(--bg2);border:1px solid var(--bd);border-radius:9px;padding:11px 13px;font-size:14px;color:var(--tx);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s,box-shadow .15s}
+.hf-input::placeholder{color:var(--txm)}
+.hf-input:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(0,212,170,.1)}
+.hf-btn-primary{width:100%;background:var(--ac);color:var(--bg0);border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:800;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:4px;position:relative;overflow:hidden}
+.hf-btn-primary::before{content:'';position:absolute;top:0;left:-30%;width:30%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);animation:accentSweep 4s ease-in-out infinite 2.5s}
+.hf-btn-primary:hover{background:#00ecc0;box-shadow:0 0 30px rgba(0,212,170,.3);transform:translateY(-1px)}
+.hf-btn-primary:active{transform:translateY(0)}
+.hf-divider{display:flex;align-items:center;gap:10px;margin:14px 0}
+.hf-divider::before,.hf-divider::after{content:'';flex:1;height:1px;background:var(--bd)}
+.hf-divider span{font-size:11px;color:var(--txm)}
+.hf-btn-google{width:100%;background:transparent;border:1px solid var(--bd);border-radius:9px;padding:11px;font-size:13px;font-weight:500;color:var(--tx);font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.hf-btn-google:hover{border-color:var(--bdh);background:var(--bg2)}
+.hf-footer{text-align:center;margin-top:14px;font-size:12px;color:var(--txm)}
+.hf-footer a{color:var(--ac);font-weight:600;cursor:pointer}
+.hf-footer a:hover{opacity:.8}
+.hf-nocard{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:12px;font-size:11px;color:var(--txm);font-family:'JetBrains Mono',monospace}
 
 /* ── SOCIAL PROOF BAR ── */
 .proof-bar{border-top:1px solid var(--bd);border-bottom:1px solid var(--bd);background:var(--bg1);padding:20px 0;overflow:hidden}
@@ -248,10 +285,7 @@ footer a{color:var(--txs)}
       <a href="#como-funciona">Como funciona</a>
       <a href="#por-que">Por que testar</a>
       <a href="#faq">FAQ</a>
-      <a href="app.html" class="nav-cta">
-        Testar grátis
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-      </a>
+
     </div>
   </div>
 </nav>
@@ -266,24 +300,88 @@ footer a{color:var(--txs)}
     <div class="hero-glow-3"></div>
     <div class="hero-particles" id="hero-particles"></div>
   </div>
-  <div class="hero-content">
-    <div class="hero-badge">
-      <span class="hero-badge-dot"></span>
-      3 backtests gratuitos · Sem cartão de crédito
+
+  <div class="hero-inner">
+
+    <!-- COPY -->
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="hero-badge-dot"></span>
+        3 backtests gratuitos · Sem cartão de crédito
+      </div>
+      <h1>Você aprendeu uma estratégia.<br>Mas ela <span class="hl">funciona?</span></h1>
+      <p class="hero-sub">Teste suas estratégias de trading com dados históricos reais do mercado. Sem programação. Sem achismo. Só dados.</p>
+      <p class="hero-hint" style="animation-delay:.65s"><strong>3 backtests grátis</strong> · Ativos nacionais e internacionais · 5 anos de dados</p>
+      <div class="hero-counter" style="animation-delay:.75s">
+        <span class="hero-counter-dot"></span>
+        <span id="hero-counter-num" class="hero-counter-num">0</span>
+        <span>candles analisados</span>
+      </div>
     </div>
-    <h1>Você aprendeu uma estratégia.<br>Mas ela <span class="hl">funciona?</span></h1>
-    <p class="hero-sub">Teste suas estratégias de trading com dados históricos reais do mercado. Sem programação. Sem achismo. Só dados.</p>
-    <a href="app.html" class="hero-cta">
-      Teste sua estratégia gratuitamente agora
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </a>
-    <p class="hero-hint"><strong>3 backtests grátis</strong> · Ativos nacionais e internacionais · 5 anos de dados</p>
-    <div class="hero-counter">
-      <span class="hero-counter-dot"></span>
-      <span id="hero-counter-num" class="hero-counter-num">0</span>
-      <span>candles analisados</span>
-    </div>
-  </div>
+
+    <!-- FORM CARD -->
+    <div class="hero-form-col">
+      <div class="hero-form-card" id="heroFormCard">
+
+        <div class="hero-form-free signup-only">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Acesso gratuito · sem cartão
+        </div>
+
+        <!-- SIGNUP state -->
+        <div class="signup-only">
+          <div class="hero-form-title">Crie sua conta e comece a testar</div>
+          <div class="hero-form-sub">3 backtests grátis. Resultado em minutos.</div>
+        </div>
+
+        <!-- LOGIN state -->
+        <div class="login-only">
+          <div class="hero-form-title">Bem-vindo de volta</div>
+          <div class="hero-form-sub">Acesse sua conta para continuar.</div>
+        </div>
+
+        <div class="hf-field signup-only">
+          <label class="hf-label">Nome</label>
+          <input class="hf-input" type="text" placeholder="Seu nome" autocomplete="name">
+        </div>
+        <div class="hf-field">
+          <label class="hf-label">E-mail</label>
+          <input class="hf-input" type="email" placeholder="seu@email.com" autocomplete="email">
+        </div>
+        <div class="hf-field">
+          <label class="hf-label">Senha</label>
+          <input class="hf-input" type="password" placeholder="••••••••" autocomplete="current-password">
+        </div>
+
+        <button class="hf-btn-primary signup-only">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor"/></svg>
+          Criar conta e testar grátis
+        </button>
+        <button class="hf-btn-primary login-only">
+          Entrar na minha conta
+        </button>
+
+        <div class="hf-divider"><span>ou</span></div>
+
+        <button class="hf-btn-google">
+          <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Continuar com Google
+        </button>
+
+        <div class="hf-footer">
+          <span class="signup-only">Já tem conta? <a id="hfSwitchLogin">Entrar</a></span>
+          <span class="login-only">Não tem conta? <a id="hfSwitchSignup">Criar conta grátis</a></span>
+        </div>
+
+        <div class="hf-nocard signup-only">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#44445A" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Sem cartão · Cancele quando quiser
+        </div>
+
+      </div>
+    </div><!-- /hero-form-col -->
+
+  </div><!-- /hero-inner -->
 </section>
 
 <!-- ═══ SOCIAL PROOF ═══ -->
@@ -971,6 +1069,11 @@ window.addEventListener('scroll',()=>{
   if(window.scrollY>50)nav.style.background='rgba(10,10,15,.95)';
   else nav.style.background='rgba(10,10,15,.88)';
 });
+
+// ── Hero form: signup ↔ login toggle ──
+const heroFormCard=document.getElementById('heroFormCard');
+document.getElementById('hfSwitchLogin').addEventListener('click',()=>heroFormCard.classList.add('mode-login'));
+document.getElementById('hfSwitchSignup').addEventListener('click',()=>heroFormCard.classList.remove('mode-login'));
 </script>
 
 </body>
