@@ -3188,7 +3188,8 @@ function renderStep3() {
   const vLabel=div('');vLabel.style.cssText='font-size:13px;color:var(--txs)';vLabel.textContent='Cancelar após';
   const vUnit=div('');vUnit.style.cssText='font-size:13px;color:var(--txs)';vUnit.textContent='candles sem execução';
   vRow.append(vLabel,stepper(cfg.validity,1,20,'',v=>{cfg.validity=v;updateSentence();}),vUnit);
-  vBlock.appendChild(vRow);el.appendChild(vBlock);
+  vBlock.appendChild(vRow);
+  if(cfg.entryType==='breakout') el.appendChild(vBlock);
   return el;
 }
 
