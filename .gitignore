@@ -3,7 +3,7 @@ __pycache__/
 *.pyc
 *.pyo
 python/_output/
-python/.env
+python/_cache/
 
 # Node
 node_modules/
@@ -12,6 +12,9 @@ node_modules/
 .env
 .env.local
 .env.*.local
+
+# Supabase
+supabase/.temp/
 
 # OS
 Thumbs.db

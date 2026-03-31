@@ -335,38 +335,76 @@ def parse_html_report(html_path: str) -> Optional[Dict[str, Any]]:
 
 
 def _extract_html_trades(content: str) -> list:
-    """Extrai lista de trades da tabela de deals do HTML do MT5."""
+    """Extrai lista de trades da tabela de deals do HTML do MT5.
+
+    Colunas do MT5 Strategy Tester (13 colunas):
+    [0] Time  [1] Deal  [2] Symbol  [3] Type  [4] Direction
+    [5] Volume  [6] Price  [7] Order  [8] Commission  [9] Swap
+    [10] Profit  [11] Balance  [12] Comment
+
+    Filtra: ignora rows 'balance' (deposito/retirada).
+    Agrupa: pares in+out formam um trade completo.
+    """
     import re
     trades = []
 
-    # Procurar a secao de Deals
-    deals_match = re.search(r'<b>Deals</b>.*?<tr[^>]*>.*?Deal.*?</tr>(.*?)(?:<tr>\s*<td[^>]*colspan|</table>)', content, re.S | re.IGNORECASE)
+    deals_match = re.search(
+        r'<b>Deals</b>.*?<tr[^>]*>.*?Deal.*?</tr>(.*?)(?:<tr>\s*<td[^>]*colspan|</table>)',
+        content, re.S | re.IGNORECASE,
+    )
     if not deals_match:
         return trades
 
     deals_html = deals_match.group(1)
     rows = re.findall(r'<tr[^>]*>(.*?)</tr>', deals_html, re.S)
 
+    def clean_num(s):
+        """Converte '1 000 000.00' ou '-68.00' para float."""
+        s = s.replace('\xa0', '').replace(' ', '').replace(',', '.')
+        return float(s) if s else 0.0
+
+    pending_entry = None
+
     for row in rows:
         cells = re.findall(r'<td[^>]*>(.*?)</td>', row, re.S)
-        if len(cells) < 10:
+        if len(cells) < 11:
             continue
-        # Limpar tags e espacos
         cells = [re.sub(r'<[^>]+>', '', c).replace('\xa0', '').strip() for c in cells]
-        try:
-            profit_str = cells[-2].replace(' ', '').replace(',', '.') if len(cells) > 2 else '0'
-            profit = float(profit_str) if profit_str else 0.0
-            trades.append({
-                "time": cells[0] if cells[0] else "",
-                "type": cells[2] if len(cells) > 2 else "",
-                "volume": cells[4] if len(cells) > 4 else "",
-                "price": cells[5] if len(cells) > 5 else "",
-                "profit": profit,
-                "commission": 0.0,
-                "swap": 0.0,
-            })
-        except (ValueError, IndexError):
+
+        deal_type = cells[3].lower()    # buy/sell/balance
+        direction = cells[4].lower()    # in/out/""
+
+        # Ignorar balance (deposito/retirada)
+        if deal_type == 'balance':
             continue
+
+        if direction == 'in':
+            pending_entry = {
+                "open_time": cells[0],
+                "type": deal_type,
+                "symbol": cells[2],
+                "volume": clean_num(cells[5]),
+                "open_price": clean_num(cells[6]),
+                "commission": clean_num(cells[8]),
+            }
+        elif direction == 'out' and pending_entry:
+            profit = clean_num(cells[10])
+            commission = pending_entry["commission"] + clean_num(cells[8])
+            swap = clean_num(cells[9])
+            trades.append({
+                "open_time": pending_entry["open_time"],
+                "close_time": cells[0],
+                "type": pending_entry["type"],
+                "volume": pending_entry["volume"],
+                "open_price": pending_entry["open_price"],
+                "close_price": clean_num(cells[6]),
+                "profit": profit,
+                "commission": commission,
+                "swap": swap,
+                "comment": cells[12] if len(cells) > 12 else "",
+                "balance": clean_num(cells[11]),
+            })
+            pending_entry = None
 
     return trades
 

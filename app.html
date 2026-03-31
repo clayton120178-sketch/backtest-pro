@@ -3426,6 +3426,10 @@ async function pollBacktestResult(backtestId, onProgress, onDone, onError) {
     'Medindo drawdowns - os momentos dificeis tambem contam...',
   ];
 
+  // Obter token do usuario para RLS
+  const session = await db.auth.getSession();
+  const userToken = session?.data?.session?.access_token || SUPA_KEY;
+
   const poll = async () => {
     if (attempts >= maxAttempts) {
       onError('Timeout: backtest demorou mais de 60 minutos.');
@@ -3435,7 +3439,7 @@ async function pollBacktestResult(backtestId, onProgress, onDone, onError) {
     try {
       const res = await fetch(
         `${SUPA_URL}/rest/v1/backtests?id=eq.${backtestId}&select=status,result,error`,
-        { headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` } }
+        { headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${userToken}` } }
       );
       const rows = await res.json();
       if (!rows || rows.length === 0) {
