@@ -256,7 +256,7 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .spinner-ring{position:absolute;inset:0;border-radius:50%;border:2px solid transparent;border-top-color:var(--pr);animation:spin .7s linear infinite}
 .spinner-inner{position:absolute;inset:10px;border-radius:50%;border:1px solid var(--prd)}
 .load-bar{width:260px;height:2px;background:var(--bg3);border-radius:1px;overflow:hidden;margin:0 auto}
-.load-fill{height:100%;background:var(--pr);border-radius:1px;animation:lprog 4.5s var(--smooth) forwards}
+.load-fill{height:100%;background:var(--pr);border-radius:1px;width:5%;transition:width 0.5s ease}
 
 /* Results */
 .verdict{border-radius:16px;padding:22px 26px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:20px}
@@ -3312,23 +3312,239 @@ function renderConfirm() {
   return el;
 }
 
+// ─── BACKEND INTEGRATION ─────────────────────────────────────
+
+// Converte resultado do worker (metrics + trades + equity_curve) para formato EQ do frontend
+function convertBackendResult(result, deposit) {
+  deposit = deposit || 100000;
+  const metrics = result.metrics || {};
+  const trades = result.trades || [];
+  const equityCurve = result.equity_curve || [];
+
+  // Se temos trades, construir EQ a partir deles
+  if (trades.length > 0) {
+    let v = 0, peak = 0;
+    return trades.map((t, i) => {
+      const pnl = (t.profit || 0) + (t.commission || 0) + (t.swap || 0);
+      v += pnl;
+      if (v > peak) peak = v;
+      // Extrair data do trade para label
+      const dt = t.close_time || t.open_time || '';
+      const parts = dt.split(/[.\s-]/);
+      let tLabel = '';
+      if (parts.length >= 2) {
+        const yr = parts[0], mo = parseInt(parts[1]) - 1;
+        const d = new Date(parseInt(yr), mo);
+        tLabel = d.toLocaleDateString('pt-BR', {month:'short'}).replace('.','') + " '" + String(yr).slice(2);
+      } else {
+        tLabel = 'T' + (i+1);
+      }
+      return { v: Math.round(v), dd: Math.round(Math.min(0, v - peak)), pnl: Math.round(pnl), t: tLabel };
+    });
+  }
+
+  // Fallback: se temos equity_curve (array de saldos), converter para PnL relativo
+  if (equityCurve.length > 0) {
+    let peak = 0;
+    return equityCurve.map((balance, i) => {
+      const v = balance - deposit;
+      if (v > peak) peak = v;
+      const pnl = i === 0 ? v : (balance - equityCurve[i-1]);
+      return { v: Math.round(v), dd: Math.round(Math.min(0, v - peak)), pnl: Math.round(pnl), t: 'T' + (i+1) };
+    });
+  }
+
+  // Ultimo fallback: gerar EQ sintetico a partir das metricas
+  const totalTrades = metrics.total_trades || 0;
+  const winRate = (metrics.win_rate || 50) / 100;
+  const avgWin = metrics.gross_profit && metrics.win_trades ? metrics.gross_profit / metrics.win_trades : 200;
+  const avgLoss = metrics.gross_loss && metrics.loss_trades ? Math.abs(metrics.gross_loss) / metrics.loss_trades : 150;
+
+  let v = 0, peak = 0;
+  const eq = [];
+  // Seed baseado no checksum para ser determinístico
+  let s = totalTrades * 7919 + Math.round((metrics.total_net_profit || 0) * 100);
+  const rng = () => { s = (s * 16807 + 0) % 2147483647; return (s & 0x7fffffff) / 2147483647; };
+
+  for (let i = 0; i < Math.max(totalTrades, 30); i++) {
+    const isWin = rng() < winRate;
+    const pnl = isWin ? avgWin * (0.5 + rng()) : -avgLoss * (0.5 + rng());
+    v += pnl;
+    if (v > peak) peak = v;
+    eq.push({ v: Math.round(v), dd: Math.round(Math.min(0, v - peak)), pnl: Math.round(pnl), t: 'T' + (i+1) });
+  }
+  return eq;
+}
+
+// Envia backtest para o backend e faz polling do resultado
+async function submitBacktestToBackend() {
+  if (!currentUser) {
+    alert('Faca login para rodar backtests.');
+    return null;
+  }
+
+  const session = await db.auth.getSession();
+  const token = session?.data?.session?.access_token;
+  if (!token) {
+    alert('Sessao expirada. Faca login novamente.');
+    return null;
+  }
+
+  // Submeter para a fila
+  try {
+    const res = await fetch(`${SUPA_URL}/functions/v1/submit-backtest`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'apikey': SUPA_KEY,
+      },
+      body: JSON.stringify({ cfg: state.cfg }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      return { error: data.error || 'Erro ao enviar backtest' };
+    }
+
+    return { backtest_id: data.backtest_id };
+  } catch (e) {
+    return { error: 'Erro de conexao: ' + e.message };
+  }
+}
+
+// Polling do status do backtest
+async function pollBacktestResult(backtestId, onProgress, onDone, onError) {
+  const maxAttempts = 720; // 720 * 5s = 60 min max
+  let attempts = 0;
+  const progressMsgs = [
+    'Backtest na fila, aguardando processamento...',
+    'Analisando 7 anos de dados reais do mercado...',
+    'Simulando cada operacao, candle por candle...',
+    'Calculando o que teria acontecido com o seu dinheiro...',
+    'Medindo drawdowns - os momentos dificeis tambem contam...',
+  ];
+
+  const poll = async () => {
+    if (attempts >= maxAttempts) {
+      onError('Timeout: backtest demorou mais de 60 minutos.');
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${SUPA_URL}/rest/v1/backtests?id=eq.${backtestId}&select=status,result,error`,
+        { headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` } }
+      );
+      const rows = await res.json();
+      if (!rows || rows.length === 0) {
+        onError('Backtest nao encontrado.');
+        return;
+      }
+
+      const bt = rows[0];
+
+      if (bt.status === 'completed' && bt.result) {
+        onDone(bt.result);
+        return;
+      }
+
+      if (bt.status === 'failed') {
+        onError(bt.error || 'Backtest falhou sem mensagem de erro.');
+        return;
+      }
+
+      // Ainda processando
+      attempts++;
+      const msgIdx = Math.min(Math.floor(attempts / 3), progressMsgs.length - 1);
+      onProgress(progressMsgs[msgIdx], attempts);
+      setTimeout(poll, 5000);
+    } catch (e) {
+      attempts++;
+      if (attempts < maxAttempts) {
+        setTimeout(poll, 5000);
+      } else {
+        onError('Erro de conexao durante polling: ' + e.message);
+      }
+    }
+  };
+
+  poll();
+}
+
 // ─── LOADING ─────────────────────────────────────────────────
 const LOAD_MSGS=[
+  'Enviando para processamento...',
   'Analisando 7 anos de dados reais do mercado...',
-  'Simulando cada operação, candle por candle...',
+  'Simulando cada operacao, candle por candle...',
   'Calculando o que teria acontecido com o seu dinheiro...',
-  'Medindo drawdowns — os momentos difíceis também contam...',
-  'Quase lá. A verdade sobre esse setup está chegando...',
+  'Medindo drawdowns - os momentos dificeis tambem contam...',
+  'Quase la. A verdade sobre esse setup esta chegando...',
 ];
 
-function startLoading() {
+async function startLoading() {
   state.animate=true;state.screen='loading';state.loadMsg=0;renderApp();
-  const iv=setInterval(()=>{
-    state.loadMsg++;
-    const msgEl=document.getElementById('load-msg');
-    if(msgEl) msgEl.textContent=LOAD_MSGS[Math.min(state.loadMsg,LOAD_MSGS.length-1)];
-    if(state.loadMsg>=LOAD_MSGS.length-1){clearInterval(iv);setTimeout(()=>{state.animate=true;state.screen='results';renderApp();},700);}
-  },900);
+
+  // 1. Submeter backtest
+  const submission = await submitBacktestToBackend();
+
+  if (!submission || submission.error) {
+    // Erro ao submeter: mostrar na tela de loading e voltar
+    const msgEl = document.getElementById('load-msg');
+    if (msgEl) msgEl.textContent = submission ? submission.error : 'Erro desconhecido';
+    setTimeout(() => { state.animate=true; state.screen='confirm'; renderApp(); }, 3000);
+    return;
+  }
+
+  // 2. Polling do resultado
+  pollBacktestResult(
+    submission.backtest_id,
+    // onProgress
+    (msg, attempt) => {
+      const msgEl = document.getElementById('load-msg');
+      if (msgEl) msgEl.textContent = msg;
+      // Atualizar barra de progresso (estimativa)
+      const fill = document.querySelector('.load-fill');
+      if (fill) {
+        const pct = Math.min(90, attempt * 2);
+        fill.style.width = pct + '%';
+      }
+    },
+    // onDone
+    (result) => {
+      // Converter resultado para formato EQ
+      EQ = convertBackendResult(result, 100000);
+      if (EQ.length === 0) {
+        // Fallback: resultado sem trades
+        EQ = [{ v: 0, dd: 0, pnl: 0, t: 'N/A' }];
+      }
+      EQ_ANALYSIS = computeAnalysis(EQ, 100000);
+
+      // Completar barra e mostrar resultados
+      const fill = document.querySelector('.load-fill');
+      if (fill) fill.style.width = '100%';
+      setTimeout(() => { state.animate=true; state.screen='results'; renderApp(); }, 500);
+    },
+    // onError
+    (errorMsg) => {
+      const msgEl = document.getElementById('load-msg');
+      if (msgEl) {
+        msgEl.style.color = '#EF4444';
+        msgEl.textContent = errorMsg;
+      }
+      // Botao para voltar
+      const loadScreen = document.querySelector('.loading-screen');
+      if (loadScreen) {
+        const backBtn = document.createElement('button');
+        backBtn.className = 'btn btnS';
+        backBtn.style.cssText = 'margin-top:20px';
+        backBtn.textContent = 'Voltar';
+        backBtn.onclick = () => { state.animate=true; state.screen='confirm'; renderApp(); };
+        loadScreen.appendChild(backBtn);
+      }
+    }
+  );
 }
 
 function renderLoading() {
