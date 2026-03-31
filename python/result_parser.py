@@ -285,32 +285,90 @@ def parse_html_report(html_path: str) -> Optional[Dict[str, Any]]:
             logger.error(f"Erro ao ler HTML: {e}")
             return None
 
-    def extract_metric(pattern, text, default=0.0):
-        m = re.search(pattern, text)
+    def extract_metric(label, text, default=0.0):
+        """Extrai valor da celula seguinte ao label no HTML do MT5.
+        Formato: <td>Label:</td><td><b>value</b></td>"""
+        pattern = re.escape(label) + r'.*?</td>\s*<td[^>]*>\s*(?:<b>)?\s*([-\d.,\s]+)'
+        m = re.search(pattern, text, re.S | re.IGNORECASE)
         if m:
-            return _safe_float(m.group(1))
+            # MT5 usa espaco como separador de milhar (ex: "-9 861.00")
+            raw = m.group(1).replace('\xa0', '').replace(' ', '').replace(',', '.')
+            return _safe_float(raw)
         return default
 
+    def extract_metric_pct(label, text, default=0.0):
+        """Extrai percentual entre parenteses, ex: '1 234.56 (12.34%)'"""
+        pattern = re.escape(label) + r'.*?</td>\s*<td[^>]*>\s*(?:<b>)?.*?\(([-\d.,\s]+)%\)'
+        m = re.search(pattern, text, re.S | re.IGNORECASE)
+        if m:
+            raw = m.group(1).replace('\xa0', '').replace(' ', '').replace(',', '.')
+            return _safe_float(raw)
+        return default
+
+    total_trades = int(extract_metric("Total Trades:", content))
+    profit_trades_pct = extract_metric_pct("Profit Trades", content)
+    win_trades = round(total_trades * profit_trades_pct / 100) if total_trades > 0 else 0
+
     metrics = {
-        "total_net_profit": extract_metric(r"Total Net Profit.*?>([-\d.,\s]+)", content),
-        "profit_factor": extract_metric(r"Profit Factor.*?>([\d.,\s]+)", content),
-        "total_trades": int(extract_metric(r"Total Trades.*?>([\d.,\s]+)", content)),
-        "max_drawdown_pct": extract_metric(r"Maximal Drawdown.*?>([\d.,\s]+)%", content),
-        "recovery_factor": extract_metric(r"Recovery Factor.*?>([\d.,\s]+)", content),
-        "sharpe_ratio": extract_metric(r"Sharpe Ratio.*?>([\d.,\s]+)", content),
+        "total_net_profit": extract_metric("Total Net Profit:", content),
+        "gross_profit": extract_metric("Gross Profit:", content),
+        "gross_loss": extract_metric("Gross Loss:", content),
+        "profit_factor": extract_metric("Profit Factor:", content),
+        "total_trades": total_trades,
+        "max_drawdown_money": extract_metric("Equity Drawdown Maximal:", content),
+        "max_drawdown_pct": extract_metric_pct("Equity Drawdown Maximal:", content),
+        "recovery_factor": extract_metric("Recovery Factor:", content),
+        "sharpe_ratio": extract_metric("Sharpe Ratio:", content),
+        "win_trades": win_trades,
+        "loss_trades": total_trades - win_trades,
+        "win_rate": profit_trades_pct,
     }
 
-    total = metrics["total_trades"]
-    win_trades = int(extract_metric(r"(?:Profit|Win) Trades.*?>([\d.,\s]+)", content))
-    metrics["win_trades"] = win_trades
-    metrics["loss_trades"] = total - win_trades
-    metrics["win_rate"] = (win_trades / total * 100) if total > 0 else 0.0
+    # Extrair trades da tabela de deals (se disponivel)
+    trades = _extract_html_trades(content)
 
     return {
         "metrics": metrics,
-        "trades": [],
+        "trades": trades,
         "equity_curve": [],
     }
+
+
+def _extract_html_trades(content: str) -> list:
+    """Extrai lista de trades da tabela de deals do HTML do MT5."""
+    import re
+    trades = []
+
+    # Procurar a secao de Deals
+    deals_match = re.search(r'<b>Deals</b>.*?<tr[^>]*>.*?Deal.*?</tr>(.*?)(?:<tr>\s*<td[^>]*colspan|</table>)', content, re.S | re.IGNORECASE)
+    if not deals_match:
+        return trades
+
+    deals_html = deals_match.group(1)
+    rows = re.findall(r'<tr[^>]*>(.*?)</tr>', deals_html, re.S)
+
+    for row in rows:
+        cells = re.findall(r'<td[^>]*>(.*?)</td>', row, re.S)
+        if len(cells) < 10:
+            continue
+        # Limpar tags e espacos
+        cells = [re.sub(r'<[^>]+>', '', c).replace('\xa0', '').strip() for c in cells]
+        try:
+            profit_str = cells[-2].replace(' ', '').replace(',', '.') if len(cells) > 2 else '0'
+            profit = float(profit_str) if profit_str else 0.0
+            trades.append({
+                "time": cells[0] if cells[0] else "",
+                "type": cells[2] if len(cells) > 2 else "",
+                "volume": cells[4] if len(cells) > 4 else "",
+                "price": cells[5] if len(cells) > 5 else "",
+                "profit": profit,
+                "commission": 0.0,
+                "swap": 0.0,
+            })
+        except (ValueError, IndexError):
+            continue
+
+    return trades
 
 
 # ============================================================================
@@ -340,27 +398,45 @@ def find_report_file(
         mt5_guid = "84064CA60B86A0341461272DFBBA7B87"
         mt5_data_dir = os.path.join(appdata, "MetaQuotes", "Terminal", mt5_guid)
 
-    tester_dir = os.path.join(mt5_data_dir, "Tester")
+    # MT5 pode salvar reports em Tester/ ou na raiz do terminal
+    search_dirs = [
+        os.path.join(mt5_data_dir, "Tester"),
+        mt5_data_dir,
+    ]
 
-    # Tentar XML primeiro
-    xml_path = os.path.join(tester_dir, report_name)
-    if os.path.exists(xml_path):
-        return xml_path
-
-    # Tentar sem extensao + .xml
     base = os.path.splitext(report_name)[0]
-    for ext in [".xml", ".htm", ".html"]:
-        path = os.path.join(tester_dir, base + ext)
-        if os.path.exists(path):
-            return path
+    # Se o nome ja termina com .xml, o MT5 pode gerar .xml.htm
+    if report_name.endswith(".xml"):
+        base_noxml = report_name[:-4]  # remove .xml
+        extensions = [".xml", ".xml.htm", ".xml.html", ".htm", ".html"]
+    else:
+        base_noxml = base
+        extensions = [".xml", ".xml.htm", ".htm", ".html"]
 
-    # Buscar em subdiretorios
-    for dirpath, _, filenames in os.walk(tester_dir):
-        for fname in filenames:
-            if fname == report_name or fname.startswith(base):
-                return os.path.join(dirpath, fname)
+    for search_dir in search_dirs:
+        if not os.path.isdir(search_dir):
+            continue
 
-    logger.warning(f"Report nao encontrado: {report_name} em {tester_dir}")
+        # Tentar nome exato
+        exact = os.path.join(search_dir, report_name)
+        if os.path.exists(exact):
+            return exact
+
+        # Tentar com extensoes alternativas
+        for ext in extensions:
+            path = os.path.join(search_dir, base_noxml + ext)
+            if os.path.exists(path):
+                return path
+
+        # Buscar arquivos que comecam com o base name
+        try:
+            for fname in os.listdir(search_dir):
+                if fname.startswith(base_noxml) and not fname.endswith(".png"):
+                    return os.path.join(search_dir, fname)
+        except OSError:
+            continue
+
+    logger.warning(f"Report nao encontrado: {report_name} em {[d for d in search_dirs]}")
     return None
 
 
@@ -386,10 +462,10 @@ def get_backtest_result(
     if not path:
         return None
 
-    if path.endswith(".xml"):
-        return parse_xml_report(path)
-    elif path.endswith((".htm", ".html")):
+    if path.endswith((".htm", ".html", ".xml.htm", ".xml.html")):
         return parse_html_report(path)
+    elif path.endswith(".xml"):
+        return parse_xml_report(path)
     else:
         logger.error(f"Formato de report nao suportado: {path}")
         return None

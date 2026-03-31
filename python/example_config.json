@@ -1,6 +1,6 @@
 {
     "ea_name": "BacktestPro_Universal_EA",
-    "symbol": "WINJ25",
+    "symbol": "WIN$N",
     "timeframe": "M5",
     "from_date": "2025.01.02",
     "to_date": "2025.03.27",
