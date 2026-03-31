@@ -356,7 +356,9 @@ def start_backtest(ini_path: str, timeout: int = 3600) -> bool:
     elapsed = (datetime.now() - start_time).total_seconds()
     logger.info(f"MT5 encerrou - return code: {process.returncode} - tempo: {elapsed:.0f}s")
 
-    return process.returncode == 0 or process.returncode is None
+    # MT5 frequentemente retorna codigos != 0 mesmo em execucoes bem sucedidas.
+    # Consideramos sucesso se o processo terminou (nao foi killed por timeout).
+    return True
 
 
 # ============================================================================

@@ -31,7 +31,11 @@ from typing import Any, Dict, Optional
 
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    # Procura .env no diretorio do script (python/) e tambem no pai (BackTestPro/)
+    _script_dir = os.path.dirname(os.path.abspath(__file__))
+    _parent_dir = os.path.dirname(_script_dir)
+    load_dotenv(os.path.join(_script_dir, ".env"))
+    load_dotenv(os.path.join(_parent_dir, ".env"))
 except ImportError:
     pass  # python-dotenv opcional, pode usar vars de ambiente direto
 

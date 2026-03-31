@@ -189,26 +189,27 @@ class BacktestPipeline:
 
         # 6. Executar MT5
         from backtest_runner import start_backtest
-        success = start_backtest(files["ini_path"], timeout=self.timeout)
+        mt5_ok = start_backtest(files["ini_path"], timeout=self.timeout)
 
-        if not success:
-            response["error"] = "MT5 falhou ou timeout atingido."
-            response["elapsed"] = time.time() - start_time
-            return response
-
-        # 7. Parsear resultado
+        # 7. Parsear resultado (mesmo se MT5 retornou codigo != 0,
+        #    o relatorio pode ter sido salvo corretamente)
         report_name = files.get("report_file", "")
         if report_name:
             result = get_backtest_result(report_name)
             if result:
                 response["success"] = True
                 response["result"] = result
+                if not mt5_ok:
+                    logger.warning("MT5 retornou erro mas relatorio foi encontrado e parseado.")
 
                 # 8. Salvar no cache
                 if self.use_cache:
                     cache_save_local(checksum, result)
             else:
-                response["error"] = f"Report '{report_name}' nao encontrado ou falha no parse."
+                if not mt5_ok:
+                    response["error"] = "MT5 falhou ou timeout atingido e relatorio nao encontrado."
+                else:
+                    response["error"] = f"Report '{report_name}' nao encontrado ou falha no parse."
         else:
             response["error"] = "Nome do report nao definido."
 
