@@ -1,0 +1,10 @@
+project_id = "lmrpxtshdiwufbfkaymg"
+
+[functions.send-email]
+verify_jwt = false
+
+[functions.on-backtest-created]
+verify_jwt = false
+
+[functions.check-expired-subscriptions]
+verify_jwt = false
