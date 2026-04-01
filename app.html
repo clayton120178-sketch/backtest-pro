@@ -2910,11 +2910,20 @@ function renderStep1() {
         item.append(tk,nm);
         item.addEventListener('click',()=>{
           cfg.asset=a.t;
-          // Snap existing point values to new asset's tick
+          // Snap risk fields to new asset's tick
           const {tick} = getAssetTick(a.t);
           cfg.stopPts   = snapToTick(Math.max(tick, cfg.stopPts),   tick);
           cfg.stopOffset= snapToTick(cfg.stopOffset,  tick);
           cfg.tpPts     = snapToTick(Math.max(tick, cfg.tpPts),     tick);
+          // Reset management — fields depend on tick size, force user to reconfigure
+          cfg.trailing=false;
+          cfg.trailAct =snapToTick(100, tick);
+          cfg.trailDist=snapToTick(100, tick);
+          cfg.trailStep=snapToTick(50,  tick);
+          cfg.partial=false;
+          cfg.partAt   =snapToTick(200, tick);
+          cfg.partPct  =50;
+          cfg.partMoveStop=true;
           dropdown.classList.remove('open');
           searchInput.value='';
           renderApp();
@@ -3331,17 +3340,17 @@ function renderStep5() {
   el.appendChild(mgmtBlock('Trailing Stop','O stop se move a favor da operação conforme o preço avança.','Trailing stop protege lucros acumulados movendo o stop automaticamente.',cfg.trailing,v=>{cfg.trailing=v;renderApp();},body=>{
     const r1=div('');r1.style.cssText='margin-bottom:12px';
     r1.appendChild(slabel('Ativar trailing após'));
-    r1.appendChild(stepper(cfg.trailAct,1,5000,'pts de lucro',v=>{cfg.trailAct=v;updateSentence();}));
+    r1.appendChild(stepperPoints(cfg.trailAct,1,5000,cfg.asset,v=>{cfg.trailAct=v;updateSentence();}));
     const r2=div('');r2.style.cssText='display:flex;gap:16px;flex-wrap:wrap';
-    const d=div('');d.appendChild(slabel('Distância'));d.appendChild(stepper(cfg.trailDist,1,2000,'pts',v=>{cfg.trailDist=v;updateSentence();}));
-    const s=div('');s.appendChild(slabel('Step'));s.appendChild(stepper(cfg.trailStep,1,1000,'pts',v=>{cfg.trailStep=v;updateSentence();}));
+    const d=div('');d.appendChild(slabel('Distância'));d.appendChild(stepperPoints(cfg.trailDist,1,2000,cfg.asset,v=>{cfg.trailDist=v;updateSentence();}));
+    const s=div('');s.appendChild(slabel('Step'));s.appendChild(stepperPoints(cfg.trailStep,1,1000,cfg.asset,v=>{cfg.trailStep=v;updateSentence();}));
     r2.append(d,s);body.append(r1,r2);
   }));
 
   el.appendChild(mgmtBlock('Realização Parcial','Parte da posição é encerrada com lucro e o restante continua rodando.','Parcial realiza ganho antes do alvo principal, reduzindo o risco residual.',cfg.partial,v=>{cfg.partial=v;renderApp();},body=>{
     const r1=div('');r1.style.cssText='display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px';
     const p=div('');p.appendChild(slabel('Realizar'));p.appendChild(stepper(cfg.partPct,10,90,'% da posição',v=>{cfg.partPct=v;updateSentence();}));
-    const a=div('');a.appendChild(slabel('Ao atingir'));a.appendChild(stepper(cfg.partAt,1,5000,'pts de lucro',v=>{cfg.partAt=v;updateSentence();}));
+    const a=div('');a.appendChild(slabel('Ao atingir'));a.appendChild(stepperPoints(cfg.partAt,1,5000,cfg.asset,v=>{cfg.partAt=v;updateSentence();}));
     r1.append(p,a);
     body.appendChild(r1);
     body.appendChild(ckbox(cfg.partMoveStop,'Mover stop para a entrada após a parcial',v=>{cfg.partMoveStop=v;renderApp();}));
