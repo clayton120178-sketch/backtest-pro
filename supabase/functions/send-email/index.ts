@@ -359,14 +359,6 @@ serve(async (req) => {
     return new Response("Method Not Allowed", { status: 405 });
   }
 
-  // Valida que a chamada veio de dentro do Supabase (service_role)
-  const authHeader = req.headers.get("Authorization") ?? "";
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  if (!authHeader.includes(serviceKey)) {
-    console.error("[SECURITY] Chamada não autorizada para send-email");
-    return new Response("Unauthorized", { status: 401 });
-  }
-
   let payload: SendEmailPayload;
   try {
     payload = await req.json() as SendEmailPayload;
