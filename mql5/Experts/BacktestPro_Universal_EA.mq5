@@ -73,7 +73,7 @@ input double            InpValue3    = 0.0;
 input group "=== [5] Entrada ==="
 input ENUM_BP_ENTRY_TYPE      InpEntryType        = BP_ENTRY_NEXT_OPEN;  // Tipo de entrada
 input int                     InpStopOrderBuffer  = 1;                   // [STOP_ORDER] Ticks acima/abaixo da max/min do candle trigger
-input int                     InpStopOrderExpBars = 1;                   // [STOP_ORDER] Expira apos N barras sem acionar (1=mesma barra)
+input int                     InpStopOrderExpBars = 1;                   // [STOP_ORDER] Validade do sinal em candles (1=expira no candle seguinte ao trigger)
 input ENUM_TRADING_DIRECTION  InpDirection        = TRADING_BOTH;        // Direcao permitida (0=AMBAS, 1=SO_COMPRA, -1=SO_VENDA)
 
 //+------------------------------------------------------------------+
@@ -119,10 +119,12 @@ input double InpInitialAlloc      = 10000.0;      // Capital alocado
 //| INPUTS: Janela de Operacao                                       |
 //+------------------------------------------------------------------+
 input group "=== [9] Janela de Operacao ==="
-input int InpStartHour      = 9;    // Hora inicio
+input int InpStartHour      = 9;    // Hora inicio (novas entradas)
 input int InpStartMin       = 0;    // Minuto inicio
-input int InpEndHour        = 17;   // Hora fim
+input int InpEndHour        = 17;   // Hora fim (novas entradas)
 input int InpEndMin         = 30;   // Minuto fim
+input int InpCloseHour      = 17;   // Hora encerramento forcado de posicoes
+input int InpCloseMin       = 45;   // Minuto encerramento forcado
 input int InpMaxTradesPerDay= 0;    // Max operacoes por dia (0 = sem limite)
 
 //+------------------------------------------------------------------+
@@ -199,10 +201,11 @@ int g_hBPSignal     = -1;
 //+------------------------------------------------------------------+
 //| Estado interno                                                    |
 //+------------------------------------------------------------------+
-datetime g_lastBarTime   = 0;
-int      g_tradesHoje    = 0;   // Contador de operacoes abertas hoje
-datetime g_currentDay    = 0;   // Dia atual para reset do contador
-bool     g_partialDone   = false;  // Saida parcial ja executada para posicao atual
+datetime g_lastBarTime        = 0;
+int      g_tradesHoje         = 0;   // Contador de operacoes abertas hoje
+datetime g_currentDay         = 0;   // Dia atual para reset do contador
+bool     g_partialDone        = false;  // Saida parcial ja executada para posicao atual
+datetime g_lastStopOrderBarTime = 0;   // Barra em que a ultima ordem STOP foi colocada (evita recolocar na mesma barra)
 
 //+------------------------------------------------------------------+
 //| Funcoes auxiliares                                               |
@@ -243,6 +246,33 @@ void ResetDailyCounterIfNeeded()
       g_currentDay = today;
       g_tradesHoje = 0;
       RiskManager_OnNewDay(g_hRisk);
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Verifica horario de encerramento e fecha posicoes/pendentes      |
+//+------------------------------------------------------------------+
+void CheckForceClose()
+{
+   MqlDateTime dt;
+   TimeToStruct(TimeCurrent(), dt);
+   int now   = dt.hour * 60 + dt.min;
+   int close = InpCloseHour * 60 + InpCloseMin;
+   if(now < close) return;
+
+   //--- Cancela ordens pendentes registradas no TriggerMonitor
+   if(g_hTriggerMonitor >= 0 && TriggerMonitor_GetPendingOrderCount(g_hTriggerMonitor) > 0)
+   {
+      TriggerMonitor_CancelAllPendingOrders(g_hTriggerMonitor);
+      Logger_Info(g_hLogger, "Encerramento forcado: ordens pendentes canceladas");
+   }
+
+   //--- Fecha posicoes abertas
+   if(HasOpenPosition())
+   {
+      OrderManager_CloseAllPositions(g_hOrder);
+      Logger_Info(g_hLogger, "Encerramento forcado: posicoes fechadas (" +
+                  IntegerToString(InpCloseHour) + "h" + StringFormat("%02d", InpCloseMin) + ")");
    }
 }
 
@@ -671,8 +701,12 @@ void PlaceStopEntry(ENUM_BP_SIGNAL signal)
    if(HasOpenPosition()) return;
    if(TriggerMonitor_GetPendingOrderCount(g_hTriggerMonitor) > 0) return;
 
-   int signalType = (signal == BP_SIGNAL_BUY) ? SIGNAL_BUY : SIGNAL_SELL;
+   //--- Evita recolocar ordem stop no mesmo candle em que ja foi colocada uma
+   //--- (ocorre quando TriggerMonitor expira/cancela e o sinal ainda e valido)
    datetime triggerBarTime = iTime(_Symbol, PERIOD_CURRENT, 1);
+   if(triggerBarTime == g_lastStopOrderBarTime) return;
+
+   int signalType = (signal == BP_SIGNAL_BUY) ? SIGNAL_BUY : SIGNAL_SELL;
 
    //--- Preco de referencia: maxima do candle[1] para BUY, minima para SELL
    double refPrice = (signal == BP_SIGNAL_BUY)
@@ -710,6 +744,7 @@ void PlaceStopEntry(ENUM_BP_SIGNAL signal)
       PositionTracker_RegisterPositionOpened(g_hTracker, ticket, ticket);
       RiskManager_OnNewOperation(g_hRisk);
       g_tradesHoje++;
+      g_lastStopOrderBarTime = iTime(_Symbol, PERIOD_CURRENT, 1);  // marca barra para evitar recolocar
       Logger_Info(g_hLogger, "Ordem STOP registrada: " + (signal == BP_SIGNAL_BUY ? "BUY_STOP" : "SELL_STOP") +
                   " refPrice=" + DoubleToString(refPrice, _Digits) +
                   " buffer=" + IntegerToString(InpStopOrderBuffer) + " ticks" +
@@ -1052,6 +1087,9 @@ void OnTick()
    //--- Trailing stop em todas as posicoes abertas
    if(g_hTrailing >= 0)
       TrailingStop_ProcessTrailingStops(g_hTrailing);
+
+   //--- Encerramento forcado no horario definido (a cada tick para precisao)
+   CheckForceClose();
 
    //--- Saida parcial (avalia a cada tick para reagir rapido ao preco)
    ProcessPartialClose();

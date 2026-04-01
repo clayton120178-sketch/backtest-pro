@@ -165,6 +165,11 @@ bool BP_Oscillators_EvaluateCondition(int handle, const BPCondition &cond)
 
    double ref = cond.value;
 
+   //--- Williams %R tem escala 0 a -100: normaliza ref para negativo se usuario digitou positivo
+   //--- Ex: usuario digita 80 querendo dizer -80 -> corrige para -80
+   if(cond.indicator == BP_IND_WILLIAMS && ref > 0.0)
+      ref = -ref;
+
    //--- Avalia condicao
    switch(cond.condition)
    {
