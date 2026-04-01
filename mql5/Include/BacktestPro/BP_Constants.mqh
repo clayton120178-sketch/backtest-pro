@@ -39,22 +39,26 @@ enum ENUM_BP_ENTRY_TYPE
 
 //+------------------------------------------------------------------+
 //| Tipo de Stop Loss                                                 |
-//+------------------------------------------------------------------+
+// ATENCAO: InpSLType usa ENUM_STOP_LOSS_TYPE do Framework (CommonTypes.mqh)
+//          SL_ATR=0, SL_FIXED=1, SL_GRAPHIC=2 (max/min candle + buffer)
 enum ENUM_BP_SL_TYPE
 {
-   BP_SL_CANDLE    = 0,  // Maxima/minima do candle sinal (+ N candles)
-   BP_SL_ATR       = 1,  // N * ATR abaixo/acima da entrada
-   BP_SL_FIXED_PTS = 2   // Pontos fixos
+   BP_SL_ATR       = 0,  // Baseado em ATR (= SL_ATR do Framework)
+   BP_SL_FIXED_PTS = 1,  // Pontos fixos   (= SL_FIXED do Framework)
+   BP_SL_CANDLE    = 2   // Maxima/minima do candle sinal (= SL_GRAPHIC do Framework)
 };
 
 //+------------------------------------------------------------------+
 //| Tipo de Take Profit                                               |
 //+------------------------------------------------------------------+
+// ATENCAO: InpTPType usa ENUM_TAKE_PROFIT_TYPE do Framework (CommonTypes.mqh)
+//          TP_FIXED_POINTS=0, TP_RR_MULTIPLIER=1, TP_ZIGZAG_LEVEL=2, TP_ATR=3
 enum ENUM_BP_TP_TYPE
 {
-   BP_TP_RR       = 0,  // Risk/Reward ratio (ex: 2.0 = 2x o SL)
-   BP_TP_ATR      = 1,  // N * ATR
-   BP_TP_FIXED_PTS= 2   // Pontos fixos
+   BP_TP_FIXED_PTS = 0,  // Pontos fixos           (= TP_FIXED_POINTS do Framework)
+   BP_TP_RR        = 1,  // Risk/Reward ratio      (= TP_RR_MULTIPLIER do Framework)
+   BP_TP_ZIGZAG    = 2,  // Ultimo pico/vale ZigZag(= TP_ZIGZAG_LEVEL do Framework)
+   BP_TP_ATR       = 3   // Baseado em ATR         (= TP_ATR do Framework)
 };
 
 //+------------------------------------------------------------------+
@@ -151,7 +155,7 @@ enum ENUM_BP_CANDLE_PATTERN
    // Padroes de reversao de baixa (bearish)
    BP_CANDLE_SHOOTING_STAR =  10, // Estrela cadente
    BP_CANDLE_BEAR_ENGULF   =  11, // Engolfo de baixa
-   BP_CANDLE_EVENING_STAR  =  12, // Estrela da tarde
+   BP_CANDLE_EVENING_STAR  =  12, // Estrela da noite
    BP_CANDLE_BEAR_HARAMI   =  13, // Harami de baixa
    BP_CANDLE_TOP_TAIL      =  14, // Top Tail (TT) - cauda superior
    BP_CANDLE_DOUBLE_TOP    =  15, // Topo duplo

@@ -122,19 +122,41 @@ ENUM_BP_SIGNAL _InferDirection(const BPCondition &cond)
       // ABOVE: para osciladores o valor de referencia define o sentido
       //   Ex: RSI ABOVE 50 -> mercado forte -> BUY (valor >= 50)
       //   Ex: Stoch ABOVE 80 -> sobrecompra -> SELL (valor >= 50)
+      //   Ex: Williams ABOVE -20 (ou 20) -> sobrecompra -> SELL
       //   Ex: SMA ABOVE (preco > MA) -> sempre BUY
       case BP_COND_ABOVE:
          if(_IsOscillator(cond.indicator))
+         {
+            // Williams: escala 0 a -100; normaliza para comparacao
+            // ABOVE perto de 0 (ex: -20 ou 20) = sobrecompra = SELL
+            // ABOVE perto de -100 (ex: -80 ou 80) = nao faz sentido mas trata como BUY
+            if(cond.indicator == BP_IND_WILLIAMS)
+            {
+               double wRef = (cond.value > 0.0) ? -cond.value : cond.value;
+               return (wRef >= -50.0) ? BP_SIGNAL_SELL : BP_SIGNAL_BUY;
+            }
             return (cond.value >= 50.0) ? BP_SIGNAL_SELL : BP_SIGNAL_BUY;
+         }
          return BP_SIGNAL_BUY;  // MA/tendencia: preco acima = alta
 
       // BELOW: para osciladores o valor de referencia define o sentido
       //   Ex: Stoch BELOW 20 -> sobrevenda -> BUY (valor < 50)
       //   Ex: RSI BELOW 70   -> ainda forte mas caindo -> SELL (valor >= 50)
+      //   Ex: Williams BELOW -80 (ou 80) -> sobrevenda -> BUY
       //   Ex: SMA BELOW (preco < MA) -> sempre SELL
       case BP_COND_BELOW:
          if(_IsOscillator(cond.indicator))
+         {
+            // Williams: escala 0 a -100; normaliza para comparacao
+            // BELOW perto de -100 (ex: -80 ou 80) = sobrevenda = BUY
+            // BELOW perto de 0 (ex: -20 ou 20) = sobrecompra saindo = SELL
+            if(cond.indicator == BP_IND_WILLIAMS)
+            {
+               double wRef = (cond.value > 0.0) ? -cond.value : cond.value;
+               return (wRef < -50.0) ? BP_SIGNAL_BUY : BP_SIGNAL_SELL;
+            }
             return (cond.value < 50.0) ? BP_SIGNAL_BUY : BP_SIGNAL_SELL;
+         }
          return BP_SIGNAL_SELL;  // MA/tendencia: preco abaixo = queda
 
       default:

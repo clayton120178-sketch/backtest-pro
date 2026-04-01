@@ -225,33 +225,32 @@ SMC_MAP = {
 
 
 # ============================================================================
-# STOP LOSS: frontend -> EA (BP_Constants.mqh)
-# ATENCAO: Valores do EA, NAO do Framework (CommonTypes.mqh)
-# EA:       BP_SL_CANDLE=0, BP_SL_ATR=1, BP_SL_FIXED_PTS=2
-# Framework: SL_ATR=0, SL_FIXED=1, SL_GRAPHIC=2  (DIFERENTE!)
+# STOP LOSS: frontend -> EA (CommonTypes.mqh do Framework)
+# InpSLType usa ENUM_STOP_LOSS_TYPE do Framework:
+#   SL_ATR=0, SL_FIXED=1, SL_GRAPHIC=2 (max/min candle + buffer)
 # ============================================================================
 
 STOP_LOSS_MAP = {
-    "fixed":     {"enum": "BP_SL_FIXED_PTS", "value": 2},
-    "hl_candle": {"enum": "BP_SL_CANDLE",    "value": 0},
-    "n_candles": {"enum": "BP_SL_CANDLE",    "value": 0},   # Usa mesmo tipo, InpSL_CandlesBack diferencia
-    "atr":       {"enum": "BP_SL_ATR",       "value": 1},
+    "fixed":     {"enum": "SL_FIXED",   "value": 1},
+    "hl_candle": {"enum": "SL_GRAPHIC", "value": 2},   # Max/min candle de sinal
+    "n_candles": {"enum": "SL_GRAPHIC", "value": 2},   # Mesmo tipo, InpSL_CandlesBack diferencia
+    "atr":       {"enum": "SL_ATR",     "value": 0},
 }
 
 
 # ============================================================================
-# TAKE PROFIT: frontend -> EA (BP_Constants.mqh)
-# EA:       BP_TP_RR=0, BP_TP_ATR=1, BP_TP_FIXED_PTS=2
-# Framework: TP_FIXED_POINTS=0, TP_RR_MULTIPLIER=1, TP_ZIGZAG_LEVEL=2, TP_ATR=3
+# TAKE PROFIT: frontend -> EA (CommonTypes.mqh do Framework)
+# InpTPType usa ENUM_TAKE_PROFIT_TYPE do Framework:
+#   TP_FIXED_POINTS=0, TP_RR_MULTIPLIER=1, TP_ZIGZAG_LEVEL=2, TP_ATR=3
 # ============================================================================
 
 TAKE_PROFIT_MAP = {
-    "fixed":   {"enum": "BP_TP_FIXED_PTS", "value": 2},
-    "rr":      {"enum": "BP_TP_RR",        "value": 0},
-    "atr":     {"enum": "BP_TP_ATR",       "value": 1},
+    "fixed":   {"enum": "TP_FIXED_POINTS",  "value": 0},
+    "rr":      {"enum": "TP_RR_MULTIPLIER", "value": 1},
+    "atr":     {"enum": "TP_ATR",           "value": 3},
     # Fase futura:
-    "fib_ext": {"enum": None,              "value": None},   # TODO: nao implementado no EA
-    "none":    {"enum": None,              "value": None},   # TODO: nao implementado no EA
+    "fib_ext": {"enum": None,               "value": None},   # TODO: nao implementado no EA
+    "none":    {"enum": None,               "value": None},   # TODO: nao implementado no EA
 }
 
 

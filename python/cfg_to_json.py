@@ -245,11 +245,8 @@ def convert_cfg_to_ea_params(cfg: Dict[str, Any]) -> Dict[str, Any]:
     use_candle = len(candle_conds) > 0
     use_smc = len(smc_conds) > 0
 
-    # Se nao tem osciladores mas tem indicadores, ou vice versa, ativar ambos
-    # O EA usa esses flags para inicializar os modulos
-    if indicator_conds:
-        use_oscillators = True
-        use_indicators = True
+    # Ativar modulo somente se ha indicadores daquele grupo
+    # (a logica correta ja foi calculada acima com groups_present)
 
     params = {}
 
@@ -324,7 +321,7 @@ def convert_cfg_to_ea_params(cfg: Dict[str, Any]) -> Dict[str, Any]:
         params["InpTPType"] = tp_info["value"]
     else:
         # Fallback para RR se tipo nao suportado
-        params["InpTPType"] = 0  # BP_TP_RR
+        params["InpTPType"] = 1  # TP_RR_MULTIPLIER
         logger.warning(f"TP type '{tp_type}' nao suportado, usando RR como fallback.")
 
     params["InpTP_FixedPts"] = cfg.get("tpPts", 200)
@@ -347,12 +344,18 @@ def convert_cfg_to_ea_params(cfg: Dict[str, Any]) -> Dict[str, Any]:
     params["InpInitialAlloc"] = 10000.0
 
     # [9] Janela de Operacao
-    t_start = cfg.get("tStart", "09:00").split(":")
-    t_end = cfg.get("tEnd", "17:30").split(":")
-    params["InpStartHour"] = int(t_start[0])
-    params["InpStartMin"] = int(t_start[1]) if len(t_start) > 1 else 0
-    params["InpEndHour"] = int(t_end[0])
-    params["InpEndMin"] = int(t_end[1]) if len(t_end) > 1 else 0
+    # tStart      = inicio da leitura de sinais  -> InpStartHour/Min
+    # tLastEntry  = ultima abertura permitida     -> InpEndHour/Min
+    # tEnd        = encerramento forcado          -> InpCloseHour/Min
+    t_start      = cfg.get("tStart",      "09:00").split(":")
+    t_last_entry = cfg.get("tLastEntry",  "17:00").split(":")
+    t_end        = cfg.get("tEnd",        "17:30").split(":")
+    params["InpStartHour"]  = int(t_start[0])
+    params["InpStartMin"]   = int(t_start[1]) if len(t_start) > 1 else 0
+    params["InpEndHour"]    = int(t_last_entry[0])
+    params["InpEndMin"]     = int(t_last_entry[1]) if len(t_last_entry) > 1 else 0
+    params["InpCloseHour"]  = int(t_end[0])
+    params["InpCloseMin"]   = int(t_end[1]) if len(t_end) > 1 else 0
     params["InpMaxTradesPerDay"] = cfg.get("maxDailyTrades", 0)
 
     # [10] Candle Patterns
