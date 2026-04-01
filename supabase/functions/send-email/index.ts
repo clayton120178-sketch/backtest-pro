@@ -336,7 +336,7 @@ async function sendViaResend(
       "Authorization": `Bearer ${resendKey}`,
     },
     body: JSON.stringify({
-      from:    "Backtest Pro <noreply@alphaquant.com.br>",
+      from:    "Backtest Pro <onboarding@resend.dev>",
       to:      [to],
       subject,
       html,
