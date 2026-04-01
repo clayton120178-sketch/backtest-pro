@@ -150,5 +150,28 @@ serve(async (req) => {
   }
 
   console.log("[WEBHOOK] Assinatura criada — user:", user_id, "plano:", plan, "ciclo:", cycle);
+
+  // ── Disparar e-mail de confirmação ──
+  // Fire-and-forget: não bloqueia o retorno do webhook ao Mercado Pago
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey  = Deno.env.get("SERVICE_ROLE_KEY")!;
+
+  fetch(`${supabaseUrl}/functions/v1/send-email`, {
+    method: "POST",
+    headers: {
+      "Content-Type":  "application/json",
+      "Authorization": `Bearer ${serviceKey}`,
+    },
+    body: JSON.stringify({
+      user_id,
+      email_type: "subscription_confirmed",
+      metadata: {
+        plan,
+        cycle,
+        expires_at: expiresAt.toISOString(),
+      },
+    }),
+  }).catch((err) => console.error("[WEBHOOK] Falha ao disparar e-mail de confirmação:", err));
+
   return new Response("ok", { status: 200 });
 });
