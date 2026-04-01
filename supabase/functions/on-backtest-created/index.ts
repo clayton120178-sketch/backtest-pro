@@ -42,7 +42,7 @@ serve(async (req) => {
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SERVICE_ROLE_KEY")!
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
   // ── Contar total de backtests deste usuário ──
@@ -80,7 +80,7 @@ serve(async (req) => {
 
   // ── Disparar send-email ──
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const serviceKey  = Deno.env.get("SERVICE_ROLE_KEY")!;
+  const serviceKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
   const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
     method: "POST",
