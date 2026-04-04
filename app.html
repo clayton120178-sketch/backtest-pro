@@ -2112,8 +2112,11 @@ function buildCondPreview(indId, condText, params={}) {
 }
 
 // ─── VALIDATION ENGINE ────────────────────────────────────────
-const OSC_IDS = ['rsi','stoch','cci','williams'];
-const MA_IDS  = ['sma','ema'];
+const OSC_IDS        = ['rsi','stoch','macd','cci','williams'];
+const MA_IDS         = ['sma','ema'];
+const TREND_IDS      = ['sma','ema','bb','vwap','adx','sar','hilo'];
+const CANDLE_IDS     = ['candle'];
+const SMARTMONEY_IDS = ['fvg','bos','choch','ob','sweep'];
 
 function oscZone(id, cond, val) {
   if (!OSC_IDS.includes(id)) return null;
@@ -2140,6 +2143,41 @@ function validateNewCondition(newCond, existingConds) {
   // R26: 4+ condições simultâneas
   if (existingConds.length >= 3)
     issues.push({type:'warn',rule:'R26',msg:'Com 4 ou mais condições simultâneas, o número de sinais pode ser insuficiente para análise estatística confiável.'});
+
+  // R40: Osciladores — máximo 1 por backtest
+  if (OSC_IDS.includes(id)) {
+    const existingOsc = existingConds.filter(c => OSC_IDS.includes(c.id));
+    if (existingOsc.length >= 1)
+      issues.push({type:'block',rule:'R40',msg:'Limite de 1 oscilador por backtest. Remova o oscilador existente para adicionar outro.'});
+  }
+
+  // R41: Tendência — máximo 2 (ou 3 se forem apenas médias SMA/EMA)
+  if (TREND_IDS.includes(id)) {
+    const existingTrend = existingConds.filter(c => TREND_IDS.includes(c.id));
+    const newIsMa = MA_IDS.includes(id);
+    const allAreMa = existingTrend.every(c => MA_IDS.includes(c.id));
+    const limit = (newIsMa && allAreMa) ? 3 : 2;
+    if (existingTrend.length >= limit) {
+      if (limit === 3)
+        issues.push({type:'block',rule:'R41',msg:'Limite de 3 médias móveis por backtest atingido.'});
+      else
+        issues.push({type:'block',rule:'R41',msg:'Limite de 2 indicadores de tendência por backtest. Para adicionar 3, use apenas médias móveis (SMA/EMA).'});
+    }
+  }
+
+  // R42: Padrões de Candle — máximo 1 por backtest
+  if (CANDLE_IDS.includes(id)) {
+    const existingCandle = existingConds.filter(c => CANDLE_IDS.includes(c.id));
+    if (existingCandle.length >= 1)
+      issues.push({type:'block',rule:'R42',msg:'Limite de 1 padrão de candle por backtest. Remova o padrão existente para adicionar outro.'});
+  }
+
+  // R43: Smart Money — máximo 1 por backtest
+  if (SMARTMONEY_IDS.includes(id)) {
+    const existingSM = existingConds.filter(c => SMARTMONEY_IDS.includes(c.id));
+    if (existingSM.length >= 1)
+      issues.push({type:'block',rule:'R43',msg:'Limite de 1 conceito Smart Money por backtest. Remova o existente para adicionar outro.'});
+  }
 
   for (const ex of existingConds) {
     const ep = ex.params;
