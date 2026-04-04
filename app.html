@@ -2271,17 +2271,7 @@ function validateNewCondition(newCond, existingConds) {
     }
   }
 
-  // R20/R21: Múltiplos osciladores mesma zona
-  if (OSC_IDS.includes(id)) {
-    const newZone = oscZone(id, p.cond, p.val);
-    if (newZone) {
-      const sameZone = existingConds.filter(c => OSC_IDS.includes(c.id) && oscZone(c.id,c.params.cond,c.params.val)===newZone);
-      if (sameZone.length >= 2)
-        issues.push({type:'warn',rule:'R21',msg:'Três osciladores de sobrecompra/sobrevenda combinados podem gerar sinais insuficientes para análise estatística.'});
-      else if (sameZone.length === 1)
-        issues.push({type:'warn',rule:'R20',msg:'Dois osciladores de sobrecompra/sobrevenda combinados tendem a gerar poucos sinais. Verifique se o histórico terá operações suficientes.'});
-    }
-  }
+  // R20/R21 removidas: substituídas pela R40 (limite de 1 oscilador por backtest)
 
   // R24: Cruzamento + posição incompatível
   if (OSC_IDS.includes(id) && p.cond==='está acima de') {
