@@ -2247,7 +2247,7 @@ function validateStep1(cfg) {
   const [eh,em]=cfg.tEnd.split(':').map(Number);
   const win=(eh*60+em)-(sh*60+sm);
   if (win>0 && tfMin[cfg.tf] && win<tfMin[cfg.tf])
-    issues.push({type:'warn',rule:'R35',msg:`A janela operacional (${win} min) é menor que o timeframe selecionado (${cfg.tf}). Nenhum candle completo caberá neste período.`});
+    issues.push({type:'block',rule:'R35',msg:`A janela operacional (${win} min) é menor que o timeframe selecionado (${cfg.tf}). Nenhum candle completo caberá neste período. Aumente a janela ou reduza o timeframe.`});
   return issues;
 }
 
