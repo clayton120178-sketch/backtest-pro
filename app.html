@@ -3509,13 +3509,7 @@ async function submitBacktestToBackend() {
 async function pollBacktestResult(backtestId, onProgress, onDone, onError) {
   const maxAttempts = 720; // 720 * 5s = 60 min max
   let attempts = 0;
-  const progressMsgs = [
-    'Backtest na fila, aguardando processamento...',
-    'Analisando 7 anos de dados reais do mercado...',
-    'Simulando cada operacao, candle por candle...',
-    'Calculando o que teria acontecido com o seu dinheiro...',
-    'Medindo drawdowns - os momentos dificeis tambem contam...',
-  ];
+  const progressMsgs = getLoadMsgs();
 
   // Obter token do usuario para RLS
   const session = await db.auth.getSession();
@@ -3569,14 +3563,32 @@ async function pollBacktestResult(backtestId, onProgress, onDone, onError) {
 }
 
 // ─── LOADING ─────────────────────────────────────────────────
-const LOAD_MSGS=[
-  'Enviando para processamento...',
-  'Analisando 7 anos de dados reais do mercado...',
-  'Simulando cada operacao, candle por candle...',
-  'Calculando o que teria acontecido com o seu dinheiro...',
-  'Medindo drawdowns - os momentos dificeis tambem contam...',
-  'Quase la. A verdade sobre esse setup esta chegando...',
-];
+function calcCandles(tf) {
+  // Periodo historico: Jan 2019 - Mar 2026 = ~7.25 anos = ~1856 dias uteis
+  const diasUteis = 1856;
+  const minPorDia = {'1m':480,'2m':480,'5m':480,'10m':480,'15m':480,'30m':480,'60m':480,'D':1};
+  const tfMin = {'1m':1,'2m':2,'5m':5,'10m':10,'15m':15,'30m':30,'60m':60,'D':480};
+  const minDia = minPorDia[tf] || 480;
+  const minTf  = tfMin[tf] || 5;
+  const total  = Math.round((diasUteis * minDia) / minTf);
+  return total.toLocaleString('pt-BR');
+}
+
+function getLoadMsgs() {
+  const tf = state.cfg ? state.cfg.tf : '5m';
+  const nCandles = calcCandles(tf);
+  const tfLabel = {'1m':'1 minuto','2m':'2 minutos','5m':'5 minutos','10m':'10 minutos',
+                   '15m':'15 minutos','30m':'30 minutos','60m':'60 minutos','D':'diário'}[tf] || tf;
+  return [
+    'Enviando para processamento...',
+    'Analisando 7 anos de dados reais do mercado...',
+    `Carregando ${nCandles} candles de ${tfLabel}...`,
+    'Simulando cada operacao, candle por candle...',
+    'Calculando o que teria acontecido com o seu dinheiro...',
+    'Medindo drawdowns - os momentos dificeis tambem contam...',
+    'Quase la. A verdade sobre esse setup esta chegando...',
+  ];
+}
 
 async function startLoading() {
   state.animate=true;state.screen='loading';state.loadMsg=0;renderApp();
@@ -3650,7 +3662,7 @@ function renderLoading() {
   spin.innerHTML=`<div class="spinner-ring"></div><div class="spinner-inner"></div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`;
   const title=div('');title.style.cssText='font-size:19px;font-weight:700;color:var(--tx);margin-bottom:5px';title.textContent='Rodando backtest';
   const tagline=div('');tagline.style.cssText='font-size:12px;color:var(--txm);margin-bottom:14px;font-style:italic';tagline.textContent='Se o assunto for o seu dinheiro, não chute. Teste.';
-  const msg=div('');msg.id='load-msg';msg.style.cssText='font-size:13px;color:var(--txs);margin-bottom:20px;min-height:20px';msg.textContent=LOAD_MSGS[0];
+  const msg=div('');msg.id='load-msg';msg.style.cssText='font-size:13px;color:var(--txs);margin-bottom:20px;min-height:20px';msg.textContent=getLoadMsgs()[0];
   const barWrap=div('load-bar');const fill=div('load-fill');barWrap.appendChild(fill);
   el.append(spin,div('',title,tagline,msg,barWrap));
   return el;
