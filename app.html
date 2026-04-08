@@ -2244,10 +2244,10 @@ function validateStep1(cfg) {
     issues.push({type:'block',rule:'R34',msg:'O horário de início deve ser anterior ao horário de fim.'});
   const tfMin={'1m':1,'2m':2,'5m':5,'10m':10,'15m':15,'30m':30,'60m':60,'D':480};
   const [sh,sm]=cfg.tStart.split(':').map(Number);
-  const [eh,em]=cfg.tEnd.split(':').map(Number);
-  const win=(eh*60+em)-(sh*60+sm);
+  const [lh,lm]=cfg.tLastEntry.split(':').map(Number);
+  const win=(lh*60+lm)-(sh*60+sm);
   if (win>0 && tfMin[cfg.tf] && win<tfMin[cfg.tf])
-    issues.push({type:'block',rule:'R35',msg:`A janela operacional (${win} min) é menor que o timeframe selecionado (${cfg.tf}). Nenhum candle completo caberá neste período. Aumente a janela ou reduza o timeframe.`});
+    issues.push({type:'block',rule:'R35',msg:`A janela de leitura (${win} min) é menor que o timeframe selecionado (${cfg.tf}). Nenhum candle completo caberá neste período. Aumente a janela ou reduza o timeframe.`});
   return issues;
 }
 
