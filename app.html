@@ -3142,7 +3142,10 @@ function renderStep2() {
           const g=div('');g.style.cssText='display:flex;flex-direction:column;gap:3px';
           const lb=div('');lb.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';lb.textContent='Valor';
           g.appendChild(lb);
-          g.appendChild(stepper(p.val,-999,99999,'',v=>{p.val=v;updateCondition(lbl,c);}));
+          // Min/max do valor baseado no range do indicador
+          const _vMin=(c.id==='rsi'||c.id==='stoch'||c.id==='adx')?0:c.id==='williams'?-100:-999;
+          const _vMax=(c.id==='rsi'||c.id==='stoch'||c.id==='adx')?100:c.id==='williams'?0:99999;
+          g.appendChild(stepper(p.val,_vMin,_vMax,'',v=>{p.val=v;updateCondition(lbl,c);}));
           paramsRow.appendChild(g);
         }
         if(p.dev!==undefined){
