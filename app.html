@@ -2098,6 +2098,41 @@ function validateNewCondition(newCond, existingConds) {
   if (id==='range' && p.val!=null && p.val<=0)
     issues.push({type:'block',rule:'R31',msg:'O valor de referência deve ser maior que zero.'});
 
+  // R44-R47: CROSS em extremos de range — condição matematicamente impossível
+  // RSI e Estocástico: range 0-100
+  if ((id==='rsi'||id==='stoch') && p.val!=null) {
+    if (p.cond==='cruza acima de' && p.val<=0)
+      issues.push({type:'block',rule:'R44',msg:'Cruzar acima de 0 é impossível — este oscilador nunca fica abaixo de 0.'});
+    if (p.cond==='cruza abaixo de' && p.val>=100)
+      issues.push({type:'block',rule:'R45',msg:'Cruzar abaixo de 100 é impossível — este oscilador nunca ultrapassa 100.'});
+    if (p.cond==='cruza acima de' && p.val>=100)
+      issues.push({type:'block',rule:'R44',msg:'Cruzar acima de 100 é impossível — este oscilador nunca ultrapassa 100.'});
+    if (p.cond==='cruza abaixo de' && p.val<=0)
+      issues.push({type:'block',rule:'R45',msg:'Cruzar abaixo de 0 é impossível — este oscilador nunca fica abaixo de 0.'});
+  }
+  // Williams %R: range -100 a 0
+  if (id==='williams' && p.val!=null) {
+    if (p.cond==='cruza acima de' && p.val>=0)
+      issues.push({type:'block',rule:'R46',msg:'Cruzar acima de 0 é impossível — o Williams %R nunca ultrapassa 0.'});
+    if (p.cond==='cruza abaixo de' && p.val<=-100)
+      issues.push({type:'block',rule:'R46',msg:'Cruzar abaixo de -100 é impossível — o Williams %R nunca fica abaixo de -100.'});
+    if (p.cond==='cruza abaixo de' && p.val>=0)
+      issues.push({type:'block',rule:'R46',msg:'Cruzar abaixo de 0 é impossível — o Williams %R nunca ultrapassa 0.'});
+    if (p.cond==='cruza acima de' && p.val<=-100)
+      issues.push({type:'block',rule:'R46',msg:'Cruzar acima de -100 é impossível — o Williams %R nunca fica abaixo de -100.'});
+  }
+  // ADX: range 0-100
+  if (id==='adx' && p.val!=null) {
+    if (p.cond==='cruza acima de' && p.val<=0)
+      issues.push({type:'block',rule:'R47',msg:'Cruzar acima de 0 é impossível — o ADX nunca fica abaixo de 0.'});
+    if (p.cond==='cruza abaixo de' && p.val>=100)
+      issues.push({type:'block',rule:'R47',msg:'Cruzar abaixo de 100 é impossível — o ADX nunca ultrapassa 100.'});
+    if (p.cond==='cruza acima de' && p.val>=100)
+      issues.push({type:'block',rule:'R47',msg:'Cruzar acima de 100 é impossível — o ADX nunca ultrapassa 100.'});
+    if (p.cond==='cruza abaixo de' && p.val<=0)
+      issues.push({type:'block',rule:'R47',msg:'Cruzar abaixo de 0 é impossível — o ADX nunca fica abaixo de 0.'});
+  }
+
   // R26: 4+ condições simultâneas
   if (existingConds.length >= 3)
     issues.push({type:'warn',rule:'R26',msg:'Com 4 ou mais condições simultâneas, o número de sinais pode ser insuficiente para análise estatística confiável.'});
