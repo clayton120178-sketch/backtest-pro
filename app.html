@@ -2232,6 +2232,43 @@ function validateNewCondition(newCond, existingConds) {
         issues.push({type:'warn',rule:'R19',msg:`SMA e EMA com mesmo período e condição produzem sinais quase idênticos. Considere usar apenas uma.`});
     }
 
+    // R49: MA mesmo indicador + mesmo período + condições incoerentes ou impossíveis
+    if (MA_IDS.includes(id) && MA_IDS.includes(ex.id) && id===ex.id && p.per===ep.per && !p.per2 && !ep.per2) {
+      // IMPOSSÍVEL: cruza acima da longa e cruza abaixo da longa no mesmo candle
+      if ((p.cond==='Média curta cruza acima da longa'&&ep.cond==='Média curta cruza abaixo da longa')||
+          (p.cond==='Média curta cruza abaixo da longa'&&ep.cond==='Média curta cruza acima da longa'))
+        issues.push({type:'block',rule:'R49',msg:`A média curta não pode cruzar para cima e para baixo da ${id.toUpperCase()}(${p.per}) no mesmo candle.`});
+      // INCOERENTE: direções opostas — preço cruzando acima + média cruzando abaixo
+      if ((p.cond==='Preço cruza acima'&&ep.cond==='Média curta cruza abaixo da longa')||
+          (p.cond==='Média curta cruza abaixo da longa'&&ep.cond==='Preço cruza acima'))
+        issues.push({type:'block',rule:'R49',msg:`Preço cruzando acima e média cruzando abaixo da ${id.toUpperCase()}(${p.per}) são condições contraditórias.`});
+      // INCOERENTE: direções opostas — preço cruzando abaixo + média cruzando acima
+      if ((p.cond==='Preço cruza abaixo'&&ep.cond==='Média curta cruza acima da longa')||
+          (p.cond==='Média curta cruza acima da longa'&&ep.cond==='Preço cruza abaixo'))
+        issues.push({type:'block',rule:'R49',msg:`Preço cruzando abaixo e média cruzando acima da ${id.toUpperCase()}(${p.per}) são condições contraditórias.`});
+      // INCOERENTE: preço está acima + média cruzando abaixo (sinais opostos)
+      if ((p.cond==='Preço está acima'&&ep.cond==='Média curta cruza abaixo da longa')||
+          (p.cond==='Média curta cruza abaixo da longa'&&ep.cond==='Preço está acima'))
+        issues.push({type:'block',rule:'R49',msg:`Preço acima (tendência de alta) e média cruzando abaixo (sinal de baixa) da ${id.toUpperCase()}(${p.per}) são condições contraditórias.`});
+      // INCOERENTE: preço está abaixo + média cruzando acima (sinais opostos)
+      if ((p.cond==='Preço está abaixo'&&ep.cond==='Média curta cruza acima da longa')||
+          (p.cond==='Média curta cruza acima da longa'&&ep.cond==='Preço está abaixo'))
+        issues.push({type:'block',rule:'R49',msg:`Preço abaixo (tendência de baixa) e média cruzando acima (sinal de alta) da ${id.toUpperCase()}(${p.per}) são condições contraditórias.`});
+      // INCOERENTE: preço cruza acima + MA_CROSS com mesmo período (mistura de comparações)
+      if ((p.cond==='Preço cruza acima'&&ep.cond==='Média curta cruza acima da longa')||
+          (p.cond==='Média curta cruza acima da longa'&&ep.cond==='Preço cruza acima'))
+        issues.push({type:'block',rule:'R49',msg:`Não é possível comparar preço vs ${id.toUpperCase()} e média vs média usando o mesmo período (${p.per}).`});
+      if ((p.cond==='Preço cruza abaixo'&&ep.cond==='Média curta cruza abaixo da longa')||
+          (p.cond==='Média curta cruza abaixo da longa'&&ep.cond==='Preço cruza abaixo'))
+        issues.push({type:'block',rule:'R49',msg:`Não é possível comparar preço vs ${id.toUpperCase()} e média vs média usando o mesmo período (${p.per}).`});
+      // INCOERENTE: bidirecional (compra e venda) + qualquer condição direcional com mesmo período
+      const bidir = 'Cruzamento de médias (compra e venda)';
+      const dirConds = ['Preço cruza acima','Preço cruza abaixo','Preço está acima','Preço está abaixo',
+                        'Média curta cruza acima da longa','Média curta cruza abaixo da longa'];
+      if ((p.cond===bidir && dirConds.includes(ep.cond))||(ep.cond===bidir && dirConds.includes(p.cond)))
+        issues.push({type:'block',rule:'R49',msg:`'Cruzamento de médias (compra e venda)' não pode ser combinado com condição direcional da ${id.toUpperCase()}(${p.per}) — use períodos diferentes.`});
+    }
+
     // R08-R10: VWAP
     if (id==='vwap' && ex.id==='vwap') {
       if ((p.cond==='Preço está acima do VWAP'&&ep.cond==='Preço está abaixo do VWAP')||(p.cond==='Preço está abaixo do VWAP'&&ep.cond==='Preço está acima do VWAP'))
