@@ -2146,6 +2146,10 @@ function validateNewCondition(newCond, existingConds) {
       issues.push({type:'block',rule:'R47',msg:'Cruzar abaixo de 0 é impossível — o ADX nunca fica abaixo de 0.'});
   }
 
+  // R48: Bollinger período mínimo 6
+  if (id==='bb' && p.per!=null && p.per < 6)
+    issues.push({type:'block',rule:'R48',msg:'O período mínimo das Bandas de Bollinger é 6. Com períodos menores as bandas recalculam rápido demais e o preço raramente fecha fora delas.'});
+
   // R26: 4+ condições simultâneas
   if (existingConds.length >= 3)
     issues.push({type:'warn',rule:'R26',msg:'Com 4 ou mais condições simultâneas, o número de sinais pode ser insuficiente para análise estatística confiável.'});
@@ -3128,7 +3132,8 @@ function renderStep2() {
           const lb=div('');lb.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';
           lb.textContent=p.per2!==undefined?'Período curta':'Período';
           g.appendChild(lb);
-          g.appendChild(stepper(p.per,1,500,'',v=>{p.per=v;updateCondition(lbl,c);}));
+          const _perMin=(c.id==='bb')?6:1;
+          g.appendChild(stepper(p.per,_perMin,500,'',v=>{p.per=v;updateCondition(lbl,c);}));
           paramsRow.appendChild(g);
         }
         if(p.per2!==undefined){
