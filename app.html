@@ -4512,27 +4512,40 @@ function showTourStep(){
   const arrow=div('tour-arrow');
 
   tooltip.append(titleEl,bodyEl,footer);
+  // Renderiza invisível primeiro para medir dimensões reais
+  tooltip.style.cssText='position:fixed;visibility:hidden;left:0;top:0';
   document.body.appendChild(tooltip);
 
-  // Position tooltip
+  // Mede após renderização
   const ttRect=tooltip.getBoundingClientRect();
   let left=rect.left, top;
-  if(step.pos==='bottom'||!step.pos){
+
+  // Tenta posição preferida, faz fallback se não couber
+  const spaceBelow = window.innerHeight - rect.bottom - 12;
+  const spaceAbove = rect.top - 12;
+  let useBottom = (step.pos==='bottom'||!step.pos) ? true : false;
+
+  // Fallback: se não couber na posição preferida, tenta o outro lado
+  if(useBottom && spaceBelow < ttRect.height && spaceAbove >= ttRect.height) useBottom=false;
+  if(!useBottom && spaceAbove < ttRect.height && spaceBelow >= ttRect.height) useBottom=true;
+
+  if(useBottom){
     top=rect.bottom+12;
     arrow.className='tour-arrow tour-arrow-bottom';
-    tooltip.appendChild(arrow);
   } else {
     top=rect.top-ttRect.height-12;
     arrow.className='tour-arrow tour-arrow-top';
-    tooltip.appendChild(arrow);
   }
-  // Keep within viewport
+  tooltip.appendChild(arrow);
+
+  // Mantém dentro da viewport horizontalmente
   if(left+ttRect.width>window.innerWidth-16) left=window.innerWidth-ttRect.width-16;
   if(left<16) left=16;
-  if(top<8) {top=rect.bottom+12;arrow.className='tour-arrow tour-arrow-bottom';}
-  if(top+ttRect.height>window.innerHeight-8){top=rect.top-ttRect.height-12;arrow.className='tour-arrow tour-arrow-top';}
+  // Garante que não sai da viewport verticalmente
+  if(top<8) top=8;
+  if(top+ttRect.height>window.innerHeight-8) top=window.innerHeight-ttRect.height-8;
 
-  tooltip.style.left=left+'px';tooltip.style.top=top+'px';tooltip.style.position='fixed';
+  tooltip.style.cssText=`position:fixed;left:${left}px;top:${top}px`;
 }
 
 function nextTourStep(){tourStepIdx++;showTourStep();}
