@@ -3296,7 +3296,7 @@ function renderStep4() {
       sub.addEventListener('click',e=>e.stopPropagation());
       if(s.id==='fixed') sub.appendChild(stepperPoints(cfg.stopPts,1,5000,cfg.asset,v=>{cfg.stopPts=v;updatePreview();}));
       if(s.id==='hl_candle') sub.appendChild(stepperPoints(cfg.stopOffset,0,1000,cfg.asset,v=>{cfg.stopOffset=v;updatePreview();}));
-      if(s.id==='n_candles'){sub.appendChild(stepper(cfg.stopCandles,1,50,'candles',v=>{cfg.stopCandles=v;updatePreview();}));sub.appendChild(stepperPoints(cfg.stopOffset,0,1000,cfg.asset,v=>{cfg.stopOffset=v;updatePreview();}));}
+      if(s.id==='n_candles'){sub.appendChild(stepper(cfg.stopCandles,1,50,'candles',v=>{cfg.stopCandles=v;updatePreview();}));}
       if(s.id==='atr'){
         const atrRow=div('');atrRow.style.cssText='display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end';
         const perG=div('');const perL=div('');perL.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px';perL.textContent='Período ATR';
@@ -3445,7 +3445,7 @@ function renderConfirm() {
   const cfg=state.cfg;
   const asset=findAsset(cfg.asset);
   const entryMap={breakout:'Rompimento da máx/mín do candle de sinal',next_open:'Abertura do próximo candle'};
-  const stopDesc={fixed:`${cfg.stopPts} pts abaixo/acima da entrada`,hl_candle:`Máx/Mín do candle de sinal (+${cfg.stopOffset} pts)`,n_candles:`Máx/Mín dos últimos ${cfg.stopCandles} candles (+${cfg.stopOffset} pts)`,atr:`${cfg.stopAtrMult.toFixed(1)}× ATR(${cfg.stopAtrPer})`}[cfg.stopType];
+  const stopDesc={fixed:`${cfg.stopPts} pts abaixo/acima da entrada`,hl_candle:`Máx/Mín do candle de sinal (+${cfg.stopOffset} pts)`,n_candles:`Máx/Mín dos últimos ${cfg.stopCandles} candles (1 tick de buffer)`,atr:`${cfg.stopAtrMult.toFixed(1)}× ATR(${cfg.stopAtrPer})`}[cfg.stopType];
   const tpDesc={fixed:`${cfg.tpPts} pts`,rr:`${cfg.tpRR}× o risco${cfg.stopType==='fixed'?' = '+(cfg.tpRR*cfg.stopPts).toLocaleString('pt-BR')+' pts':''}`,atr:`${cfg.tpAtrMult.toFixed(1)}× ATR(${cfg.tpAtrPer})`,fib_ext:`Extensão Fibonacci ${cfg.tpFibLevel}%`,none:'Sem alvo fixo'}[cfg.tpType];
   const mgmt=[];
   if(cfg.trailing) mgmt.push(`Trailing após ${cfg.trailAct} pts (dist.${cfg.trailDist}, step ${cfg.trailStep})`);
@@ -3582,7 +3582,13 @@ async function submitBacktestToBackend() {
         'Authorization': `Bearer ${token}`,
         'apikey': SUPA_KEY,
       },
-      body: JSON.stringify({ cfg: state.cfg }),
+      body: JSON.stringify({ cfg: {
+        ...state.cfg,
+        // n_candles: offset fixo em 1 tick — não exposto ao usuário
+        stopOffset: state.cfg.stopType==='n_candles'
+          ? getAssetTick(state.cfg.asset).tick
+          : state.cfg.stopOffset,
+      } }),
     });
 
     const data = await res.json();
@@ -3953,7 +3959,7 @@ function buildStrategySentence(cfg) {
   const stopMap = {
     fixed: `stop fixo de <strong>${cfg.stopPts} pts</strong>`,
     hl_candle: `stop na máx/mín do candle de sinal`,
-    n_candles: `stop na máx/mín dos últimos <strong>${cfg.stopCandles} candles</strong>`,
+    n_candles: `stop na máx/mín dos últimos <strong>${cfg.stopCandles} candles</strong> (1 tick de buffer)`,
     atr: `stop de <strong>${cfg.stopAtrMult}× ATR(${cfg.stopAtrPer})</strong>`,
   };
   const tpMap = {
