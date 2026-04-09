@@ -904,7 +904,7 @@ function openStrategiesModal() {
 
     const tags=div('');tags.style.cssText='display:flex;gap:5px;flex-wrap:wrap';
     strat.conditions.forEach(c=>{
-      const tag=div('');tag.style.cssText='font-size:10px;font-weight:600;color:var(--txm);padding:2px 8px;border-radius:4px;background:var(--bg2);font-family:JetBrains Mono';
+      const tag=div('');tag.style.cssText='font-size:10px;font-weight:600;color:var(--txs);padding:2px 8px;border-radius:4px;background:var(--bg3);border:0.5px solid var(--bd);font-family:JetBrains Mono';
       tag.textContent=condLabel(c);
       tags.appendChild(tag);
     });
