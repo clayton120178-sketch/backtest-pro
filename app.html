@@ -2386,6 +2386,7 @@ function openModal(forExitCond=false) {
 function closeModal() { modalState.open=false; const m=document.getElementById('modal-container'); if(m) m.remove(); }
 
 function renderModal() {
+  try {
   let existing=document.getElementById('modal-container');
   if(existing) existing.remove();
   if(!modalState.open) return;
@@ -2960,6 +2961,7 @@ function renderModal() {
     // refreshModalValidation: usa referência direta ao confirmBtn (não getElementById)
     // pois é chamada antes e depois do modal entrar no DOM
     window.refreshModalValidation = function() {
+      try {
       const tempCond={id:ms.ind.id,name:ms.ind.name,params:{...ms.params}};
       const valIssues = ms.forExitCond
         ? validateExitCondition(tempCond, state.cfg.conditions)
@@ -2997,6 +2999,7 @@ function renderModal() {
           modalWarnOverride=false;closeModal();renderApp();
         };
       }
+      } catch(err) { console.error('refreshModalValidation erro:', err); }
     };
   }
 
@@ -3004,6 +3007,7 @@ function renderModal() {
   document.body.appendChild(modalEl);
   // Chamar APÓS inserção no DOM (para val-feedback estar acessível)
   if(window.refreshModalValidation) refreshModalValidation();
+  } catch(err) { console.error('renderModal erro:', err, err.stack); }
 }
 
 // ─── STEP RENDERERS ───────────────────────────────────────────
