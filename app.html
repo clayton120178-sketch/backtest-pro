@@ -2055,14 +2055,41 @@ function buildCondPreview(indId, condText, params={}) {
 
   // ═══ SMART MONEY ═══
   if(indId==='fvg'){
-    drawCds(CDS.slice(0,6),0.4);
-    const imp=[{x:CDS[6].x,o:70,c:35,h:30,l:74,w:5},{x:CDS[7].x,o:35,c:25,h:20,l:38,w:5},{x:CDS[8].x,o:25,c:18,h:14,l:28,w:5}];
-    drawCds(imp,0.7);
-    const fvgTop=CDS[5].l,fvgBot=imp[0].h;
-    rc(CDS[5].x,fvgBot,W-CDS[5].x-8,fvgTop-fvgBot,'#6366F1',0.1,2);
-    ln(CDS[5].x,fvgTop,W-8,fvgTop,'#6366F1',0.6,'2,2');ln(CDS[5].x,fvgBot,W-8,fvgBot,'#6366F1',0.6,'2,2');
-    tx(W/2,((fvgTop+fvgBot)/2)+3,'FVG','#6366F1',8,'middle');
-    tx(10,14,'FVG','#6366F1',8);
+    const isMitigation = params.entryMode==='mitigation' || (params.cond||'').includes('retornar');
+    if(!isMitigation){
+      // Modo imediato: impulso + imbalance + entrada no candle seguinte
+      drawCds(CDS.slice(0,8),0.35);
+      const imp=[{x:CDS[8].x,o:65,c:28,h:22,l:68,w:5},{x:CDS[9].x,o:28,c:18,h:14,l:30,w:5}];
+      drawCds(imp,0.85);
+      const fvgTop=CDS[7].l+2, fvgBot=imp[0].h-2;
+      rc(CDS[7].x,fvgBot,imp[1].x+5-CDS[7].x,fvgTop-fvgBot,'#6366F1',0.12,2);
+      ln(CDS[7].x,fvgTop,imp[1].x+5,fvgTop,'#6366F1',0.7,'2,2');
+      ln(CDS[7].x,fvgBot,imp[1].x+5,fvgBot,'#6366F1',0.7,'2,2');
+      // Entry arrow
+      const ex=CDS[10]?CDS[10].x:imp[1].x+18;
+      const ey=imp[1].c-4;
+      rc(ex,ey,5,14,'#10B981',0.85,1);
+      svg.appendChild(hsvg('polygon',{points:`${ex+2.5},${ey-5} ${ex-2},${ey+1} ${ex+7},${ey+1}`,fill:'#10B981','fill-opacity':0.9}));
+      tx(ex+8,ey+4,'ENTRADA','#00D4AA',6);
+    } else {
+      // Modo retorno: impulso + subida + recuo até o imbalance + entrada
+      const pre=[{x:14,o:80,c:50,h:44,l:84,w:6}]; drawCds(pre,0.9);
+      rc(10,52,22,28,'#6366F1',0.12,2);
+      ln(10,52,32,52,'#6366F1',0.7,'2,2'); ln(10,80,32,80,'#6366F1',0.7,'2,2');
+      tx(12,68,'imbala-','#6366F1',6); tx(12,76,'nce','#6366F1',6);
+      // Continuação subindo
+      const cont=[{x:36,o:46,c:30,h:26,l:48,w:5},{x:46,o:30,c:20,h:16,l:32,w:5},{x:56,o:20,c:14,h:10,l:22,w:5}];
+      drawCds(cont,0.7);
+      // Recuo (candles vermelhos descendo)
+      const pb=[{x:70,o:20,c:30,h:18,l:32,w:5},{x:80,o:30,c:44,h:28,l:46,w:5},{x:90,o:44,c:58,h:42,l:60,w:5},{x:100,o:58,c:68,h:56,l:72,w:5}];
+      drawCds(pb,0.65);
+      // Chegada no imbalance + entrada
+      rc(10,52,106,28,'#6366F1',0.06,2);
+      svg.appendChild(hsvg('circle',{cx:114,cy:70,r:4,fill:'#00D4AA','fill-opacity':0.25,stroke:'#00D4AA','stroke-width':1}));
+      ln(114,66,114,54,'#00D4AA',1.2); ln(111,58,114,54,'#00D4AA',1.2); ln(117,58,114,54,'#00D4AA',1.2);
+      tx(120,60,'ENTRADA','#00D4AA',6);
+    }
+    tx(10,10,isMitigation?'FVG — Retorno ao imbalance':'FVG — Entrada imediata','#6366F1',7);
     return svg;
   }
 
