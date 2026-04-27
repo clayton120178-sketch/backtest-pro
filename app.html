@@ -2558,7 +2558,7 @@ function renderModal() {
         const _tx=(x,y,t,c,sz,a)=>{const e=hsvg('text',{x,y,fill:c,'font-size':sz||7,'font-family':'JetBrains Mono','font-weight':600,'text-anchor':a||'start'});e.textContent=t;s.appendChild(e);};
         const _cd=(x,o,c,hi,lo,op)=>{const bull=c<o;const col=bull?'#10B981':'#EF4444';_ln(x+5,hi,x+5,lo,col,1);_rc(x,Math.min(o,c),10,Math.max(2,Math.abs(o-c)),col,op||0.8,1);};
         const _ci=(x,y,c,r)=>s.appendChild(hsvg('circle',{cx:x,cy:y,r:r||4,fill:c,'fill-opacity':0.25,stroke:c,'stroke-width':1.5}));
-        drawFn(_ln,_rc,_tx,_cd,_ci);
+        drawFn(_ln,_rc,_tx,_cd,_ci,_TH);
         const wrap=div('');wrap.style.cssText='margin:8px 0 4px;border-radius:8px;overflow:hidden';
         wrap.appendChild(s);return wrap;
       };
@@ -2584,7 +2584,7 @@ function renderModal() {
         mitNote.innerHTML='<span style="color:#6366F1;font-size:14px;flex-shrink:0">ℹ</span><span>A validade da ordem limite usa o campo <strong style="color:var(--tx)">Validade em candles</strong> configurado na seção Entrada.</span>';
         frag.appendChild(mitNote);
         // Visual: what is an FVG
-        frag.appendChild(miniSVG(500,130,(ln,rc,tx,cd,ci)=>{
+        frag.appendChild(miniSVG(500,130,(ln,rc,tx,cd,ci,th)=>{
           // Before impulse
           cd(16,75,60,50,82,0.5);cd(46,60,50,42,68,0.5);
           // Impulse candles leaving gap
@@ -2599,9 +2599,9 @@ function renderModal() {
           ln(240,24,240,42,'#00D4AA',2);ln(235,37,240,42,'#00D4AA',2);ln(245,37,240,42,'#00D4AA',2);
           tx(252,38,'retorno','#00D4AA',12);
           cd(220,42,48,34,56,0.6);
-          tx(370,24,'Gap = zona sem',_TH.txs,11);
-          tx(370,40,'negociação. O preço',_TH.txs,11);
-          tx(370,56,'costuma voltar.',_TH.txs,11);
+          tx(370,24,'Gap = zona sem',th.txs,11);
+          tx(370,40,'negociação. O preço',th.txs,11);
+          tx(370,56,'costuma voltar.',th.txs,11);
         }));
       }
 
@@ -2613,23 +2613,23 @@ function renderModal() {
         frag.appendChild(pRow);
         // Confirmation pills with visual
         frag.appendChild(pills('Confirmação','Fechamento = o candle precisa fechar além do nível. Sombra = basta a sombra ultrapassar.',['Por fechamento','Por sombra'],ms.params.conf==='sombra'?'Por sombra':'Por fechamento',v=>{ms.params.conf=v==='Por sombra'?'sombra':'fechamento';}));
-        frag.appendChild(miniSVG(500,120,(ln,rc,tx,cd,ci)=>{
+        frag.appendChild(miniSVG(500,120,(ln,rc,tx,cd,ci,th)=>{
           // --- "Por fechamento" side ---
           ln(8,60,235,60,'#F59E0B',1,'4,3');
           tx(14,54,'nível','#F59E0B',11);
           rc(85,24,18,32,'#10B981',0.8,2);ln(94,18,94,56,'#10B981',1.5);
-          tx(114,40,'corpo fecha',_TH.txs,11);
+          tx(114,40,'corpo fecha',th.txs,11);
           tx(114,54,'além do nível ✓','#10B981',11);
-          tx(120,108,'POR FECHAMENTO',_TH.tx,12,'middle');
+          tx(120,108,'POR FECHAMENTO',th.tx,12,'middle');
           // Divider
           ln(250,12,250,105,'#2A2A3C',1);
           // --- "Por sombra" side ---
           ln(260,60,490,60,'#F59E0B',1,'4,3');
           tx(266,54,'nível','#F59E0B',11);
           rc(340,64,18,26,'#10B981',0.8,2);ln(349,26,349,90,'#10B981',1.5);
-          tx(368,40,'sombra passa',_TH.txs,11);
+          tx(368,40,'sombra passa',th.txs,11);
           tx(368,54,'corpo fica acima ✓','#10B981',11);
-          tx(375,108,'POR SOMBRA',_TH.tx,12,'middle');
+          tx(375,108,'POR SOMBRA',th.tx,12,'middle');
         }));
 
         // Limites de pernas do BoS
@@ -2671,16 +2671,16 @@ function renderModal() {
         frag.appendChild(pRow);
         frag.appendChild(pills('Confirmação','Fechamento = o candle precisa fechar além do nível. Sombra = basta a sombra ultrapassar.',['Por fechamento','Por sombra'],ms.params.conf==='sombra'?'Por sombra':'Por fechamento',v=>{ms.params.conf=v==='Por sombra'?'sombra':'fechamento';}));
         // Same confirmation visual as BoS
-        frag.appendChild(miniSVG(500,120,(ln,rc,tx,cd,ci)=>{
+        frag.appendChild(miniSVG(500,120,(ln,rc,tx,cd,ci,th)=>{
           ln(8,60,235,60,'#F59E0B',1,'4,3');tx(14,54,'nível','#F59E0B',11);
           rc(85,24,18,32,'#10B981',0.8,2);ln(94,18,94,56,'#10B981',1.5);
-          tx(114,40,'corpo fecha',_TH.txs,11);tx(114,54,'além do nível ✓','#10B981',11);
-          tx(120,108,'POR FECHAMENTO',_TH.tx,12,'middle');
+          tx(114,40,'corpo fecha',th.txs,11);tx(114,54,'além do nível ✓','#10B981',11);
+          tx(120,108,'POR FECHAMENTO',th.tx,12,'middle');
           ln(250,12,250,105,'#2A2A3C',1);
           ln(260,60,490,60,'#F59E0B',1,'4,3');tx(266,54,'nível','#F59E0B',11);
           rc(340,64,18,26,'#10B981',0.8,2);ln(349,26,349,90,'#10B981',1.5);
-          tx(368,40,'sombra passa',_TH.txs,11);tx(368,54,'corpo fica acima ✓','#10B981',11);
-          tx(375,108,'POR SOMBRA',_TH.tx,12,'middle');
+          tx(368,40,'sombra passa',th.txs,11);tx(368,54,'corpo fica acima ✓','#10B981',11);
+          tx(375,108,'POR SOMBRA',th.tx,12,'middle');
         }));
 
         // Limites de tendência prévia (CHoCH)
@@ -2724,7 +2724,7 @@ function renderModal() {
         grabNote.innerHTML='<span style="color:#6366F1;font-size:14px;flex-shrink:0">ℹ</span><span>A qualificação do Grab é automática: o pavio deve representar ≥ 50% do range do candle e o fechamento deve ser na metade oposta. Isso filtra rejeições fraquejadas.</span>';
         frag.appendChild(grabNote);
         // Grab visual
-        frag.appendChild(miniSVG(500,140,(ln,rc,tx,cd,ci)=>{
+        frag.appendChild(miniSVG(500,140,(ln,rc,tx,cd,ci,th)=>{
           // Level line
           ln(8,90,492,90,'#F59E0B',1.5,'5,4');
           tx(14,108,'nível de liquidez','#F59E0B',11);
@@ -2738,10 +2738,10 @@ function renderModal() {
           ln(180,82,180,58,'#10B981',2);ln(175,64,180,58,'#10B981',2);ln(185,64,180,58,'#10B981',2);
           // Recovery candles
           cd(200,58,36,28,66,0.7);cd(230,36,24,18,44,0.7);cd(260,22,16,10,30,0.7);
-          tx(340,36,'BoS falhado:',_TH.txs,12);
-          tx(340,54,'viola o nível mas',_TH.txs,12);
-          tx(340,72,'fecha dentro → venda',_TH.txs,12);
-          tx(200,130,'GRAB LOW → COMPRA',_TH.tx,12,'middle');
+          tx(340,36,'BoS falhado:',th.txs,12);
+          tx(340,54,'viola o nível mas',th.txs,12);
+          tx(340,72,'fecha dentro → venda',th.txs,12);
+          tx(200,130,'GRAB LOW → COMPRA',th.tx,12,'middle');
         }));
       }
 
@@ -2758,7 +2758,7 @@ function renderModal() {
         cRow.appendChild(stepper(ms.params.confCandles,1,20,'candles',v=>{ms.params.confCandles=v;if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(cRow);
         // Sweep visual
-        frag.appendChild(miniSVG(500,150,(ln,rc,tx,cd,ci)=>{
+        frag.appendChild(miniSVG(500,150,(ln,rc,tx,cd,ci,th)=>{
           // Price action approaching level
           cd(16,54,66,46,72,0.4);cd(46,66,58,50,76,0.4);cd(76,58,50,42,68,0.4);cd(106,50,42,34,60,0.4);
           // Liquidity level
@@ -2775,10 +2775,10 @@ function renderModal() {
           cd(230,64,42,34,72,0.7);cd(260,42,30,24,48,0.7);cd(290,30,18,14,36,0.7);
           tx(240,140,'confirmação →','#10B981',11);
           // Summary steps
-          tx(340,36,'1. Preço se aproxima do nível',_TH.txs,12);
-          tx(340,56,'2. Varre além (sweep)',_TH.txs,12);
-          tx(340,76,'3. Reverte e confirma',_TH.txs,12);
-          tx(340,100,'Falso rompimento institucional',_TH.txm,10);
+          tx(340,36,'1. Preço se aproxima do nível',th.txs,12);
+          tx(340,56,'2. Varre além (sweep)',th.txs,12);
+          tx(340,76,'3. Reverte e confirma',th.txs,12);
+          tx(340,100,'Falso rompimento institucional',th.txm,10);
         }));
       }
 
