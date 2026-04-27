@@ -425,7 +425,7 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 
 /* Tooltip */
 .tip-wrap{position:relative;display:inline-flex}
-.tip-box{position:absolute;bottom:130%;left:50%;transform:translateX(-50%);background:var(--bg3);border:0.5px solid var(--bdh);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--tx);line-height:1.5;width:210px;z-index:500;box-shadow:0 6px 24px rgba(0,0,0,.6);pointer-events:none;font-weight:400}
+.tip-box{position:fixed;background:var(--bg3);border:0.5px solid var(--bdh);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--tx);line-height:1.5;width:240px;z-index:9999;box-shadow:0 6px 24px rgba(0,0,0,.8);pointer-events:none;font-weight:400}
 .strategy-sentence{font-size:12px;color:var(--txs);line-height:1.75;animation:fadeUp .2s ease-out}
 .strategy-sentence strong{color:var(--tx);font-weight:600}
 .strategy-sentence .hl{color:#00D4AA;font-weight:600}
@@ -1201,20 +1201,20 @@ function stepperPoints(val, min, max, assetTicker, onChange) {
   return container;
 }
 
-function stepper(val,min=0,max=9999,unit='',onChange) {
+function stepper(val,min=0,max=9999,unit='',onChange,step=1) {
   const inp=h('input',{type:'text',inputmode:'numeric',class:'step-val',value:String(val)});
-  function readVal(){const n=parseInt(inp.value.replace(/[^\d\-]/g,''),10);return isNaN(n)?val:n;}
-  function clamp(n){return Math.max(min,Math.min(max,Math.round(n)));}
+  function readVal(){const n=parseFloat(inp.value.replace(/[^\d\-\.]/g,''));return isNaN(n)?val:n;}
+  function clamp(n){return Math.max(min,Math.min(max,Math.round(n/step)*step));}
   function commit(){const nv=clamp(readVal());inp.value=nv;onChange(nv);}
   inp.addEventListener('change',commit);
   inp.addEventListener('blur',commit);
   inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});
   const dec=h('button',{class:'step-btn',type:'button'});
   dec.textContent='−';
-  dec.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const nv=clamp(readVal()-1);inp.value=nv;onChange(nv);});
+  dec.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const nv=clamp(readVal()-step);inp.value=nv;onChange(nv);});
   const inc=h('button',{class:'step-btn',type:'button'});
   inc.textContent='+';
-  inc.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const nv=clamp(readVal()+1);inp.value=nv;onChange(nv);});
+  inc.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const nv=clamp(readVal()+step);inp.value=nv;onChange(nv);});
   const wrap=div('stepper',dec,inp,inc);
   if(unit) {const u=div('step-unit');u.textContent=unit;wrap.appendChild(u);}
   return wrap;
@@ -1301,7 +1301,20 @@ function slabel(text,tip) {
     tb.textContent=tip;
     tb.style.display='none';
     tw.appendChild(tb);
-    tw.addEventListener('mouseenter',()=>tb.style.display='block');
+    tw.addEventListener('mouseenter',()=>{
+      tb.style.display='block';
+      const r=tw.getBoundingClientRect();
+      const spaceAbove=r.top;
+      const spaceBelow=window.innerHeight-r.bottom;
+      tb.style.left=Math.min(r.left, window.innerWidth-260)+'px';
+      if(spaceAbove>160){
+        tb.style.top='';
+        tb.style.bottom=(window.innerHeight-r.top+6)+'px';
+      } else {
+        tb.style.bottom='';
+        tb.style.top=(r.bottom+6)+'px';
+      }
+    });
     tw.addEventListener('mouseleave',()=>tb.style.display='none');
     sl.appendChild(tw);
   }
@@ -2573,64 +2586,117 @@ function renderModal() {
 
       // ── FVG config ──
       if(smcId==='fvg'){
-        frag.appendChild(pills('Direção','Compra = movimento impulsivo de alta criou o gap (procura FVGs de alta). Venda = movimento impulsivo de baixa criou o gap. Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
+        // Detectar step de tickagem pelo ativo selecionado
+        const asset = state.cfg.asset || 'WIN';
+        const tickStep = (asset==='WDO'||asset==='DOL') ? 0.5 : 5;
+        const tickMin  = tickStep;
 
-        // Tamanho mínimo — tooltip reescrito
+        frag.appendChild(pills('Direção',
+          'Compra = busca imbalances de alta (movimentos impulsivos para cima). Venda = busca imbalances de baixa. Compra e Venda = testa ambos.',
+          SMC_DIRS, ms.params.dir, v=>{ms.params.dir=v;}));
+
+        // Tamanho mínimo do imbalance
         const vRow=div('');
-        vRow.appendChild(slabel('Tamanho mínimo do gap',
-          'Um FVG é o espaço vazio deixado entre o pavio de um candle e o corpo do candle seguinte quando o mercado se move muito rápido. ' +
-          'Gaps pequenos podem ser ruído de mercado. Este filtro garante que só serão considerados FVGs com tamanho relevante — ' +
-          'quanto maior o gap, mais forte foi o movimento que o gerou.'));
-        vRow.appendChild(stepper(ms.params.val,1,5000,'pts',v=>{ms.params.val=v;if(window.refreshModalValidation)refreshModalValidation();}));
+        vRow.appendChild(slabel('Tamanho mínimo do imbalance',
+          'Um imbalance (Fair Value Gap) é uma zona de preço que o mercado atravessou tão rapidamente que não houve negociação real dos dois lados. ' +
+          'Imbalances pequenos podem ser ruído. Este filtro garante que só serão considerados os imbalances gerados por movimentos com força real. ' +
+          'Para o WIN, valores entre 50 e 200 pts costumam filtrar bem o ruído.'));
+        if(!ms.params.val || ms.params.val < tickMin) ms.params.val = tickStep * 10;
+        vRow.appendChild(stepper(ms.params.val, tickMin, 5000, 'pts', v=>{ms.params.val=v;if(window.refreshModalValidation)refreshModalValidation();}, tickStep));
         frag.appendChild(vRow);
 
-        // Condição — determina o modo de entrada implicitamente
-        // "FVG detectado" = entrada imediata; "Preço retorna ao FVG" = entrada na correção
+        // Condição / modo de entrada — unified selector
         if(!ms.params.entryMode) ms.params.entryMode='aggressive';
-        if(!ms.params.cond) ms.params.cond=FVG_CONDS[1];
+        if(!ms.params.cond) ms.params.cond=FVG_CONDS[0];
 
-        // Sincronizar entryMode com a condição selecionada
         function syncFVGMode(cond){
           ms.params.cond=cond;
           ms.params.entryMode=(cond===FVG_CONDS[0])?'aggressive':'mitigation';
         }
 
-        // Condição como seletor principal (substitui pills separados)
         const condBlock=div('');
         condBlock.appendChild(slabel('Quando entrar',
-          'Escolha o momento da entrada: logo após o gap ser formado, ou quando o preço voltar à zona do gap depois de formado.'));
+          'Define o momento da entrada em relação ao imbalance detectado.'));
         const condCards=div('');condCards.style.cssText='display:flex;flex-direction:column;gap:8px';
 
         const COND_OPTIONS=[
           {
             cond: FVG_CONDS[0],
-            title: 'Ao detectar o gap',
-            desc: 'Entra no candle imediatamente após o gap ser formado — o mercado acabou de se mover com força e você quer surfar a continuação.',
-            mode: 'aggressive'
+            title: 'Logo após o imbalance ser formado',
+            desc: 'O mercado se move com força e deixa o imbalance para trás. A entrada ocorre no candle seguinte, apostando na continuação do movimento.',
+            mode: 'aggressive',
+            svgFn: (ln,rc,tx,cd,ci,th)=>{
+              // Candles before
+              cd(10,70,55,48,75,0.4); cd(38,62,48,38,68,0.4);
+              // Impulse up — 3 strong bull candles
+              cd(68,48,18,10,54,0.85); cd(90,28,14,8,34,0.85); cd(112,14,12,6,20,0.85);
+              // Imbalance zone
+              rc(64,22,68,26,'#6366F1',0.15,3);
+              ln(64,22,132,22,'#6366F1',1,'3,3'); ln(64,48,132,48,'#6366F1',1,'3,3');
+              tx(70,38,'imbalance','#6366F1',10,'start');
+              // Entry arrow on next candle
+              ln(140,35,140,15,'#00D4AA',2); ln(135,20,140,15,'#00D4AA',2); ln(145,20,140,15,'#00D4AA',2);
+              cd(148,10,14,6,16,0.85);
+              tx(166,14,'ENTRADA','#00D4AA',11);
+              // Label
+              tx(240,55,'Entrada imediata:',th.txs,11);
+              tx(240,70,'mercado continua subindo',th.txs,11);
+            }
           },
           {
             cond: FVG_CONDS[1],
-            title: 'Quando o preço retornar ao gap',
-            desc: 'O gap é formado, o mercado continua subindo (ou caindo), e então recua de volta à zona. A entrada ocorre nesse recuo — buscando uma relação risco/retorno melhor.',
-            mode: 'mitigation'
+            title: 'Quando o preço retornar ao imbalance',
+            desc: 'Após o imbalance ser formado, o mercado segue e depois recua até a zona. A entrada ocorre nesse recuo — buscando uma relação risco/retorno melhor.',
+            mode: 'mitigation',
+            svgFn: (ln,rc,tx,cd,ci,th)=>{
+              // Impulse up leaving imbalance
+              cd(10,68,18,10,72,0.85); cd(32,48,14,8,52,0.85); cd(52,32,12,6,36,0.85);
+              // Imbalance zone
+              rc(6,40,62,28,'#6366F1',0.12,3);
+              ln(6,40,68,40,'#6366F1',1,'3,3'); ln(6,68,68,68,'#6366F1',1,'3,3');
+              tx(8,57,'imbalance','#6366F1',10);
+              // Continuation up
+              cd(72,22,14,8,28,0.6); cd(92,14,12,6,20,0.6);
+              // Pullback down to zone
+              ln(108,14,108,52,'#F59E0B',1.5,'4,3');
+              cd(112,48,16,10,56,0.5); cd(132,56,16,10,64,0.5); cd(152,62,14,10,68,0.5);
+              // Entry at zone
+              ci(168,65,'#00D4AA',5);
+              ln(168,62,168,44,'#00D4AA',2); ln(163,49,168,44,'#00D4AA',2); ln(173,49,168,44,'#00D4AA',2);
+              tx(178,50,'ENTRADA','#00D4AA',11);
+              // Labels
+              tx(240,36,'Recuo ao imbalance:',th.txs,11);
+              tx(240,51,'preço volta à zona e',th.txs,11);
+              tx(240,66,'a entrada ocorre ali',th.txs,11);
+            }
           }
         ];
 
         COND_OPTIONS.forEach(opt=>{
-          const card=div('card pick'+(ms.params.cond===opt.cond?' selp':''));
-          card.style.cssText='padding:12px 14px;cursor:pointer';
-          const row=div('');row.style.cssText='display:flex;align-items:flex-start;gap:10px';
-          row.appendChild(cring(ms.params.cond===opt.cond));
+          const card=div('');
+          const isSel = ms.params.cond===opt.cond;
+          card.style.cssText=`border:1px solid ${isSel?'var(--ac)':'var(--bd)'};border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .15s;background:${isSel?'rgba(0,212,170,0.04)':'transparent'}`;
+          // Top: radio + title + desc
+          const top=div('');top.style.cssText='display:flex;align-items:flex-start;gap:10px;padding:12px 14px 10px';
+          top.appendChild(cring(isSel));
           const info=div('');
           const nm=div('');nm.style.cssText='font-size:13px;font-weight:600;color:var(--tx);margin-bottom:3px';nm.textContent=opt.title;
           const ds=div('');ds.style.cssText='font-size:12px;color:var(--txs);line-height:1.45';ds.textContent=opt.desc;
-          info.append(nm,ds);row.appendChild(info);card.appendChild(row);
+          info.append(nm,ds);top.appendChild(info);card.appendChild(top);
+          // SVG illustration
+          card.appendChild(miniSVG(420,90,opt.svgFn));
           card.addEventListener('click',()=>{
             syncFVGMode(opt.cond);
-            condCards.querySelectorAll('.card').forEach(c2=>{c2.classList.remove('selp');c2.querySelector('.cring')?.classList.remove('on');});
-            card.classList.add('selp');
-            const ring=card.querySelector('.cring');if(ring){ring.classList.add('on');ring.innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0A0A0F" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>';}
-            // Mostrar/ocultar nota de validade
+            condCards.querySelectorAll('div[style*="border:1px"]').forEach((c2,i)=>{
+              const sel=COND_OPTIONS[i].cond===ms.params.cond;
+              c2.style.borderColor=sel?'var(--ac)':'var(--bd)';
+              c2.style.background=sel?'rgba(0,212,170,0.04)':'transparent';
+              const ring=c2.querySelector('.cring');
+              if(ring){
+                ring.className='cring'+(sel?' on':'');
+                ring.innerHTML=sel?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0A0A0F" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>':'';
+              }
+            });
             frag.querySelectorAll('.fvg-mit-note').forEach(n=>n.style.display=ms.params.entryMode==='mitigation'?'flex':'none');
           });
           condCards.appendChild(card);
@@ -2638,35 +2704,12 @@ function renderModal() {
         condBlock.appendChild(condCards);
         frag.appendChild(condBlock);
 
-        // Nota de validade (só relevante no modo correção)
+        // Nota de validade — só no modo recuo, aponta para Step 3
         const mitNote=div('');mitNote.className='fvg-mit-note';
-        mitNote.style.cssText='display:'+(ms.params.entryMode==='mitigation'?'flex':'none')+';align-items:flex-start;gap:8px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5';
-        mitNote.innerHTML='<span style="color:#6366F1;font-size:14px;flex-shrink:0">ℹ</span><span>O sistema aguarda o preço retornar à zona do gap. Se isso não acontecer dentro do limite de candles definido na seção <strong style="color:var(--tx)">Entrada</strong>, o sinal é cancelado automaticamente.</span>';
+        mitNote.style.cssText='display:'+(ms.params.entryMode==='mitigation'?'flex':'none')+';align-items:flex-start;gap:8px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5;margin-top:4px';
+        mitNote.innerHTML='<span style="color:#6366F1;font-size:14px;flex-shrink:0">ℹ</span><span>O sistema aguarda o recuo. Se o preço não voltar ao imbalance dentro do limite definido em <strong style="color:var(--tx)">Passo 3 → Validade do sinal</strong>, a operação não é aberta.</span>';
         frag.appendChild(mitNote);
-
-        // Visual FVG — legenda reescrita
-        frag.appendChild(miniSVG(500,130,(ln,rc,tx,cd,ci,th)=>{
-          // Before impulse
-          cd(16,75,60,50,82,0.5);cd(46,60,50,42,68,0.5);
-          // Impulse candles leaving gap
-          cd(80,50,22,12,58,0.8);cd(114,22,12,6,28,0.8);
-          // Gap zone
-          rc(76,30,260,24,'#6366F1',0.18,4);
-          ln(76,30,336,30,'#6366F1',1,'4,3');ln(76,54,336,54,'#6366F1',1,'4,3');
-          tx(180,46,'FVG','#6366F1',14,'middle');
-          // After candles
-          cd(150,14,28,8,34,0.6);cd(184,28,40,20,46,0.6);
-          // Arrow showing return
-          ln(240,24,240,42,'#00D4AA',2);ln(235,37,240,42,'#00D4AA',2);ln(245,37,240,42,'#00D4AA',2);
-          tx(252,38,'recuo','#00D4AA',12);
-          cd(220,42,48,34,56,0.6);
-          tx(358,18,'Movimento rápido deixa',th.txs,11);
-          tx(358,32,'um vazio no gráfico.',th.txs,11);
-          tx(358,50,'O preço tende a',th.txs,11);
-          tx(358,64,'preencher esse vazio.',th.txs,11);
-        }));
       }
-
       // ── BoS config ──
       if(smcId==='bos'){
         frag.appendChild(pills('Direção','Compra = rompe o último topo (tendência de alta). Venda = rompe o último fundo (tendência de baixa). Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
