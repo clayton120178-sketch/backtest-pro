@@ -363,7 +363,20 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .payment-tab.active{border-color:var(--ac);background:var(--acd);color:var(--tx)}
 .pix-container{text-align:center;padding:20px}
 .pix-qr{width:180px;height:180px;background:var(--bg3);border-radius:12px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;border:0.5px solid var(--bd)}
-.nosub-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:55vh;text-align:center;padding:32px 20px}
+.nosub-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 56px);padding:32px 20px;position:relative;overflow:hidden}
+.nosub-glow{position:absolute;width:480px;height:480px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,212,170,.07) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+.nosub-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;border:0.5px solid rgba(0,212,170,.3);background:rgba(0,212,170,.07);font-size:11px;font-weight:700;color:var(--ac);letter-spacing:.08em;text-transform:uppercase;margin-bottom:24px;font-family:'JetBrains Mono',monospace}
+.nosub-headline{font-family:'Syne',sans-serif;font-size:clamp(28px,5vw,44px);font-weight:800;color:var(--tx);letter-spacing:-.03em;line-height:1.1;margin-bottom:14px;max-width:480px}
+.nosub-headline em{font-style:normal;color:var(--ac)}
+.nosub-desc{font-size:15px;color:var(--txs);line-height:1.6;max-width:380px;margin-bottom:36px}
+.nosub-cta{display:inline-flex;align-items:center;gap:10px;padding:15px 36px;border-radius:12px;border:none;background:var(--ac);color:#0A0A0F;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .18s cubic-bezier(.34,1.56,.64,1);letter-spacing:-.01em}
+.nosub-cta:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,212,170,.3)}
+.nosub-cta:active{transform:translateY(0)}
+.nosub-cta svg{transition:transform .18s}
+.nosub-cta:hover svg{transform:translateX(3px)}
+.nosub-proof{display:flex;align-items:center;gap:20px;margin-top:28px;flex-wrap:wrap;justify-content:center}
+.nosub-proof-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--txm)}
+.nosub-proof-dot{width:4px;height:4px;border-radius:50%;background:var(--bd)}
 
 /* ── HISTORY ─────────────────────────────────────────────── */
 .history-list{display:flex;flex-direction:column;gap:10px}
@@ -4365,10 +4378,24 @@ function renderNoSub() {
   const el = document.createElement('div');
   el.className = 'nosub-screen';
   el.innerHTML = `
-    <div class="nosub-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="1.8" stroke-linecap="round"><path d="M3 3v18h18"/><path d="m9 17 3-5 3 3 3-5"/></svg></div>
-    <div class="nosub-title">Escolha seu plano para continuar</div>
-    <div class="nosub-sub">Você ainda não tem uma assinatura ativa.</div>
-    <button onclick="showScreen('plans')" style="padding:13px 32px;border-radius:10px;border:none;background:#00D4AA;color:#0A0A0F;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">Ver planos</button>`;
+    <div class="nosub-glow"></div>
+    <div class="nosub-badge">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      Backtest Pro
+    </div>
+    <div class="nosub-headline">Teste estratégias antes de<br><em>arriscar dinheiro real</em></div>
+    <div class="nosub-desc">340.000+ candles históricos. Backtest completo em segundos. Sem código, sem instalação.</div>
+    <button class="nosub-cta" onclick="showScreen('plans')">
+      Ver planos
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+    <div class="nosub-proof">
+      <div class="nosub-proof-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2.5" stroke-linecap="round"><polyline points="20,6 9,17 4,12"/></svg> Sem recorrência</div>
+      <div class="nosub-proof-dot"></div>
+      <div class="nosub-proof-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2.5" stroke-linecap="round"><polyline points="20,6 9,17 4,12"/></svg> Pix ou cartão</div>
+      <div class="nosub-proof-dot"></div>
+      <div class="nosub-proof-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2.5" stroke-linecap="round"><polyline points="20,6 9,17 4,12"/></svg> Cancele quando quiser</div>
+    </div>`;
   return el;
 }
 
@@ -4381,28 +4408,122 @@ function renderPlans() {
   };
   const cycleLabel = { mensal:'Mensal', semestral:'Semestral', anual:'Anual' };
   const disc = { mensal:'', semestral:' · 11% off', anual:' · 30% off' };
-  el.innerHTML = `
-    <div class="plans-title">Escolha seu plano</div>
-    <div class="plans-sub">Cobrança avulsa · Sem recorrência · Pix ou cartão</div>
-    <div class="cycle-toggle">
-      ${Object.keys(cycleLabel).map(c=>`<button class="cycle-btn${selectedCycle===c?' active':''}" onclick="selectedCycle='${c}';showScreen('plans')">${cycleLabel[c]}${disc[c]}</button>`).join('')}
-    </div>
-    <div class="plans-grid">
-      ${['essencial','pro'].map(plan=>{
-        const price = PRICES[plan][selectedCycle];
-        const isPro = plan==='pro';
-        return `<div class="plan-card${!isPro?' featured':''}">
-          ${!isPro?'<div class="plan-popular">Popular</div>':''}
-          <div class="plan-name">${plan.charAt(0).toUpperCase()+plan.slice(1)}</div>
-          <div class="plan-price">R$ <span>${price.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span></div>
-          <div class="plan-cycle-note">acesso por ${CYCLE_DAYS[selectedCycle]} dias · cobrança única</div>
-          <div class="plan-divider"></div>
-          <div class="plan-features">${feats[plan].map(([ok,txt])=>`<div class="plan-feat"><span class="${ok?'plan-feat-check':'plan-feat-dash'}">${ok?'✓':'—'}</span>${txt}</div>`).join('')}</div>
-          <button class="plan-cta ${isPro?'secondary':'primary'}" onclick="selectedPlan='${plan}';showScreen('payment')">Assinar ${plan.charAt(0).toUpperCase()+plan.slice(1)}</button>
-        </div>`;
-      }).join('')}
-    </div>
-    <div style="text-align:center;font-size:12px;color:var(--txm)">Pagamento seguro via Mercado Pago</div>`;
+
+  // Header
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'text-align:center;margin-bottom:32px';
+  hdr.innerHTML = `
+    <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:99px;border:0.5px solid rgba(0,212,170,.25);background:rgba(0,212,170,.06);font-size:10px;font-weight:700;color:var(--ac);letter-spacing:.1em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:18px">Planos e preços</div>
+    <div style="font-family:'Syne',sans-serif;font-size:clamp(24px,4vw,36px);font-weight:800;color:var(--tx);letter-spacing:-.03em;margin-bottom:8px">Escolha o seu plano</div>
+    <div style="font-size:14px;color:var(--txs);line-height:1.5">Cobrança avulsa · Sem recorrência · Acesso imediato após pagamento</div>`;
+  el.appendChild(hdr);
+
+  // Cycle toggle
+  const cycleWrap = document.createElement('div');
+  cycleWrap.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:32px;background:var(--bg2);border:0.5px solid var(--bd);border-radius:12px;padding:5px;width:fit-content;margin-left:auto;margin-right:auto';
+  Object.keys(cycleLabel).forEach(cy => {
+    const btn = document.createElement('button');
+    btn.style.cssText = `padding:8px 20px;border-radius:8px;border:none;font-size:13px;font-weight:${selectedCycle===cy?'700':'500'};cursor:pointer;font-family:inherit;transition:all .15s;background:${selectedCycle===cy?'var(--ac)':'transparent'};color:${selectedCycle===cy?'#0A0A0F':'var(--txs)'}`;
+    const discText = {mensal:'',semestral:' · 11% off',anual:' · 30% off'}[cy];
+    btn.textContent = cycleLabel[cy] + discText;
+    btn.addEventListener('click', () => { selectedCycle = cy; showScreen('plans'); });
+    cycleWrap.appendChild(btn);
+  });
+  el.appendChild(cycleWrap);
+
+  // Cards grid
+  const grid = document.createElement('div');
+  grid.className = 'plans-grid';
+
+  ['essencial','pro'].forEach(plan => {
+    const price = PRICES[plan][selectedCycle];
+    const isPro = plan === 'pro';
+    const days = CYCLE_DAYS[selectedCycle];
+
+    const card = document.createElement('div');
+    card.className = 'plan-card' + (!isPro ? ' featured' : '');
+
+    // Badge Popular
+    if (!isPro) {
+      const pop = document.createElement('div');
+      pop.className = 'plan-popular';
+      pop.textContent = 'Popular';
+      card.appendChild(pop);
+    }
+
+    // Plan name
+    const nm = document.createElement('div');
+    nm.className = 'plan-name';
+    nm.textContent = plan === 'essencial' ? 'ESSENCIAL' : 'PRO';
+    card.appendChild(nm);
+
+    // Price block
+    const priceBlock = document.createElement('div');
+    priceBlock.style.cssText = 'margin-bottom:4px';
+    const priceEl = document.createElement('div');
+    priceEl.className = 'plan-price';
+    const currency = document.createElement('span');
+    currency.style.cssText = 'font-size:20px;font-weight:500;color:var(--txs);font-family:"DM Sans",sans-serif;vertical-align:top;margin-top:8px;display:inline-block;margin-right:2px';
+    currency.textContent = 'R$';
+    const val = document.createElement('span');
+    val.style.cssText = 'font-size:44px;font-weight:800;color:var(--tx);font-family:"JetBrains Mono",monospace;letter-spacing:-.04em;line-height:1';
+    val.textContent = price.toLocaleString('pt-BR', {minimumFractionDigits:2});
+    priceEl.append(currency, val);
+    priceBlock.appendChild(priceEl);
+    card.appendChild(priceBlock);
+
+    // Cycle note
+    const note = document.createElement('div');
+    note.style.cssText = 'font-size:12px;color:var(--txm);margin-bottom:22px';
+    note.textContent = `acesso por ${days} dias · cobrança única`;
+    card.appendChild(note);
+
+    // Divider
+    const div2 = document.createElement('div');
+    div2.style.cssText = 'height:0.5px;background:var(--bd);margin-bottom:20px';
+    card.appendChild(div2);
+
+    // Features
+    const featList = document.createElement('div');
+    featList.className = 'plan-features';
+    feats[plan].forEach(([ok, txt]) => {
+      const row = document.createElement('div');
+      row.className = 'plan-feature' + (ok ? ' ok' : '');
+      const icon = document.createElement('div');
+      icon.className = 'fi';
+      icon.innerHTML = ok
+        ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20,6 9,17 4,12"/></svg>'
+        : '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+      const label = document.createElement('span');
+      label.textContent = txt;
+      row.append(icon, label);
+      featList.appendChild(row);
+    });
+    card.appendChild(featList);
+
+    // CTA button
+    const cta = document.createElement('button');
+    cta.className = 'plan-btn' + (!isPro ? ' featured-btn' : '');
+    cta.style.cssText = 'margin-top:24px';
+    cta.textContent = 'Assinar ' + (plan === 'essencial' ? 'Essencial' : 'Pro');
+    cta.addEventListener('click', () => { selectedPlan = plan; showScreen('payment'); });
+    card.appendChild(cta);
+
+    grid.appendChild(card);
+  });
+  el.appendChild(grid);
+
+  // Footer trust
+  const trust = document.createElement('div');
+  trust.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:16px;margin-top:24px;flex-wrap:wrap';
+  trust.innerHTML = `
+    <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--txm)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2.5" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Pagamento seguro via Mercado Pago</span>
+    <span style="width:3px;height:3px;border-radius:50%;background:var(--bd)"></span>
+    <span style="font-size:12px;color:var(--txm)">Pix ou cartão de crédito</span>
+    <span style="width:3px;height:3px;border-radius:50%;background:var(--bd)"></span>
+    <span style="font-size:12px;color:var(--txm)">Acesso imediato</span>`;
+  el.appendChild(trust);
+
   return el;
 }
 
