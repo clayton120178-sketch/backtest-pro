@@ -4233,6 +4233,10 @@ function renderProgressBar() {
 
 // ─── MAIN RENDER ──────────────────────────────────────────────
 function renderApp() {
+  // Nunca renderizar o wizard sem usuário e assinatura confirmados
+  if (!currentUser) return;
+  if (!currentSub) { showScreen('nosub'); return; }
+
   renderProgressBar();
   const main=document.getElementById('main');
 
@@ -4991,6 +4995,18 @@ async function handleAuth(mode) {
 // ─── BOOT ─────────────────────────────────────────────────────
 // Único ponto de entrada de sessão — onAuthStateChange
 let currentScreen = null; // Track current screen to prevent auth override
+let authResolved = false; // Flag para saber se o INITIAL_SESSION já foi processado
+
+// Mostrar spinner de boot enquanto a sessão é verificada
+(function showBootSpinner() {
+  const main = document.getElementById('main');
+  if (!main) return;
+  const spinner = document.createElement('div');
+  spinner.id = 'boot-spinner';
+  spinner.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 56px)';
+  spinner.innerHTML = '<div style="width:28px;height:28px;border:2.5px solid var(--bd);border-top-color:var(--ac);border-radius:50%;animation:spin 0.7s linear infinite"></div>';
+  main.replaceChildren(spinner);
+})();
 
 db.auth.onAuthStateChange(async (event, session) => {
   
@@ -5004,17 +5020,20 @@ db.auth.onAuthStateChange(async (event, session) => {
     if (currentSub) { renderApp(); } else { showScreen('nosub'); }
   }
   if (event === 'INITIAL_SESSION') {
+    authResolved = true;
     if (session?.user) {
       currentUser = session.user;
       await loadSubscription(session.access_token);
       updateAvatarUI();
+      document.getElementById('boot-spinner')?.remove();
       if (currentSub) { renderApp(); maybeAutoTour(); } else { showScreen('nosub'); }
     } else {
+      document.getElementById('boot-spinner')?.remove();
       showAuthModal('login');
     }
   }
   if (event === 'SIGNED_OUT') {
-    currentUser=null; currentSub=null; currentScreen=null;
+    currentUser=null; currentSub=null; currentScreen=null; authResolved=false;
     showAuthModal('login');
   }
 });
