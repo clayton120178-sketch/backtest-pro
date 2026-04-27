@@ -1477,7 +1477,7 @@ function buildHistChart() {
 function buildPreview(step,cfg) {
   const conds=cfg.conditions||[];
   // Classify conditions
-  const overlayConds=conds.filter(c=>['sma','ema','bb','vwap','sar','hilo','prevday','hilon','fib'].includes(c.id));
+  const overlayConds=conds.filter(c=>['sma','ema','bb','vwap','sar','hilo','prevday','hilon','fib','fvg','bos','choch','sweep','grab'].includes(c.id));
   const oscConds=conds.filter(c=>['rsi','stoch','cci','williams','macd','adx','atr'].includes(c.id));
   const volConds=[];
   const otherConds=conds.filter(c=>['range','gap','candle'].includes(c.id));
@@ -1585,6 +1585,48 @@ function buildPreview(step,cfg) {
       const top=chartH*0.15,bot=chartH*0.85,rng=bot-top;
       const lvs=[{p:'38.2%',f:0.382},{p:'50%',f:0.5},{p:'61.8%',f:0.618}];
       lvs.forEach(lv=>{const y=bot-rng*lv.f;const hl=ct.includes(lv.p.replace('%',''));ln(4,y,W-4,y,hl?'#F59E0B':TH.grid,hl?0.8:0.4,hl?'':'2,2');if(hl)badge(W-20,y-3,lv.p,'#F59E0B',6);});
+    }
+    // ── SMC CONDITIONS ──
+    else if(cond.id==='fvg'){
+      const isMit=cond.params?.entryMode==='mitigation'||(cond.params?.cond||'').includes('retornar');
+      // Imbalance zone between candle 7 and 9
+      const zTop=candles[7].l, zBot=candles[9].h;
+      if(zBot<zTop){
+        rc(candles[7].x,zBot,candles[9].x+candles[9].w-candles[7].x,zTop-zBot,'#6366F1',0.12,2);
+        ln(candles[7].x,zTop,W-6,zTop,'#6366F1',0.6,'2,2');
+        ln(candles[7].x,zBot,W-6,zBot,'#6366F1',0.6,'2,2');
+        badge(candles[7].x+2,(zTop+zBot)/2+3,'imbalance','#6366F1',6);
+      }
+      if(isMit){
+        // Pullback arrow pointing down to zone
+        const px=candles[15].x+candles[15].w/2;
+        const py=Math.min(...candles.slice(10,16).map(cd=>cd.l))-2;
+        ln(px,py,px,zTop+2,'#00D4AA',1,'3,2');
+        badge(px+4,py-2,'recuo','#00D4AA',6);
+      } else {
+        // Entry arrow after imbalance
+        const ex=candles[10].x+candles[10].w/2;
+        cir(ex,candles[10].c,'#00D4AA',3);
+        badge(ex,candles[10].c-8,'ENTRADA','#00D4AA',6,'middle');
+      }
+      badge(6,12,'FVG','#6366F1',7);
+    }
+    else if(cond.id==='bos'||cond.id==='choch'){
+      const isBos=cond.id==='bos';
+      const pivotY=up?Math.min(...candles.slice(3,8).map(cd=>cd.h)):Math.max(...candles.slice(3,8).map(cd=>cd.l));
+      ln(4,pivotY,W-4,pivotY,isBos?'#F59E0B':'#EF4444',0.7,'3,3');
+      cir(candles[12].x+candles[12].w/2,pivotY,'#00D4AA',3);
+      badge(candles[12].x+candles[12].w/2,pivotY+(up?-8:8),isBos?'BoS':'CHoCH',isBos?'#F59E0B':'#EF4444',7,'middle');
+      badge(6,12,isBos?'BoS':'CHoCH',isBos?'#F59E0B':'#EF4444',7);
+    }
+    else if(cond.id==='sweep'||cond.id==='grab'){
+      const lvlY=up?Math.min(...candles.slice(0,10).map(cd=>cd.l)):Math.max(...candles.slice(0,10).map(cd=>cd.h));
+      ln(4,lvlY,W-4,lvlY,'#F59E0B',0.7,'4,3');
+      const sweepCd=candles[10];
+      ln(sweepCd.x+sweepCd.w/2,up?sweepCd.h:sweepCd.l,sweepCd.x+sweepCd.w/2,lvlY+(up?4:-4),'#EF4444',1.5);
+      cir(sweepCd.x+sweepCd.w/2,lvlY,'#EF4444',3);
+      cir(candles[13].x+candles[13].w/2,up?candles[13].l:candles[13].h,'#00D4AA',3);
+      badge(6,12,cond.id==='grab'?'Grab':'Sweep','#F59E0B',7);
     }
   });
 
