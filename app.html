@@ -2665,9 +2665,11 @@ function renderModal() {
         const tickStep = (asset==='WDO'||asset==='DOL') ? 0.5 : 5;
         const tickMin  = tickStep;
 
+        // FVG: sem "Compra e Venda" — EA tem BP_SMC_FVG_BULL e BP_SMC_FVG_BEAR separados, não há enum combinado
+        if(ms.params.dir==='Compra e Venda') ms.params.dir='Compra'; // corrige estado inválido herdado
         frag.appendChild(pills('Direção',
-          'Compra = busca imbalances de alta (movimentos impulsivos para cima). Venda = busca imbalances de baixa. Compra e Venda = testa ambos.',
-          SMC_DIRS, ms.params.dir, v=>{ms.params.dir=v;}));
+          'Compra = busca imbalances gerados por movimentos impulsivos de alta. Venda = busca imbalances gerados por movimentos impulsivos de baixa.',
+          ['Compra','Venda'], ms.params.dir, v=>{ms.params.dir=v;}));
 
         // Tamanho mínimo do imbalance
         const vRow=div('');
