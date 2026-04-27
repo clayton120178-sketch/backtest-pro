@@ -2386,7 +2386,6 @@ function openModal(forExitCond=false) {
 function closeModal() { modalState.open=false; const m=document.getElementById('modal-container'); if(m) m.remove(); }
 
 function renderModal() {
-  try {
   let existing=document.getElementById('modal-container');
   if(existing) existing.remove();
   if(!modalState.open) return;
@@ -2454,6 +2453,7 @@ function renderModal() {
           if(ind.id==='bb'){ ms.params.per=20; ms.params.dev=2; }
           if(ind.id==='atr'){ ms.params={per:14,mult:1.0,cond:ATR_CONDS[0]}; }
           // Smart Money Concepts — custom param init
+          console.log('[SMC] card clicado:', ind.id);
           if(ind.id==='fvg')  ms.params={dir:'Compra',val:50,cond:FVG_CONDS[1],entryMode:'aggressive'};
           if(ind.id==='bos')  ms.params={dir:'Compra',per:10,conf:'fechamento',obMit:'none',leg1Min:2,leg1Max:5,corrMax:3,leg2Max:3,cond:BOS_CONDS[0]};
           if(ind.id==='choch')ms.params={dir:'Compra',per:10,conf:'fechamento',obMit:'none',trendMin:5,trendMax:15,ampRatio:40,cond:CHOCH_CONDS[0]};
@@ -2961,7 +2961,6 @@ function renderModal() {
     // refreshModalValidation: usa referência direta ao confirmBtn (não getElementById)
     // pois é chamada antes e depois do modal entrar no DOM
     window.refreshModalValidation = function() {
-      try {
       const tempCond={id:ms.ind.id,name:ms.ind.name,params:{...ms.params}};
       const valIssues = ms.forExitCond
         ? validateExitCondition(tempCond, state.cfg.conditions)
@@ -2999,7 +2998,6 @@ function renderModal() {
           modalWarnOverride=false;closeModal();renderApp();
         };
       }
-      } catch(err) { console.error('refreshModalValidation erro:', err); }
     };
   }
 
@@ -3007,7 +3005,6 @@ function renderModal() {
   document.body.appendChild(modalEl);
   // Chamar APÓS inserção no DOM (para val-feedback estar acessível)
   if(window.refreshModalValidation) refreshModalValidation();
-  } catch(err) { console.error('renderModal erro:', err, err.stack); }
 }
 
 // ─── STEP RENDERERS ───────────────────────────────────────────
