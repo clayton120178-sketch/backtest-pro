@@ -2698,11 +2698,14 @@ function renderModal() {
           const ds=div('');ds.style.cssText='font-size:12px;color:var(--txs);line-height:1.45';ds.textContent=opt.desc;
           info.append(nm,ds);top.appendChild(info);card.appendChild(top);
           // SVG illustration
-          card.appendChild(miniSVG(420,90,opt.svgFn));
+          const svgEl=miniSVG(420,opt.mode==='mitigation'?110:90,opt.svgFn);
+          svgEl.style.pointerEvents='none';
+          card.appendChild(svgEl);
+          card.dataset.fvgCond=opt.cond;
           card.addEventListener('click',()=>{
             syncFVGMode(opt.cond);
-            condCards.querySelectorAll('div[style*="border:1px"]').forEach((c2,i)=>{
-              const sel=COND_OPTIONS[i].cond===ms.params.cond;
+            condCards.querySelectorAll('[data-fvg-cond]').forEach(c2=>{
+              const sel=c2.dataset.fvgCond===ms.params.cond;
               c2.style.borderColor=sel?'var(--ac)':'var(--bd)';
               c2.style.background=sel?'rgba(0,212,170,0.04)':'transparent';
               const ring=c2.querySelector('.cring');
