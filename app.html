@@ -2573,18 +2573,78 @@ function renderModal() {
 
       // ── FVG config ──
       if(smcId==='fvg'){
-        frag.appendChild(pills('Direção','Compra = gap de alta (preço subiu rápido). Venda = gap de baixa (preço caiu rápido). Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
-        const vRow=div('');vRow.appendChild(slabel('Tamanho mínimo do gap','O gap precisa ter pelo menos este tamanho em pontos para ser considerado.'));
+        frag.appendChild(pills('Direção','Compra = movimento impulsivo de alta criou o gap (procura FVGs de alta). Venda = movimento impulsivo de baixa criou o gap. Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
+
+        // Tamanho mínimo — tooltip reescrito
+        const vRow=div('');
+        vRow.appendChild(slabel('Tamanho mínimo do gap',
+          'Um FVG é o espaço vazio deixado entre o pavio de um candle e o corpo do candle seguinte quando o mercado se move muito rápido. ' +
+          'Gaps pequenos podem ser ruído de mercado. Este filtro garante que só serão considerados FVGs com tamanho relevante — ' +
+          'quanto maior o gap, mais forte foi o movimento que o gerou.'));
         vRow.appendChild(stepper(ms.params.val,1,5000,'pts',v=>{ms.params.val=v;if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(vRow);
-        // Modo de entrada FVG
+
+        // Condição — determina o modo de entrada implicitamente
+        // "FVG detectado" = entrada imediata; "Preço retorna ao FVG" = entrada na correção
         if(!ms.params.entryMode) ms.params.entryMode='aggressive';
-        const entryModeBlock=pills('Modo de Entrada','Imediata = entra no próximo candle após detectar o FVG. Correção (Limite) = coloca ordem limite na borda do gap e aguarda o preço retornar à zona.',['Imediata','Correção (Limite)'],ms.params.entryMode==='mitigation'?'Correção (Limite)':'Imediata',v=>{ms.params.entryMode=(v==='Correção (Limite)')?'mitigation':'aggressive';frag.querySelectorAll('.fvg-mit-note').forEach(n=>n.style.display=ms.params.entryMode==='mitigation'?'flex':'none');});
-        frag.appendChild(entryModeBlock);
-        const mitNote=div('');mitNote.className='fvg-mit-note';mitNote.style.cssText='display:'+(ms.params.entryMode==='mitigation'?'flex':'none')+';align-items:flex-start;gap:8px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5';
-        mitNote.innerHTML='<span style="color:#6366F1;font-size:14px;flex-shrink:0">ℹ</span><span>A validade da ordem limite usa o campo <strong style="color:var(--tx)">Validade em candles</strong> configurado na seção Entrada.</span>';
+        if(!ms.params.cond) ms.params.cond=FVG_CONDS[1];
+
+        // Sincronizar entryMode com a condição selecionada
+        function syncFVGMode(cond){
+          ms.params.cond=cond;
+          ms.params.entryMode=(cond===FVG_CONDS[0])?'aggressive':'mitigation';
+        }
+
+        // Condição como seletor principal (substitui pills separados)
+        const condBlock=div('');
+        condBlock.appendChild(slabel('Quando entrar',
+          'Escolha o momento da entrada: logo após o gap ser formado, ou quando o preço voltar à zona do gap depois de formado.'));
+        const condCards=div('');condCards.style.cssText='display:flex;flex-direction:column;gap:8px';
+
+        const COND_OPTIONS=[
+          {
+            cond: FVG_CONDS[0],
+            title: 'Ao detectar o gap',
+            desc: 'Entra no candle imediatamente após o gap ser formado — o mercado acabou de se mover com força e você quer surfar a continuação.',
+            mode: 'aggressive'
+          },
+          {
+            cond: FVG_CONDS[1],
+            title: 'Quando o preço retornar ao gap',
+            desc: 'O gap é formado, o mercado continua subindo (ou caindo), e então recua de volta à zona. A entrada ocorre nesse recuo — buscando uma relação risco/retorno melhor.',
+            mode: 'mitigation'
+          }
+        ];
+
+        COND_OPTIONS.forEach(opt=>{
+          const card=div('card pick'+(ms.params.cond===opt.cond?' selp':''));
+          card.style.cssText='padding:12px 14px;cursor:pointer';
+          const row=div('');row.style.cssText='display:flex;align-items:flex-start;gap:10px';
+          row.appendChild(cring(ms.params.cond===opt.cond));
+          const info=div('');
+          const nm=div('');nm.style.cssText='font-size:13px;font-weight:600;color:var(--tx);margin-bottom:3px';nm.textContent=opt.title;
+          const ds=div('');ds.style.cssText='font-size:12px;color:var(--txs);line-height:1.45';ds.textContent=opt.desc;
+          info.append(nm,ds);row.appendChild(info);card.appendChild(row);
+          card.addEventListener('click',()=>{
+            syncFVGMode(opt.cond);
+            condCards.querySelectorAll('.card').forEach(c2=>{c2.classList.remove('selp');c2.querySelector('.cring')?.classList.remove('on');});
+            card.classList.add('selp');
+            const ring=card.querySelector('.cring');if(ring){ring.classList.add('on');ring.innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0A0A0F" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>';}
+            // Mostrar/ocultar nota de validade
+            frag.querySelectorAll('.fvg-mit-note').forEach(n=>n.style.display=ms.params.entryMode==='mitigation'?'flex':'none');
+          });
+          condCards.appendChild(card);
+        });
+        condBlock.appendChild(condCards);
+        frag.appendChild(condBlock);
+
+        // Nota de validade (só relevante no modo correção)
+        const mitNote=div('');mitNote.className='fvg-mit-note';
+        mitNote.style.cssText='display:'+(ms.params.entryMode==='mitigation'?'flex':'none')+';align-items:flex-start;gap:8px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5';
+        mitNote.innerHTML='<span style="color:#6366F1;font-size:14px;flex-shrink:0">ℹ</span><span>O sistema aguarda o preço retornar à zona do gap. Se isso não acontecer dentro do limite de candles definido na seção <strong style="color:var(--tx)">Entrada</strong>, o sinal é cancelado automaticamente.</span>';
         frag.appendChild(mitNote);
-        // Visual: what is an FVG
+
+        // Visual FVG — legenda reescrita
         frag.appendChild(miniSVG(500,130,(ln,rc,tx,cd,ci,th)=>{
           // Before impulse
           cd(16,75,60,50,82,0.5);cd(46,60,50,42,68,0.5);
@@ -2594,15 +2654,16 @@ function renderModal() {
           rc(76,30,260,24,'#6366F1',0.18,4);
           ln(76,30,336,30,'#6366F1',1,'4,3');ln(76,54,336,54,'#6366F1',1,'4,3');
           tx(180,46,'FVG','#6366F1',14,'middle');
-          // After
+          // After candles
           cd(150,14,28,8,34,0.6);cd(184,28,40,20,46,0.6);
           // Arrow showing return
           ln(240,24,240,42,'#00D4AA',2);ln(235,37,240,42,'#00D4AA',2);ln(245,37,240,42,'#00D4AA',2);
-          tx(252,38,'retorno','#00D4AA',12);
+          tx(252,38,'recuo','#00D4AA',12);
           cd(220,42,48,34,56,0.6);
-          tx(370,24,'Gap = zona sem',th.txs,11);
-          tx(370,40,'negociação. O preço',th.txs,11);
-          tx(370,56,'costuma voltar.',th.txs,11);
+          tx(358,18,'Movimento rápido deixa',th.txs,11);
+          tx(358,32,'um vazio no gráfico.',th.txs,11);
+          tx(358,50,'O preço tende a',th.txs,11);
+          tx(358,64,'preencher esse vazio.',th.txs,11);
         }));
       }
 
