@@ -5021,12 +5021,20 @@ db.auth.onAuthStateChange(async (event, session) => {
   }
   if (event === 'INITIAL_SESSION') {
     authResolved = true;
+    console.log('[AUTH] INITIAL_SESSION — user:', session?.user?.email || 'none');
     if (session?.user) {
       currentUser = session.user;
       await loadSubscription(session.access_token);
+      console.log('[AUTH] loadSubscription result — currentSub:', currentSub);
       updateAvatarUI();
       document.getElementById('boot-spinner')?.remove();
-      if (currentSub) { renderApp(); maybeAutoTour(); } else { showScreen('nosub'); }
+      if (currentSub) {
+        console.log('[AUTH] → renderApp()');
+        renderApp(); maybeAutoTour();
+      } else {
+        console.log('[AUTH] → showScreen(nosub)');
+        showScreen('nosub');
+      }
     } else {
       document.getElementById('boot-spinner')?.remove();
       showAuthModal('login');
