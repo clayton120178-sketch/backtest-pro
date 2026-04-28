@@ -723,7 +723,7 @@ const INDS_BY_TAB = {
     { id:'candle', name:'Padrão de Candle', desc:'Identifica formações clássicas de candlestick',hasPer:false,hasVal:false,defCond:'Martelo (alta)',defVal:0 },
   ],
   'Smart Money': [
-    { id:'fvg',   name:'Fair Value Gap (FVG)',        desc:'Gap de preço criado por movimento impulsivo',              hasPer:false,hasVal:true,  defCond:'Preço retorna ao FVG',defVal:50 },
+    { id:'fvg',   name:'Fair Value Gap (FVG)',        desc:'Gap entre o candle [1] e o candle [3] — zona não negociada que o preço tende a revisitar', hasPer:false,hasVal:false, defCond:'FVG detectado',defVal:0 },
     { id:'bos',   name:'Break of Structure (BoS)',     desc:'Rompimento de topo/fundo confirma tendência',             hasPer:true, hasVal:false, defCond:'BoS detectado',defVal:0,defPer:10 },
     { id:'choch', name:'Change of Character (CHoCH)',  desc:'Possível reversão — rompe estrutura oposta',              hasPer:true, hasVal:false, defCond:'CHoCH detectado',defVal:0,defPer:10 },
     { id:'sweep', name:'Liquidity Sweep',              desc:'BoS confirmado seguido de consolidação e reversão (falso rompimento institucional)',hasPer:true, hasVal:true,  defCond:'Liquidity Sweep detectado',defVal:10,defPer:20 },
@@ -1595,7 +1595,7 @@ function buildPreview(step,cfg) {
         rc(candles[7].x,zBot,candles[9].x+candles[9].w-candles[7].x,zTop-zBot,'#6366F1',0.12,2);
         ln(candles[7].x,zTop,W-6,zTop,'#6366F1',0.6,'2,2');
         ln(candles[7].x,zBot,W-6,zBot,'#6366F1',0.6,'2,2');
-        badge(candles[7].x+2,(zTop+zBot)/2+3,'imbalance','#6366F1',6);
+        badge(candles[7].x+2,(zTop+zBot)/2+3,'FVG','#6366F1',6);
       }
       if(isMit){
         // Pullback arrow pointing down to zone
@@ -2131,7 +2131,7 @@ function buildCondPreview(indId, condText, params={}) {
       ln(114,66,114,54,'#00D4AA',1.2); ln(111,58,114,54,'#00D4AA',1.2); ln(117,58,114,54,'#00D4AA',1.2);
       tx(120,60,'ENTRADA','#00D4AA',6);
     }
-    tx(10,10,isMitigation?'FVG — Retorno ao imbalance':'FVG — Entrada imediata','#6366F1',7);
+    tx(10,10,isMitigation?'FVG — Preço retorna ao gap':'FVG — Entrada imediata','#6366F1',7);
     return svg;
   }
 
@@ -2664,7 +2664,7 @@ function renderModal() {
         ms.params.dir = 'Compra e Venda';
         const dirInfo = div('');
         dirInfo.style.cssText = 'display:flex;align-items:flex-start;gap:8px;background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5';
-        dirInfo.innerHTML = '<span style="color:#00D4AA;font-size:14px;flex-shrink:0">ℹ</span><span>O backtest irá contemplar operações de <strong style="color:var(--tx)">compra e venda</strong> simultaneamente neste padrão. A seleção de direção estará disponível em versões futuras.</span>';
+        dirInfo.innerHTML = '<span style="color:#00D4AA;font-size:14px;flex-shrink:0">ℹ</span><span>O backtest irá contemplar operações de <strong style="color:var(--tx)">compra e venda</strong> simultaneamente. O padrão FVG é identificado pelo gap deixado entre o candle [1] e o candle [3] de uma estrutura de movimento.</span>';
         frag.appendChild(dirInfo);
 
         // Condição / modo de entrada — unified selector
@@ -2695,7 +2695,7 @@ function renderModal() {
               // Imbalance zone
               rc(64,22,68,26,'#6366F1',0.15,3);
               ln(64,22,132,22,'#6366F1',1,'3,3'); ln(64,48,132,48,'#6366F1',1,'3,3');
-              tx(70,38,'imbalance','#6366F1',10,'start');
+              tx(70,38,'gap','#6366F1',10,'start');
               // Entry arrow on next candle
               ln(140,35,140,15,'#00D4AA',2); ln(135,20,140,15,'#00D4AA',2); ln(145,20,140,15,'#00D4AA',2);
               cd(148,10,14,6,16,0.85);
@@ -2734,10 +2734,10 @@ function renderModal() {
               // Zona destacada no recuo
               rc(8,36,160,26,'#6366F1',0.06,3);
               // Labels
-              tx(240,30,'1. Impulso forte forma',th.txs,11);
-              tx(240,44,'   o imbalance',th.txs,11);
-              tx(240,62,'2. Mercado continua subindo',th.txs,11);
-              tx(240,76,'3. Recua até o imbalance',th.txs,11);
+              tx(240,30,'1. Candle 3 deixa gap',th.txs,11);
+              tx(240,44,'   entre candle 1 e candle 3',th.txs,11);
+              tx(240,62,'2. Mercado segue em frente',th.txs,11);
+              tx(240,76,'3. Preço retorna ao gap',th.txs,11);
               tx(240,90,'4. Entrada no recuo',th.txs,11);
             }
           }
