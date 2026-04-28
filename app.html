@@ -2685,79 +2685,79 @@ function renderModal() {
           {
             cond: FVG_CONDS[0],
             title: 'Logo após o gap ser formado',
-            desc: 'Quando o candle 3 confirma o gap em relação ao candle 1, a entrada ocorre no candle seguinte — apostando na continuação do movimento.',
+            desc: 'Quando a mínima do candle [3] fica acima da máxima do candle [1], o gap é confirmado. A entrada ocorre no candle seguinte — apostando na continuação do movimento.',
             mode: 'aggressive',
             svgFn: (ln,rc,tx,cd,ci,th)=>{
-              // Contexto: 2 candles anteriores (pequenos, mistos)
-              cd(8,52,10,36,58,0.35); ln(13,32,13,62,th.bd,1);
-              cd(24,44,10,30,50,0.35); ln(29,26,29,54,th.bd,1);
-              // [1] Candle 1 — último antes do impulso (pequeno, neutro)
-              rc(40,42,12,14,'#8888A0',0.6,1); ln(46,36,46,60,th.txs,1);
-              tx(40,74,'[1]',th.txs,9,'start');
-              // [2] Candle 2 — impulso (corpo grande, alta)
-              rc(58,18,14,34,'#10B981',0.9,1); ln(65,12,65,56,'#10B981',1.5);
-              tx(58,74,'[2]',th.txs,9,'start');
-              // GAP — zona entre mínima do [1] e máxima do [3]
-              rc(54,42,50,16,'#6366F1',0.12,2);
-              ln(54,42,104,42,'#6366F1',1,'3,2');
-              ln(54,58,104,58,'#6366F1',1,'3,2');
-              tx(56,53,'GAP','#6366F1',9);
-              // [3] Candle 3 — após impulso (pequeno, neutro, máxima abaixo da mínima do [1])
-              rc(78,60,12,10,'#8888A0',0.6,1); ln(84,56,84,74,'#8888A0',1);
-              tx(78,74,'[3]',th.txs,9,'start');
+              // Contexto — candles anteriores
+              cd(8,68,10,50,74,0.3); ln(13,46,13,78,th.bd,1);
+              cd(22,62,10,44,68,0.3); ln(27,40,27,72,th.bd,1);
+              // [1] Candle 1 — neutro, máxima em y=48
+              rc(36,48,14,18,'#8888A0',0.65,1); ln(43,42,43,70,th.txs,1);
+              tx(36,82,'[1]',th.txs,9,'start');
+              // GAP — entre máxima do [1] (y=48) e mínima do [3] (y=28)
+              // zona em roxo, visível entre os candles
+              rc(32,28,54,20,'#6366F1',0.15,2);
+              ln(32,28,86,28,'#6366F1',1,'3,2');
+              ln(32,48,86,48,'#6366F1',1,'3,2');
+              tx(34,41,'GAP','#6366F1',9);
+              // [2] Candle 2 — impulso forte de alta (cruza o gap)
+              rc(52,12,14,52,'#10B981',0.9,1); ln(59,6,59,68,'#10B981',1.5);
+              tx(52,82,'[2]',th.txs,9,'start');
+              // [3] Candle 3 — pequeno, mínima acima da máxima do [1] (y=28)
+              rc(72,20,14,14,'#10B981',0.65,1); ln(79,14,79,38,'#10B981',1);
+              tx(72,82,'[3]',th.txs,9,'start');
               // Entrada no candle seguinte ao [3]
-              rc(96,52,12,12,'#10B981',0.85,1); ln(102,46,102,68,'#10B981',1.5);
-              ln(102,44,102,30,'#00D4AA',2); ln(97,36,102,30,'#00D4AA',2); ln(107,36,102,30,'#00D4AA',2);
-              tx(112,34,'ENTRADA','#00D4AA',10);
+              rc(92,14,14,18,'#10B981',0.85,1); ln(99,8,99,36,'#10B981',1.5);
+              ln(99,6,99,0,'#00D4AA',0); // espaço
+              ln(106,20,99,8,'#00D4AA',2); ln(93,20,99,8,'#00D4AA',2);
+              ln(99,8,99,0,'#00D4AA',2);
+              tx(110,18,'ENTRADA','#00D4AA',10);
               // Descrição
-              tx(220,28,'Gap entre [1] e [3]:',th.txs,10);
-              tx(220,42,'mínima do [1] >',th.txs,10);
-              tx(220,56,'máxima do [3]',th.txs,10);
-              tx(220,76,'Entrada: candle seguinte',th.txs,10);
+              tx(210,22,'FVG altista:',th.txs,10);
+              tx(210,36,'mín. do [3] > máx. do [1]',th.txs,10);
+              tx(210,54,'O gap fica entre os dois.',th.txs,10);
+              tx(210,68,'Entrada: candle após [3]',th.txs,10);
             }
           },
           {
             cond: FVG_CONDS[1],
             title: 'Quando o preço retornar ao gap',
-            desc: 'Após o gap ser formado, o mercado segue em frente. Quando o preço recua e preenche o gap, a entrada ocorre nesse retorno — buscando uma relação risco/retorno melhor.',
+            desc: 'Após o gap ser confirmado, o mercado sobe além do candle [3]. Quando o preço recua até a zona do gap (entre máx. do [1] e mín. do [3]), a entrada ocorre ali.',
             mode: 'mitigation',
             svgFn: (ln,rc,tx,cd,ci,th)=>{
-              // [1] candle 1 — neutro, pequeno
-              rc(8,54,12,14,'#8888A0',0.6,1); ln(14,48,14,72,th.txs,1);
+              // [1] Candle 1 — neutro, máxima em y=48
+              rc(8,48,14,18,'#8888A0',0.65,1); ln(15,42,15,70,th.txs,1);
               tx(8,82,'[1]',th.txs,9,'start');
-              // [2] candle 2 — impulso forte de alta
-              rc(26,24,14,36,'#10B981',0.9,1); ln(33,18,33,64,'#10B981',1.5);
-              tx(26,82,'[2]',th.txs,9,'start');
-              // [3] candle 3 — pequeno, máxima abaixo da mínima do [1]
-              rc(46,70,12,10,'#8888A0',0.6,1); ln(52,64,52,84,th.txs,1);
-              tx(46,82,'[3]',th.txs,9,'start');
-              // GAP zone entre mínima [1] e máxima [3]
-              rc(4,54,58,16,'#6366F1',0.1,2);
-              ln(4,54,62,54,'#6366F1',0.8,'3,2');
-              ln(4,70,62,70,'#6366F1',0.8,'3,2');
-              tx(6,64,'GAP','#6366F1',8);
-              // Continuação (2 candles de alta)
-              rc(64,58,12,18,'#10B981',0.7,1); ln(70,52,70,80,'#10B981',1);
-              rc(82,48,12,16,'#10B981',0.6,1); ln(88,42,88,68,'#10B981',1);
-              // Topo
-              rc(96,44,10,8,'#8888A0',0.5,1); ln(101,38,101,56,th.txs,1);
-              // Recuo — 3 candles vermelhos voltando ao gap
-              rc(112,50,12,18,'#EF4444',0.65,1); ln(118,44,118,72,'#EF4444',1);
-              rc(130,62,12,16,'#EF4444',0.7,1); ln(136,56,136,82,'#EF4444',1);
-              rc(148,66,12,12,'#EF4444',0.6,1); ln(154,60,154,82,'#EF4444',1);
-              // GAP zone estendida para cobrir o recuo
-              rc(4,54,160,16,'#6366F1',0.05,2);
-              // Entrada quando o preço toca o gap
-              ci(166,68,'#00D4AA',4);
-              ln(166,64,166,50,'#00D4AA',1.5);
-              ln(162,55,166,50,'#00D4AA',1.5); ln(170,55,166,50,'#00D4AA',1.5);
-              tx(174,54,'ENTRADA','#00D4AA',10);
+              // [2] Candle 2 — impulso forte de alta
+              rc(28,12,14,52,'#10B981',0.9,1); ln(35,6,35,68,'#10B981',1.5);
+              tx(28,82,'[2]',th.txs,9,'start');
+              // [3] Candle 3 — mínima acima da máxima do [1]
+              rc(48,18,14,14,'#10B981',0.65,1); ln(55,12,55,36,'#10B981',1);
+              tx(48,82,'[3]',th.txs,9,'start');
+              // GAP zone (entre máx. [1] y=48 e mín. [3] y=32) — estende à direita
+              rc(4,32,170,16,'#6366F1',0.08,2);
+              ln(4,32,174,32,'#6366F1',0.9,'3,2');
+              ln(4,48,174,48,'#6366F1',0.9,'3,2');
+              tx(6,43,'GAP','#6366F1',8);
+              // Continuação após [3] — 2 candles de alta
+              rc(68,10,12,16,'#10B981',0.7,1); ln(74,4,74,30,'#10B981',1);
+              rc(86,4,12,14,'#10B981',0.6,1); ln(92,0,92,22,'#10B981',1);
+              // Topo — candle doji
+              rc(102,2,10,8,'#8888A0',0.5,1); ln(107,0,107,14,'#8888A0',1);
+              // Recuo — 3 candles vermelhos descendo em direção ao gap
+              rc(118,10,12,18,'#EF4444',0.65,1); ln(124,6,124,32,'#EF4444',1);
+              rc(136,24,12,16,'#EF4444',0.7,1); ln(142,18,142,44,'#EF4444',1);
+              rc(154,36,12,14,'#EF4444',0.6,1); ln(160,30,160,54,'#EF4444',1);
+              // Entrada quando o preço toca o topo do gap (y=32)
+              ci(168,32,'#00D4AA',4);
+              ln(168,28,168,14,'#00D4AA',1.5);
+              ln(164,19,168,14,'#00D4AA',1.5); ln(172,19,168,14,'#00D4AA',1.5);
+              tx(176,18,'ENTRADA','#00D4AA',10);
               // Labels
-              tx(220,24,'1. Gap formado entre',th.txs,10);
-              tx(220,36,'   candle [1] e [3]',th.txs,10);
-              tx(220,52,'2. Mercado segue',th.txs,10);
-              tx(220,64,'3. Recua até o gap',th.txs,10);
-              tx(220,76,'4. Entrada no retorno',th.txs,10);
+              tx(216,52,'1. Gap: mín.[3] > máx.[1]',th.txs,10);
+              tx(216,66,'2. Mercado sobe além',th.txs,10);
+              tx(216,78,'3. Recua até o gap',th.txs,10);
+              tx(216,90,'4. Entrada no topo do gap',th.txs,10);
             }
           }
         ];
