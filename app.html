@@ -2660,9 +2660,12 @@ function renderModal() {
 
       // ── FVG config ──
       if(smcId==='fvg'){
-        frag.appendChild(pills('Direção',
-          'Compra = detecta FVGs gerados por movimentos de alta (gap entre a mínima do candle 1 e a máxima do candle 3). Venda = detecta FVGs gerados por movimentos de baixa.',
-          ['Compra','Venda'], ms.params.dir, v=>{ms.params.dir=v;}));
+        // Direção: no MVP o EA opera compra e venda simultaneamente — informar ao usuário
+        ms.params.dir = 'Compra e Venda';
+        const dirInfo = div('');
+        dirInfo.style.cssText = 'display:flex;align-items:flex-start;gap:8px;background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5';
+        dirInfo.innerHTML = '<span style="color:#00D4AA;font-size:14px;flex-shrink:0">ℹ</span><span>O backtest irá contemplar operações de <strong style="color:var(--tx)">compra e venda</strong> simultaneamente neste padrão. A seleção de direção estará disponível em versões futuras.</span>';
+        frag.appendChild(dirInfo);
 
         // Condição / modo de entrada — unified selector
         if(!ms.params.entryMode) ms.params.entryMode='aggressive';
