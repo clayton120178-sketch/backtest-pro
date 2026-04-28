@@ -1053,8 +1053,8 @@ function condLabel(c) {
 
     case 'range':    return `Range ${p.cond} ${p.val} pts`;
     case 'fvg':      return `FVG ${p.dir||'Compra'} — ${p.cond||'Gap detectado'}`;
-    case 'bos':      return `BoS ${p.dir||'Compra'} (swing ${p.per} candles, ${p.conf||'fechamento'})`;
-    case 'choch':    return `CHoCH ${p.dir||'Compra'} (swing ${p.per} candles, ${p.conf||'fechamento'})`;
+    case 'bos':      return `BoS ${p.dir||'Compra'} — ${p.cond||'BoS detectado'}`;
+    case 'choch':    return `CHoCH ${p.dir||'Compra'} — ${p.cond||'CHoCH detectado'}`;
     case 'grab':     return `Grab ${p.dir||'Compra'} (${p.per} candles)`;
     case 'sweep':    return `Sweep ${p.dir||'Compra'} (${p.per} candles, ≥${p.val} pts, ${p.confCandles||3} conf.)`;
     default:         return c.name;
@@ -2541,10 +2541,9 @@ function renderModal() {
           if(ind.id==='bb'){ ms.params.per=20; ms.params.dev=2; }
           if(ind.id==='atr'){ ms.params={per:14,mult:1.0,cond:ATR_CONDS[0]}; }
           // Smart Money Concepts — custom param init
-          console.log('[SMC] card clicado:', ind.id);
           if(ind.id==='fvg')  ms.params={dir:'Compra',cond:FVG_CONDS[0],entryMode:'aggressive'};
-          if(ind.id==='bos')  ms.params={dir:'Compra',per:10,conf:'fechamento',obMit:'none',leg1Min:2,leg1Max:5,corrMax:3,leg2Max:3,cond:BOS_CONDS[0]};
-          if(ind.id==='choch')ms.params={dir:'Compra',per:10,conf:'fechamento',obMit:'none',trendMin:5,trendMax:15,ampRatio:40,cond:CHOCH_CONDS[0]};
+          if(ind.id==='bos')  ms.params={dir:'Compra',obMit:'none',leg1Min:2,leg1Max:5,corrMax:3,leg2Max:3,cond:BOS_CONDS[0]};
+          if(ind.id==='choch')ms.params={dir:'Compra',obMit:'none',trendMin:5,trendMax:15,ampRatio:40,cond:CHOCH_CONDS[0]};
           if(ind.id==='grab') ms.params={dir:'Compra',per:20,cond:GRAB_CONDS[0]};
           if(ind.id==='sweep')ms.params={dir:'Compra',per:20,val:10,confCandles:3,cond:SWEEP_CONDS[0]};
           ms.page=1;
@@ -2806,29 +2805,6 @@ function renderModal() {
       // ── BoS config ──
       if(smcId==='bos'){
         frag.appendChild(pills('Direção','Compra = rompe o último topo (tendência de alta). Venda = rompe o último fundo (tendência de baixa). Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
-        const pRow=div('');pRow.appendChild(slabel('Candles para swing','Quantos candles olhar pra trás para identificar o topo ou fundo que será rompido.'));
-        pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;if(window.refreshModalValidation)refreshModalValidation();}));
-        frag.appendChild(pRow);
-        // Confirmation pills with visual
-        frag.appendChild(pills('Confirmação','Fechamento = o candle precisa fechar além do nível. Sombra = basta a sombra ultrapassar.',['Por fechamento','Por sombra'],ms.params.conf==='sombra'?'Por sombra':'Por fechamento',v=>{ms.params.conf=v==='Por sombra'?'sombra':'fechamento';}));
-        frag.appendChild(miniSVG(500,120,(ln,rc,tx,cd,ci,th)=>{
-          // --- "Por fechamento" side ---
-          ln(8,60,235,60,'#F59E0B',1,'4,3');
-          tx(14,54,'nível','#F59E0B',11);
-          rc(85,24,18,32,'#10B981',0.8,2);ln(94,18,94,56,'#10B981',1.5);
-          tx(114,40,'corpo fecha',th.txs,11);
-          tx(114,54,'além do nível ✓','#10B981',11);
-          tx(120,108,'POR FECHAMENTO',th.tx,12,'middle');
-          // Divider
-          ln(250,12,250,105,'#2A2A3C',1);
-          // --- "Por sombra" side ---
-          ln(260,60,490,60,'#F59E0B',1,'4,3');
-          tx(266,54,'nível','#F59E0B',11);
-          rc(340,64,18,26,'#10B981',0.8,2);ln(349,26,349,90,'#10B981',1.5);
-          tx(368,40,'sombra passa',th.txs,11);
-          tx(368,54,'corpo fica acima ✓','#10B981',11);
-          tx(375,108,'POR SOMBRA',th.tx,12,'middle');
-        }));
 
         // Limites de pernas do BoS
         if(!ms.params.leg1Min) ms.params.leg1Min=2;
@@ -2864,10 +2840,6 @@ function renderModal() {
       // ── CHoCH config ──
       if(smcId==='choch'){
         frag.appendChild(pills('Direção','Compra = possível reversão para alta. Venda = possível reversão para baixa. Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
-        const pRow=div('');pRow.appendChild(slabel('Candles para swing','Quantos candles olhar pra trás para identificar a estrutura que será rompida.'));
-        pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;if(window.refreshModalValidation)refreshModalValidation();}));
-        frag.appendChild(pRow);
-        frag.appendChild(pills('Confirmação','Fechamento = o candle precisa fechar além do nível. Sombra = basta a sombra ultrapassar.',['Por fechamento','Por sombra'],ms.params.conf==='sombra'?'Por sombra':'Por fechamento',v=>{ms.params.conf=v==='Por sombra'?'sombra':'fechamento';}));
         // Same confirmation visual as BoS
         frag.appendChild(miniSVG(500,120,(ln,rc,tx,cd,ci,th)=>{
           ln(8,60,235,60,'#F59E0B',1,'4,3');tx(14,54,'nível','#F59E0B',11);
