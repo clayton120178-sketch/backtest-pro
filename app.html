@@ -1052,7 +1052,7 @@ function condLabel(c) {
     case 'candle':   return `Padrão: ${p.cond}`;
 
     case 'range':    return `Range ${p.cond} ${p.val} pts`;
-    case 'fvg':      return `FVG ${p.dir||'Compra'} (≥${p.val} pts) — ${p.cond}`;
+    case 'fvg':      return `FVG ${p.dir||'Compra'} — ${p.cond||'Gap detectado'}`;
     case 'bos':      return `BoS ${p.dir||'Compra'} (swing ${p.per} candles, ${p.conf||'fechamento'})`;
     case 'choch':    return `CHoCH ${p.dir||'Compra'} (swing ${p.per} candles, ${p.conf||'fechamento'})`;
     case 'grab':     return `Grab ${p.dir||'Compra'} (${p.per} candles)`;
@@ -2542,7 +2542,7 @@ function renderModal() {
           if(ind.id==='atr'){ ms.params={per:14,mult:1.0,cond:ATR_CONDS[0]}; }
           // Smart Money Concepts — custom param init
           console.log('[SMC] card clicado:', ind.id);
-          if(ind.id==='fvg')  ms.params={dir:'Compra',val:300,cond:FVG_CONDS[0],entryMode:'aggressive'};
+          if(ind.id==='fvg')  ms.params={dir:'Compra',cond:FVG_CONDS[0],entryMode:'aggressive'};
           if(ind.id==='bos')  ms.params={dir:'Compra',per:10,conf:'fechamento',obMit:'none',leg1Min:2,leg1Max:5,corrMax:3,leg2Max:3,cond:BOS_CONDS[0]};
           if(ind.id==='choch')ms.params={dir:'Compra',per:10,conf:'fechamento',obMit:'none',trendMin:5,trendMax:15,ampRatio:40,cond:CHOCH_CONDS[0]};
           if(ind.id==='grab') ms.params={dir:'Compra',per:20,cond:GRAB_CONDS[0]};
@@ -2660,24 +2660,9 @@ function renderModal() {
 
       // ── FVG config ──
       if(smcId==='fvg'){
-        // Detectar step de tickagem pelo ativo selecionado
-        const asset = state.cfg.asset || 'WIN';
-        const tickStep = (asset==='WDO'||asset==='DOL') ? 0.5 : 5;
-        const tickMin  = tickStep;
-
         frag.appendChild(pills('Direção',
-          'Compra = busca imbalances gerados por movimentos impulsivos de alta. Venda = busca imbalances gerados por movimentos impulsivos de baixa. Compra e Venda = testa os dois simultaneamente.',
-          SMC_DIRS, ms.params.dir, v=>{ms.params.dir=v;}));
-
-        // Tamanho mínimo do imbalance
-        const vRow=div('');
-        vRow.appendChild(slabel('Tamanho mínimo do imbalance',
-          'Um imbalance (Fair Value Gap) é uma zona de preço que o mercado atravessou tão rapidamente que não houve negociação real dos dois lados. ' +
-          'Imbalances pequenos podem ser ruído. Este filtro garante que só serão considerados os imbalances gerados por movimentos com força real. ' +
-          'Para o WIN, valores entre 50 e 200 pts costumam filtrar bem o ruído.'));
-        if(!ms.params.val || ms.params.val < tickMin) ms.params.val = tickStep * 60; // 300 pts para WIN
-        vRow.appendChild(stepper(ms.params.val, tickMin, 5000, 'pts', v=>{ms.params.val=v;if(window.refreshModalValidation)refreshModalValidation();}, tickStep));
-        frag.appendChild(vRow);
+          'Compra = detecta FVGs gerados por movimentos de alta (gap entre a mínima do candle 1 e a máxima do candle 3). Venda = detecta FVGs gerados por movimentos de baixa.',
+          ['Compra','Venda'], ms.params.dir, v=>{ms.params.dir=v;}));
 
         // Condição / modo de entrada — unified selector
         if(!ms.params.entryMode) ms.params.entryMode='aggressive';
@@ -2690,14 +2675,14 @@ function renderModal() {
 
         const condBlock=div('');
         condBlock.appendChild(slabel('Quando entrar',
-          'Define o momento da entrada em relação ao imbalance detectado.'));
+          'Define o momento da entrada em relação ao gap detectado.'));
         const condCards=div('');condCards.style.cssText='display:flex;flex-direction:column;gap:8px';
 
         const COND_OPTIONS=[
           {
             cond: FVG_CONDS[0],
-            title: 'Logo após o imbalance ser formado',
-            desc: 'O mercado se move com força e deixa o imbalance para trás. A entrada ocorre no candle seguinte, apostando na continuação do movimento.',
+            title: 'Logo após o gap ser formado',
+            desc: 'Quando o candle 3 confirma o gap em relação ao candle 1, a entrada ocorre no candle seguinte — apostando na continuação do movimento.',
             mode: 'aggressive',
             svgFn: (ln,rc,tx,cd,ci,th)=>{
               // Candles before
@@ -2719,8 +2704,8 @@ function renderModal() {
           },
           {
             cond: FVG_CONDS[1],
-            title: 'Quando o preço retornar ao imbalance',
-            desc: 'Após o imbalance ser formado, o mercado segue e depois recua até a zona. A entrada ocorre nesse recuo — buscando uma relação risco/retorno melhor.',
+            title: 'Quando o preço retornar ao gap',
+            desc: 'Após o gap ser formado, o mercado segue em frente. Quando o preço recua e preenche o gap, a entrada ocorre nesse retorno — buscando uma relação risco/retorno melhor.',
             mode: 'mitigation',
             svgFn: (ln,rc,tx,cd,ci,th)=>{
               // 1. Candle de impulso forte (corpo grande, vela de alta)
@@ -2793,7 +2778,7 @@ function renderModal() {
         // Nota de validade — só no modo recuo, aponta para Step 3
         const mitNote=div('');mitNote.className='fvg-mit-note';
         mitNote.style.cssText='display:'+(ms.params.entryMode==='mitigation'?'flex':'none')+';align-items:flex-start;gap:8px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5;margin-top:4px';
-        mitNote.innerHTML='<span style="color:#6366F1;font-size:14px;flex-shrink:0">ℹ</span><span>O sistema aguarda o recuo. Se o preço não voltar ao imbalance dentro do limite definido em <strong style="color:var(--tx)">Passo 3 → Validade do sinal</strong>, a operação não é aberta.</span>';
+        mitNote.innerHTML='<span style="color:#6366F1;font-size:14px;flex-shrink:0">ℹ</span><span>O sistema aguarda o preço preencher o gap. Se isso não ocorrer dentro do limite definido em <strong style="color:var(--tx)">Passo 3 → Validade do sinal</strong>, a operação não é aberta.</span>';
         frag.appendChild(mitNote);
       }
       // ── BoS config ──
