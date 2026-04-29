@@ -2804,7 +2804,7 @@ function renderModal() {
       }
       // ── BoS config ──
       if(smcId==='bos'){
-        frag.appendChild(pills('Direção','Compra = rompe o último topo (tendência de alta). Venda = rompe o último fundo (tendência de baixa). Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
+        frag.appendChild(pills('Direção','Compra = detecta BoS de alta (rompimento de topo). Venda = detecta BoS de baixa (rompimento de fundo).',['Compra','Venda'],ms.params.dir,v=>{ms.params.dir=v;}));
 
         // Limites de pernas do BoS
         if(!ms.params.leg1Min) ms.params.leg1Min=2;
@@ -2879,7 +2879,7 @@ function renderModal() {
 
       // ── CHoCH config ──
       if(smcId==='choch'){
-        frag.appendChild(pills('Direção','Compra = detecta reversão de baixa para alta. Venda = detecta reversão de alta para baixa. Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
+        frag.appendChild(pills('Direção','Compra = detecta reversão de baixa para alta. Venda = detecta reversão de alta para baixa.',['Compra','Venda'],ms.params.dir,v=>{ms.params.dir=v;}));
 
         // Visualização das 3 etapas do CHoCH
         // Divisórias: x=125 e x=240 — calculadas para evitar sobreposição de texto
@@ -2958,7 +2958,7 @@ function renderModal() {
 
       // ── Grab config ──
       if(smcId==='grab'){
-        frag.appendChild(pills('Direção','Compra = rejeição em fundo (Grab Low). Venda = rejeição em topo (Grab High). Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
+        frag.appendChild(pills('Direção','Compra = rejeição em fundo (pavio longo para baixo, fechamento na metade superior). Venda = rejeição em topo (pavio longo para cima, fechamento na metade inferior).',['Compra','Venda'],ms.params.dir,v=>{ms.params.dir=v;}));
         const pRow=div('');pRow.appendChild(slabel('Candles para nível','Quantos candles olhar pra trás para identificar o nível de liquidez que será varrido.'));
         pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(pRow);
@@ -2990,7 +2990,7 @@ function renderModal() {
 
       // ── Sweep config ──
       if(smcId==='sweep'){
-        frag.appendChild(pills('Direção','Compra = varre mínimas e reverte pra cima. Venda = varre máximas e reverte pra baixo. Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
+        frag.appendChild(pills('Direção','Compra = sweep de mínimas (falso rompimento para baixo, reversão para cima). Venda = sweep de máximas (falso rompimento para cima, reversão para baixo).',['Compra','Venda'],ms.params.dir,v=>{ms.params.dir=v;}));
         const pRow=div('');pRow.appendChild(slabel('Candles para nível','Quantos candles olhar pra trás para identificar o nível de liquidez.'));
         pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(pRow);
