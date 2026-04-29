@@ -4379,7 +4379,8 @@ function renderResults() {
 }
 
 // ─── STRATEGY SENTENCE ────────────────────────────────────────
-function buildStrategySentence(cfg) {
+function buildStrategySentence(cfg, step) {
+  if(step === undefined) step = state.step;
   const asset = findAsset(cfg.asset);
   const assetName = asset ? asset.n : cfg.asset;
   const dirText = cfg.direction==='long'
@@ -4396,33 +4397,58 @@ function buildStrategySentence(cfg) {
     hl_candle: `stop na máx/mín do candle de sinal`,
     n_candles: `stop na máx/mín dos últimos <strong>${cfg.stopCandles} candles</strong> (1 tick de buffer)`,
     atr: `stop de <strong>${cfg.stopAtrMult}× ATR(${cfg.stopAtrPer})</strong>`,
+    fibo: `stop no nível Fibonacci configurado`,
   };
   const tpMap = {
     fixed: `alvo de <strong>${cfg.tpPts} pts</strong>`,
     rr: `alvo de <strong>${cfg.tpRR}× o risco</strong>`,
     atr: `alvo de <strong>${cfg.tpAtrMult}× ATR(${cfg.tpAtrPer})</strong>`,
     fib_ext: `alvo na extensão de Fibonacci <strong>${cfg.tpFibLevel}%</strong>`,
+    fibo: `alvo no nível Fibonacci configurado`,
     none: 'sem alvo fixo',
   };
-  const conds = cfg.conditions.length === 0
-    ? '<span style="color:var(--txm)">nenhuma condição definida ainda</span>'
-    : cfg.conditions.map(c => `<strong>${condLabel(c)}</strong>`).join(' <span class="hl">e</span> ');
 
   const parts = [];
-  parts.push(`Sistema vai ${dirText} <strong>${assetName}</strong> no <strong>${cfg.tf}</strong>`);
-  parts.push(`quando ${conds}`);
-  if(cfg.conditions.length > 0) parts.push(entryMap[cfg.entryType] || '');
-  const risk = [stopMap[cfg.stopType], tpMap[cfg.tpType]].filter(Boolean);
-  if(risk.length) parts.push(risk.join(', '));
-  if(cfg.trailing) parts.push(`trailing após <strong>${cfg.trailAct} pts</strong>`);
-  if(cfg.partial) parts.push(`parcial de <strong>${cfg.partPct}%</strong> aos <strong>${cfg.partAt} pts</strong>`);
+
+  // ── Step 0: Mercado ──────────────────────────────────
+  // Sempre presente
+  const timeStr = `das <strong>${cfg.startH}h${cfg.startM>0?String(cfg.startM).padStart(2,'0'):'00'}</strong> às <strong>${cfg.endH}h${cfg.endM>0?String(cfg.endM).padStart(2,'0'):'00'}</strong>`;
+  parts.push(`Sistema vai ${dirText} <strong>${assetName}</strong> no <strong>${cfg.tf}</strong> · ${timeStr}`);
+
+  // ── Step 1: Condições ────────────────────────────────
+  if(step >= 1) {
+    const conds = cfg.conditions.length === 0
+      ? '<span style="color:var(--txm);font-style:italic">aguardando condições...</span>'
+      : cfg.conditions.map(c => `<strong>${condLabel(c)}</strong>`).join(' <span class="hl">e</span> ');
+    parts.push(`quando ${conds}`);
+  }
+
+  // ── Step 2: Gatilho ──────────────────────────────────
+  if(step >= 2 && cfg.conditions.length > 0) {
+    const entryTxt = entryMap[cfg.entryType];
+    if(entryTxt) parts.push(entryTxt);
+    if(cfg.validity > 1) parts.push(`sinal válido por <strong>${cfg.validity} candles</strong>`);
+  }
+
+  // ── Step 3: Risco ────────────────────────────────────
+  if(step >= 3) {
+    const risk = [stopMap[cfg.stopType], tpMap[cfg.tpType]].filter(Boolean);
+    if(risk.length) parts.push(risk.join(', '));
+  }
+
+  // ── Step 4: Gestão ───────────────────────────────────
+  if(step >= 4) {
+    if(cfg.trailing) parts.push(`trailing após <strong>${cfg.trailAct} pts</strong>`);
+    if(cfg.partial) parts.push(`parcial de <strong>${cfg.partPct}%</strong> aos <strong>${cfg.partAt} pts</strong>`);
+  }
+
   return parts.filter(Boolean).join(' · ');
 }
 
 // Atualiza só a frase sem re-renderizar o DOM inteiro
 function updateSentence() {
   const el = document.getElementById('strategy-sentence-el');
-  if(el) el.innerHTML = buildStrategySentence(state.cfg);
+  if(el) el.innerHTML = buildStrategySentence(state.cfg, state.step);
 }
 
 // Atualiza só o preview SVG sem re-renderizar o DOM inteiro
@@ -4532,7 +4558,7 @@ function renderApp() {
   sentLabel.innerHTML=`<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--txm)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16" stroke-width="3"/></svg> Sua estratégia em português`;
   const sentEl=div('strategy-sentence');
   sentEl.id='strategy-sentence-el';
-  sentEl.innerHTML=buildStrategySentence(state.cfg);
+  sentEl.innerHTML=buildStrategySentence(state.cfg, state.step);
   sentWrap.append(sentLabel,sentEl);
   previewCard.appendChild(sentWrap);
   right.appendChild(previewCard);
