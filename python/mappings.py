@@ -213,16 +213,14 @@ SMC_MAP = {
     # CHoCH
     "choch detectado":               {"enum_bull": "BP_SMC_CHOCH_BULL", "val_bull": 5,
                                       "enum_bear": "BP_SMC_CHOCH_BEAR", "val_bear": 6},
-    # Order Block removido como conceito isolado (valores 7 e 8 reservados).
-    # Agora e filtro de BoS/CHoCH via InpOB_Mitigation (ENUM_BP_OB_MITIGATION).
-    # Liquidity Sweep: BoS confirmado + consolidacao + reversao (direcao invertida ao swing)
-    # long -> SWEEP_LOW (compra apos sweep de fundos), short -> SWEEP_HIGH (venda apos sweep de topos)
-    "liquidity sweep detectado":     {"enum_bull": "BP_SMC_SWEEP_LOW",  "val_bull": 10,
-                                      "enum_bear": "BP_SMC_SWEEP_HIGH", "val_bear": 9},
-    # Liquidity Grab: BoS falhado com rejeicao imediata
-    # long -> GRAB_LOW (compra apos grab de fundos), short -> GRAB_HIGH (venda apos grab de topos)
-    "liquidity grab detectado":      {"enum_bull": "BP_SMC_GRAB_LOW",   "val_bull": 12,
-                                      "enum_bear": "BP_SMC_GRAB_HIGH",  "val_bear": 11},
+    # Order Block
+    "order block detectado":         {"enum_bull": "BP_SMC_OB_BULL",    "val_bull": 7,
+                                      "enum_bear": "BP_SMC_OB_BEAR",    "val_bear": 8},
+    "preco retesta order block":     {"enum_bull": "BP_SMC_OB_BULL",    "val_bull": 7,
+                                      "enum_bear": "BP_SMC_OB_BEAR",    "val_bear": 8},
+    # Liquidity Sweep
+    "liquidity sweep detectado":     {"enum_bull": "BP_SMC_SWEEP_HIGH", "val_bull": 9,
+                                      "enum_bear": "BP_SMC_SWEEP_LOW",  "val_bear": 10},
 }
 
 
@@ -237,7 +235,6 @@ STOP_LOSS_MAP = {
     "hl_candle": {"enum": "SL_GRAPHIC", "value": 2},   # Max/min candle de sinal
     "n_candles": {"enum": "SL_GRAPHIC", "value": 2},   # Mesmo tipo, InpSL_CandlesBack diferencia
     "atr":       {"enum": "SL_ATR",     "value": 0},
-    "fibo":      {"enum": "BP_SL_FIBO", "value": 10},  # Nivel Fibonacci (BP_Constants.mqh)
 }
 
 
@@ -251,53 +248,9 @@ TAKE_PROFIT_MAP = {
     "fixed":   {"enum": "TP_FIXED_POINTS",  "value": 0},
     "rr":      {"enum": "TP_RR_MULTIPLIER", "value": 1},
     "atr":     {"enum": "TP_ATR",           "value": 3},
-    "fibo":    {"enum": "BP_TP_FIBO",       "value": 10},  # Nivel Fibonacci (BP_Constants.mqh)
     # Fase futura:
     "fib_ext": {"enum": None,               "value": None},   # TODO: nao implementado no EA
     "none":    {"enum": None,               "value": None},   # TODO: nao implementado no EA
-}
-
-
-# ============================================================================
-# FIBONACCI: niveis de retracao e projecao -> enum EA (ENUM_BP_FIBO_LEVEL)
-# Chave = string usada no cfg do frontend (fiboTriggerLevel, fiboSLLevel, fiboTPLevel)
-# ============================================================================
-
-FIBO_LEVEL_MAP = {
-    "23.6":  {"enum": "BP_FIBO_236",  "value": 0},
-    "38.2":  {"enum": "BP_FIBO_382",  "value": 1},
-    "50.0":  {"enum": "BP_FIBO_500",  "value": 2},
-    "61.8":  {"enum": "BP_FIBO_618",  "value": 3},
-    "78.6":  {"enum": "BP_FIBO_786",  "value": 4},
-    "100.0": {"enum": "BP_FIBO_100",  "value": 5},
-    "127.2": {"enum": "BP_FIBO_1272", "value": 6},
-    "161.8": {"enum": "BP_FIBO_1618", "value": 7},
-    "200.0": {"enum": "BP_FIBO_200",  "value": 8},
-    "261.8": {"enum": "BP_FIBO_2618", "value": 9},
-}
-
-
-# ============================================================================
-# FIBONACCI: modo de gatilho -> enum EA (ENUM_BP_FIBO_TRIGGER_MODE)
-# Chave = valor de cfg.fiboTriggerMode no frontend
-# ============================================================================
-
-FIBO_TRIGGER_MODE_MAP = {
-    "touch":      {"enum": "BP_FIBO_TRIG_TOUCH",      "value": 0},
-    "validation": {"enum": "BP_FIBO_TRIG_VALIDATION", "value": 1},
-}
-
-
-# ============================================================================
-# FIBONACCI: debug highlight -> enum EA (ENUM_BP_TRIGGER_HIGHLIGHT)
-# Usado apenas internamente pelo worker (nao exposto no frontend publico).
-# ============================================================================
-
-FIBO_DEBUG_HIGHLIGHT_MAP = {
-    "none":      {"enum": "BP_HL_NONE",      "value": 0},
-    "arrow":     {"enum": "BP_HL_ARROW",     "value": 1},
-    "rectangle": {"enum": "BP_HL_RECTANGLE", "value": 2},
-    "both":      {"enum": "BP_HL_BOTH",      "value": 3},
 }
 
 

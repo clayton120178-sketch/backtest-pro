@@ -23,9 +23,6 @@ from mappings import (
     CONDITION_MAP,
     DIRECTION_MAP,
     ENTRY_TYPE_MAP,
-    FIBO_DEBUG_HIGHLIGHT_MAP,
-    FIBO_LEVEL_MAP,
-    FIBO_TRIGGER_MODE_MAP,
     INDICATOR_MAP,
     RISK_TYPE_MAP,
     SMC_IDS,
@@ -258,21 +255,10 @@ def convert_cfg_to_ea_params(cfg: Dict[str, Any]) -> Dict[str, Any]:
     params["InpLogOutput"] = 1  # PRINT
 
     # [1] Modulos Ativos
-    # Calcular fibo_active antecipadamente para tratar exclusividade
-    _fibo_as_trigger = cfg.get("useFibonacci", False)
-    _fibo_as_sl      = cfg.get("stopType", "") == "fibo"
-    _fibo_as_tp      = cfg.get("tpType",   "") == "fibo"
-    _fibo_active     = _fibo_as_trigger or _fibo_as_sl or _fibo_as_tp
-
-    # Quando Fibonacci e gatilho, substitui SMC e condicoes tradicionais
-    if _fibo_as_trigger:
-        use_smc = False
-
-    params["InpUseOscillators"]   = use_oscillators
-    params["InpUseIndicators"]    = use_indicators
-    params["InpUseCandlePatterns"]= use_candle
-    params["InpUseSmartMoney"]    = use_smc
-    params["InpUseFibonacci"]     = _fibo_active
+    params["InpUseOscillators"] = use_oscillators
+    params["InpUseIndicators"] = use_indicators
+    params["InpUseCandlePatterns"] = use_candle
+    params["InpUseSmartMoney"] = use_smc
 
     # [2-4] Condicoes de indicador (max 3 slots)
     # Slot 1: sempre preenchido (mesmo que BP_IND_NONE)
@@ -470,52 +456,6 @@ def convert_cfg_to_ea_params(cfg: Dict[str, Any]) -> Dict[str, Any]:
         params["InpExitCond"] = 0
         params["InpExitPeriod"] = 14
         params["InpExitValue"] = 0.0
-
-    # [15] Fibonacci
-    # Ativo como gatilho OU como referencia de SL/TP.
-    # InpUseFibonacci=true quando: cfg.useFibonacci=true (gatilho) OU
-    # cfg.stopType='fibo' OU cfg.tpType='fibo' (apenas SL/TP).
-    # _fibo_active e _fibo_as_trigger ja foram calculados no bloco [1].
-    fibo_active = _fibo_active
-
-    if fibo_active:
-        params["InpFibo_ZZDepth"]     = cfg.get("fiboZZDepth",     12)
-        params["InpFibo_ZZDeviation"] = cfg.get("fiboZZDeviation",  5)
-        params["InpFibo_ZZBackstep"]  = cfg.get("fiboZZBackstep",   3)
-
-        # TriggerLevel: so relevante quando Fibonacci e gatilho; default 61.8%
-        trig_level_key = cfg.get("fiboTriggerLevel", "61.8")
-        trig_level_info = FIBO_LEVEL_MAP.get(trig_level_key, FIBO_LEVEL_MAP["61.8"])
-        params["InpFibo_TriggerLevel"] = trig_level_info["value"]
-
-        # TriggerMode: touch ou validation; default validation
-        trig_mode_key = cfg.get("fiboTriggerMode", "validation")
-        trig_mode_info = FIBO_TRIGGER_MODE_MAP.get(trig_mode_key, FIBO_TRIGGER_MODE_MAP["validation"])
-        params["InpFibo_TriggerMode"] = trig_mode_info["value"]
-
-        # SLLevel: nivel usado como SL quando InpSLType=BP_SL_FIBO; default 100%
-        sl_level_key = cfg.get("fiboSLLevel", "100.0")
-        sl_level_info = FIBO_LEVEL_MAP.get(sl_level_key, FIBO_LEVEL_MAP["100.0"])
-        params["InpFibo_SLLevel"] = sl_level_info["value"]
-
-        # TPLevel: nivel usado como TP quando InpTPType=BP_TP_FIBO; default 161.8%
-        tp_level_key = cfg.get("fiboTPLevel", "161.8")
-        tp_level_info = FIBO_LEVEL_MAP.get(tp_level_key, FIBO_LEVEL_MAP["161.8"])
-        params["InpFibo_TPLevel"] = tp_level_info["value"]
-    else:
-        # Defaults quando modulo inativo
-        params["InpFibo_ZZDepth"]      = 12
-        params["InpFibo_ZZDeviation"]  = 5
-        params["InpFibo_ZZBackstep"]   = 3
-        params["InpFibo_TriggerLevel"] = FIBO_LEVEL_MAP["61.8"]["value"]   # 3
-        params["InpFibo_TriggerMode"]  = FIBO_TRIGGER_MODE_MAP["validation"]["value"]  # 1
-        params["InpFibo_SLLevel"]      = FIBO_LEVEL_MAP["100.0"]["value"]  # 5
-        params["InpFibo_TPLevel"]      = FIBO_LEVEL_MAP["161.8"]["value"]  # 7
-
-    # Debug visual: nunca exposto no frontend publico (Opcao A do backlog Ivan).
-    # Worker sempre envia os defaults para o EA ter os inputs completos.
-    params["InpFibo_Debug"]          = False
-    params["InpFibo_DebugHighlight"] = FIBO_DEBUG_HIGHLIGHT_MAP["both"]["value"]  # 3 = BP_HL_BOTH
 
     return params
 
