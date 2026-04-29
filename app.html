@@ -4412,7 +4412,7 @@ function buildStrategySentence(cfg, step) {
 
   // ── Step 0: Mercado ──────────────────────────────────
   // Sempre presente
-  const timeStr = `das <strong>${cfg.startH}h${cfg.startM>0?String(cfg.startM).padStart(2,'0'):'00'}</strong> às <strong>${cfg.endH}h${cfg.endM>0?String(cfg.endM).padStart(2,'0'):'00'}</strong>`;
+  const timeStr = `das <strong>${cfg.tStart||'09:00'}</strong> às <strong>${cfg.tEnd||'17:30'}</strong>`;
   parts.push(`Sistema vai ${dirText} <strong>${assetName}</strong> no <strong>${cfg.tf}</strong> · ${timeStr}`);
 
   // ── Step 1: Condições ────────────────────────────────
