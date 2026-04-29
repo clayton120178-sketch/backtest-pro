@@ -1527,7 +1527,9 @@ function buildPreview(step,cfg) {
   overlayConds.forEach(cond=>{
     const col=nextCol();
     const ct=(cond.params?.cond||'').toLowerCase();
-    const up=ct.includes('acima')||ct.includes('sup')||ct.includes('alta')||ct.includes('compra')||ct.includes('maior');
+    const smcIds=['fvg','bos','choch','sweep','grab'];
+    const upBySMC=smcIds.includes(cond.id)?(cond.params?.dir||'Compra')==='Compra':false;
+    const up=smcIds.includes(cond.id)?upBySMC:(ct.includes('acima')||ct.includes('sup')||ct.includes('alta')||ct.includes('compra')||ct.includes('maior'));
 
     if(['sma','ema'].includes(cond.id)){
       const isCross=isMACrossover(cond.params?.cond||'');
