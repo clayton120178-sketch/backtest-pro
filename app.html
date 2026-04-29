@@ -2820,9 +2820,45 @@ function renderModal() {
         const corrMaxRow=div('');corrMaxRow.appendChild(slabel('Correção — máximo de candles','Quantidade máxima de candles na correção. O EA rejeita automaticamente correções com mais candles que a 1ª perna, independente deste valor.'));
         corrMaxRow.appendChild(stepper(ms.params.corrMax,1,30,'candles',v=>{ms.params.corrMax=v;if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(corrMaxRow);
+        // Visualização gráfica do padrão BoS — 3 fases
+        frag.appendChild(miniSVG(500,130,(ln,rc,tx,cd,ci,th)=>{
+          // Contexto — candles anteriores neutros
+          cd(8,80,12,60,86,0.3); cd(22,74,10,56,80,0.3);
+
+          // FASE 1 — 1ª perna de alta (3 candles bullish consecutivos)
+          rc(36,54,12,22,'#10B981',0.85,1); ln(42,48,42,80,'#10B981',1.5);
+          rc(52,36,12,24,'#10B981',0.9,1);  ln(58,30,58,64,'#10B981',1.5);
+          rc(68,22,12,20,'#10B981',0.85,1); ln(74,16,74,46,'#10B981',1.5);
+          // High1 — nível a ser rompido
+          ln(36,22,500,22,'#F59E0B',0.8,'4,3');
+          tx(80,18,'High1',th.txs,9);
+          // Low1 — ponto de invalidação
+          ln(36,76,180,76,'#EF4444',0.5,'3,2');
+          tx(80,82,'Low1 (stop)',th.txs,8);
+          tx(36,120,'FASE 1',th.txm,9,'start');
+
+          // FASE 2 — Correção (2 candles bearish, não rompe Low1)
+          rc(86,38,12,28,'#EF4444',0.7,1); ln(92,32,92,70,'#EF4444',1.2);
+          rc(102,52,12,22,'#EF4444',0.65,1); ln(108,46,108,78,'#EF4444',1.2);
+          tx(86,120,'FASE 2',th.txm,9,'start');
+
+          // FASE 3 — 2ª perna rompe High1
+          rc(118,34,12,28,'#10B981',0.85,1); ln(124,28,124,66,'#10B981',1.5);
+          rc(134,10,12,30,'#10B981',0.9,1);  ln(140,4,140,44,'#10B981',1.5);
+          // Seta de confirmação no rompimento
+          ci(140,10,'#00D4AA',4);
+          ln(148,14,162,14,'#00D4AA',1.5);
+          tx(164,18,'BoS!','#00D4AA',11);
+          tx(118,120,'FASE 3',th.txm,9,'start');
+
+          // Linha divisória entre fases
+          ln(82,10,82,118,th.bd,0.6,'2,3');
+          ln(114,10,114,118,th.bd,0.6,'2,3');
+        }));
+
         // Aviso sobre regra interna do EA
         const bosNote=div('');bosNote.style.cssText='display:flex;align-items:flex-start;gap:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5';
-        bosNote.innerHTML='<span style="color:#F59E0B;font-size:13px;flex-shrink:0">⚠</span><span>Regra interna: a correção nunca pode ter mais candles que a 1ª perna. O EA descarta automaticamente padrões que violem essa condição.</span>';
+        bosNote.innerHTML='<span style="color:#F59E0B;font-size:13px;flex-shrink:0">⚠</span><span>Regras internas: (1) a correção nunca pode ter mais candles que a 1ª perna; (2) a correção não pode romper o Low1 — ponto de origem da 1ª perna. Padrões que violem essas condições são descartados automaticamente.</span>';
         frag.appendChild(bosNote);
         const leg2MaxRow=div('');leg2MaxRow.appendChild(slabel('2ª perna — máximo de candles','Quantidade máxima de candles para o rompimento. Se o rompimento não ocorrer dentro deste limite, o padrão é descartado.'));
         leg2MaxRow.appendChild(stepper(ms.params.leg2Max,1,30,'candles',v=>{ms.params.leg2Max=v;if(window.refreshModalValidation)refreshModalValidation();}));
