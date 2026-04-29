@@ -1055,8 +1055,8 @@ function condLabel(c) {
     case 'fvg':      return `FVG ${p.dir||'Compra'} — ${p.cond||'Gap detectado'}`;
     case 'bos':      return `BoS ${p.dir||'Compra'} — ${p.cond||'BoS detectado'}`;
     case 'choch':    return `CHoCH ${p.dir||'Compra'} — ${p.cond||'CHoCH detectado'}`;
-    case 'grab':     return `Grab ${p.dir||'Compra'} (${p.per} candles)`;
-    case 'sweep':    return `Sweep ${p.dir||'Compra'} (${p.per} candles, ≥${p.val} pts, ${p.confCandles||3} conf.)`;
+    case 'grab':     return `Grab ${p.dir||'Compra'} — ${p.cond||'Liquidity Grab detectado'}`;
+    case 'sweep':    return `Sweep ${p.dir||'Compra'} — ${p.cond||'Liquidity Sweep detectado'}`;
     default:         return c.name;
   }
 }
