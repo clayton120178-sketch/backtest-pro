@@ -2544,8 +2544,8 @@ function renderModal() {
           if(ind.id==='fvg')  ms.params={dir:'Compra',cond:FVG_CONDS[0],entryMode:'aggressive'};
           if(ind.id==='bos')  ms.params={dir:'Compra',obMit:'none',leg1Min:2,leg1Max:5,corrMax:3,leg2Max:3,cond:BOS_CONDS[0]};
           if(ind.id==='choch')ms.params={dir:'Compra',obMit:'none',trendMin:5,trendMax:15,ampRatio:40,cond:CHOCH_CONDS[0]};
-          if(ind.id==='grab') ms.params={dir:'Compra',per:20,cond:GRAB_CONDS[0]};
-          if(ind.id==='sweep')ms.params={dir:'Compra',per:20,val:10,confCandles:3,cond:SWEEP_CONDS[0]};
+          if(ind.id==='grab') ms.params={dir:'Compra',cond:GRAB_CONDS[0]};
+          if(ind.id==='sweep')ms.params={dir:'Compra',cond:SWEEP_CONDS[0]};
           ms.page=1;
           renderModal();
         });
@@ -2959,9 +2959,6 @@ function renderModal() {
       // ── Grab config ──
       if(smcId==='grab'){
         frag.appendChild(pills('Direção','Compra = rejeição em fundo (pavio longo para baixo, fechamento na metade superior). Venda = rejeição em topo (pavio longo para cima, fechamento na metade inferior).',['Compra','Venda'],ms.params.dir,v=>{ms.params.dir=v;}));
-        const pRow=div('');pRow.appendChild(slabel('Candles para nível','Quantos candles olhar pra trás para identificar o nível de liquidez que será varrido.'));
-        pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;if(window.refreshModalValidation)refreshModalValidation();}));
-        frag.appendChild(pRow);
         // Info sobre qualificação interna
         const grabNote=div('');grabNote.style.cssText='display:flex;align-items:flex-start;gap:8px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5';
         grabNote.innerHTML='<span style="color:#6366F1;font-size:14px;flex-shrink:0">ℹ</span><span>A qualificação do Grab é automática: o pavio deve representar ≥ 50% do range do candle e o fechamento deve ser na metade oposta. Isso filtra rejeições fraquejadas.</span>';
@@ -2991,15 +2988,10 @@ function renderModal() {
       // ── Sweep config ──
       if(smcId==='sweep'){
         frag.appendChild(pills('Direção','Compra = sweep de mínimas (falso rompimento para baixo, reversão para cima). Venda = sweep de máximas (falso rompimento para cima, reversão para baixo).',['Compra','Venda'],ms.params.dir,v=>{ms.params.dir=v;}));
-        const pRow=div('');pRow.appendChild(slabel('Candles para nível','Quantos candles olhar pra trás para identificar o nível de liquidez.'));
-        pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;if(window.refreshModalValidation)refreshModalValidation();}));
-        frag.appendChild(pRow);
-        const vRow=div('');vRow.appendChild(slabel('Ultrapassagem mínima','O preço precisa ultrapassar o nível por pelo menos estes pontos antes de reverter.'));
-        vRow.appendChild(stepper(ms.params.val,1,1000,'pts',v=>{ms.params.val=v;if(window.refreshModalValidation)refreshModalValidation();}));
-        frag.appendChild(vRow);
-        const cRow=div('');cRow.appendChild(slabel('Candles de confirmação','Quantos candles o preço precisa fechar na direção oposta para confirmar o sweep.'));
-        cRow.appendChild(stepper(ms.params.confCandles,1,20,'candles',v=>{ms.params.confCandles=v;if(window.refreshModalValidation)refreshModalValidation();}));
-        frag.appendChild(cRow);
+        // Aviso sobre parâmetros internos do EA
+        const sweepNote=div('');sweepNote.style.cssText='display:flex;align-items:flex-start;gap:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5';
+        sweepNote.innerHTML='<span style="color:#F59E0B;font-size:13px;flex-shrink:0">⚠</span><span>Os parâmetros de detecção do Sweep (janela de busca, ultrapassagem mínima e confirmação) são definidos internamente pelo EA e não são configuráveis nesta versão.</span>';
+        frag.appendChild(sweepNote);
         // Sweep visual
         frag.appendChild(miniSVG(500,150,(ln,rc,tx,cd,ci,th)=>{
           // Price action approaching level
