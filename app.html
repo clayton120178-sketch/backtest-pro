@@ -3738,6 +3738,10 @@ function renderStep4() {
     const excNote=div('');excNote.style.cssText='display:flex;align-items:flex-start;gap:8px;background:rgba(99,102,241,0.1);border-bottom:1px solid rgba(99,102,241,0.2);padding:10px 16px;font-size:12px;color:var(--txs);line-height:1.5';
     excNote.innerHTML='<span style="color:#6366F1;font-size:14px;flex-shrink:0">ℹ</span><span>Quando ativo como gatilho, o Fibonacci <strong style="color:var(--tx)">substitui as condições do Passo 2</strong> e o Smart Money. A direção é determinada automaticamente pelo swing do ZigZag.</span>';
     fiboBlock.appendChild(excNote);
+
+    const reentryNote=div('');reentryNote.style.cssText='display:flex;align-items:flex-start;gap:8px;background:rgba(245,158,11,0.06);border-bottom:1px solid rgba(245,158,11,0.2);padding:10px 16px;font-size:12px;color:var(--txs);line-height:1.5';
+    reentryNote.innerHTML='<span style="color:#F59E0B;font-size:13px;flex-shrink:0">⚠</span><span><strong style="color:var(--tx)">Bloqueio de reentrada:</strong> após uma entrada confirmada na perna atual, o EA aguarda a formação de uma nova perna (novo pivot do ZigZag) antes de gerar um novo sinal do mesmo lado. Isso evita reentradas sequenciais na mesma estrutura após um stop. Ordens pendentes que expirem sem virar posição não ativam o bloqueio.</span>';
+    fiboBlock.appendChild(reentryNote);
   }
 
   if(fiboActive){
