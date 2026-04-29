@@ -2811,16 +2811,20 @@ function renderModal() {
         if(!ms.params.leg1Max) ms.params.leg1Max=5;
         if(!ms.params.corrMax) ms.params.corrMax=3;
         if(!ms.params.leg2Max) ms.params.leg2Max=3;
-        const leg1MinRow=div('');leg1MinRow.appendChild(slabel('1ª perna — mínimo de candles','Mínimo de candles consecutivos na 1ª perna de tendência para qualificar o padrão.'));
-        leg1MinRow.appendChild(stepper(ms.params.leg1Min,2,20,'candles',v=>{ms.params.leg1Min=Math.min(v,ms.params.leg1Max);if(window.refreshModalValidation)refreshModalValidation();}));
+        const leg1MinRow=div('');leg1MinRow.appendChild(slabel('1ª perna — mínimo de candles','Quantidade mínima de candles consecutivos na direção do movimento para qualificar a 1ª perna. Abaixo disso o movimento não tem consistência.'));
+        leg1MinRow.appendChild(stepper(ms.params.leg1Min,2,20,'candles',v=>{ms.params.leg1Min=v;if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(leg1MinRow);
-        const leg1MaxRow=div('');leg1MaxRow.appendChild(slabel('1ª perna — máximo de candles','Máximo de candles na 1ª perna. Acima disso o movimento é considerado esticado demais.'));
-        leg1MaxRow.appendChild(stepper(ms.params.leg1Max,2,50,'candles',v=>{ms.params.leg1Max=Math.max(v,ms.params.leg1Min);if(window.refreshModalValidation)refreshModalValidation();}));
+        const leg1MaxRow=div('');leg1MaxRow.appendChild(slabel('1ª perna — máximo de candles','Quantidade máxima de candles na 1ª perna. Acima disso o movimento é considerado esticado demais para o padrão.'));
+        leg1MaxRow.appendChild(stepper(ms.params.leg1Max,2,50,'candles',v=>{ms.params.leg1Max=v;if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(leg1MaxRow);
-        const corrMaxRow=div('');corrMaxRow.appendChild(slabel('Correção — máximo de candles','Máximo de candles na correção. Acima disso o preço está em consolidação, não em correção.'));
+        const corrMaxRow=div('');corrMaxRow.appendChild(slabel('Correção — máximo de candles','Quantidade máxima de candles na correção. O EA rejeita automaticamente correções com mais candles que a 1ª perna, independente deste valor.'));
         corrMaxRow.appendChild(stepper(ms.params.corrMax,1,30,'candles',v=>{ms.params.corrMax=v;if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(corrMaxRow);
-        const leg2MaxRow=div('');leg2MaxRow.appendChild(slabel('2ª perna — máximo de candles','Máximo de candles para o rompimento. Acima disso o movimento não tem força para confirmar o BoS.'));
+        // Aviso sobre regra interna do EA
+        const bosNote=div('');bosNote.style.cssText='display:flex;align-items:flex-start;gap:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5';
+        bosNote.innerHTML='<span style="color:#F59E0B;font-size:13px;flex-shrink:0">⚠</span><span>Regra interna: a correção nunca pode ter mais candles que a 1ª perna. O EA descarta automaticamente padrões que violem essa condição.</span>';
+        frag.appendChild(bosNote);
+        const leg2MaxRow=div('');leg2MaxRow.appendChild(slabel('2ª perna — máximo de candles','Quantidade máxima de candles para o rompimento. Se o rompimento não ocorrer dentro deste limite, o padrão é descartado.'));
         leg2MaxRow.appendChild(stepper(ms.params.leg2Max,1,30,'candles',v=>{ms.params.leg2Max=v;if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(leg2MaxRow);
         // OB Mitigation filter
