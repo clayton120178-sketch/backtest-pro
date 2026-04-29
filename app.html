@@ -2882,50 +2882,47 @@ function renderModal() {
         frag.appendChild(pills('Direção','Compra = detecta reversão de baixa para alta. Venda = detecta reversão de alta para baixa. Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
 
         // Visualização das 3 etapas do CHoCH
+        // Divisórias: x=125 e x=240 — calculadas para evitar sobreposição de texto
         frag.appendChild(miniSVG(500,160,(ln,rc,tx,cd,ci,th)=>{
-          // ── ETAPA 1 — Tendência prévia de BAIXA ──
-          // 5 candles bearish consecutivos descendo
-          rc(10,20,14,32,'#EF4444',0.85,1); ln(17,15,17,56,'#EF4444',1.5);
-          rc(28,34,14,30,'#EF4444',0.8,1);  ln(35,29,35,68,'#EF4444',1.5);
-          rc(46,48,14,28,'#EF4444',0.75,1); ln(53,43,53,80,'#EF4444',1.5);
-          rc(64,60,14,26,'#EF4444',0.7,1);  ln(71,55,71,90,'#EF4444',1.5);
-          rc(82,72,14,22,'#EF4444',0.65,1); ln(89,67,89,98,'#EF4444',1.5);
-          // Label etapa 1
-          tx(10,140,'ETAPA 1',th.txm,9,'start');
-          tx(10,153,'Tendência de baixa',th.txs,9,'start');
+          // ── ETAPA 1 — Tendência prévia de BAIXA (x: 0–125) ──
+          rc(8,22,14,32,'#EF4444',0.85,1);  ln(15,17,15,58,'#EF4444',1.5);
+          rc(26,36,14,28,'#EF4444',0.8,1);  ln(33,31,33,68,'#EF4444',1.5);
+          rc(44,50,14,26,'#EF4444',0.75,1); ln(51,45,51,80,'#EF4444',1.5);
+          rc(62,62,14,24,'#EF4444',0.7,1);  ln(69,57,69,90,'#EF4444',1.5);
+          rc(80,74,14,22,'#EF4444',0.65,1); ln(87,69,87,100,'#EF4444',1.5);
+          tx(8,142,'ETAPA 1',th.txm,9,'start');
+          tx(8,155,'Tendência de baixa',th.txs,9,'start');
 
-          // Divisória 1
-          ln(104,6,104,130,th.bd,0.7,'3,3');
+          // Divisória 1 (x=125)
+          ln(125,6,125,132,th.bd,0.7,'3,3');
 
-          // ── ETAPA 2 — Impulso de reversão (1ª perna de alta) ──
-          // High1 — nível que a 3ª etapa vai romper
-          ln(104,50,500,50,'#F59E0B',0.8,'5,4');
-          tx(320,44,'High1','#F59E0B',9);
-          // 3 candles bullish subindo forte
-          rc(110,60,14,38,'#10B981',0.9,1); ln(117,20,117,102,'#10B981',1.5);
-          rc(128,40,14,34,'#10B981',0.9,1); ln(135,12,135,78,'#10B981',1.5);
-          rc(146,24,14,30,'#10B981',0.85,1);ln(153,8,153,58,'#10B981',1.5);
-          // Label etapa 2
-          tx(110,140,'ETAPA 2',th.txm,9,'start');
-          tx(110,153,'Impulso de reversão',th.txs,9,'start');
+          // ── ETAPA 2 — Impulso de alta (x: 125–240) ──
+          // High1 — nível a ser rompido na etapa 3
+          ln(125,46,500,46,'#F59E0B',0.75,'5,4');
+          tx(380,40,'High1','#F59E0B',9);
+          // 3 candles bullish subindo
+          rc(131,58,14,36,'#10B981',0.9,1); ln(138,18,138,98,'#10B981',1.5);
+          rc(149,36,14,32,'#10B981',0.9,1); ln(156,10,156,72,'#10B981',1.5);
+          rc(167,18,14,28,'#10B981',0.85,1);ln(174,6,174,50,'#10B981',1.5);
+          tx(131,142,'ETAPA 2',th.txm,9,'start');
+          tx(131,155,'Impulso de alta',th.txs,9,'start');
 
-          // Divisória 2
-          ln(168,6,168,130,th.bd,0.7,'3,3');
+          // Divisória 2 (x=240)
+          ln(240,6,240,132,th.bd,0.7,'3,3');
 
-          // ── ETAPA 3 — Correção + rompimento de High1 ──
-          // Correção: 2 candles bearish (não rompe Low1)
-          rc(174,30,14,24,'#EF4444',0.65,1); ln(181,24,181,58,'#EF4444',1.2);
-          rc(192,42,14,20,'#EF4444',0.6,1);  ln(199,36,199,66,'#EF4444',1.2);
+          // ── ETAPA 3 — Correção + rompimento (x: 240–500) ──
+          // Correção: 2 candles bearish
+          rc(246,26,14,24,'#EF4444',0.65,1); ln(253,20,253,54,'#EF4444',1.2);
+          rc(264,36,14,20,'#EF4444',0.6,1);  ln(271,30,271,60,'#EF4444',1.2);
           // 2ª perna: rompe High1
-          rc(210,26,14,30,'#10B981',0.9,1);  ln(217,6,217,60,'#10B981',1.5);
-          rc(228,8,14,26,'#10B981',0.9,1);   ln(235,2,235,38,'#10B981',1.5);
-          // Marcador de confirmação
-          ci(235,2,'#00D4AA',5);
-          ln(244,6,262,6,'#00D4AA',1.5);
-          tx(265,10,'CHoCH!','#00D4AA',12);
-          // Label etapa 3
-          tx(174,140,'ETAPA 3',th.txm,9,'start');
-          tx(174,153,'Correção + rompimento',th.txs,9,'start');
+          rc(282,18,14,30,'#10B981',0.9,1);  ln(289,4,289,52,'#10B981',1.5);
+          rc(300,4,14,26,'#10B981',0.9,1);   ln(307,0,307,34,'#10B981',1.5);
+          // Confirmação CHoCH
+          ci(307,0,'#00D4AA',5);
+          ln(316,4,336,4,'#00D4AA',1.5);
+          tx(340,8,'CHoCH!','#00D4AA',12);
+          tx(246,142,'ETAPA 3',th.txm,9,'start');
+          tx(246,155,'Correção + ruptura',th.txs,9,'start');
         }));
 
         // Limites de tendência prévia (CHoCH)
