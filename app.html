@@ -2879,35 +2879,64 @@ function renderModal() {
 
       // ── CHoCH config ──
       if(smcId==='choch'){
-        frag.appendChild(pills('Direção','Compra = possível reversão para alta. Venda = possível reversão para baixa. Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
-        // Same confirmation visual as BoS
-        frag.appendChild(miniSVG(500,120,(ln,rc,tx,cd,ci,th)=>{
-          ln(8,60,235,60,'#F59E0B',1,'4,3');tx(14,54,'nível','#F59E0B',11);
-          rc(85,24,18,32,'#10B981',0.8,2);ln(94,18,94,56,'#10B981',1.5);
-          tx(114,40,'corpo fecha',th.txs,11);tx(114,54,'além do nível ✓','#10B981',11);
-          tx(120,108,'POR FECHAMENTO',th.tx,12,'middle');
-          ln(250,12,250,105,'#2A2A3C',1);
-          ln(260,60,490,60,'#F59E0B',1,'4,3');tx(266,54,'nível','#F59E0B',11);
-          rc(340,64,18,26,'#10B981',0.8,2);ln(349,26,349,90,'#10B981',1.5);
-          tx(368,40,'sombra passa',th.txs,11);tx(368,54,'corpo fica acima ✓','#10B981',11);
-          tx(375,108,'POR SOMBRA',th.tx,12,'middle');
+        frag.appendChild(pills('Direção','Compra = detecta reversão de baixa para alta. Venda = detecta reversão de alta para baixa. Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
+
+        // Visualização das 3 etapas do CHoCH
+        frag.appendChild(miniSVG(500,130,(ln,rc,tx,cd,ci,th)=>{
+          // ETAPA 1 — Tendência prévia de BAIXA (candles bearish consecutivos)
+          rc(8,18,12,30,'#EF4444',0.8,1);  ln(14,14,14,52,'#EF4444',1.5);
+          rc(24,30,12,28,'#EF4444',0.75,1); ln(30,26,30,62,'#EF4444',1.5);
+          rc(40,44,12,26,'#EF4444',0.7,1);  ln(46,40,46,74,'#EF4444',1.5);
+          rc(56,58,12,24,'#EF4444',0.65,1); ln(62,54,62,86,'#EF4444',1.5);
+          rc(72,70,12,22,'#EF4444',0.6,1);  ln(78,66,78,96,'#EF4444',1.5);
+          tx(8,120,'ETAPA 1',th.txm,9,'start');
+          tx(8,110,'Tendência de baixa',th.txs,8,'start');
+
+          // Linha divisória
+          ln(90,8,90,118,th.bd,0.6,'2,3');
+
+          // ETAPA 2 — 1ª perna de ALTA (impulso de reversão)
+          // High1 — nível que será rompido na etapa 3
+          ln(90,30,500,30,'#F59E0B',0.7,'4,3');
+          tx(200,26,'High1',th.txs,8);
+          rc(96,56,12,28,'#10B981',0.85,1); ln(102,28,102,88,'#10B981',1.5);
+          rc(112,40,12,26,'#10B981',0.9,1); ln(118,14,118,70,'#10B981',1.5);
+          rc(128,28,12,22,'#10B981',0.85,1);ln(134,10,134,54,'#10B981',1.5);
+          tx(96,120,'ETAPA 2',th.txm,9,'start');
+          tx(96,110,'Impulso reversão',th.txs,8,'start');
+
+          // Linha divisória
+          ln(146,8,146,118,th.bd,0.6,'2,3');
+
+          // ETAPA 3 — Correção + 2ª perna rompe High1
+          rc(152,36,12,22,'#EF4444',0.65,1); ln(158,30,158,62,'#EF4444',1.2);
+          rc(168,44,12,18,'#EF4444',0.6,1);  ln(174,38,174,66,'#EF4444',1.2);
+          rc(184,28,12,26,'#10B981',0.85,1); ln(190,8,190,58,'#10B981',1.5);
+          rc(200,10,12,24,'#10B981',0.9,1);  ln(206,4,206,38,'#10B981',1.5);
+          // Confirmação do CHoCH
+          ci(206,4,'#00D4AA',4);
+          ln(214,8,230,8,'#00D4AA',1.5);
+          tx(232,12,'CHoCH!','#00D4AA',11);
+          tx(152,120,'ETAPA 3',th.txm,9,'start');
+          tx(152,110,'Correção + rompimento',th.txs,8,'start');
         }));
 
         // Limites de tendência prévia (CHoCH)
         if(!ms.params.trendMin) ms.params.trendMin=5;
         if(!ms.params.trendMax) ms.params.trendMax=15;
         if(!ms.params.ampRatio) ms.params.ampRatio=40;
-        const trendMinRow=div('');trendMinRow.appendChild(slabel('Tendência prévia — mínimo de candles','Mínimo de candles consecutivos na tendência oposta antes da reversão. Garante que existe uma tendência estabelecida.'));
+        const trendMinRow=div('');trendMinRow.appendChild(slabel('Tendência prévia — mínimo de candles','Quantidade mínima de candles bearish consecutivos que caracterizam a tendência prévia de baixa. Abaixo disso não há tendência estabelecida para reverter.'));
         trendMinRow.appendChild(stepper(ms.params.trendMin,2,50,'candles',v=>{ms.params.trendMin=Math.min(v,ms.params.trendMax);if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(trendMinRow);
-        const trendMaxRow=div('');trendMaxRow.appendChild(slabel('Tendência prévia — máximo de candles','Máximo de candles na tendência prévia. Acima disso a tendência é muito longa e o padrão perde relevância temporal.'));
+        const trendMaxRow=div('');trendMaxRow.appendChild(slabel('Tendência prévia — máximo de candles','Quantidade máxima de candles na tendência prévia. Acima disso a tendência é considerada longa demais e o padrão perde relevância temporal.'));
         trendMaxRow.appendChild(stepper(ms.params.trendMax,2,100,'candles',v=>{ms.params.trendMax=Math.max(v,ms.params.trendMin);if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(trendMaxRow);
-        const ampRow=div('');ampRow.appendChild(slabel('Amplitude mínima da 1ª perna (%)','A 1ª perna de reversão deve cobrir pelo menos esta porcentagem da amplitude da tendência prévia. Ex: 40% = perna de reversão deve ter no mínimo 40% do range da tendência anterior.'));
+        const ampRow=div('');ampRow.appendChild(slabel('Força mínima do impulso (%)','O impulso de reversão (1ª perna de alta) precisa cobrir pelo menos esta porcentagem do range da tendência prévia. Garante que a reversão tem força real — não é um repique fraco.'));
         ampRow.appendChild(stepper(ms.params.ampRatio,1,100,'%',v=>{ms.params.ampRatio=v;if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(ampRow);
-        const chochNote=div('');chochNote.style.cssText='display:flex;align-items:flex-start;gap:8px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5';
-        chochNote.innerHTML='<span style="color:#6366F1;font-size:14px;flex-shrink:0">ℹ</span><span>Os limites de candles da 1ª perna de reversão, correção e 2ª perna são compartilhados com o BoS. Ajuste-os na configuração do BoS quando necessário.</span>';
+        // Aviso sobre regras internas compartilhadas com BoS
+        const chochNote=div('');chochNote.style.cssText='display:flex;align-items:flex-start;gap:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5';
+        chochNote.innerHTML='<span style="color:#F59E0B;font-size:13px;flex-shrink:0">⚠</span><span>Regras internas: (1) o impulso de reversão não pode ter mais candles que a tendência prévia; (2) a etapa final (correção + rompimento) usa os mesmos limites configurados no padrão BoS.</span>';
         frag.appendChild(chochNote);
         // OB Mitigation filter
         if(!ms.params.obMit) ms.params.obMit='none';
