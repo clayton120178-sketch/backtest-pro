@@ -17,6 +17,7 @@
 #include <BacktestPro/BP_Oscillators.mqh>
 #include <BacktestPro/BP_CandlePatterns.mqh>
 #include <BacktestPro/BP_SmartMoney.mqh>
+#include <BacktestPro/BP_Fibonacci.mqh>
 #include <BacktestPro/BP_SignalEngine.mqh>
 
 //+------------------------------------------------------------------+
@@ -34,6 +35,7 @@ input bool   InpUseOscillators   = true;   // Usar modulo de osciladores
 input bool   InpUseIndicators    = true;   // Usar modulo de indicadores de tendencia/volume
 input bool   InpUseCandlePatterns= false;  // Usar modulo de padroes de candle
 input bool   InpUseSmartMoney    = false;  // Usar modulo Smart Money Concepts
+input bool   InpUseFibonacci     = false;  // Usar modulo Fibonacci (substitui Cond1/2/3 como gatilho)
 
 //+------------------------------------------------------------------+
 //| INPUTS: Condicao 1 (Oscilador Principal)                        |
@@ -80,7 +82,7 @@ input ENUM_TRADING_DIRECTION  InpDirection        = TRADING_BOTH;        // Dire
 //| INPUTS: Stop Loss                                                |
 //+------------------------------------------------------------------+
 input group "=== [6] Stop Loss ==="
-input ENUM_STOP_LOSS_TYPE InpSLType    = SL_GRAPHIC;  // Tipo de SL (0=ATR, 1=FIXED, 2=CANDLE)
+input ENUM_BP_SL_TYPE InpSLType        = BP_SL_CANDLE; // Tipo de SL (0=ATR, 1=FIXED, 2=CANDLE, 10=FIBO)
 input int    InpSL_ATRPeriod           = 14;           // Periodo ATR
 input double InpSL_ATRMult             = 1.5;          // Multiplicador ATR
 input int    InpSL_FixedPts            = 100;          // Pontos fixos
@@ -93,7 +95,7 @@ input int    InpSL_Max                 = 5000;         // Stop maximo (pontos, 0
 //| INPUTS: Take Profit                                              |
 //+------------------------------------------------------------------+
 input group "=== [7] Take Profit ==="
-input ENUM_TAKE_PROFIT_TYPE InpTPType  = TP_RR_MULTIPLIER;  // Tipo de TP (0=FIXED, 1=RR, 2=ZIGZAG, 3=ATR)
+input ENUM_BP_TP_TYPE InpTPType        = BP_TP_RR;    // Tipo de TP (0=FIXED, 1=RR, 2=ZIGZAG, 3=ATR, 10=FIBO)
 input int    InpTP_FixedPts            = 200;                // Pontos fixos
 input double InpTP_RR                  = 2.0;                // Ratio R:R
 input int    InpTP_ZZDepth             = 12;                 // ZigZag Depth
@@ -138,7 +140,16 @@ input ENUM_BP_CANDLE_PATTERN InpCandleBear = BP_CANDLE_NONE;  // Padrao de baixa
 //| INPUTS: Smart Money (modulo isolado)                            |
 //+------------------------------------------------------------------+
 input group "=== [11] Smart Money ==="
-input ENUM_BP_SMC_CONCEPT InpSMCEntry = BP_SMC_NONE;  // Conceito SMC de entrada
+input ENUM_BP_SMC_CONCEPT    InpSMCEntry      = BP_SMC_NONE;          // Conceito SMC de entrada
+input ENUM_BP_FVG_ENTRY_MODE InpFVGEntryMode  = FVG_ENTRY_AGGRESSIVE; // [FVG] Modo de entrada (Imediata / Correcao Limite)
+input int    InpBOS_Leg1Min       = 2;  // [BoS] Min candles 1a perna
+input int    InpBOS_Leg1Max       = 5;  // [BoS] Max candles 1a perna
+input int    InpBOS_CorrectionMax = 3;  // [BoS] Max candles correcao
+input int    InpBOS_Leg2Max       = 3;  // [BoS] Max candles 2a perna
+input int    InpCHoCH_TrendMin          = 5;   // [CHoCH] Min candles tendencia previa
+input int    InpCHoCH_TrendMax          = 15;  // [CHoCH] Max candles tendencia previa
+input int    InpCHoCH_MinAmplitudeRatio = 40;  // [CHoCH] Min % amplitude 1a perna vs previa
+input ENUM_BP_OB_MITIGATION InpOB_Mitigation = OB_MITIGATION_NONE; // [OB] Filtro de mitigacao (BoS/CHoCH)
 
 //+------------------------------------------------------------------+
 //| INPUTS: Trailing Stop                                             |
@@ -177,6 +188,20 @@ input int               InpExitPeriod   = 14;            // Periodo
 input double            InpExitValue    = 0.0;           // Valor de referencia
 
 //+------------------------------------------------------------------+
+//| INPUTS: Fibonacci (modulo opcional, substitui Cond1/2/3)         |
+//+------------------------------------------------------------------+
+input group "=== [15] Fibonacci ==="
+input int                       InpFibo_ZZDepth      = 12;                        // ZigZag Depth
+input int                       InpFibo_ZZDeviation  = 5;                         // ZigZag Deviation
+input int                       InpFibo_ZZBackstep   = 3;                         // ZigZag Backstep
+input ENUM_BP_FIBO_LEVEL        InpFibo_TriggerLevel = BP_FIBO_618;               // Nivel de retracao p/ monitorar trigger
+input ENUM_BP_FIBO_TRIGGER_MODE InpFibo_TriggerMode  = BP_FIBO_TRIG_VALIDATION;   // Modo de trigger (TOQUE ou VALIDACAO)
+input ENUM_BP_FIBO_LEVEL        InpFibo_SLLevel      = BP_FIBO_100;               // Nivel Fibo usado como SL (se InpSLType = BP_SL_FIBO)
+input ENUM_BP_FIBO_LEVEL        InpFibo_TPLevel      = BP_FIBO_1618;              // Nivel Fibo usado como TP (se InpTPType = BP_TP_FIBO)
+input bool                      InpFibo_Debug        = false;                     // [DEBUG] Desenha linhas Fibo no chart (requer LogLevel=DEBUG)
+input ENUM_BP_TRIGGER_HIGHLIGHT InpFibo_DebugHighlight = BP_HL_BOTH;               // [DEBUG] Como destacar o candle que disparou o trigger
+
+//+------------------------------------------------------------------+
 //| Handles do Framework alphaQuant                                  |
 //+------------------------------------------------------------------+
 int g_hLogger         = -1;
@@ -196,13 +221,13 @@ int g_hBPIndicators = -1;
 int g_hBPOscillators= -1;
 int g_hBPCandles    = -1;
 int g_hBPSmartMoney = -1;
+int g_hBPFibonacci  = -1;
 int g_hBPSignal     = -1;
 
 //+------------------------------------------------------------------+
 //| Estado interno                                                    |
 //+------------------------------------------------------------------+
 datetime g_lastBarTime        = 0;
-int      g_tradesHoje         = 0;   // Contador de operacoes abertas hoje
 datetime g_currentDay         = 0;   // Dia atual para reset do contador
 bool     g_partialDone        = false;  // Saida parcial ja executada para posicao atual
 datetime g_lastStopOrderBarTime = 0;   // Barra em que a ultima ordem STOP foi colocada (evita recolocar na mesma barra)
@@ -244,7 +269,8 @@ void ResetDailyCounterIfNeeded()
    if(today != g_currentDay)
    {
       g_currentDay = today;
-      g_tradesHoje = 0;
+      OrderManager_ResetExecutedPositionsCount(g_hOrder);
+      PositionTracker_CleanupClosedPositions(g_hTracker);
       RiskManager_OnNewDay(g_hRisk);
    }
 }
@@ -279,7 +305,7 @@ void CheckForceClose()
 bool HasReachedDailyLimit()
 {
    if(InpMaxTradesPerDay <= 0) return false;
-   return g_tradesHoje >= InpMaxTradesPerDay;
+   return OrderManager_GetExecutedPositionsCount(g_hOrder) >= InpMaxTradesPerDay;
 }
 
 //+------------------------------------------------------------------+
@@ -419,10 +445,11 @@ void LogDiagnostic(const BPCondition &conditions[], int count)
                    (InpDirection == TRADING_SELL_ONLY) ? "SO VENDA"  : "AMBAS";
    Logger_Debug(g_hLogger, "  Direcao: " + dirStr);
 
-   //--- Contador diario
+   //--- Contador diario (posicoes efetivamente executadas via OrderManager)
+   int tradesHoje = OrderManager_GetExecutedPositionsCount(g_hOrder);
    string limitStr = (InpMaxTradesPerDay > 0)
-      ? IntegerToString(g_tradesHoje) + "/" + IntegerToString(InpMaxTradesPerDay)
-      : IntegerToString(g_tradesHoje) + " (sem limite)";
+      ? IntegerToString(tradesHoje) + "/" + IntegerToString(InpMaxTradesPerDay)
+      : IntegerToString(tradesHoje) + " (sem limite)";
    Logger_Debug(g_hLogger, "  Operacoes hoje: " + limitStr);
 
    //--- Avalia cada condicao individualmente
@@ -630,6 +657,8 @@ void LogDiagnostic(const BPCondition &conditions[], int count)
    {
       Logger_Debug(g_hLogger, "  --- Smart Money ---");
       Logger_Debug(g_hLogger, "  Conceito: " + EnumToString(InpSMCEntry));
+      if(InpSMCEntry == BP_SMC_FVG_BULL || InpSMCEntry == BP_SMC_FVG_BEAR)
+         Logger_Debug(g_hLogger, "  FVG Modo: " + EnumToString(InpFVGEntryMode));
    }
 }
 
@@ -647,9 +676,11 @@ void ExecuteEntry(ENUM_BP_SIGNAL signal)
                                              : SymbolInfoDouble(_Symbol, SYMBOL_BID);
    datetime triggerBarTime = iTime(_Symbol, PERIOD_CURRENT, 1);
 
-   //--- Calcula SL: se SL_GRAPHIC com N candles, usa calculo proprio; senao, usa framework
+   //--- Calcula SL: Fibo tem prioridade; SL_CANDLE com N>1 usa calculo proprio; senao framework
    double sl = 0.0;
-   if(InpSLType == SL_GRAPHIC && InpSL_CandlesBack > 1)
+   if(InpSLType == BP_SL_FIBO && g_hBPFibonacci >= 0)
+      sl = BP_Fibonacci_CalculateSL(g_hBPFibonacci, signal, InpFibo_SLLevel, InpSL_Buffer);
+   else if(InpSLType == BP_SL_CANDLE && InpSL_CandlesBack > 1)
       sl = CalculateGraphicSL_NCandles(signalType, entry, InpSL_CandlesBack);
    else
       sl = StopLoss_CalculateStopLoss(g_hSL, signalType, entry, triggerBarTime);
@@ -659,8 +690,12 @@ void ExecuteEntry(ENUM_BP_SIGNAL signal)
       return;
    }
 
-   //--- Calcula TP via framework
-   double tp = TakeProfit_Calculate(g_hTP, signalType, entry, sl);
+   //--- Calcula TP: Fibo tem prioridade; senao framework
+   double tp = 0.0;
+   if(InpTPType == BP_TP_FIBO && g_hBPFibonacci >= 0)
+      tp = BP_Fibonacci_CalculateTP(g_hBPFibonacci, signal, InpFibo_TPLevel);
+   else
+      tp = TakeProfit_Calculate(g_hTP, signalType, entry, sl);
    if(tp <= 0.0)
    {
       Logger_Error(g_hLogger, "Falha ao calcular Take Profit");
@@ -680,9 +715,7 @@ void ExecuteEntry(ENUM_BP_SIGNAL signal)
 
    if(ticket > 0)
    {
-      PositionTracker_RegisterPositionOpened(g_hTracker, ticket, ticket);
-      RiskManager_OnNewOperation(g_hRisk);
-      g_tradesHoje++;
+      // PositionTracker, RiskManager e contador: processados via OnTradeTransaction
       Logger_Info(g_hLogger, "Entrada executada: " + (signal == BP_SIGNAL_BUY ? "BUY" : "SELL") +
                   " lots=" + DoubleToString(lots, 2) +
                   " sl=" + DoubleToString(sl, _Digits) +
@@ -713,15 +746,22 @@ void PlaceStopEntry(ENUM_BP_SIGNAL signal)
                      ? iHigh(_Symbol, PERIOD_CURRENT, 1)
                      : iLow(_Symbol, PERIOD_CURRENT, 1);
 
-   //--- Calcula SL: se SL_GRAPHIC com N candles, usa calculo proprio; senao, usa framework
+   //--- Calcula SL: Fibo tem prioridade; SL_CANDLE com N>1 usa calculo proprio; senao framework
    double slEst = 0.0;
-   if(InpSLType == SL_GRAPHIC && InpSL_CandlesBack > 1)
+   if(InpSLType == BP_SL_FIBO && g_hBPFibonacci >= 0)
+      slEst = BP_Fibonacci_CalculateSL(g_hBPFibonacci, signal, InpFibo_SLLevel, InpSL_Buffer);
+   else if(InpSLType == BP_SL_CANDLE && InpSL_CandlesBack > 1)
       slEst = CalculateGraphicSL_NCandles(signalType, refPrice, InpSL_CandlesBack);
    else
       slEst = StopLoss_CalculateStopLoss(g_hSL, signalType, refPrice, triggerBarTime);
    if(slEst <= 0.0) { Logger_Error(g_hLogger, "PlaceStopEntry: falha ao calcular SL"); return; }
 
-   double tp = TakeProfit_Calculate(g_hTP, signalType, refPrice, slEst);
+   //--- Calcula TP: Fibo tem prioridade; senao framework
+   double tp = 0.0;
+   if(InpTPType == BP_TP_FIBO && g_hBPFibonacci >= 0)
+      tp = BP_Fibonacci_CalculateTP(g_hBPFibonacci, signal, InpFibo_TPLevel);
+   else
+      tp = TakeProfit_Calculate(g_hTP, signalType, refPrice, slEst);
    if(tp <= 0.0) { Logger_Error(g_hLogger, "PlaceStopEntry: falha ao calcular TP"); return; }
 
    double lots = RiskManager_CalculateLotSize(g_hRisk, refPrice, slEst);
@@ -741,10 +781,8 @@ void PlaceStopEntry(ENUM_BP_SIGNAL signal)
    {
       //--- Registra no TriggerMonitor: ele monitora, expira e cancela automaticamente
       TriggerMonitor_RegisterPendingOrder(g_hTriggerMonitor, (long)ticket);
-      PositionTracker_RegisterPositionOpened(g_hTracker, ticket, ticket);
-      RiskManager_OnNewOperation(g_hRisk);
-      g_tradesHoje++;
       g_lastStopOrderBarTime = iTime(_Symbol, PERIOD_CURRENT, 1);  // marca barra para evitar recolocar
+      // Nota: contador e RiskManager_OnNewOperation movidos para OnTradeTransaction
       Logger_Info(g_hLogger, "Ordem STOP registrada: " + (signal == BP_SIGNAL_BUY ? "BUY_STOP" : "SELL_STOP") +
                   " refPrice=" + DoubleToString(refPrice, _Digits) +
                   " buffer=" + IntegerToString(InpStopOrderBuffer) + " ticks" +
@@ -752,6 +790,72 @@ void PlaceStopEntry(ENUM_BP_SIGNAL signal)
    }
    else
       Logger_Warning(g_hLogger, "PlaceStopEntry: falha ao colocar ordem stop");
+}
+
+//+------------------------------------------------------------------+
+//| Coloca ordem LIMIT na zona do FVG (modo mitigation)              |
+//| BUY_LIMIT no topo da zona (zoneHigh) para FVG bullish            |
+//| SELL_LIMIT no fundo da zona (zoneLow) para FVG bearish           |
+//| Stop fixo na borda oposta do FVG                                 |
+//| Expiracao controlada por InpStopOrderExpBars + TriggerMonitor    |
+//+------------------------------------------------------------------+
+void PlaceFVGLimitEntry(ENUM_BP_SIGNAL signal, double zoneHigh, double zoneLow)
+{
+   if(HasOpenPosition()) return;
+   if(TriggerMonitor_GetPendingOrderCount(g_hTriggerMonitor) > 0) return;
+
+   // Evita recolocar no mesmo candle
+   datetime triggerBarTime = iTime(_Symbol, PERIOD_CURRENT, 1);
+   if(triggerBarTime == g_lastStopOrderBarTime) return;
+
+   double entryPrice = 0.0;
+   double sl         = 0.0;
+   int    signalType = 0;
+
+   if(signal == BP_SIGNAL_BUY)
+   {
+      signalType = SIGNAL_BUY;
+      entryPrice = zoneHigh;  // BUY_LIMIT: preco de entrada no topo da zona
+      sl         = zoneLow;   // Stop fixo na borda oposta (fundo do FVG)
+   }
+   else
+   {
+      signalType = SIGNAL_SELL;
+      entryPrice = zoneLow;   // SELL_LIMIT: preco de entrada no fundo da zona
+      sl         = zoneHigh;  // Stop fixo na borda oposta (topo do FVG)
+   }
+
+   double tp = TakeProfit_Calculate(g_hTP, signalType, entryPrice, sl);
+   if(tp <= 0.0) { Logger_Error(g_hLogger, "PlaceFVGLimitEntry: falha ao calcular TP"); return; }
+
+   double lots = RiskManager_CalculateLotSize(g_hRisk, entryPrice, sl);
+   if(lots <= 0.0) { Logger_Error(g_hLogger, "PlaceFVGLimitEntry: lote invalido"); return; }
+
+   // Coloca ordem limite via OrderManager
+   // signalType para limite: BUY_LIMIT = SIGNAL_BUY, SELL_LIMIT = SIGNAL_SELL
+   // buffer = 0 (preco exato da zona)
+   ulong ticket = OrderManager_PlacePendingOrder(
+      g_hOrder, signalType, lots,
+      entryPrice,       // preco de entrada na zona FVG
+      0.0,              // sem buffer (preco exato)
+      sl, tp,
+      0,                // sem expiracao absoluta (TriggerMonitor controla por barras)
+      "BP_FVG_LIMIT"
+   );
+
+   if(ticket > 0)
+   {
+      TriggerMonitor_RegisterPendingOrder(g_hTriggerMonitor, (long)ticket);
+      g_lastStopOrderBarTime = iTime(_Symbol, PERIOD_CURRENT, 1);
+      // Nota: contador e RiskManager_OnNewOperation movidos para OnTradeTransaction
+      Logger_Info(g_hLogger, "Ordem FVG LIMIT registrada: " + (signal == BP_SIGNAL_BUY ? "BUY_LIMIT" : "SELL_LIMIT") +
+                  " entry=" + DoubleToString(entryPrice, _Digits) +
+                  " zoneHigh=" + DoubleToString(zoneHigh, _Digits) +
+                  " zoneLow=" + DoubleToString(zoneLow, _Digits) +
+                  " sl=" + DoubleToString(sl, _Digits) + " tp=" + DoubleToString(tp, _Digits));
+   }
+   else
+      Logger_Warning(g_hLogger, "PlaceFVGLimitEntry: falha ao colocar ordem limite");
 }
 
 //+------------------------------------------------------------------+
@@ -782,14 +886,23 @@ int OnInit()
    if(g_hRisk < 0) { Logger_Error(g_hLogger, "RiskManager_Create falhou"); return INIT_FAILED; }
 
    //--- 5. StopLossManager
+   //--- BP_SL_FIBO: nao existe no framework; usa SL_FIXED como placeholder,
+   //--- o preco e calculado pelo modulo BP_Fibonacci no EA (ver ExecuteEntry).
+   ENUM_STOP_LOSS_TYPE fwSLType = (InpSLType == BP_SL_FIBO)
+      ? SL_FIXED
+      : (ENUM_STOP_LOSS_TYPE)InpSLType;
    g_hSL = StopLoss_Create(_Symbol, PERIOD_CURRENT, g_hLogger,
-                            InpSLType, InpSL_ATRPeriod, InpSL_ATRMult,
+                            fwSLType, InpSL_ATRPeriod, InpSL_ATRMult,
                             InpSL_FixedPts, InpSL_Buffer, InpSL_Min, InpSL_Max);
    if(g_hSL < 0) { Logger_Error(g_hLogger, "StopLoss_Create falhou"); return INIT_FAILED; }
 
    //--- 6. TakeProfitManager
+   //--- BP_TP_FIBO: nao existe no framework; usa TP_FIXED_POINTS como placeholder.
+   ENUM_TAKE_PROFIT_TYPE fwTPType = (InpTPType == BP_TP_FIBO)
+      ? TP_FIXED_POINTS
+      : (ENUM_TAKE_PROFIT_TYPE)InpTPType;
    g_hTP = TakeProfit_Create(_Symbol, PERIOD_CURRENT, g_hLogger,
-                              InpTPType, InpTP_FixedPts, InpTP_RR,
+                              fwTPType, InpTP_FixedPts, InpTP_RR,
                               InpTP_ZZDepth, InpTP_ZZDeviation, InpTP_ZZBackstep,
                               InpTP_ZZBuffer, InpTP_Min, InpTP_Max,
                               InpTP_ATRPeriod, InpTP_ATRPercent, InpTP_ATRTF);
@@ -853,11 +966,45 @@ int OnInit()
       if(g_hBPCandles < 0) { Logger_Error(g_hLogger, "BP_CandlePatterns_Create falhou"); return INIT_FAILED; }
    }
 
+   //--- Fibonacci
+   if(InpUseFibonacci)
+   {
+      g_hBPFibonacci = BP_Fibonacci_Create(_Symbol, PERIOD_CURRENT, g_hLogger,
+                                            InpFibo_ZZDepth, InpFibo_ZZDeviation, InpFibo_ZZBackstep);
+      if(g_hBPFibonacci < 0) { Logger_Error(g_hLogger, "BP_Fibonacci_Create falhou"); return INIT_FAILED; }
+
+      //--- Debug visual: so ativa se LogLevel=DEBUG E usuario marcou InpFibo_Debug
+      bool vizEnabled = (InpFibo_Debug && Logger_GetLevel(g_hLogger) >= LOG_LEVEL_DEBUG);
+      BP_Viz_SetEnabled(vizEnabled);
+      if(vizEnabled)
+      {
+         BP_Fibonacci_SetDebugViz(g_hBPFibonacci, true,
+                                   InpFibo_DebugHighlight,
+                                   InpFibo_TriggerLevel,
+                                   InpFibo_SLLevel,
+                                   InpFibo_TPLevel);
+         Logger_Info(g_hLogger, "Fibo debug visual ATIVADO");
+      }
+   }
+
    //--- Smart Money
    if(InpUseSmartMoney)
    {
       g_hBPSmartMoney = BP_SmartMoney_Create(_Symbol, PERIOD_CURRENT, g_hLogger);
       if(g_hBPSmartMoney < 0) { Logger_Error(g_hLogger, "BP_SmartMoney_Create falhou"); return INIT_FAILED; }
+
+      // Configura limites do BoS (inputs do usuario)
+      BP_SmartMoney_SetBOSLimits(g_hBPSmartMoney,
+                                 InpBOS_Leg1Min, InpBOS_Leg1Max,
+                                 InpBOS_CorrectionMax, InpBOS_Leg2Max);
+
+      // Configura limites do CHoCH (inputs do usuario)
+      BP_SmartMoney_SetCHoCHLimits(g_hBPSmartMoney,
+                                   InpCHoCH_TrendMin, InpCHoCH_TrendMax,
+                                   InpCHoCH_MinAmplitudeRatio);
+
+      // Configura filtro de mitigacao do OB (aplicado em BoS e CHoCH)
+      BP_SmartMoney_SetOBMitigation(g_hBPSmartMoney, InpOB_Mitigation);
    }
 
    //--- Signal Engine
@@ -876,7 +1023,15 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
 {
+   //--- Limpa objetos de debug visual (se ativos)
+   if(BP_Viz_IsEnabled())
+   {
+      BP_Viz_Clear();
+      BP_Viz_SetEnabled(false);
+   }
+
    if(g_hBPSignal     >= 0) BP_SignalEngine_Destroy(g_hBPSignal);
+   if(g_hBPFibonacci  >= 0) BP_Fibonacci_Destroy(g_hBPFibonacci);
    if(g_hBPSmartMoney >= 0) BP_SmartMoney_Destroy(g_hBPSmartMoney);
    if(g_hBPCandles    >= 0) BP_CandlePatterns_Destroy(g_hBPCandles);
    if(g_hBPOscillators>= 0) BP_Oscillators_Destroy(g_hBPOscillators);
@@ -1116,6 +1271,15 @@ void OnTick()
    BPCondition conditions[];
    int count = BuildConditions(conditions);
 
+   //--- Atualiza perna do Fibonacci a cada nova barra (fora da janela tambem,
+   //--- para manter o estado pronto para a proxima operacao; funciona tanto
+   //--- quando Fibo e gatilho quanto quando e apenas fonte de SL/TP).
+   if(g_hBPFibonacci >= 0)
+   {
+      BP_Fibonacci_Update(g_hBPFibonacci);
+      BP_Fibonacci_DrawDebug(g_hBPFibonacci);  // no-op se debug viz desativado
+   }
+
    //--- Log diagnostico a cada candle (so imprime em nivel DEBUG)
    LogDiagnostic(conditions, count);
 
@@ -1124,7 +1288,7 @@ void OnTick()
    if(HasOpenPosition()) return;
    if(HasReachedDailyLimit())
    {
-      Logger_Verbose(g_hLogger, "  >> Limite diario atingido (" + IntegerToString(g_tradesHoje) + "/" + IntegerToString(InpMaxTradesPerDay) + ")");
+      Logger_Verbose(g_hLogger, "  >> Limite diario atingido (" + IntegerToString(OrderManager_GetExecutedPositionsCount(g_hOrder)) + "/" + IntegerToString(InpMaxTradesPerDay) + ")");
       return;
    }
    if(count == 0) return;
@@ -1135,13 +1299,43 @@ void OnTick()
    ENUM_BP_CANDLE_PATTERN candleBull = InpUseCandlePatterns ? InpCandleBull : BP_CANDLE_NONE;
    ENUM_BP_CANDLE_PATTERN candleBear = InpUseCandlePatterns ? InpCandleBear : BP_CANDLE_NONE;
 
-   ENUM_BP_SIGNAL signal = BP_SignalEngine_Evaluate(
-      g_hBPSignal,
-      conditions, count,
-      candleBull, candleBear,
-      smcConcept,
-      (int)InpDirection
-   );
+   ENUM_BP_SIGNAL signal = BP_SIGNAL_NONE;
+
+   //--- Fibonacci como gatilho principal (substitui Cond1/2/3 + SMC quando ativo)
+   //--- Nota: Update ja foi chamado acima, estado e comum a todas as operacoes.
+   if(InpUseFibonacci && g_hBPFibonacci >= 0)
+   {
+      if(Logger_GetLevel(g_hLogger) >= LOG_LEVEL_DEBUG)
+         Logger_Debug(g_hLogger, "  " + BP_Fibonacci_DescribeState(g_hBPFibonacci));
+
+      ENUM_BP_SIGNAL fiboSig = BP_Fibonacci_CheckTrigger(g_hBPFibonacci,
+                                                         InpFibo_TriggerLevel,
+                                                         InpFibo_TriggerMode);
+      // Filtro de direcao
+      if(fiboSig != BP_SIGNAL_NONE)
+      {
+         if(InpDirection == TRADING_BUY_ONLY  && fiboSig != BP_SIGNAL_BUY)  fiboSig = BP_SIGNAL_NONE;
+         if(InpDirection == TRADING_SELL_ONLY && fiboSig != BP_SIGNAL_SELL) fiboSig = BP_SIGNAL_NONE;
+      }
+
+      // Debug visual: destaca candle trigger quando efetivamente disparou
+      if(fiboSig != BP_SIGNAL_NONE)
+      {
+         datetime triggerBar = iTime(_Symbol, PERIOD_CURRENT, 1);
+         BP_Fibonacci_HighlightTriggerCandle(g_hBPFibonacci, fiboSig, triggerBar);
+      }
+      signal = fiboSig;
+   }
+   else
+   {
+      signal = BP_SignalEngine_Evaluate(
+         g_hBPSignal,
+         conditions, count,
+         candleBull, candleBear,
+         smcConcept,
+         (int)InpDirection
+      );
+   }
 
    //--- Log resultado do sinal
    if(Logger_GetLevel(g_hLogger) >= LOG_LEVEL_VERBOSE)
@@ -1154,7 +1348,21 @@ void OnTick()
 
    if(signal == BP_SIGNAL_NONE) return;
 
-   //--- Executa conforme modo de entrada
+   //--- FVG modo mitigation: coloca ordem limite na zona do FVG
+   if(InpUseSmartMoney && InpFVGEntryMode == FVG_ENTRY_MITIGATION &&
+      (smcConcept == BP_SMC_FVG_BULL || smcConcept == BP_SMC_FVG_BEAR))
+   {
+      double zoneHigh = 0.0, zoneLow = 0.0;
+      if(BP_SmartMoney_GetFVGZone(g_hBPSmartMoney, smcConcept, zoneHigh, zoneLow, 1))
+      {
+         PlaceFVGLimitEntry(signal, zoneHigh, zoneLow);
+         return;
+      }
+      Logger_Warning(g_hLogger, "FVG mitigation: zona nao encontrada, operacao ignorada");
+      return;
+   }
+
+   //--- Executa conforme modo de entrada (normal ou BOS/outros SMC)
    if(InpEntryType == BP_ENTRY_NEXT_OPEN)
       ExecuteEntry(signal);       // Mercado no preco atual (abertura do candle[0])
    else
@@ -1162,25 +1370,45 @@ void OnTick()
 }
 
 //+------------------------------------------------------------------+
-//| OnTradeTransaction: atualiza resultado no RiskManager           |
+//| OnTradeTransaction: processa abertura e fechamento de posicoes   |
+//| - Abertura: OrderManager_ProcessDealEntry valida magic/symbol,   |
+//|   registra posicao (anti-duplicata) e incrementa contador        |
+//| - Fechamento: PositionTracker_ProcessDealExit com anti-duplicata,|
+//|   acumulacao de profit (deals parciais) e suporte a INOUT        |
 //+------------------------------------------------------------------+
 void OnTradeTransaction(const MqlTradeTransaction &trans,
                         const MqlTradeRequest &request,
                         const MqlTradeResult &result)
 {
-   if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_BALANCE) return;
+   if(trans.type != TRADE_TRANSACTION_DEAL_ADD) return;
+   if(trans.deal_type == DEAL_TYPE_BALANCE) return;
 
-   if(trans.type == TRADE_TRANSACTION_DEAL_ADD)
+   //--- Abertura: OrderManager verifica magic/symbol/DEAL_ENTRY_IN + anti-duplicata
+   if(OrderManager_ProcessDealEntry(g_hOrder, trans.deal, (int)trans.type))
    {
-      if(HistoryDealSelect(trans.deal))
+      RiskManager_OnNewOperation(g_hRisk);
+      PositionTracker_RegisterPositionOpened(g_hTracker, trans.position, trans.position);
+      Logger_Info(g_hLogger, StringFormat("Posicao confirmada #%I64d (total hoje: %d)",
+                  trans.position, OrderManager_GetExecutedPositionsCount(g_hOrder)));
+
+      //--- Fibo: registra a perna usada para bloquear reentrada do mesmo lado
+      //--- (so quando a posicao e efetivamente aberta, nao em pendentes canceladas)
+      if(InpUseFibonacci && g_hBPFibonacci >= 0 && PositionSelectByTicket(trans.position))
       {
-         double profit = HistoryDealGetDouble(trans.deal, DEAL_PROFIT);
-         if(profit != 0.0)
-         {
-            bool isWin = (profit > 0.0);
-            RiskManager_OnOperationResult(g_hRisk, isWin, profit);
-            PositionTracker_RegisterPositionClosed(g_hTracker, trans.position);
-         }
+         long posType = PositionGetInteger(POSITION_TYPE);
+         ENUM_BP_SIGNAL sig = (posType == POSITION_TYPE_BUY) ? BP_SIGNAL_BUY : BP_SIGNAL_SELL;
+         BP_Fibonacci_RegisterEntry(g_hBPFibonacci, sig);
       }
+   }
+
+   //--- Fechamento: PositionTracker verifica magic/symbol/DEAL_ENTRY_OUT|INOUT
+   //--- Anti-duplicata interno, acumula profit de todos os deals parciais
+   double closedProfit = 0.0;
+   if(PositionTracker_ProcessDealExit(g_hTracker, trans.deal, (int)trans.type, closedProfit))
+   {
+      bool isWin = (closedProfit > 0.0);
+      RiskManager_OnOperationResult(g_hRisk, isWin, closedProfit);
+      Logger_Info(g_hLogger, StringFormat("Posicao #%I64d fechada | Profit total: %.2f",
+                  trans.position, closedProfit));
    }
 }

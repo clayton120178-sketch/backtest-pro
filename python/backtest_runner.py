@@ -100,8 +100,14 @@ ENUM_MAPS = {
     "BP_SMC_FVG_BULL": 1, "BP_SMC_FVG_BEAR": 2,
     "BP_SMC_BOS_BULL": 3, "BP_SMC_BOS_BEAR": 4,
     "BP_SMC_CHOCH_BULL": 5, "BP_SMC_CHOCH_BEAR": 6,
-    "BP_SMC_OB_BULL": 7, "BP_SMC_OB_BEAR": 8,
+    # 7 e 8 reservados (OB_BULL/OB_BEAR removidos - OB virou filtro via InpOB_Mitigation)
     "BP_SMC_SWEEP_HIGH": 9, "BP_SMC_SWEEP_LOW": 10,
+    "BP_SMC_GRAB_HIGH": 11, "BP_SMC_GRAB_LOW": 12,
+
+    # ENUM_BP_OB_MITIGATION (filtro de mitigacao do OB em BoS/CHoCH)
+    "OB_MITIGATION_NONE": 0,
+    "OB_MITIGATION_TOUCH": 1,
+    "OB_MITIGATION_VALIDATION": 2,
 
     # ENUM_BP_SL_TYPE (EA - BP_Constants.mqh)
     # ATENCAO: Valores do EA, NAO do Framework (CommonTypes.mqh)!
