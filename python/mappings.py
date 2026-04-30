@@ -213,14 +213,31 @@ SMC_MAP = {
     # CHoCH
     "choch detectado":               {"enum_bull": "BP_SMC_CHOCH_BULL", "val_bull": 5,
                                       "enum_bear": "BP_SMC_CHOCH_BEAR", "val_bear": 6},
-    # Order Block
-    "order block detectado":         {"enum_bull": "BP_SMC_OB_BULL",    "val_bull": 7,
-                                      "enum_bear": "BP_SMC_OB_BEAR",    "val_bear": 8},
-    "preco retesta order block":     {"enum_bull": "BP_SMC_OB_BULL",    "val_bull": 7,
-                                      "enum_bear": "BP_SMC_OB_BEAR",    "val_bear": 8},
-    # Liquidity Sweep
-    "liquidity sweep detectado":     {"enum_bull": "BP_SMC_SWEEP_HIGH", "val_bull": 9,
-                                      "enum_bear": "BP_SMC_SWEEP_LOW",  "val_bear": 10},
+    # Order Block: REMOVIDO como conceito isolado.
+    # OB agora e filtro de mitigacao em BoS/CHoCH via InpOB_Mitigation
+    # (ver OB_MITIGATION_MAP abaixo). Valores 7/8 do enum estao reservados.
+
+    # Liquidity Sweep: HIGH=SELL (val_bear=9), LOW=BUY (val_bull=10)
+    # Logica: SWEEP_HIGH = BoS_Bull confirmado + reversao -> sinal de venda
+    #         SWEEP_LOW  = BoS_Bear confirmado + reversao -> sinal de compra
+    "liquidity sweep detectado":     {"enum_bull": "BP_SMC_SWEEP_LOW",  "val_bull": 10,
+                                      "enum_bear": "BP_SMC_SWEEP_HIGH", "val_bear": 9},
+    # Liquidity Grab: HIGH=SELL (val_bear=11), LOW=BUY (val_bull=12)
+    # Logica: GRAB_HIGH = BoS_Bull falhado, rejeicao no topo -> sinal de venda
+    #         GRAB_LOW  = BoS_Bear falhado, rejeicao no fundo -> sinal de compra
+    "liquidity grab detectado":      {"enum_bull": "BP_SMC_GRAB_LOW",   "val_bull": 12,
+                                      "enum_bear": "BP_SMC_GRAB_HIGH",  "val_bear": 11},
+}
+
+
+# ============================================================================
+# OB MITIGATION: filtro aplicado em BoS/CHoCH via InpOB_Mitigation
+# ============================================================================
+
+OB_MITIGATION_MAP = {
+    "sem filtro":      {"enum": "OB_MITIGATION_NONE",       "value": 0},
+    "ob touch":        {"enum": "OB_MITIGATION_TOUCH",      "value": 1},
+    "ob validation":   {"enum": "OB_MITIGATION_VALIDATION", "value": 2},
 }
 
 

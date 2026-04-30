@@ -10,8 +10,12 @@ node_modules/
 
 # Environment
 .env
+.env.example
 .env.local
 .env.*.local
+
+# Logs
+*.log
 
 # Supabase
 supabase/.temp/
