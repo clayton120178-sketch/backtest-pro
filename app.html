@@ -714,7 +714,7 @@ const INDS_BY_TAB = {
     { id:'hilon',  name:'Máx/Mín de N períodos', desc:'Maior máxima ou menor mínima dos últimos N candles',hasPer:true,hasVal:false,defCond:'Preço rompe máxima de N períodos',defVal:0,defPer:20 },
     { id:'gap',    name:'Gap',               desc:'Diferença entre fechamento anterior e abertura atual',hasPer:false,hasVal:true,defCond:'Gap de alta',defVal:0 },
     { id:'prevday',name:'Máx/Mín Dia Anterior', desc:'Máxima ou mínima do pregão anterior',hasPer:false,hasVal:false,defCond:'Preço está acima da máxima de ontem',defVal:0 },
-    { id:'fib',    name:'Retração de Fibonacci', desc:'Níveis de retração baseados no swing de N períodos',hasPer:true,hasVal:false,defCond:'Preço toca nível 61.8%',defVal:0,defPer:50 },
+    { id:'fib',    name:'Retração de Fibonacci', desc:'Níveis de retração baseados no swing de N períodos',hasPer:true,hasVal:false,defCond:'Preço toca nível 61.8%',defVal:0,defPer:14,defFibLevel:'61.8%',defFibMode:'touch' },
   ],
   'Volatilidade': [
     { id:'atr',    name:'ATR',              desc:'Average True Range — filtra por volatilidade relativa à média',hasPer:true,hasVal:false,defCond:'ATR está acima de X× a média',defVal:0,defPer:14 },
@@ -747,7 +747,10 @@ const ATR_CONDS  = ['ATR está acima de X× a média','ATR está abaixo de X× a
 const HILON_CONDS = ['Preço rompe máxima de N períodos','Preço rompe mínima de N períodos','Preço está acima da máxima de N','Preço está abaixo da mínima de N'];
 const GAP_CONDS  = ['Gap de alta','Gap de baixa','Gap de alta maior que','Gap de baixa maior que'];
 const PREVDAY_CONDS = ['Preço está acima da máxima de ontem','Preço está abaixo da mínima de ontem','Preço cruza acima da máxima de ontem','Preço cruza abaixo da mínima de ontem','Preço está entre máxima e mínima de ontem'];
-const FIB_CONDS = ['Preço toca nível 23.6%','Preço toca nível 38.2%','Preço toca nível 50%','Preço toca nível 61.8%','Preço toca nível 78.6%','Preço cruza acima do nível 61.8%','Preço cruza abaixo do nível 61.8%','Preço está na zona 50%–61.8%','Preço está na zona 61.8%–78.6%'];
+const FIB_LEVELS = ['23.6%','38.2%','50%','61.8%','78.6%','100%'];
+const FIB_MODES  = [['touch','Toque'],['validation','Validação']];
+// FIB_CONDS mantido para compatibilidade com condições já salvas (legado)
+const FIB_CONDS = ['Preço toca nível 23.6%','Preço toca nível 38.2%','Preço toca nível 50%','Preço toca nível 61.8%','Preço toca nível 78.6%','Preço cruza acima do nível 61.8%','Preço cruza abaixo do nível 61.8%'];
 const CANDLE_CONDS = ['Martelo (alta)','Martelo Invertido (alta)','Engolfo de Alta','Engolfo de Baixa','Doji','Estrela da Manhã (alta)','Estrela da Noite (baixa)','Doji da Manhã (alta)','Doji da Noite (baixa)','Harami de Alta','Harami de Baixa','Marubozu de Alta','Marubozu de Baixa','Spinning Top','Pivô de Alta','Pivô de Baixa','3 Soldados Brancos (alta)','3 Corvos Negros (baixa)','Cobertura de Nuvem Negra (baixa)','Linha de Perfuração (alta)','Topo Duplo (baixa)','Fundo Duplo (alta)','Trap de Alta','Trap de Baixa'];
 
 // Smart Money Concepts
@@ -2548,6 +2551,7 @@ function renderModal() {
           if(ind.id==='choch')ms.params={dir:'Compra',obMit:'none',trendMin:5,trendMax:15,ampRatio:40,cond:CHOCH_CONDS[0]};
           if(ind.id==='grab') ms.params={dir:'Compra',cond:GRAB_CONDS[0]};
           if(ind.id==='sweep')ms.params={dir:'Compra',cond:SWEEP_CONDS[0]};
+          if(ind.id==='fib')  ms.params={per:14,fibLevel:'61.8%',fibMode:'touch',cond:'Preço toca nível 61.8%'};
           ms.page=1;
           renderModal();
         });
@@ -3095,7 +3099,59 @@ function renderModal() {
         row.appendChild(stepperDecimal(ms.params.dev,0.5,5,0.5,'σ',v=>{ms.params.dev=v;refreshCondPreview();}));
         frag.appendChild(row);
       }
-      if(conds.length>0 && ind.id!=='fvg'){
+
+      // ── Fibonacci: seletores de nível e modo separados ──
+      if(ind.id==='fib'){
+        // helper: reconstrói ms.params.cond a partir de fibLevel + fibMode
+        function syncFibCond(){
+          const lvl=ms.params.fibLevel||'61.8%';
+          const mode=ms.params.fibMode||'touch';
+          ms.params.cond=mode==='touch'
+            ? `Preço toca nível ${lvl}`
+            : `Preço cruza nível ${lvl}`;
+        }
+
+        // Nível de retração
+        const lvlRow=div('');
+        lvlRow.appendChild(slabel('Nível de retração',
+          'O preço precisa atingir este nível de retração da perna de impulso para disparar a condição. Ex: 61.8% significa que o preço recuou 61.8% da perna antes de retomar a direção original.'));
+        const lvlChips=div('');lvlChips.style.cssText='display:flex;gap:7px;flex-wrap:wrap';
+        FIB_LEVELS.forEach(lv=>{
+          const ch=div('chip'+(ms.params.fibLevel===lv?' on':''));
+          ch.textContent=lv;
+          ch.addEventListener('click',()=>{
+            ms.params.fibLevel=lv;
+            lvlChips.querySelectorAll('.chip').forEach(c=>c.className='chip');
+            ch.className='chip on';
+            syncFibCond();
+            refreshCondPreview();
+          });
+          lvlChips.appendChild(ch);
+        });
+        lvlRow.appendChild(lvlChips);
+        frag.appendChild(lvlRow);
+
+        // Modo de confirmação
+        const modeRow=div('');
+        modeRow.appendChild(slabel('Modo de confirmação',
+          'Toque: o pavio do candle basta tocar o nível para disparar — mais sinais, menos filtro.\n\nValidação: o candle precisa fechar confirmando a rejeição (fecha de volta na direção do impulso após tocar o nível) — menos sinais, mais qualidade.\n\nExemplo: candle que tocou 61.8% com o pavio e fechou de volta para cima = Validação.'));
+        const modeChips=div('');modeChips.style.cssText='display:flex;gap:7px';
+        FIB_MODES.forEach(([val,lbl])=>{
+          const ch=div('chip'+(ms.params.fibMode===val?' on':''));
+          ch.textContent=lbl;
+          ch.addEventListener('click',()=>{
+            ms.params.fibMode=val;
+            modeChips.querySelectorAll('.chip').forEach(c=>c.className='chip');
+            ch.className='chip on';
+            syncFibCond();
+            refreshCondPreview();
+          });
+          modeChips.appendChild(ch);
+        });
+        modeRow.appendChild(modeChips);
+        frag.appendChild(modeRow);
+      }
+      if(conds.length>0 && ind.id!=='fvg' && ind.id!=='fib'){
         const row=div('');
         row.appendChild(slabel(ind.id==='candle'?'Padrão':'Condição'));
 
