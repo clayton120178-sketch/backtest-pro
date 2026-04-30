@@ -553,7 +553,7 @@ const state = {
     stopType:'fixed', stopPts:200, stopOffset:10, stopCandles:5, stopAtrPer:14, stopAtrMult:1.5,
     tpType:'rr', tpPts:400, tpRR:2, tpFibLevel:'161.8', tpAtrPer:14, tpAtrMult:2.0,
     useFibonacci:false, fiboZZDepth:12, fiboZZDeviation:5, fiboZZBackstep:3,
-    fiboTriggerLevel:'61.8', fiboTriggerMode:'validation', fiboSLLevel:'100.0', fiboTPLevel:'161.8',
+    fiboTriggerLevel:'61.8', fiboTriggerMode:'validation', fiboSLLevel:'100.0', fiboTPLevel:'161.8', fiboDirection:'both',
     trailing:false, trailAct:100, trailDist:100, trailStep:50,
     partial:false, partPct:50, partAt:200, partMoveStop:true,
     exitCond:false, exitCondition:null,
@@ -3763,7 +3763,7 @@ function renderStep4() {
       // Trigger Level
       const trigTitle=div('');trigTitle.style.cssText='font-size:12px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-top:4px';trigTitle.textContent='Gatilho';
       fiboBody.appendChild(trigTitle);
-      const trigLevelBlock=div('');trigLevelBlock.appendChild(slabel('Nível de retração monitorado','O preço precisa atingir este nível de retração da perna de impulso para disparar a entrada.'));
+      const trigLevelBlock=div('');trigLevelBlock.appendChild(slabel('Nível de retração monitorado','O preço precisa atingir este nível de retração da perna de impulso para disparar a entrada. Ex: 61.8% significa que o EA aguarda o preço recuar 61.8% da perna antes de entrar.'));
       const trigLevelRow=div('');trigLevelRow.style.cssText='display:flex;gap:7px;flex-wrap:wrap';
       FIBO_RETRACE_LEVELS.forEach(([val,lbl])=>{
         const ch=div('chip'+(cfg.fiboTriggerLevel===val?' on':''));ch.textContent=lbl;
@@ -3772,7 +3772,10 @@ function renderStep4() {
       });
       trigLevelBlock.appendChild(trigLevelRow);fiboBody.appendChild(trigLevelBlock);
 
-      const trigModeBlock=div('');trigModeBlock.appendChild(slabel('Modo de confirmação','Toque = o pavio do candle toca o nível. Validação = o candle fecha confirmando a rejeição (fecha além do nível, de volta na direção do impulso).'));
+      // Modo de confirmação com tooltip ?
+      const trigModeBlock=div('');
+      trigModeBlock.appendChild(slabel('Modo de confirmação',
+        'Toque: o pavio do candle basta tocar o nível para disparar a entrada — mais sinais, menos filtro.\n\nValidação: o candle precisa fechar confirmando a rejeição (fecha de volta na direção do impulso após tocar o nível) — menos sinais, mais qualidade.\n\nExemplo da imagem: o candle trigger tocou 61,8% com o pavio e fechou de volta para cima — isso é Validação.'));
       const trigModeRow=div('');trigModeRow.style.cssText='display:flex;gap:7px';
       [['touch','Toque'],['validation','Validação']].forEach(([val,lbl])=>{
         const ch=div('chip'+(cfg.fiboTriggerMode===val?' on':''));ch.textContent=lbl;
@@ -3780,6 +3783,17 @@ function renderStep4() {
         trigModeRow.appendChild(ch);
       });
       trigModeBlock.appendChild(trigModeRow);fiboBody.appendChild(trigModeBlock);
+
+      // Direção da operação
+      const dirBlock=div('');
+      dirBlock.appendChild(slabel('Direção','Define se o EA opera apenas compras, apenas vendas ou ambas as direções quando o Fibonacci disparar.\n\nCompra: busca retrações em pernas de alta (fundo → topo) e entra long.\nVenda: busca retrações em pernas de baixa (topo → fundo) e entra short.\nAmbas: opera nas duas direções conforme a estrutura identificada pelo ZigZag.'));
+      const dirRow=div('');dirRow.style.cssText='display:flex;gap:7px';
+      [['long','Compra'],['short','Venda'],['both','Ambas']].forEach(([val,lbl])=>{
+        const ch=div('chip'+(cfg.fiboDirection===val?' on':''));ch.textContent=lbl;
+        ch.addEventListener('click',()=>{cfg.fiboDirection=val;dirRow.querySelectorAll('.chip').forEach(c2=>c2.classList.remove('on'));ch.classList.add('on');});
+        dirRow.appendChild(ch);
+      });
+      dirBlock.appendChild(dirRow);fiboBody.appendChild(dirBlock);
     }
 
     // SL Level (só se stopType=fibo)
