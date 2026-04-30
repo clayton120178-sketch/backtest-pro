@@ -1587,9 +1587,57 @@ function buildPreview(step,cfg) {
       badge(candles[0].x,levelY+(up?-5:8),'N per.',col,6);
     }
     else if(cond.id==='fib'){
-      const top=chartH*0.15,bot=chartH*0.85,rng=bot-top;
-      const lvs=[{p:'38.2%',f:0.382},{p:'50%',f:0.5},{p:'61.8%',f:0.618}];
-      lvs.forEach(lv=>{const y=bot-rng*lv.f;const hl=ct.includes(lv.p.replace('%',''));ln(4,y,W-4,y,hl?'#F59E0B':TH.grid,hl?0.8:0.4,hl?'':'2,2');if(hl)badge(W-20,y-3,lv.p,'#F59E0B',6);});
+      // Nível selecionado
+      const fibLvls=[{p:'23.6',f:0.236},{p:'38.2',f:0.382},{p:'50',f:0.5},{p:'61.8',f:0.618},{p:'78.6',f:0.786},{p:'100',f:1.0}];
+      const fibParams=cond.params||{};
+      const selLvl=fibLvls.find(l=>ct.includes(l.p))||{p:'61.8',f:0.618};
+      const isVal=ct.includes('valida')||ct.includes('cruza');
+
+      // Define perna de impulso usando os candles do gráfico
+      // Fundo = mínimo dos candles 0-5, Topo = mínimo dos candles 10-16
+      const fundoIdx=4, topoIdx=14;
+      const fundoY=candles[fundoIdx].l-2;
+      const topoY=candles[topoIdx].h+2;
+      const pRng=fundoY-topoY; // positivo (fundoY > topoY)
+
+      // Nível de retração sobre a perna
+      const trigY=topoY+pRng*selLvl.f;
+
+      // Linha de tendência ZigZag (fundo → topo)
+      ln(candles[fundoIdx].x+candles[fundoIdx].w/2, fundoY,
+         candles[topoIdx].x+candles[topoIdx].w/2, topoY,
+         '#F59E0B',0.5,'4,3');
+
+      // Pivot de fundo
+      cir(candles[fundoIdx].x+candles[fundoIdx].w/2, fundoY,'#10B981',3);
+
+      // Pivot de topo
+      cir(candles[topoIdx].x+candles[topoIdx].w/2, topoY,'#F59E0B',3);
+
+      // Níveis Fibonacci (tracejados, suaves)
+      fibLvls.forEach(lv=>{
+        const ly=topoY+pRng*lv.f;
+        const isSel=lv.p===selLvl.p;
+        ln(candles[topoIdx].x,ly,W-4,ly,
+           isSel?'#F59E0B':TH.grid,
+           isSel?0.85:0.25,
+           isSel?'':'2,4');
+        if(isSel) badge(W-4,ly-2,lv.p+'%','#F59E0B',6,'end');
+      });
+
+      // Candle trigger (após topo, na retração)
+      const trigIdx=topoIdx+2;
+      if(trigIdx<candles.length){
+        const tc=candles[trigIdx];
+        cir(tc.x+tc.w/2, trigY, '#00D4AA',3);
+        // Marca visual se é Validação (linha de pavio até o nível)
+        if(isVal){
+          ln(tc.x+tc.w/2, tc.h, tc.x+tc.w/2, trigY,'#00D4AA',0.7,'2,2');
+          badge(tc.x+tc.w/2, trigY-8,'SINAL','#00D4AA',6,'middle');
+        } else {
+          badge(tc.x+tc.w/2, trigY-8,'SINAL','#00D4AA',6,'middle');
+        }
+      }
     }
     // ── SMC CONDITIONS ──
     else if(cond.id==='fvg'){
