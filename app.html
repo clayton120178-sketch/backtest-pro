@@ -2060,13 +2060,107 @@ function buildCondPreview(indId, condText, params={}) {
 
   // ═══ FIBONACCI ═══
   if(indId==='fib'){
-    const top=18,bot=100,rng=bot-top;
-    const lvs=[{p:'0%',y:bot},{p:'23.6%',y:bot-rng*0.236},{p:'38.2%',y:bot-rng*0.382},{p:'50%',y:bot-rng*0.5},{p:'61.8%',y:bot-rng*0.618},{p:'78.6%',y:bot-rng*0.786},{p:'100%',y:top}];
-    pl(`25,${top} 70,${top} 110,${bot} 160,${bot}`,TH.txm,0.6);
-    lvs.forEach(lv=>{const hl=ct.includes(lv.p.replace('%',''));ln(90,lv.y,W-10,lv.y,hl?'#F59E0B':TH.grid,hl?0.8:0.3,hl?'':'2,2');tx(W-6,lv.y-2,lv.p,hl?'#F59E0B':TH.txm,6,'end');});
-    if(ct.includes('zona')){const zt=bot-rng*0.618,zb=bot-rng*0.5;rc(90,zt,W-100,zb-zt,sc,0.1,3);}
-    else{const tl=lvs.find(l=>ct.includes(l.p.replace('%','')));if(tl){ci(140,tl.y,sc,4);}}
-    tx(10,14,'FIBONACCI','#F59E0B',8);
+    // Extrai nível selecionado do texto da condição
+    const fibLevels=[
+      {p:'23.6',f:0.236},{p:'38.2',f:0.382},{p:'50',f:0.5},
+      {p:'61.8',f:0.618},{p:'78.6',f:0.786},{p:'100',f:1.0}
+    ];
+    const selLevel = fibLevels.find(l=>ct.includes(l.p)) || {p:'61.8',f:0.618};
+    const isValidation = ct.includes('valida') || ct.includes('cruza');
+
+    // Coordenadas da perna de impulso
+    const fundoY=88, topoY=20, rng=fundoY-topoY;
+    const trigY = topoY + rng*selLevel.f;  // Y do nível selecionado
+
+    // ── Candles da perna de BAIXA (antes do fundo) ──
+    const bearCds=[
+      {x:8,  o:30,c:38,h:28,l:40,w:6},
+      {x:17, o:38,c:47,h:36,l:49,w:6},
+      {x:26, o:47,c:55,h:45,l:57,w:6},
+    ];
+    bearCds.forEach(cd=>{
+      ln(cd.x+cd.w/2,cd.h,cd.x+cd.w/2,cd.l,'#EF4444',0.5);
+      rc(cd.x,cd.o,cd.w,cd.c-cd.o,'#EF4444',0.7,0.5);
+    });
+
+    // ── Fundo (pivot ZigZag) ──
+    const fundoX=38;
+    // Candle de fundo — longa sombra inferior (martelo)
+    ln(fundoX+3,fundoY-12,fundoX+3,fundoY+2,'#10B981',0.6);
+    rc(fundoX,fundoY-8,6,5,'#10B981',0.8,0.5);
+    tx(fundoX-4,fundoY+8,'Fundo','#10B981',5.5);
+    ci(fundoX+3,fundoY,'#10B981',2.5);
+
+    // ── Perna de ALTA (impulso: fundo → topo) ──
+    const bullCds=[
+      {x:47, o:fundoY-4, c:fundoY-16, h:fundoY-17, l:fundoY-2, w:6},
+      {x:56, o:fundoY-16,c:fundoY-30, h:fundoY-31, l:fundoY-14,w:6},
+      {x:65, o:fundoY-30,c:fundoY-44, h:fundoY-45, l:fundoY-28,w:6},
+      {x:74, o:fundoY-44,c:topoY+4,   h:topoY+2,   l:fundoY-42,w:6},
+    ];
+    bullCds.forEach(cd=>{
+      ln(cd.x+cd.w/2,cd.h,cd.x+cd.w/2,cd.l,'#10B981',0.5);
+      rc(cd.x,cd.c,cd.w,cd.o-cd.c,'#10B981',0.75,0.5);
+    });
+
+    // ── Topo (pivot ZigZag) ──
+    const topoX=84;
+    ln(topoX+3,topoY-3,topoX+3,topoY+10,'#F59E0B',0.6);
+    rc(topoX,topoY+2,6,6,'#EF4444',0.7,0.5);
+    tx(topoX-2,topoY-5,'Topo','#F59E0B',5.5);
+    ci(topoX+3,topoY,'#F59E0B',2.5);
+
+    // ── Linha de tendência ZigZag ──
+    ln(fundoX+3,fundoY,topoX+3,topoY,'#F59E0B',0.4,'3,2');
+
+    // ── Retração: candles descendo do topo até o nível ──
+    const retCds=[
+      {x:93, o:topoY+6, c:topoY+16, h:topoY+4,  l:topoY+18, w:6},
+      {x:102,o:topoY+16,c:topoY+27, h:topoY+14, l:topoY+29, w:6},
+    ];
+    // Adicionar mais candles de retração conforme profundidade do nível
+    if(selLevel.f>0.4){
+      retCds.push({x:111,o:topoY+27,c:trigY-4,h:topoY+25,l:trigY-2,w:6});
+    }
+    retCds.forEach(cd=>{
+      ln(cd.x+cd.w/2,cd.h,cd.x+cd.w/2,cd.l,'#EF4444',0.5);
+      rc(cd.x,cd.o,cd.w,cd.c-cd.o,'#EF4444',0.65,0.5);
+    });
+
+    // ── Linha do nível selecionado ──
+    ln(fundoX,trigY,W-4,trigY,'#F59E0B',0.9,'');
+    tx(W-3,trigY-2,selLevel.p+'%','#F59E0B',6,'end');
+
+    // ── Linhas dos outros níveis (tracejadas, suaves) ──
+    fibLevels.filter(l=>l.p!==selLevel.p).forEach(lv=>{
+      const ly=topoY+rng*lv.f;
+      ln(fundoX,ly,W-4,ly,TH.grid,0.3,'2,3');
+      tx(W-3,ly-2,lv.p+'%',TH.txm,5,'end');
+    });
+
+    // ── Candle trigger (toca o nível) ──
+    const trigX=isValidation?128:122;
+    const trigH=isValidation?trigY+8:trigY+2;
+    const trigC=isValidation?trigY-6:trigY+6;
+    ln(trigX+3,trigH-2,trigX+3,trigH+4,'#EF4444',0.5);
+    rc(trigX,Math.min(trigH,trigC),6,Math.abs(trigH-trigC),'#EF4444',0.7,0.5);
+    tx(trigX-2,trigY+16,'Trigger',sc,5.5);
+    ci(trigX+3,trigY,sc,2.5);
+
+    // ── Seta de entrada ──
+    const entX=trigX+14;
+    const entY=trigY-10;
+    rc(entX,entY,5,12,sc,0.85,1);
+    svg.appendChild(hsvg('polygon',{
+      points:`${entX+2.5},${entY-4} ${entX-1.5},${entY+1} ${entX+6.5},${entY+1}`,
+      fill:sc,'fill-opacity':'0.9'
+    }));
+    tx(entX+7,entY+6,'ENTRADA',sc,5);
+
+    // ── Label ──
+    tx(8,11,'FIBONACCI','#F59E0B',7);
+    if(isValidation) tx(8,19,'Validação','#F59E0B',5);
+
     return svg;
   }
 
@@ -3081,7 +3175,10 @@ function renderModal() {
       if(ind.hasPer!==false && ms.params.per!==undefined) {
         const isCross=isMA&&isMACrossover(ms.params.cond);
         const row=div('');
-        row.appendChild(slabel(isCross?'Período da média curta':'Período'));
+        const perTip = ind.id==='fib'
+          ? 'Sensibilidade do ZigZag para identificar topos e fundos. Valores maiores = estruturas maiores (ignora ruídos menores). Padrão: 14. Ex: com 14, o ZigZag só marca um topo se houver pelo menos 14 candles sem uma máxima mais alta ao redor.'
+          : undefined;
+        row.appendChild(slabel(isCross?'Período da média curta':'Período', perTip));
         row.appendChild(stepper(ms.params.per,1,500,'',v=>{ms.params.per=v;refreshCondPreview();}));
         frag.appendChild(row);
 
