@@ -1987,23 +1987,18 @@ function _calcCCI(highs, lows, closes, period) {
   });
 }
 
-// ─── LWC RENDER — executa callback quando elemento tem largura real no DOM ─────
+// ─── LWC RENDER — executa callback via ResizeObserver quando elemento entra no DOM ─
 function _lwcRender(el, cb) {
-  // Se já tem largura (está no DOM), executa direto
-  if (el.offsetWidth > 0) { cb(); return; }
-  // Senão, espera entrar no DOM via ResizeObserver
   const ro = new ResizeObserver((entries) => {
     for (const e of entries) {
       if (e.contentRect.width > 0) {
         ro.disconnect();
-        cb();
+        cb(Math.floor(e.contentRect.width));
         return;
       }
     }
   });
   ro.observe(el);
-  // Fallback: se ResizeObserver não disparar em 300ms, executa mesmo assim
-  setTimeout(() => { ro.disconnect(); if (el.offsetWidth === 0) cb(); }, 300);
 }
 
 // ─── LIGHTWEIGHT CHARTS CONDITION PREVIEW ─────────────────────────────────────
@@ -2106,11 +2101,10 @@ function buildCondPreview(indId, condText, params={}) {
     container.appendChild(botDiv);
 
     // Create charts after DOM is appended (needs dimensions)
-    _lwcRender(container, () => {
+    _lwcRender(container, (chartW) => {
       if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
 
-const chartW = container.offsetWidth || topDiv.offsetWidth || 320;
-      const chartOpts = {
+const chartOpts = {
         width: chartW,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
@@ -2214,10 +2208,10 @@ const chartW = container.offsetWidth || topDiv.offsetWidth || 320;
   // ── MACD ──────────────────────────────────────────────────────
   if (indId === 'macd') {
     container.style.height = '160px';
-    _lwcRender(container, () => {
+    _lwcRender(container, (chartW) => {
       if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
       const chart = LightweightCharts.createChart(container, {
-        width: container.offsetWidth || 320,
+        width: chartW,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
         rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.15, bottom: 0.15 } },
@@ -2254,10 +2248,10 @@ const chartW = container.offsetWidth || topDiv.offsetWidth || 320;
   if (['sma','ema'].includes(indId)) {
     const isCross = ct.includes('longa') || ct.includes('cruzamento');
     container.style.height = '160px';
-    _lwcRender(container, () => {
+    _lwcRender(container, (chartW) => {
       if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
       const chart = LightweightCharts.createChart(container, {
-        width: container.offsetWidth || 320,
+        width: chartW,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
         rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.12, bottom: 0.12 } },
@@ -2314,10 +2308,10 @@ const chartW = container.offsetWidth || topDiv.offsetWidth || 320;
   // ── BOLLINGER BANDS ───────────────────────────────────────────
   if (indId === 'bb') {
     container.style.height = '160px';
-    _lwcRender(container, () => {
+    _lwcRender(container, (chartW) => {
       if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
       const chart = LightweightCharts.createChart(container, {
-        width: container.offsetWidth || 320,
+        width: chartW,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
         rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.12, bottom: 0.12 } },
@@ -2353,10 +2347,10 @@ const chartW = container.offsetWidth || topDiv.offsetWidth || 320;
   // ── VWAP ─────────────────────────────────────────────────────
   if (indId === 'vwap') {
     container.style.height = '160px';
-    _lwcRender(container, () => {
+    _lwcRender(container, (chartW) => {
       if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
       const chart = LightweightCharts.createChart(container, {
-        width: container.offsetWidth || 320,
+        width: chartW,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
         rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.12, bottom: 0.12 } },
