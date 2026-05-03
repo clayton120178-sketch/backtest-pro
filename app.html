@@ -2090,7 +2090,10 @@ function buildCondPreview(indId, condText, params={}) {
     setTimeout(() => {
       if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
 
+      const chartW = 320;
+
       const chartOpts = {
+        width: chartW,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
         rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.15, bottom: 0.15 } },
