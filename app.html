@@ -2012,23 +2012,53 @@ function buildCondPreview(indId, condText, params={}) {
   const text = isDark ? '#8888A0' : '#999999';
   const wick = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)';
 
-  // Price data — 30 candles, deterministic, range realista para candles visíveis
+  // Preço base e tick realistas por ativo selecionado
+  const _assetBase = {
+    'WIN$N':130000,'IND$N':130000,'ISP$N':5800,
+    'WDO$N':5700,'DOL$N':5700,
+    'EURUSD':1.085,'GBPUSD':1.265,'USDJPY':149.5,'USDCHF':0.895,
+    'AUDUSD':0.645,'USDCAD':1.365,'NZDUSD':0.595,'USDBRL':5.05,
+    'XAUUSD':2020,'XAGUSD':23.5,'WTICOUSD':78,'BRENTCMDUSD':83,
+    'US500':5000,'NAS100':17500,'US30':38000,'DE40':17200,
+    'UK100':7600,'JP225':37000,'BTCUSD':62000,'ETHUSD':3200,
+  };
+  const _assetVolPct = {
+    'WIN$N':0.012,'IND$N':0.012,'WDO$N':0.008,'DOL$N':0.008,
+    'EURUSD':0.004,'GBPUSD':0.005,'USDJPY':0.004,'XAUUSD':0.008,
+    'US500':0.008,'NAS100':0.012,'US30':0.008,'BTCUSD':0.025,'ETHUSD':0.03,
+  };
+  const asset = (typeof state !== 'undefined' && state.cfg) ? state.cfg.asset : 'WIN$N';
+  const assetTick = (findAsset(asset)||{}).tick || 1;
+  const BASE = _assetBase[asset] || 100;
+  const volPct = _assetVolPct[asset] || 0.008;
   const N = 30;
-  const BASE = 1000;
-  const closes = _seededPrices(N, BASE, BASE * 0.08, 77);
-  // Generate OHLC — shadows proporcionais ao corpo (15-40% do range total)
+
+  // Gera closes com random walk real — step proporcional ao BASE e volatilidade do ativo
+  const closes = (() => {
+    let s = 77;
+    const rng = () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
+    const prices = [BASE];
+    for (let i = 1; i < N; i++) {
+      const step = (rng() - 0.48) * BASE * volPct;
+      // snap ao tick do ativo
+      const raw = prices[i-1] + step;
+      prices.push(Math.round(raw / assetTick) * assetTick);
+    }
+    return prices;
+  })();
+
+  // OHLC com shadows proporcionais ao step médio
+  const avgStep = BASE * volPct * 0.6;
   let seed2 = 12345;
   const rng2 = () => { seed2 = (seed2 * 1664525 + 1013904223) & 0xffffffff; return (seed2 >>> 0) / 0xffffffff; };
   const t0 = new Date('2024-01-02').getTime();
   const barSecs = 5 * 60;
-  const totalRange = Math.max(...closes) - Math.min(...closes) || BASE * 0.05;
-  const shadowUnit = totalRange * 0.08; // shadow proporcional ao range total
   const ohlc = closes.map((c, i) => {
     const prev = i > 0 ? closes[i-1] : c;
     const o = prev, cl = c;
-    const bodySize = Math.abs(cl - o);
-    const hi = Math.max(o, cl) + shadowUnit * (0.3 + rng2() * 0.7);
-    const lo = Math.min(o, cl) - shadowUnit * (0.3 + rng2() * 0.7);
+    const shadow = avgStep * (0.5 + rng2() * 1.0);
+    const hi = Math.round((Math.max(o, cl) + shadow) / assetTick) * assetTick;
+    const lo = Math.round((Math.min(o, cl) - shadow) / assetTick) * assetTick;
     return { time: Math.floor(t0/1000) + i * barSecs, open: o, high: hi, low: lo, close: cl };
   });
   const highs  = ohlc.map(b => b.high);
@@ -2085,8 +2115,8 @@ function buildCondPreview(indId, condText, params={}) {
       // Bottom: indicator
       const botChart = LightweightCharts.createChart(botDiv, {
         ...chartOpts,
-        height: botDiv.offsetHeight || 80,
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.15, bottom: 0.15 } },
+        height: 88,
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.1, bottom: 0.1 }, autoScale: true },
       });
 
       const per = params.per || (indId === 'rsi' ? 14 : indId === 'atr' ? 14 : 14);
