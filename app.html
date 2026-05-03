@@ -1987,6 +1987,25 @@ function _calcCCI(highs, lows, closes, period) {
   });
 }
 
+// ─── LWC RENDER — executa callback quando elemento tem largura real no DOM ─────
+function _lwcRender(el, cb) {
+  // Se já tem largura (está no DOM), executa direto
+  if (el.offsetWidth > 0) { cb(); return; }
+  // Senão, espera entrar no DOM via ResizeObserver
+  const ro = new ResizeObserver((entries) => {
+    for (const e of entries) {
+      if (e.contentRect.width > 0) {
+        ro.disconnect();
+        cb();
+        return;
+      }
+    }
+  });
+  ro.observe(el);
+  // Fallback: se ResizeObserver não disparar em 300ms, executa mesmo assim
+  setTimeout(() => { ro.disconnect(); if (el.offsetWidth === 0) cb(); }, 300);
+}
+
 // ─── LIGHTWEIGHT CHARTS CONDITION PREVIEW ─────────────────────────────────────
 function buildCondPreview(indId, condText, params={}) {
   const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
@@ -2087,11 +2106,10 @@ function buildCondPreview(indId, condText, params={}) {
     container.appendChild(botDiv);
 
     // Create charts after DOM is appended (needs dimensions)
-    setTimeout(() => {
+    _lwcRender(container, () => {
       if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
 
-      const chartW = 320;
-
+const chartW = container.offsetWidth || topDiv.offsetWidth || 320;
       const chartOpts = {
         width: chartW,
         layout: { background: { color: bg }, textColor: text },
@@ -2188,7 +2206,7 @@ function buildCondPreview(indId, condText, params={}) {
 
       botChart.timeScale().fitContent();
       topChart.timeScale().fitContent();
-    }, 0);
+    });
 
     return container;
   }
@@ -2196,9 +2214,10 @@ function buildCondPreview(indId, condText, params={}) {
   // ── MACD ──────────────────────────────────────────────────────
   if (indId === 'macd') {
     container.style.height = '160px';
-    setTimeout(() => {
+    _lwcRender(container, () => {
       if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
       const chart = LightweightCharts.createChart(container, {
+        width: container.offsetWidth || 320,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
         rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.15, bottom: 0.15 } },
@@ -2227,7 +2246,7 @@ function buildCondPreview(indId, condText, params={}) {
         if (prev > 0 && curr <= 0) { macdSeries.setMarkers([{ time: macdData[i].time, position: 'aboveBar', color: '#EF4444', shape: 'arrowDown', text: 'Cruz' }]); break; }
       }
       chart.timeScale().fitContent();
-    }, 0);
+    });
     return container;
   }
 
@@ -2235,9 +2254,10 @@ function buildCondPreview(indId, condText, params={}) {
   if (['sma','ema'].includes(indId)) {
     const isCross = ct.includes('longa') || ct.includes('cruzamento');
     container.style.height = '160px';
-    setTimeout(() => {
+    _lwcRender(container, () => {
       if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
       const chart = LightweightCharts.createChart(container, {
+        width: container.offsetWidth || 320,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
         rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.12, bottom: 0.12 } },
@@ -2287,16 +2307,17 @@ function buildCondPreview(indId, condText, params={}) {
         chart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `${indId.toUpperCase()}(${per})` } });
       }
       chart.timeScale().fitContent();
-    }, 0);
+    });
     return container;
   }
 
   // ── BOLLINGER BANDS ───────────────────────────────────────────
   if (indId === 'bb') {
     container.style.height = '160px';
-    setTimeout(() => {
+    _lwcRender(container, () => {
       if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
       const chart = LightweightCharts.createChart(container, {
+        width: container.offsetWidth || 320,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
         rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.12, bottom: 0.12 } },
@@ -2325,16 +2346,17 @@ function buildCondPreview(indId, condText, params={}) {
       const sigIdx = ct.includes('sup') ? ohlc.findIndex((b, i) => bb[i] && b.high >= bb[i].upper - 0.05) : ohlc.findIndex((b, i) => bb[i] && b.low <= bb[i].lower + 0.05);
       if (sigIdx > 0) cs.setMarkers([{ time: times[sigIdx], position: up ? 'belowBar' : 'aboveBar', color: '#00D4AA', shape: up ? 'arrowUp' : 'arrowDown', text: 'Toque' }]);
       chart.timeScale().fitContent();
-    }, 0);
+    });
     return container;
   }
 
   // ── VWAP ─────────────────────────────────────────────────────
   if (indId === 'vwap') {
     container.style.height = '160px';
-    setTimeout(() => {
+    _lwcRender(container, () => {
       if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
       const chart = LightweightCharts.createChart(container, {
+        width: container.offsetWidth || 320,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
         rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.12, bottom: 0.12 } },
@@ -2363,7 +2385,7 @@ function buildCondPreview(indId, condText, params={}) {
       const sigIdx = 28;
       cs.setMarkers([{ time: times[sigIdx], position: up ? 'belowBar' : 'aboveBar', color: '#00D4AA', shape: up ? 'arrowUp' : 'arrowDown', text: 'Sinal' }]);
       chart.timeScale().fitContent();
-    }, 0);
+    });
     return container;
   }
 
