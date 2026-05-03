@@ -7,6 +7,7 @@
 <title>Backtest Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -249,7 +250,9 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .modal-body{flex:1;overflow-y:auto;padding:18px 20px}
 .modal-footer{padding:13px 20px;border-top:0.5px solid var(--bd);display:flex;justify-content:flex-end;gap:9px}
 .ind-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:9px}
-.cond-preview{background:var(--bg0);border:0.5px solid var(--bd);border-radius:10px;padding:8px;margin-bottom:4px}
+.cond-preview{background:var(--bg0);border:0.5px solid var(--bd);border-radius:10px;padding:0;margin-bottom:4px;overflow:hidden}
+.cond-preview-chart{width:100%;height:160px;border-radius:10px;overflow:hidden}
+.cond-preview svg{display:block;width:100%;padding:8px}
 
 /* Loading */
 .loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:55vh;gap:28px;text-align:center}
@@ -1876,16 +1879,466 @@ function miniCandleIcon(patternName) {
   return svg;
 }
 
+// ─── PRICE DATA GENERATOR (deterministic seed, realistic price action) ────────
+function _seededPrices(n, base, range, seed) {
+  let s = seed || 42;
+  const rng = () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
+  const prices = [base];
+  for (let i = 1; i < n; i++) {
+    const chg = (rng() - 0.48) * range * 0.08;
+    prices.push(Math.max(base * 0.85, Math.min(base * 1.15, prices[i-1] + chg)));
+  }
+  return prices;
+}
+
+function _calcRSI(closes, period) {
+  if (closes.length < period + 1) return closes.map(() => 50);
+  const gains = [], losses = [];
+  for (let i = 1; i < closes.length; i++) {
+    const d = closes[i] - closes[i-1];
+    gains.push(d > 0 ? d : 0);
+    losses.push(d < 0 ? -d : 0);
+  }
+  const result = new Array(period).fill(null);
+  let ag = gains.slice(0, period).reduce((a,b) => a+b, 0) / period;
+  let al = losses.slice(0, period).reduce((a,b) => a+b, 0) / period;
+  result.push(al === 0 ? 100 : 100 - 100 / (1 + ag / al));
+  for (let i = period; i < gains.length; i++) {
+    ag = (ag * (period-1) + gains[i]) / period;
+    al = (al * (period-1) + losses[i]) / period;
+    result.push(al === 0 ? 100 : 100 - 100 / (1 + ag / al));
+  }
+  return result;
+}
+
+function _calcSMA(closes, period) {
+  return closes.map((_, i) => {
+    if (i < period - 1) return null;
+    return closes.slice(i - period + 1, i + 1).reduce((a,b) => a+b, 0) / period;
+  });
+}
+
+function _calcEMA(closes, period) {
+  const k = 2 / (period + 1);
+  const result = [];
+  let ema = null;
+  closes.forEach((c, i) => {
+    if (i < period - 1) { result.push(null); return; }
+    if (ema === null) { ema = closes.slice(0, period).reduce((a,b) => a+b, 0) / period; }
+    else ema = c * k + ema * (1 - k);
+    result.push(ema);
+  });
+  return result;
+}
+
+function _calcBB(closes, period, dev) {
+  const sma = _calcSMA(closes, period);
+  return closes.map((_, i) => {
+    if (sma[i] === null) return null;
+    const slice = closes.slice(i - period + 1, i + 1);
+    const mean = sma[i];
+    const std = Math.sqrt(slice.reduce((s, v) => s + (v - mean) ** 2, 0) / period);
+    return { mid: sma[i], upper: sma[i] + dev * std, lower: sma[i] - dev * std };
+  });
+}
+
+function _calcStoch(highs, lows, closes, k, d) {
+  const result = [];
+  for (let i = 0; i < closes.length; i++) {
+    if (i < k - 1) { result.push(null); continue; }
+    const lo = Math.min(...lows.slice(i - k + 1, i + 1));
+    const hi = Math.max(...highs.slice(i - k + 1, i + 1));
+    result.push(hi === lo ? 50 : ((closes[i] - lo) / (hi - lo)) * 100);
+  }
+  return result;
+}
+
+function _calcMACD(closes, fast, slow, signal) {
+  const emaF = _calcEMA(closes, fast);
+  const emaS = _calcEMA(closes, slow);
+  const macd = closes.map((_, i) => (emaF[i] !== null && emaS[i] !== null) ? emaF[i] - emaS[i] : null);
+  const validMacd = macd.filter(v => v !== null);
+  const sigLine = _calcEMA(validMacd, signal);
+  let si = 0;
+  const fullSig = macd.map(v => v === null ? null : (sigLine[si] !== undefined ? sigLine[si++] : null));
+  const hist = macd.map((v, i) => v !== null && fullSig[i] !== null ? v - fullSig[i] : null);
+  return { macd, signal: fullSig, hist };
+}
+
+function _calcATR(highs, lows, closes, period) {
+  const tr = closes.map((c, i) => {
+    if (i === 0) return highs[i] - lows[i];
+    return Math.max(highs[i] - lows[i], Math.abs(highs[i] - closes[i-1]), Math.abs(lows[i] - closes[i-1]));
+  });
+  return tr.map((_, i) => {
+    if (i < period - 1) return null;
+    return tr.slice(i - period + 1, i + 1).reduce((a,b) => a+b, 0) / period;
+  });
+}
+
+function _calcCCI(highs, lows, closes, period) {
+  return closes.map((_, i) => {
+    if (i < period - 1) return null;
+    const typicals = closes.slice(i - period + 1, i + 1).map((c, j) => (highs[i - period + 1 + j] + lows[i - period + 1 + j] + c) / 3);
+    const mean = typicals.reduce((a,b) => a+b, 0) / period;
+    const mad = typicals.reduce((s, v) => s + Math.abs(v - mean), 0) / period;
+    const tp = (highs[i] + lows[i] + closes[i]) / 3;
+    return mad === 0 ? 0 : (tp - mean) / (0.015 * mad);
+  });
+}
+
+// ─── LIGHTWEIGHT CHARTS CONDITION PREVIEW ─────────────────────────────────────
 function buildCondPreview(indId, condText, params={}) {
-  const W=280,H=120;
-  const TH=svgTheme();
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  const ct = (condText || '').toLowerCase();
+  const up = ct.includes('acima') || ct.includes('sup') || ct.includes('alta') || ct.includes('subindo') || ct.includes('compra') || ct.includes('maior');
+  const cross = ct.includes('cruza') || ct.includes('rompe');
+  const sc = up ? '#10B981' : '#EF4444';
+
+  // Indicator types that get LWC treatment
+  const LWC_IDS = ['rsi','stoch','cci','williams','macd','atr','sma','ema','bb','vwap'];
+
+  if (!LWC_IDS.includes(indId)) {
+    return _buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct);
+  }
+
+  // ── LIGHTWEIGHT CHARTS ──────────────────────────────────────
+  const container = document.createElement('div');
+  container.className = 'cond-preview-chart';
+
+  // Colors
+  const bg   = isDark ? '#12121A' : '#F5F5F0';
+  const grid = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)';
+  const text = isDark ? '#8888A0' : '#999999';
+  const wick = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)';
+
+  // Price data — 40 candles, deterministic
+  const N = 40;
+  const BASE = 100;
+  const closes = _seededPrices(N, BASE, BASE * 0.12, 77);
+  // Generate OHLC with realistic shadows
+  let seed2 = 12345;
+  const rng2 = () => { seed2 = (seed2 * 1664525 + 1013904223) & 0xffffffff; return (seed2 >>> 0) / 0xffffffff; };
+  const t0 = new Date('2024-01-02').getTime();
+  const barSecs = 5 * 60;
+  const ohlc = closes.map((c, i) => {
+    const prev = i > 0 ? closes[i-1] : c;
+    const o = prev, cl = c;
+    const hi = Math.max(o, cl) + rng2() * 0.8;
+    const lo = Math.min(o, cl) - rng2() * 0.8;
+    return { time: Math.floor(t0/1000) + i * barSecs, open: o, high: hi, low: lo, close: cl };
+  });
+  const highs  = ohlc.map(b => b.high);
+  const lows   = ohlc.map(b => b.low);
+  const times  = ohlc.map(b => b.time);
+
+  // ── OSCILLATOR PANELS (rsi, stoch, cci, williams, atr) ──────
+  if (['rsi','stoch','cci','williams','atr'].includes(indId)) {
+    // split layout: top=candles (55%), bottom=indicator (45%)
+    container.style.height = '180px';
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+
+    // --- Candle chart (top) ---
+    const topDiv = document.createElement('div');
+    topDiv.style.cssText = 'flex:0 0 95px;overflow:hidden;border-radius:10px 10px 0 0';
+    container.appendChild(topDiv);
+
+    const divider = document.createElement('div');
+    divider.style.cssText = `height:1px;background:${grid}`;
+    container.appendChild(divider);
+
+    // --- Indicator chart (bottom) ---
+    const botDiv = document.createElement('div');
+    botDiv.style.cssText = 'flex:1;overflow:hidden;border-radius:0 0 10px 10px';
+    container.appendChild(botDiv);
+
+    // Create charts after DOM is appended (needs dimensions)
+    setTimeout(() => {
+      if (!window.LightweightCharts) return;
+
+      const chartOpts = {
+        layout: { background: { color: bg }, textColor: text },
+        grid: { vertLines: { color: grid }, horzLines: { color: grid } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.1, bottom: 0.1 } },
+        timeScale: { borderColor: 'transparent', visible: false },
+        crosshair: { mode: 0 },
+        handleScroll: false, handleScale: false,
+      };
+
+      // Top: candles
+      const topChart = LightweightCharts.createChart(topDiv, { ...chartOpts, height: 95 });
+      const cs = topChart.addCandlestickSeries({
+        upColor: '#10B981', downColor: '#EF4444',
+        borderUpColor: '#10B981', borderDownColor: '#EF4444',
+        wickUpColor: '#10B981', wickDownColor: '#EF4444',
+      });
+      cs.setData(ohlc);
+      // Highlight signal candle
+      const sigIdx = 28;
+      cs.setMarkers([{ time: times[sigIdx], position: up ? 'belowBar' : 'aboveBar', color: '#00D4AA', shape: up ? 'arrowUp' : 'arrowDown', text: 'Sinal' }]);
+      topChart.timeScale().fitContent();
+
+      // Bottom: indicator
+      const botChart = LightweightCharts.createChart(botDiv, {
+        ...chartOpts,
+        height: botDiv.offsetHeight || 80,
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.15, bottom: 0.15 } },
+      });
+
+      const per = params.per || (indId === 'rsi' ? 14 : indId === 'atr' ? 14 : 14);
+      const val = params.val != null ? params.val : (up ? 70 : 30);
+
+      let indData = [];
+
+      if (indId === 'rsi') {
+        const rsi = _calcRSI(closes, per);
+        indData = rsi.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+        const lineSeries = botChart.addLineSeries({ color: '#6366F1', lineWidth: 1.5, priceLineVisible: false });
+        lineSeries.setData(indData);
+        // Threshold line
+        const threshSeries = botChart.addLineSeries({ color: '#F59E0B', lineWidth: 1, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        threshSeries.setData(times.map(t => ({ time: t, value: val })));
+        // Signal marker
+        const sigPoint = indData[Math.min(sigIdx, indData.length-1)];
+        if (sigPoint) lineSeries.setMarkers([{ time: sigPoint.time, position: up ? 'belowBar' : 'aboveBar', color: '#00D4AA', shape: 'circle', size: 1 }]);
+        // Watermark
+        botChart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `RSI(${per})` } });
+      }
+      else if (indId === 'stoch') {
+        const k = params.per || 14, d = 3;
+        const stochK = _calcStoch(highs, lows, closes, k, d);
+        const stochD = _calcSMA(stochK.filter(v => v !== null), d);
+        let di = 0;
+        const kData = stochK.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+        const dDataRaw = stochK.map((v, i) => { if (v === null) return null; const dv = stochD[di++]; return dv !== null ? { time: times[i], value: dv } : null; }).filter(Boolean);
+        const kSeries = botChart.addLineSeries({ color: '#6366F1', lineWidth: 1.5, priceLineVisible: false });
+        kSeries.setData(kData);
+        const dSeries = botChart.addLineSeries({ color: '#00D4AA', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
+        dSeries.setData(dDataRaw);
+        const threshSeries = botChart.addLineSeries({ color: '#F59E0B', lineWidth: 1, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        threshSeries.setData(times.map(t => ({ time: t, value: val })));
+        botChart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `Stoch(%K${k},%D${d})` } });
+      }
+      else if (indId === 'cci') {
+        const cci = _calcCCI(highs, lows, closes, per);
+        indData = cci.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+        const lineSeries = botChart.addLineSeries({ color: '#6366F1', lineWidth: 1.5, priceLineVisible: false });
+        lineSeries.setData(indData);
+        const refVal = params.val != null ? params.val : (up ? 100 : -100);
+        const threshSeries = botChart.addLineSeries({ color: '#F59E0B', lineWidth: 1, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        threshSeries.setData(times.map(t => ({ time: t, value: refVal })));
+        const zeroSeries = botChart.addLineSeries({ color: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+        zeroSeries.setData(times.map(t => ({ time: t, value: 0 })));
+        botChart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `CCI(${per})` } });
+      }
+      else if (indId === 'williams') {
+        const wR = _calcStoch(highs, lows, closes, per, 3).map(v => v !== null ? v - 100 : null);
+        indData = wR.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+        const lineSeries = botChart.addLineSeries({ color: '#6366F1', lineWidth: 1.5, priceLineVisible: false });
+        lineSeries.setData(indData);
+        const refVal = params.val != null ? params.val : (up ? -20 : -80);
+        const threshSeries = botChart.addLineSeries({ color: '#F59E0B', lineWidth: 1, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        threshSeries.setData(times.map(t => ({ time: t, value: refVal })));
+        botChart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `W%R(${per})` } });
+      }
+      else if (indId === 'atr') {
+        const atr = _calcATR(highs, lows, closes, per);
+        indData = atr.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+        const lineSeries = botChart.addLineSeries({ color: '#F59E0B', lineWidth: 1.5, priceLineVisible: false });
+        lineSeries.setData(indData);
+        botChart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `ATR(${per})` } });
+      }
+
+      botChart.timeScale().fitContent();
+      topChart.timeScale().fitContent();
+    }, 0);
+
+    return container;
+  }
+
+  // ── MACD ──────────────────────────────────────────────────────
+  if (indId === 'macd') {
+    container.style.height = '160px';
+    setTimeout(() => {
+      if (!window.LightweightCharts) return;
+      const chart = LightweightCharts.createChart(container, {
+        layout: { background: { color: bg }, textColor: text },
+        grid: { vertLines: { color: grid }, horzLines: { color: grid } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.1, bottom: 0.1 } },
+        timeScale: { borderColor: 'transparent', visible: false },
+        crosshair: { mode: 0 },
+        handleScroll: false, handleScale: false,
+        height: 160,
+        watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: 'MACD(12,26,9)' }
+      });
+      const fast = params.fast || 12, slow = params.slow || 26, sig = params.signal || 9;
+      const { macd, signal: sigLine, hist } = _calcMACD(closes, fast, slow, sig);
+      const histData = hist.map((v, i) => v !== null ? { time: times[i], value: v, color: v >= 0 ? 'rgba(16,185,129,0.7)' : 'rgba(239,68,68,0.7)' } : null).filter(Boolean);
+      const macdData = macd.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+      const sigData = sigLine.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+      const histSeries = chart.addHistogramSeries({ priceLineVisible: false, lastValueVisible: false });
+      histSeries.setData(histData);
+      const macdSeries = chart.addLineSeries({ color: '#00D4AA', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false });
+      macdSeries.setData(macdData);
+      const sigSeries = chart.addLineSeries({ color: '#EF4444', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
+      sigSeries.setData(sigData);
+      // Signal crossover marker
+      for (let i = 1; i < macdData.length; i++) {
+        const prev = macdData[i-1].value - (sigData[i-1]?.value || 0);
+        const curr = macdData[i].value - (sigData[i]?.value || 0);
+        if (prev < 0 && curr >= 0) { macdSeries.setMarkers([{ time: macdData[i].time, position: 'belowBar', color: '#00D4AA', shape: 'arrowUp', text: 'Cruz' }]); break; }
+        if (prev > 0 && curr <= 0) { macdSeries.setMarkers([{ time: macdData[i].time, position: 'aboveBar', color: '#EF4444', shape: 'arrowDown', text: 'Cruz' }]); break; }
+      }
+      chart.timeScale().fitContent();
+    }, 0);
+    return container;
+  }
+
+  // ── SMA / EMA ─────────────────────────────────────────────────
+  if (['sma','ema'].includes(indId)) {
+    const isCross = ct.includes('longa') || ct.includes('cruzamento');
+    container.style.height = '160px';
+    setTimeout(() => {
+      if (!window.LightweightCharts) return;
+      const chart = LightweightCharts.createChart(container, {
+        layout: { background: { color: bg }, textColor: text },
+        grid: { vertLines: { color: grid }, horzLines: { color: grid } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
+        timeScale: { borderColor: 'transparent', visible: false },
+        crosshair: { mode: 0 },
+        handleScroll: false, handleScale: false,
+        height: 160,
+      });
+      const cs = chart.addCandlestickSeries({
+        upColor: '#10B981', downColor: '#EF4444',
+        borderUpColor: '#10B981', borderDownColor: '#EF4444',
+        wickUpColor: isDark ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.7)',
+        wickDownColor: isDark ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.7)',
+      });
+      cs.setData(ohlc);
+
+      if (isCross) {
+        const per1 = params.per || 9, per2 = params.per2 || 21;
+        const calc = indId === 'ema' ? _calcEMA : _calcSMA;
+        const fast = calc(closes, per1), slow = calc(closes, per2);
+        const fData = fast.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+        const sData = slow.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+        const fSeries = chart.addLineSeries({ color: '#00D4AA', lineWidth: 1.5, priceLineVisible: false });
+        fSeries.setData(fData);
+        const sSeries = chart.addLineSeries({ color: '#F59E0B', lineWidth: 1.5, lineStyle: 2, priceLineVisible: false });
+        sSeries.setData(sData);
+        // Find crossover
+        for (let i = 1; i < fData.length && i < sData.length; i++) {
+          const prev = fData[i-1].value - sData[i-1].value;
+          const curr = fData[i].value - sData[i].value;
+          if (prev * curr < 0) {
+            fSeries.setMarkers([{ time: fData[i].time, position: curr > 0 ? 'belowBar' : 'aboveBar', color: curr > 0 ? '#10B981' : '#EF4444', shape: curr > 0 ? 'arrowUp' : 'arrowDown', text: 'Cruz' }]);
+            break;
+          }
+        }
+        chart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `${indId.toUpperCase()}(${per1}) × ${indId.toUpperCase()}(${per2})` } });
+      } else {
+        const per = params.per || 20;
+        const calc = indId === 'ema' ? _calcEMA : _calcSMA;
+        const maVals = calc(closes, per);
+        const maData = maVals.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+        const maSeries = chart.addLineSeries({ color: '#F59E0B', lineWidth: 1.8, priceLineVisible: false });
+        maSeries.setData(maData);
+        // Area between price and MA
+        const sigIdx = 28;
+        cs.setMarkers([{ time: times[sigIdx], position: up ? 'belowBar' : 'aboveBar', color: '#00D4AA', shape: up ? 'arrowUp' : 'arrowDown', text: 'Sinal' }]);
+        chart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `${indId.toUpperCase()}(${per})` } });
+      }
+      chart.timeScale().fitContent();
+    }, 0);
+    return container;
+  }
+
+  // ── BOLLINGER BANDS ───────────────────────────────────────────
+  if (indId === 'bb') {
+    container.style.height = '160px';
+    setTimeout(() => {
+      if (!window.LightweightCharts) return;
+      const chart = LightweightCharts.createChart(container, {
+        layout: { background: { color: bg }, textColor: text },
+        grid: { vertLines: { color: grid }, horzLines: { color: grid } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
+        timeScale: { borderColor: 'transparent', visible: false },
+        crosshair: { mode: 0 },
+        handleScroll: false, handleScale: false,
+        height: 160,
+        watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `BB(${params.per||20}, ${params.dev||2}σ)` }
+      });
+      const per = params.per || 20, dev = params.dev || 2;
+      const bb = _calcBB(closes, per, dev);
+      const cs = chart.addCandlestickSeries({
+        upColor: '#10B981', downColor: '#EF4444',
+        borderUpColor: '#10B981', borderDownColor: '#EF4444',
+        wickUpColor: isDark ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.7)',
+        wickDownColor: isDark ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.7)',
+      });
+      cs.setData(ohlc);
+      const upData = bb.map((v, i) => v ? { time: times[i], value: v.upper } : null).filter(Boolean);
+      const midData = bb.map((v, i) => v ? { time: times[i], value: v.mid } : null).filter(Boolean);
+      const loData = bb.map((v, i) => v ? { time: times[i], value: v.lower } : null).filter(Boolean);
+      chart.addLineSeries({ color: 'rgba(99,102,241,0.8)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false }).setData(upData);
+      chart.addLineSeries({ color: 'rgba(99,102,241,0.4)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false }).setData(midData);
+      chart.addLineSeries({ color: 'rgba(99,102,241,0.8)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false }).setData(loData);
+      // Signal: candle touching band
+      const sigIdx = ct.includes('sup') ? ohlc.findIndex((b, i) => bb[i] && b.high >= bb[i].upper - 0.05) : ohlc.findIndex((b, i) => bb[i] && b.low <= bb[i].lower + 0.05);
+      if (sigIdx > 0) cs.setMarkers([{ time: times[sigIdx], position: up ? 'belowBar' : 'aboveBar', color: '#00D4AA', shape: up ? 'arrowUp' : 'arrowDown', text: 'Toque' }]);
+      chart.timeScale().fitContent();
+    }, 0);
+    return container;
+  }
+
+  // ── VWAP ─────────────────────────────────────────────────────
+  if (indId === 'vwap') {
+    container.style.height = '160px';
+    setTimeout(() => {
+      if (!window.LightweightCharts) return;
+      const chart = LightweightCharts.createChart(container, {
+        layout: { background: { color: bg }, textColor: text },
+        grid: { vertLines: { color: grid }, horzLines: { color: grid } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
+        timeScale: { borderColor: 'transparent', visible: false },
+        crosshair: { mode: 0 },
+        handleScroll: false, handleScale: false,
+        height: 160,
+        watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: 'VWAP' }
+      });
+      const cs = chart.addCandlestickSeries({
+        upColor: '#10B981', downColor: '#EF4444',
+        borderUpColor: '#10B981', borderDownColor: '#EF4444',
+        wickUpColor: isDark ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.7)',
+        wickDownColor: isDark ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.7)',
+      });
+      cs.setData(ohlc);
+      // Approximate VWAP as cumulative typical price (simplified, consistent)
+      let cumTP = 0, cumVol = 0;
+      const vwapData = ohlc.map((b, i) => {
+        const tp = (b.high + b.low + b.close) / 3;
+        const vol = 1000 + Math.sin(i * 0.7) * 300;
+        cumTP += tp * vol; cumVol += vol;
+        return { time: b.time, value: cumTP / cumVol };
+      });
+      chart.addLineSeries({ color: '#F59E0B', lineWidth: 1.8, priceLineVisible: false }).setData(vwapData);
+      const sigIdx = 28;
+      cs.setMarkers([{ time: times[sigIdx], position: up ? 'belowBar' : 'aboveBar', color: '#00D4AA', shape: up ? 'arrowUp' : 'arrowDown', text: 'Sinal' }]);
+      chart.timeScale().fitContent();
+    }, 0);
+    return container;
+  }
+
+  // Fallback to SVG for everything else
+  return _buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct);
+}
+
+function _buildCondPreviewSVG(indId, condText, params={}, isDark, up, cross, sc, ct) {
   const svg=hsvg('svg',{width:'100%',viewBox:`0 0 ${W} ${H}`});
   svg.appendChild(hsvg('rect',{x:0,y:0,width:W,height:H,rx:6,fill:TH.bg}));
-  const ct=condText.toLowerCase();
-  const up=ct.includes('acima')||ct.includes('sup')||ct.includes('alta')||ct.includes('subindo')||ct.includes('compra')||ct.includes('maior')||ct.includes('manhã');
-  const cross=ct.includes('cruza')||ct.includes('rompe')||ct.includes('virou')||ct.includes('sai');
   const touch=ct.includes('toca');
-  const sc=up?'#10B981':'#EF4444';
   const ln=(x1,y1,x2,y2,c,w,d)=>{const a={x1,y1,x2,y2,stroke:c,'stroke-width':w||0.5};if(d)a['stroke-dasharray']=d;svg.appendChild(hsvg('line',a));};
   const pl=(p,c,w,d)=>{const a={points:p,fill:'none',stroke:c,'stroke-width':w||1};if(d)a['stroke-dasharray']=d;svg.appendChild(hsvg('polyline',a));};
   const rc=(x,y,w,h,c,o,r)=>svg.appendChild(hsvg('rect',{x,y,width:w,height:h,fill:c,'fill-opacity':o!=null?o:1,rx:r||0}));
