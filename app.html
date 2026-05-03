@@ -2012,20 +2012,23 @@ function buildCondPreview(indId, condText, params={}) {
   const text = isDark ? '#8888A0' : '#999999';
   const wick = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)';
 
-  // Price data — 40 candles, deterministic
-  const N = 40;
-  const BASE = 100;
-  const closes = _seededPrices(N, BASE, BASE * 0.12, 77);
-  // Generate OHLC with realistic shadows
+  // Price data — 30 candles, deterministic, range realista para candles visíveis
+  const N = 30;
+  const BASE = 1000;
+  const closes = _seededPrices(N, BASE, BASE * 0.08, 77);
+  // Generate OHLC — shadows proporcionais ao corpo (15-40% do range total)
   let seed2 = 12345;
   const rng2 = () => { seed2 = (seed2 * 1664525 + 1013904223) & 0xffffffff; return (seed2 >>> 0) / 0xffffffff; };
   const t0 = new Date('2024-01-02').getTime();
   const barSecs = 5 * 60;
+  const totalRange = Math.max(...closes) - Math.min(...closes) || BASE * 0.05;
+  const shadowUnit = totalRange * 0.08; // shadow proporcional ao range total
   const ohlc = closes.map((c, i) => {
     const prev = i > 0 ? closes[i-1] : c;
     const o = prev, cl = c;
-    const hi = Math.max(o, cl) + rng2() * 0.8;
-    const lo = Math.min(o, cl) - rng2() * 0.8;
+    const bodySize = Math.abs(cl - o);
+    const hi = Math.max(o, cl) + shadowUnit * (0.3 + rng2() * 0.7);
+    const lo = Math.min(o, cl) - shadowUnit * (0.3 + rng2() * 0.7);
     return { time: Math.floor(t0/1000) + i * barSecs, open: o, high: hi, low: lo, close: cl };
   });
   const highs  = ohlc.map(b => b.high);
@@ -2035,13 +2038,13 @@ function buildCondPreview(indId, condText, params={}) {
   // ── OSCILLATOR PANELS (rsi, stoch, cci, williams, atr) ──────
   if (['rsi','stoch','cci','williams','atr'].includes(indId)) {
     // split layout: top=candles (55%), bottom=indicator (45%)
-    container.style.height = '180px';
+    container.style.height = '210px';
     container.style.display = 'flex';
     container.style.flexDirection = 'column';
 
     // --- Candle chart (top) ---
     const topDiv = document.createElement('div');
-    topDiv.style.cssText = 'flex:0 0 95px;overflow:hidden;border-radius:10px 10px 0 0';
+    topDiv.style.cssText = 'flex:0 0 120px;overflow:hidden;border-radius:10px 10px 0 0';
     container.appendChild(topDiv);
 
     const divider = document.createElement('div');
@@ -2060,14 +2063,14 @@ function buildCondPreview(indId, condText, params={}) {
       const chartOpts = {
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.1, bottom: 0.1 } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.15, bottom: 0.15 } },
         timeScale: { borderColor: 'transparent', visible: false },
         crosshair: { mode: 0 },
         handleScroll: false, handleScale: false,
       };
 
       // Top: candles
-      const topChart = LightweightCharts.createChart(topDiv, { ...chartOpts, height: 95 });
+      const topChart = LightweightCharts.createChart(topDiv, { ...chartOpts, height: 120 });
       const cs = topChart.addCandlestickSeries({
         upColor: '#10B981', downColor: '#EF4444',
         borderUpColor: '#10B981', borderDownColor: '#EF4444',
@@ -2165,7 +2168,7 @@ function buildCondPreview(indId, condText, params={}) {
       const chart = LightweightCharts.createChart(container, {
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.1, bottom: 0.1 } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.15, bottom: 0.15 } },
         timeScale: { borderColor: 'transparent', visible: false },
         crosshair: { mode: 0 },
         handleScroll: false, handleScale: false,
@@ -2204,7 +2207,7 @@ function buildCondPreview(indId, condText, params={}) {
       const chart = LightweightCharts.createChart(container, {
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.12, bottom: 0.12 } },
         timeScale: { borderColor: 'transparent', visible: false },
         crosshair: { mode: 0 },
         handleScroll: false, handleScale: false,
@@ -2263,7 +2266,7 @@ function buildCondPreview(indId, condText, params={}) {
       const chart = LightweightCharts.createChart(container, {
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.12, bottom: 0.12 } },
         timeScale: { borderColor: 'transparent', visible: false },
         crosshair: { mode: 0 },
         handleScroll: false, handleScale: false,
@@ -2301,7 +2304,7 @@ function buildCondPreview(indId, condText, params={}) {
       const chart = LightweightCharts.createChart(container, {
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.12, bottom: 0.12 } },
         timeScale: { borderColor: 'transparent', visible: false },
         crosshair: { mode: 0 },
         handleScroll: false, handleScale: false,
