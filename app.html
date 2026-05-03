@@ -7,7 +7,7 @@
 <title>Backtest Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -2055,7 +2055,7 @@ function buildCondPreview(indId, condText, params={}) {
 
     // Create charts after DOM is appended (needs dimensions)
     setTimeout(() => {
-      if (!window.LightweightCharts) return;
+      if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
 
       const chartOpts = {
         layout: { background: { color: bg }, textColor: text },
@@ -2161,7 +2161,7 @@ function buildCondPreview(indId, condText, params={}) {
   if (indId === 'macd') {
     container.style.height = '160px';
     setTimeout(() => {
-      if (!window.LightweightCharts) return;
+      if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
       const chart = LightweightCharts.createChart(container, {
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
@@ -2200,7 +2200,7 @@ function buildCondPreview(indId, condText, params={}) {
     const isCross = ct.includes('longa') || ct.includes('cruzamento');
     container.style.height = '160px';
     setTimeout(() => {
-      if (!window.LightweightCharts) return;
+      if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
       const chart = LightweightCharts.createChart(container, {
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
@@ -2259,7 +2259,7 @@ function buildCondPreview(indId, condText, params={}) {
   if (indId === 'bb') {
     container.style.height = '160px';
     setTimeout(() => {
-      if (!window.LightweightCharts) return;
+      if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
       const chart = LightweightCharts.createChart(container, {
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
@@ -2297,7 +2297,7 @@ function buildCondPreview(indId, condText, params={}) {
   if (indId === 'vwap') {
     container.style.height = '160px';
     setTimeout(() => {
-      if (!window.LightweightCharts) return;
+      if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
       const chart = LightweightCharts.createChart(container, {
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
