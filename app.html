@@ -1987,18 +1987,17 @@ function _calcCCI(highs, lows, closes, period) {
   });
 }
 
-// ─── LWC RENDER — executa callback via ResizeObserver quando elemento entra no DOM ─
+// ─── LWC RENDER — registra chart para render após modal entrar no DOM ────────────
+const _lwcPendingCharts = [];
 function _lwcRender(el, cb) {
-  const ro = new ResizeObserver((entries) => {
-    for (const e of entries) {
-      if (e.contentRect.width > 0) {
-        ro.disconnect();
-        cb(Math.floor(e.contentRect.width));
-        return;
-      }
-    }
-  });
-  ro.observe(el);
+  _lwcPendingCharts.push({ el, cb });
+}
+function _lwcFlush() {
+  while (_lwcPendingCharts.length) {
+    const { el, cb } = _lwcPendingCharts.shift();
+    const w = el.getBoundingClientRect().width || el.offsetWidth || 320;
+    cb(Math.floor(w));
+  }
 }
 
 // ─── LIGHTWEIGHT CHARTS CONDITION PREVIEW ─────────────────────────────────────
@@ -3746,7 +3745,8 @@ function renderModal() {
 
   modalEl.appendChild(modal);
   document.body.appendChild(modalEl);
-  // Chamar APÓS inserção no DOM (para val-feedback estar acessível)
+  // Chamar APÓS inserção no DOM (para val-feedback e charts LWC)
+  _lwcFlush();
   if(window.refreshModalValidation) refreshModalValidation();
 }
 
