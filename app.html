@@ -253,6 +253,7 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .cond-preview{background:var(--bg0);border:0.5px solid var(--bd);border-radius:10px;padding:0;margin-bottom:4px;overflow:hidden}
 .cond-preview-chart{width:100%;height:160px;border-radius:10px;overflow:hidden}
 .cond-preview svg{display:block;width:100%;padding:8px}
+.cond-preview-legend{font-size:11px;color:var(--txs);opacity:0.75;text-align:center;padding:0 8px;margin-top:-12px;font-style:italic;line-height:1.4}
 
 /* Loading */
 .loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:55vh;gap:28px;text-align:center}
@@ -3550,6 +3551,11 @@ function renderModal() {
         previewWrap.id='cond-preview-wrap';
         previewWrap.appendChild(buildCondPreview(ind.id, ms.params.cond||conds[0]||'', ms.params));
         frag.appendChild(previewWrap);
+
+        // Legenda explicativa — escala ilustrativa
+        const legend=div('cond-preview-legend');
+        legend.innerHTML='<span style="opacity:0.6">ⓘ</span> Visualização ilustrativa. Os valores exibidos não correspondem ao ativo selecionado.';
+        frag.appendChild(legend);
       }
 
       // Helper: rebuild the modal preview when any param changes
