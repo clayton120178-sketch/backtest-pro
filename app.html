@@ -2033,7 +2033,7 @@ function buildCondPreview(indId, condText, params={}) {
     const rng = () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
     const prices = [150];
     for (let i = 1; i < N; i++) {
-      const step = (rng() - 0.48) * 24; // step de ±12 unidades
+      const step = (rng() - 0.48) * 48; // step de ±24 unidades
       prices.push(Math.max(110, Math.min(190, prices[i-1] + step)));
     }
     return prices;
@@ -2046,7 +2046,7 @@ function buildCondPreview(indId, condText, params={}) {
   const ohlc = closes.map((c, i) => {
     const prev = i > 0 ? closes[i-1] : c;
     const o = prev, cl = c;
-    const shadow = 3 + rng2() * 5; // shadow de 3 a 8 unidades
+    const shadow = 6 + rng2() * 10; // shadow de 6 a 16 unidades
     const hi = Math.max(o, cl) + shadow;
     const lo = Math.min(o, cl) - shadow;
     return { time: Math.floor(t0/1000) + i * barSecs, open: +o.toFixed(2), high: +hi.toFixed(2), low: +lo.toFixed(2), close: +cl.toFixed(2) };
