@@ -2027,14 +2027,14 @@ function buildCondPreview(indId, condText, params={}) {
 
   // Dados normalizados — escala fixa 100-200, independente do ativo
   // O preview mostra padrão, não preço absoluto
-  const N = 30;
+  const N = 20;
   const closes = (() => {
     let s = 77;
     const rng = () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
     const prices = [150];
     for (let i = 1; i < N; i++) {
       const step = (rng() - 0.48) * 48; // step de ±24 unidades
-      prices.push(Math.max(110, Math.min(190, prices[i-1] + step)));
+      prices.push(Math.max(80, Math.min(220, prices[i-1] + step)));
     }
     return prices;
   })();
@@ -2084,7 +2084,7 @@ const chartOpts = {
         width: chartW,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.1, bottom: 0.1 } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.03, bottom: 0.03 } },
         timeScale: { borderColor: 'transparent', visible: false },
         crosshair: { mode: 0 },
         handleScroll: false, handleScale: false,
@@ -2107,7 +2107,7 @@ const chartOpts = {
       const botChart = LightweightCharts.createChart(botDiv, {
         ...chartOpts,
         height: 88,
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.1, bottom: 0.1 } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.03, bottom: 0.03 } },
       });
 
       const per = params.per || (indId === 'rsi' ? 14 : indId === 'atr' ? 14 : 14);
@@ -2190,7 +2190,7 @@ const chartOpts = {
         width: chartW,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.1, bottom: 0.1 } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.03, bottom: 0.03 } },
         timeScale: { borderColor: 'transparent', visible: false },
         crosshair: { mode: 0 },
         handleScroll: false, handleScale: false,
@@ -2230,7 +2230,7 @@ const chartOpts = {
         width: chartW,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.1, bottom: 0.1 } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.03, bottom: 0.03 } },
         timeScale: { borderColor: 'transparent', visible: false },
         crosshair: { mode: 0 },
         handleScroll: false, handleScale: false,
@@ -2290,7 +2290,7 @@ const chartOpts = {
         width: chartW,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.1, bottom: 0.1 } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.03, bottom: 0.03 } },
         timeScale: { borderColor: 'transparent', visible: false },
         crosshair: { mode: 0 },
         handleScroll: false, handleScale: false,
@@ -2329,7 +2329,7 @@ const chartOpts = {
         width: chartW,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.1, bottom: 0.1 } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.03, bottom: 0.03 } },
         timeScale: { borderColor: 'transparent', visible: false },
         crosshair: { mode: 0 },
         handleScroll: false, handleScale: false,
