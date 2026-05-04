@@ -2107,7 +2107,7 @@ const chartOpts = {
         width: chartW,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.15, bottom: 0.15 } },
+        rightPriceScale: { visible: false, scaleMargins: { top: 0.1, bottom: 0.1 } },
         timeScale: { borderColor: 'transparent', visible: false },
         crosshair: { mode: 0 },
         handleScroll: false, handleScale: false,
@@ -2130,7 +2130,7 @@ const chartOpts = {
       const botChart = LightweightCharts.createChart(botDiv, {
         ...chartOpts,
         height: 88,
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.1, bottom: 0.1 }, autoScale: true },
+        rightPriceScale: { visible: false, scaleMargins: { top: 0.1, bottom: 0.1 } },
       });
 
       const per = params.per || (indId === 'rsi' ? 14 : indId === 'atr' ? 14 : 14);
@@ -2213,7 +2213,7 @@ const chartOpts = {
         width: chartW,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.15, bottom: 0.15 } },
+        rightPriceScale: { visible: false, scaleMargins: { top: 0.1, bottom: 0.1 } },
         timeScale: { borderColor: 'transparent', visible: false },
         crosshair: { mode: 0 },
         handleScroll: false, handleScale: false,
@@ -2253,7 +2253,7 @@ const chartOpts = {
         width: chartW,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.12, bottom: 0.12 } },
+        rightPriceScale: { visible: false, scaleMargins: { top: 0.1, bottom: 0.1 } },
         timeScale: { borderColor: 'transparent', visible: false },
         crosshair: { mode: 0 },
         handleScroll: false, handleScale: false,
@@ -2313,7 +2313,7 @@ const chartOpts = {
         width: chartW,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.12, bottom: 0.12 } },
+        rightPriceScale: { visible: false, scaleMargins: { top: 0.1, bottom: 0.1 } },
         timeScale: { borderColor: 'transparent', visible: false },
         crosshair: { mode: 0 },
         handleScroll: false, handleScale: false,
@@ -2352,7 +2352,7 @@ const chartOpts = {
         width: chartW,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.12, bottom: 0.12 } },
+        rightPriceScale: { visible: false, scaleMargins: { top: 0.1, bottom: 0.1 } },
         timeScale: { borderColor: 'transparent', visible: false },
         crosshair: { mode: 0 },
         handleScroll: false, handleScale: false,
@@ -3574,7 +3574,7 @@ function renderModal() {
       // Helper: rebuild the modal preview when any param changes
       function refreshCondPreview(){
         const pw=document.getElementById('cond-preview-wrap');
-        if(pw){pw.innerHTML='';pw.appendChild(buildCondPreview(ind.id,ms.params.cond||'',ms.params));}
+        if(pw){pw.innerHTML='';pw.appendChild(buildCondPreview(ind.id,ms.params.cond||'',ms.params));_lwcFlush();}
         if(window.refreshModalValidation)refreshModalValidation();
       }
 
