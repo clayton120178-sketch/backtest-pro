@@ -2136,16 +2136,21 @@ function buildCondPreview(indId, condText, params={}) {
   // Dados normalizados — escala fixa 100-200, independente do ativo
   // O preview mostra padrão, não preço absoluto
   // ── Dados mock: random walk com oscilação cíclica para RSI variar entre 20-80 ──
-  const N = 40;
+  const N = 60;
   const closes = (() => {
     let s = 77;
     const rng = () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
     const prices = [100];
     for (let i = 1; i < N; i++) {
-      // Oscilação cíclica + ruído — garante que RSI/osciladores variem significativamente
-      const trend = Math.sin(i * 0.4) * 12;
-      const noise = (rng() - 0.5) * 5;
-      prices.push(+(prices[i-1] + trend + noise).toFixed(2));
+      // Tendência em três fases: alta (0-20) → queda (20-40) → alta (40-60)
+      // Garante que RSI cubra zonas de sobrevenda (<30) e sobrecompra (>70)
+      let trend;
+      if (i < 20) trend = 1.5;
+      else if (i < 40) trend = -1.6;
+      else trend = 1.4;
+      const noise = (rng() - 0.5) * 3;
+      const osc = Math.sin(i * 0.8) * 1.5;
+      prices.push(+(prices[i-1] + trend + noise + osc).toFixed(2));
     }
     return prices;
   })();
@@ -2159,12 +2164,13 @@ function buildCondPreview(indId, condText, params={}) {
   // visível no meio do gráfico (usado SOMENTE quando isCross=true em SMA/EMA)
   const _crossCloses = (() => {
     const arr = [];
+    // Tendência: alta dos 0-22, baixa dos 22-44, alta dos 44-60 — cruzamento bem no meio
     for (let i = 0; i < N; i++) {
       let v;
-      if (i < 15) v = 100 + i * 1.5;
-      else if (i < 30) v = 122.5 - (i - 15) * 2;
-      else v = 92.5 + (i - 30) * 1.8;
-      v += (((i * 17 + 7) % 13) - 6) * 0.5;
+      if (i < 22) v = 100 + i * 1.2;
+      else if (i < 44) v = 100 + 22*1.2 - (i - 22) * 1.6;
+      else v = 100 + 22*1.2 - 22*1.6 + (i - 44) * 1.4;
+      v += (((i * 17 + 7) % 13) - 6) * 0.4;
       arr.push(+v.toFixed(2));
     }
     return arr;
@@ -2429,20 +2435,31 @@ const chartOpts = {
         const per2 = Math.min(params.per2 || 21, maxPer);
         const calc = indId === 'ema' ? _calcEMA : _calcSMA;
         const fast = calc(_closes, per1), slow = calc(_closes, per2);
-        // SEM extensão: a linha começa exatamente onde o cálculo é válido —
-        // isso é fundamental para o cruzamento aparecer corretamente
-        const fData = fast.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
-        const sData = slow.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+        // Estender com primeiro valor válido — não afeta o cruzamento (que ocorre no meio
+        // dos dados onde ambas MAs já estão válidas), mas evita linhas curtas no início
+        const fFirst = fast.findIndex(v => v !== null);
+        const sFirst = slow.findIndex(v => v !== null);
+        const fData = fast.map((v, i) => {
+          if (v !== null) return { time: times[i], value: v };
+          if (fFirst >= 0 && i < fFirst) return { time: times[i], value: fast[fFirst] };
+          return null;
+        }).filter(Boolean);
+        const sData = slow.map((v, i) => {
+          if (v !== null) return { time: times[i], value: v };
+          if (sFirst >= 0 && i < sFirst) return { time: times[i], value: slow[sFirst] };
+          return null;
+        }).filter(Boolean);
         const fSeries = chart.addLineSeries({ color: '#00D4AA', lineWidth: 1.5, priceLineVisible: false });
         fSeries.setData(fData);
         const sSeries = chart.addLineSeries({ color: '#F59E0B', lineWidth: 1.5, lineStyle: 2, priceLineVisible: false });
         sSeries.setData(sData);
-        // Find crossover
-        for (let i = 1; i < fData.length && i < sData.length; i++) {
-          const prev = fData[i-1].value - sData[i-1].value;
-          const curr = fData[i].value - sData[i].value;
+        // Find crossover — apenas no trecho onde ambas têm valores reais (não estendidos)
+        for (let i = Math.max(fFirst, sFirst) + 1; i < fast.length; i++) {
+          if (fast[i] === null || slow[i] === null || fast[i-1] === null || slow[i-1] === null) continue;
+          const prev = fast[i-1] - slow[i-1];
+          const curr = fast[i] - slow[i];
           if (prev * curr < 0) {
-            fSeries.setMarkers([{ time: fData[i].time, position: curr > 0 ? 'belowBar' : 'aboveBar', color: curr > 0 ? '#10B981' : '#EF4444', shape: curr > 0 ? 'arrowUp' : 'arrowDown', text: 'Sinal' }]);
+            fSeries.setMarkers([{ time: times[i], position: curr > 0 ? 'belowBar' : 'aboveBar', color: curr > 0 ? '#10B981' : '#EF4444', shape: curr > 0 ? 'arrowUp' : 'arrowDown', text: 'Sinal' }]);
             break;
           }
         }
@@ -2527,9 +2544,17 @@ const chartOpts = {
         wickDownColor: isDark ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.7)',
       });
       cs.setData(ohlc);
-      const upData = bb.map((v, i) => v ? { time: times[i], value: v.upper } : null).filter(Boolean);
-      const midData = bb.map((v, i) => v ? { time: times[i], value: v.mid } : null).filter(Boolean);
-      const loData = bb.map((v, i) => v ? { time: times[i], value: v.lower } : null).filter(Boolean);
+      // Estender bandas para os candles iniciais com primeiro valor válido —
+      // assim aumentar o período não diminui a linha visualmente
+      const firstBB = bb.findIndex(v => v !== null);
+      const _ext = (key) => bb.map((v, i) => {
+        if (v) return { time: times[i], value: v[key] };
+        if (firstBB >= 0 && i < firstBB) return { time: times[i], value: bb[firstBB][key] };
+        return null;
+      }).filter(Boolean);
+      const upData  = _ext('upper');
+      const midData = _ext('mid');
+      const loData  = _ext('lower');
       chart.addLineSeries({ color: 'rgba(99,102,241,0.8)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false }).setData(upData);
       chart.addLineSeries({ color: 'rgba(99,102,241,0.4)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false }).setData(midData);
       chart.addLineSeries({ color: 'rgba(99,102,241,0.8)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false }).setData(loData);
@@ -2649,7 +2674,13 @@ const chartOpts = {
       });
       const per = Math.min(params.per || 14, Math.floor(N/2) - 1);
       const adx = _calcADX(highs, lows, closes, per);
-      const indData = adx.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+      // Estender linha com primeiro valor válido — período maior não diminui visual
+      const firstAdx = adx.findIndex(v => v !== null);
+      const indData = adx.map((v, i) => {
+        if (v !== null) return { time: times[i], value: v };
+        if (firstAdx >= 0 && i < firstAdx) return { time: times[i], value: adx[firstAdx] };
+        return null;
+      }).filter(Boolean);
       const lineSeries = botChart.addLineSeries({ color: '#6366F1', lineWidth: 1.5, priceLineVisible: false });
       lineSeries.setData(indData);
       const val = params.val != null ? params.val : 25;
@@ -2711,7 +2742,8 @@ const chartOpts = {
   }
 
   // ── HiLo Activator ───────────────────────────────────────────
-  // Overlay nos candles: linha que segue a SMA da High (modo venda) ou SMA da Low (modo compra)
+  // Representação tradicional: linha que segue SMA da High em modo venda (acima dos candles),
+  // pula para SMA da Low em modo compra (abaixo dos candles). Linha em steps (não suave).
   if (indId === 'hilo') {
     container.style.height = '160px';
     _lwcRender(container, (chartW) => {
@@ -2733,15 +2765,40 @@ const chartOpts = {
         wickUpColor: isDark ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.7)',
         wickDownColor: isDark ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.7)',
       });
-      cs.setData(_crossOhlc);  // dataset com tendência clara
+      cs.setData(_crossOhlc);  // dataset com tendência V (garante flips visíveis)
       const per = Math.min(params.per || 6, Math.floor(N/3));
       const hilo = _calcHiLo(_crossOhlc.map(b=>b.high), _crossOhlc.map(b=>b.low), _crossOhlc.map(b=>b.close), per);
-      // Separar em segmentos por modo
-      const buyData = hilo.map((h, i) => h && h.mode === 'buy' ? { time: times[i], value: h.value } : null).filter(Boolean);
-      const sellData = hilo.map((h, i) => h && h.mode === 'sell' ? { time: times[i], value: h.value } : null).filter(Boolean);
-      chart.addLineSeries({ color: '#10B981', lineWidth: 2, priceLineVisible: false, lastValueVisible: false }).setData(buyData);
-      chart.addLineSeries({ color: '#EF4444', lineWidth: 2, priceLineVisible: false, lastValueVisible: false }).setData(sellData);
-      // Marker na primeira virada conforme condição
+
+      // Construir segmentos contínuos por modo — cada série inclui o ponto de flip
+      // do segmento anterior para que a linha pareça contínua visualmente
+      const segments = []; // [{ mode, points: [{time, value}] }]
+      let curr = null;
+      for (let i = 0; i < hilo.length; i++) {
+        if (!hilo[i]) continue;
+        if (!curr || curr.mode !== hilo[i].mode) {
+          // Flip — adiciona último ponto do segmento anterior como início do novo
+          // (linha "salta" do nível antigo para o novo no mesmo timestamp do flip)
+          if (curr) segments.push(curr);
+          curr = { mode: hilo[i].mode, points: [] };
+        }
+        curr.points.push({ time: times[i], value: hilo[i].value });
+      }
+      if (curr) segments.push(curr);
+
+      // Renderizar cada segmento com sua cor — usa LineStyle Solid + lineType.Stepped
+      segments.forEach(seg => {
+        if (seg.points.length === 0) return;
+        const series = chart.addLineSeries({
+          color: seg.mode === 'buy' ? '#10B981' : '#EF4444',
+          lineWidth: 2,
+          lineType: 1, // WithSteps — comportamento tradicional do HiLo (não suave)
+          priceLineVisible: false,
+          lastValueVisible: false,
+        });
+        series.setData(seg.points);
+      });
+
+      // Marker no primeiro flip que corresponde à condição
       let flipIdx = -1;
       const wantBuy = ct.includes('compra');
       for (let i = 1; i < hilo.length; i++) {
@@ -3488,7 +3545,7 @@ function renderModal() {
         <div style="font-size:11px;color:var(--txm);margin-top:6px">→ Dois períodos · Média curta vs Média longa</div>`;
       crossCard.addEventListener('click',()=>{
         ms.maMode='crossover';
-        ms.params={per:9,per2:200,cond:'Cruzamento de médias (compra e venda)'};
+        ms.params={per:9,per2:21,cond:'Cruzamento de médias (compra e venda)'};
         renderModal();
       });
       frag.appendChild(crossCard);
