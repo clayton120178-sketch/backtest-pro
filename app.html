@@ -2027,14 +2027,17 @@ function buildCondPreview(indId, condText, params={}) {
 
   // Dados normalizados — escala fixa 100-200, independente do ativo
   // O preview mostra padrão, não preço absoluto
-  const N = 20;
+  // ── Dados mock: random walk com oscilação cíclica para RSI variar entre 20-80 ──
+  const N = 40;
   const closes = (() => {
     let s = 77;
     const rng = () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
-    const prices = [150];
+    const prices = [100];
     for (let i = 1; i < N; i++) {
-      const step = (rng() - 0.48) * 48; // step de ±24 unidades
-      prices.push(Math.max(80, Math.min(220, prices[i-1] + step)));
+      // Oscilação cíclica + ruído — garante que RSI/osciladores variem significativamente
+      const trend = Math.sin(i * 0.4) * 12;
+      const noise = (rng() - 0.5) * 5;
+      prices.push(+(prices[i-1] + trend + noise).toFixed(2));
     }
     return prices;
   })();
@@ -2046,7 +2049,8 @@ function buildCondPreview(indId, condText, params={}) {
   const ohlc = closes.map((c, i) => {
     const prev = i > 0 ? closes[i-1] : c;
     const o = prev, cl = c;
-    const shadow = 6 + rng2() * 10; // shadow de 6 a 16 unidades
+    const body = Math.abs(cl - o);
+    const shadow = Math.max(body * 0.4, 1.5) + rng2() * 3; // shadow proporcional ao body
     const hi = Math.max(o, cl) + shadow;
     const lo = Math.min(o, cl) - shadow;
     return { time: Math.floor(t0/1000) + i * barSecs, open: +o.toFixed(2), high: +hi.toFixed(2), low: +lo.toFixed(2), close: +cl.toFixed(2) };
@@ -2084,7 +2088,7 @@ const chartOpts = {
         width: chartW,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.03, bottom: 0.03 } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
         timeScale: { borderColor: 'transparent', visible: false },
         crosshair: { mode: 0 },
         handleScroll: false, handleScale: false,
@@ -2099,7 +2103,7 @@ const chartOpts = {
       });
       cs.setData(ohlc);
       // Highlight signal candle
-      const sigIdx = 28;
+      const sigIdx = N - 3;
       cs.setMarkers([{ time: times[sigIdx], position: up ? 'belowBar' : 'aboveBar', color: '#00D4AA', shape: up ? 'arrowUp' : 'arrowDown', text: 'Sinal' }]);
       topChart.timeScale().fitContent();
 
@@ -2107,7 +2111,7 @@ const chartOpts = {
       const botChart = LightweightCharts.createChart(botDiv, {
         ...chartOpts,
         height: 88,
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.03, bottom: 0.03 } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.15, bottom: 0.15 } },
       });
 
       const per = params.per || (indId === 'rsi' ? 14 : indId === 'atr' ? 14 : 14);
@@ -2190,7 +2194,7 @@ const chartOpts = {
         width: chartW,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.03, bottom: 0.03 } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
         timeScale: { borderColor: 'transparent', visible: false },
         crosshair: { mode: 0 },
         handleScroll: false, handleScale: false,
@@ -2230,7 +2234,7 @@ const chartOpts = {
         width: chartW,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.03, bottom: 0.03 } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
         timeScale: { borderColor: 'transparent', visible: false },
         crosshair: { mode: 0 },
         handleScroll: false, handleScale: false,
@@ -2272,7 +2276,7 @@ const chartOpts = {
         const maSeries = chart.addLineSeries({ color: '#F59E0B', lineWidth: 1.8, priceLineVisible: false });
         maSeries.setData(maData);
         // Area between price and MA
-        const sigIdx = 28;
+        const sigIdx = N - 3;
         cs.setMarkers([{ time: times[sigIdx], position: up ? 'belowBar' : 'aboveBar', color: '#00D4AA', shape: up ? 'arrowUp' : 'arrowDown', text: 'Sinal' }]);
         chart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `${indId.toUpperCase()}(${per})` } });
       }
@@ -2290,7 +2294,7 @@ const chartOpts = {
         width: chartW,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.03, bottom: 0.03 } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
         timeScale: { borderColor: 'transparent', visible: false },
         crosshair: { mode: 0 },
         handleScroll: false, handleScale: false,
@@ -2329,7 +2333,7 @@ const chartOpts = {
         width: chartW,
         layout: { background: { color: bg }, textColor: text },
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.03, bottom: 0.03 } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
         timeScale: { borderColor: 'transparent', visible: false },
         crosshair: { mode: 0 },
         handleScroll: false, handleScale: false,
@@ -2352,7 +2356,7 @@ const chartOpts = {
         return { time: b.time, value: cumTP / cumVol };
       });
       chart.addLineSeries({ color: '#F59E0B', lineWidth: 1.8, priceLineVisible: false }).setData(vwapData);
-      const sigIdx = 28;
+      const sigIdx = N - 3;
       cs.setMarkers([{ time: times[sigIdx], position: up ? 'belowBar' : 'aboveBar', color: '#00D4AA', shape: up ? 'arrowUp' : 'arrowDown', text: 'Sinal' }]);
       chart.timeScale().fitContent();
     });
