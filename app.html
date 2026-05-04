@@ -2213,13 +2213,56 @@ const chartOpts = {
       macdSeries.setData(macdData);
       const sigSeries = chart.addLineSeries({ color: '#EF4444', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
       sigSeries.setData(sigData);
-      // Signal crossover marker
-      for (let i = 1; i < macdData.length; i++) {
-        const prev = macdData[i-1].value - (sigData[i-1]?.value || 0);
-        const curr = macdData[i].value - (sigData[i]?.value || 0);
-        if (prev < 0 && curr >= 0) { macdSeries.setMarkers([{ time: macdData[i].time, position: 'belowBar', color: '#00D4AA', shape: 'arrowUp', text: 'Cruz' }]); break; }
-        if (prev > 0 && curr <= 0) { macdSeries.setMarkers([{ time: macdData[i].time, position: 'aboveBar', color: '#EF4444', shape: 'arrowDown', text: 'Cruz' }]); break; }
+      // Marker conforme condição:
+      // - "cruza acima do sinal" → MACD cruzando linha signal para cima (compra)
+      // - "cruza abaixo do sinal" → MACD cruzando linha signal para baixo (venda)
+      // - "acima de zero" → primeiro candle em que MACD > 0 (viés alta)
+      // - "abaixo de zero" → primeiro candle em que MACD < 0 (viés baixa)
+      const isAboveZero = ct.includes('acima de zero');
+      const isBelowZero = ct.includes('abaixo de zero');
+      const isCrossUp   = ct.includes('cruza acima');
+      const isCrossDown = ct.includes('cruza abaixo');
+      let macdSig = -1, macdMark = null;
+
+      if (isAboveZero || isBelowZero) {
+        for (let i = 0; i < macdData.length; i++) {
+          if (isAboveZero && macdData[i].value > 0) { macdSig = i; break; }
+          if (isBelowZero && macdData[i].value < 0) { macdSig = i; break; }
+        }
+        if (macdSig >= 0) macdMark = {
+          time: macdData[macdSig].time,
+          position: isAboveZero ? 'belowBar' : 'aboveBar',
+          color: isAboveZero ? '#10B981' : '#EF4444',
+          shape: isAboveZero ? 'arrowUp' : 'arrowDown',
+          text: isAboveZero ? 'MACD>0' : 'MACD<0'
+        };
+      } else {
+        // Cross signal line
+        for (let i = 1; i < macdData.length; i++) {
+          const prev = macdData[i-1].value - (sigData[i-1]?.value || 0);
+          const curr = macdData[i].value - (sigData[i]?.value || 0);
+          if (isCrossUp && prev < 0 && curr >= 0) {
+            macdMark = { time: macdData[i].time, position: 'belowBar', color: '#10B981', shape: 'arrowUp', text: 'Cruz ↑' };
+            break;
+          }
+          if (isCrossDown && prev > 0 && curr <= 0) {
+            macdMark = { time: macdData[i].time, position: 'aboveBar', color: '#EF4444', shape: 'arrowDown', text: 'Cruz ↓' };
+            break;
+          }
+          // Default: primeiro cruzamento qualquer
+          if (!isCrossUp && !isCrossDown && prev * curr < 0) {
+            macdMark = {
+              time: macdData[i].time,
+              position: curr > 0 ? 'belowBar' : 'aboveBar',
+              color: curr > 0 ? '#10B981' : '#EF4444',
+              shape: curr > 0 ? 'arrowUp' : 'arrowDown',
+              text: curr > 0 ? 'Cruz ↑' : 'Cruz ↓'
+            };
+            break;
+          }
+        }
       }
+      if (macdMark) macdSeries.setMarkers([macdMark]);
       chart.timeScale().fitContent();
     });
     return container;
@@ -2250,11 +2293,24 @@ const chartOpts = {
       cs.setData(ohlc);
 
       if (isCross) {
-        const per1 = params.per || 9, per2 = params.per2 || 21;
+        // Clamp visual: períodos limitados a N-2 para sempre haver linha visível no preview
+        const maxPer = N - 2;
+        const per1 = Math.min(params.per || 9, maxPer);
+        const per2 = Math.min(params.per2 || 21, maxPer);
         const calc = indId === 'ema' ? _calcEMA : _calcSMA;
         const fast = calc(closes, per1), slow = calc(closes, per2);
-        const fData = fast.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
-        const sData = slow.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+        const fFirst = fast.findIndex(v => v !== null);
+        const sFirst = slow.findIndex(v => v !== null);
+        const fData = fast.map((v, i) => {
+          if (v !== null) return { time: times[i], value: v };
+          if (fFirst >= 0 && i < fFirst) return { time: times[i], value: fast[fFirst] };
+          return null;
+        }).filter(Boolean);
+        const sData = slow.map((v, i) => {
+          if (v !== null) return { time: times[i], value: v };
+          if (sFirst >= 0 && i < sFirst) return { time: times[i], value: slow[sFirst] };
+          return null;
+        }).filter(Boolean);
         const fSeries = chart.addLineSeries({ color: '#00D4AA', lineWidth: 1.5, priceLineVisible: false });
         fSeries.setData(fData);
         const sSeries = chart.addLineSeries({ color: '#F59E0B', lineWidth: 1.5, lineStyle: 2, priceLineVisible: false });
@@ -2270,15 +2326,53 @@ const chartOpts = {
         }
         chart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `${indId.toUpperCase()}(${per1}) × ${indId.toUpperCase()}(${per2})` } });
       } else {
-        const per = params.per || 20;
+        const maxPer = N - 2;
+        const per = Math.min(params.per || 20, maxPer);
         const calc = indId === 'ema' ? _calcEMA : _calcSMA;
         const maVals = calc(closes, per);
-        const maData = maVals.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+        // Estende o primeiro valor válido para os candles iniciais
+        // (caso contrário, períodos maiores produzem linhas mais curtas e o usuário
+        // tem a impressão de que a MA "diminuiu")
+        const firstValid = maVals.findIndex(v => v !== null);
+        const maData = maVals.map((v, i) => {
+          if (v !== null) return { time: times[i], value: v };
+          if (firstValid >= 0 && i < firstValid) return { time: times[i], value: maVals[firstValid] };
+          return null;
+        }).filter(Boolean);
         const maSeries = chart.addLineSeries({ color: '#F59E0B', lineWidth: 1.8, priceLineVisible: false });
         maSeries.setData(maData);
-        // Area between price and MA
-        const sigIdx = N - 3;
-        cs.setMarkers([{ time: times[sigIdx], position: up ? 'belowBar' : 'aboveBar', color: '#00D4AA', shape: up ? 'arrowUp' : 'arrowDown', text: 'Sinal' }]);
+        // Marker posicionado conforme condição:
+        // - "preço acima" → arrow embaixo apontando para cima (compra) NO candle ACIMA da MA
+        // - "preço abaixo" → arrow em cima apontando para baixo (venda) NO candle ABAIXO da MA
+        // - "cruza acima/abaixo" → no candle de cruzamento
+        let sigIdx = -1;
+        if (cross) {
+          for (let i = 1; i < ohlc.length; i++) {
+            if (maVals[i] === null || maVals[i-1] === null) continue;
+            const prevDiff = ohlc[i-1].close - maVals[i-1];
+            const currDiff = ohlc[i].close - maVals[i];
+            if (up && prevDiff <= 0 && currDiff > 0) { sigIdx = i; break; }
+            if (!up && prevDiff >= 0 && currDiff < 0) { sigIdx = i; break; }
+          }
+        } else {
+          for (let i = ohlc.length - 1; i >= 0; i--) {
+            if (maVals[i] === null) continue;
+            const above = ohlc[i].close > maVals[i];
+            if (up && above) { sigIdx = i; break; }
+            if (!up && !above) { sigIdx = i; break; }
+          }
+        }
+        if (sigIdx > 0) {
+          // up=true → preço acima da MA → arrow ACIMA do candle apontando pra cima
+          // up=false → preço abaixo da MA → arrow ABAIXO do candle apontando pra baixo
+          cs.setMarkers([{
+            time: times[sigIdx],
+            position: up ? 'aboveBar' : 'belowBar',
+            color: up ? '#10B981' : '#EF4444',
+            shape: up ? 'arrowUp' : 'arrowDown',
+            text: cross ? 'Cruz' : 'Sinal'
+          }]);
+        }
         chart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `${indId.toUpperCase()}(${per})` } });
       }
       chart.timeScale().fitContent();
@@ -2317,9 +2411,35 @@ const chartOpts = {
       chart.addLineSeries({ color: 'rgba(99,102,241,0.8)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false }).setData(upData);
       chart.addLineSeries({ color: 'rgba(99,102,241,0.4)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false }).setData(midData);
       chart.addLineSeries({ color: 'rgba(99,102,241,0.8)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false }).setData(loData);
-      // Signal: candle touching band
-      const sigIdx = ct.includes('sup') ? ohlc.findIndex((b, i) => bb[i] && b.high >= bb[i].upper - 0.05) : ohlc.findIndex((b, i) => bb[i] && b.low <= bb[i].lower + 0.05);
-      if (sigIdx > 0) cs.setMarkers([{ time: times[sigIdx], position: up ? 'belowBar' : 'aboveBar', color: '#00D4AA', shape: up ? 'arrowUp' : 'arrowDown', text: 'Toque' }]);
+      // Signal posicionamento conforme condição
+      const isSup = ct.includes('superior');
+      const isCross = ct.includes('cruza');
+      let sigIdx = -1;
+      for (let i = 1; i < ohlc.length; i++) {
+        if (!bb[i] || !bb[i-1]) continue;
+        if (isSup) {
+          if (isCross) {
+            if (ohlc[i-1].high <= bb[i-1].upper && ohlc[i].close > bb[i].upper) { sigIdx = i; break; }
+          } else {
+            if (ohlc[i].high >= bb[i].upper - 0.05) { sigIdx = i; break; }
+          }
+        } else {
+          if (isCross) {
+            if (ohlc[i-1].low >= bb[i-1].lower && ohlc[i].close < bb[i].lower) { sigIdx = i; break; }
+          } else {
+            if (ohlc[i].low <= bb[i].lower + 0.05) { sigIdx = i; break; }
+          }
+        }
+      }
+      if (sigIdx > 0) {
+        cs.setMarkers([{
+          time: times[sigIdx],
+          position: isSup ? 'aboveBar' : 'belowBar',
+          color: isSup ? '#EF4444' : '#10B981',
+          shape: isSup ? 'arrowDown' : 'arrowUp',
+          text: isCross ? 'Cruz' : 'Toque'
+        }]);
+      }
       chart.timeScale().fitContent();
     });
     return container;
@@ -2369,6 +2489,8 @@ const chartOpts = {
 }
 
 function _buildCondPreviewSVG(indId, condText, params={}, isDark, up, cross, sc, ct) {
+  const W=280,H=120;
+  const TH=svgTheme();
   const svg=hsvg('svg',{width:'100%',viewBox:`0 0 ${W} ${H}`});
   svg.appendChild(hsvg('rect',{x:0,y:0,width:W,height:H,rx:6,fill:TH.bg}));
   const touch=ct.includes('toca');
@@ -3659,7 +3781,15 @@ function renderModal() {
       if(ind.hasVal!==false && ms.params.val!==undefined) {
         const row=div('');
         const valLabel = ind.id==='gap' ? 'Tamanho mínimo (pontos)' : 'Valor de referência';
-        row.appendChild(slabel(valLabel));
+        const valTooltips = {
+          rsi: 'Nível do RSI usado na comparação. Tradicionalmente, valores abaixo de 30 indicam sobrevenda e acima de 70 indicam sobrecompra. Você pode ajustar conforme sua estratégia.',
+          stoch: 'Nível do Estocástico usado na comparação. Tradicionalmente, valores abaixo de 20 indicam sobrevenda e acima de 80 indicam sobrecompra.',
+          cci: 'Nível do CCI usado na comparação. Os limites tradicionais são +100 (sobrecompra) e −100 (sobrevenda), mas o CCI pode chegar a +/−300 em movimentos fortes.',
+          williams: 'Nível do Williams %R usado na comparação. A escala vai de 0 a −100. Valores acima de −20 indicam sobrecompra; abaixo de −80, sobrevenda.',
+          adx: 'Nível do ADX usado na comparação. Valores acima de 25 indicam tendência forte; acima de 40, tendência muito forte. Abaixo de 20, mercado lateralizado.',
+          macd: 'Valor de referência para o MACD. Use 0 para identificar quando o MACD cruza a linha de zero (mudança de viés).',
+        };
+        row.appendChild(slabel(valLabel, valTooltips[ind.id]));
         row.appendChild(stepper(ms.params.val,-999,99999, ind.id==='gap'?'pts':'', v=>{ms.params.val=v;refreshCondPreview();}));
         frag.appendChild(row);
       }
