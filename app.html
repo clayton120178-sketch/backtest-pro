@@ -2,6 +2,7 @@
 <html lang="pt-BR" data-theme="dark">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Backtest Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -25,7 +26,7 @@
   --bdh:rgba(255,255,255,0.14);
   --tx:#F2F2F6;
   --txs:#72728A;
-  --txm:#3E3E54;
+  --txm:#6B6B82;
 
   /* Brand — Âmbar (logo, accent decorativo, chips ativos, steps) */
   --ac:#F0A020;
@@ -363,7 +364,20 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .payment-tab.active{border-color:var(--ac);background:var(--acd);color:var(--tx)}
 .pix-container{text-align:center;padding:20px}
 .pix-qr{width:180px;height:180px;background:var(--bg3);border-radius:12px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;border:0.5px solid var(--bd)}
-.nosub-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:55vh;text-align:center;padding:32px 20px}
+.nosub-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 56px);padding:32px 20px;position:relative;overflow:hidden}
+.nosub-glow{position:absolute;width:480px;height:480px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,212,170,.07) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+.nosub-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;border:0.5px solid rgba(0,212,170,.3);background:rgba(0,212,170,.07);font-size:11px;font-weight:700;color:var(--ac);letter-spacing:.08em;text-transform:uppercase;margin-bottom:24px;font-family:'JetBrains Mono',monospace}
+.nosub-headline{font-family:'Syne',sans-serif;font-size:clamp(28px,5vw,44px);font-weight:800;color:var(--tx);letter-spacing:-.03em;line-height:1.1;margin-bottom:14px;max-width:480px}
+.nosub-headline em{font-style:normal;color:var(--ac)}
+.nosub-desc{font-size:15px;color:var(--txs);line-height:1.6;max-width:380px;margin-bottom:36px}
+.nosub-cta{display:inline-flex;align-items:center;gap:10px;padding:15px 36px;border-radius:12px;border:none;background:var(--ac);color:#0A0A0F;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .18s cubic-bezier(.34,1.56,.64,1);letter-spacing:-.01em}
+.nosub-cta:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,212,170,.3)}
+.nosub-cta:active{transform:translateY(0)}
+.nosub-cta svg{transition:transform .18s}
+.nosub-cta:hover svg{transform:translateX(3px)}
+.nosub-proof{display:flex;align-items:center;gap:20px;margin-top:28px;flex-wrap:wrap;justify-content:center}
+.nosub-proof-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--txm)}
+.nosub-proof-dot{width:4px;height:4px;border-radius:50%;background:var(--bd)}
 
 /* ── HISTORY ─────────────────────────────────────────────── */
 .history-list{display:flex;flex-direction:column;gap:10px}
@@ -395,10 +409,23 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .tour-dots{display:flex;gap:5px}
 .tour-dot{width:5px;height:5px;border-radius:50%;background:var(--bd);transition:background var(--t2)}
 .tour-dot.on{background:var(--ac)}
+.tour-tooltip{position:fixed;background:var(--bg1);border:0.5px solid var(--bdh);border-radius:14px;padding:18px 20px;max-width:300px;box-shadow:0 20px 60px rgba(0,0,0,.8);z-index:9002;pointer-events:auto}
+.tour-tooltip-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--tx);margin-bottom:8px;letter-spacing:-.01em;display:flex;align-items:center;gap:7px}
+.tour-tooltip-body{font-size:13px;color:var(--txs);line-height:1.6;margin-bottom:16px}
+.tour-tooltip-footer{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tour-tooltip-counter{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txm);font-family:'JetBrains Mono',monospace}
+.tour-tooltip-btns{display:flex;gap:8px;align-items:center}
+.tour-skip{background:transparent;border:0.5px solid var(--bd);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--txs);cursor:pointer;transition:all var(--t2)}
+.tour-skip:hover{border-color:var(--bdh);color:var(--tx)}
+.tour-next{background:var(--ac);border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;color:#000;cursor:pointer;transition:all var(--t2)}
+.tour-next:hover{opacity:.85}
+.tour-arrow{position:absolute;width:10px;height:10px;background:var(--bg1);border:0.5px solid var(--bdh);transform:rotate(45deg)}
+.tour-arrow-bottom{top:-6px;left:20px;border-right:none;border-bottom:none}
+.tour-arrow-top{bottom:-6px;left:20px;border-left:none;border-top:none}
 
 /* Tooltip */
 .tip-wrap{position:relative;display:inline-flex}
-.tip-box{position:absolute;bottom:130%;left:50%;transform:translateX(-50%);background:var(--bg3);border:0.5px solid var(--bdh);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--tx);line-height:1.5;width:210px;z-index:500;box-shadow:0 6px 24px rgba(0,0,0,.6);pointer-events:none;font-weight:400}
+.tip-box{position:fixed;background:var(--bg3);border:0.5px solid var(--bdh);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--tx);line-height:1.5;width:240px;z-index:9999;box-shadow:0 6px 24px rgba(0,0,0,.8);pointer-events:none;font-weight:400}
 .strategy-sentence{font-size:12px;color:var(--txs);line-height:1.75;animation:fadeUp .2s ease-out}
 .strategy-sentence strong{color:var(--tx);font-weight:600}
 .strategy-sentence .hl{color:#00D4AA;font-weight:600}
@@ -525,6 +552,8 @@ const state = {
     direction:'long', entryType:'breakout', validity:3,
     stopType:'fixed', stopPts:200, stopOffset:10, stopCandles:5, stopAtrPer:14, stopAtrMult:1.5,
     tpType:'rr', tpPts:400, tpRR:2, tpFibLevel:'161.8', tpAtrPer:14, tpAtrMult:2.0,
+    useFibonacci:false, fiboZZDepth:12, fiboZZDeviation:5, fiboZZBackstep:3,
+    fiboTriggerLevel:'61.8', fiboTriggerMode:'validation', fiboSLLevel:'100.0', fiboTPLevel:'161.8', fiboDirection:'both',
     trailing:false, trailAct:100, trailDist:100, trailStep:50,
     partial:false, partPct:50, partAt:200, partMoveStop:true,
     exitCond:false, exitCondition:null,
@@ -679,16 +708,13 @@ const INDS_BY_TAB = {
     { id:'sar',  name:'SAR Parabólico',     desc:'Indicador de reversão de tendência',hasPer:false,hasVal:false,defCond:'Preço está acima do SAR',defVal:0 },
     { id:'hilo', name:'HiLo Activator',    desc:'Linha de suporte/resistência baseada em máximas e mínimas de N períodos',hasPer:true,hasVal:false,defCond:'HiLo virou compra',defVal:0,defPer:6 },
   ],
-  'Volume': [
-    { id:'obv',    name:'OBV',          desc:'On Balance Volume — acumulador de volume por direção do preço',hasPer:true,hasVal:false,defCond:'OBV está acima da sua média',defVal:0,defPer:21 },
-    { id:'avgvol', name:'Volume Médio', desc:'Volume vs média histórica',    hasPer:true, hasVal:true, defCond:'é maior que', defVal:1000 },
-  ],
+
   'Preço': [
     { id:'range',  name:'Range (Máx−Mín)',   desc:'Amplitude do candle em pontos',    hasPer:false,hasVal:true,defCond:'é maior que',  defVal:100 },
     { id:'hilon',  name:'Máx/Mín de N períodos', desc:'Maior máxima ou menor mínima dos últimos N candles',hasPer:true,hasVal:false,defCond:'Preço rompe máxima de N períodos',defVal:0,defPer:20 },
     { id:'gap',    name:'Gap',               desc:'Diferença entre fechamento anterior e abertura atual',hasPer:false,hasVal:true,defCond:'Gap de alta',defVal:0 },
     { id:'prevday',name:'Máx/Mín Dia Anterior', desc:'Máxima ou mínima do pregão anterior',hasPer:false,hasVal:false,defCond:'Preço está acima da máxima de ontem',defVal:0 },
-    { id:'fib',    name:'Retração de Fibonacci', desc:'Níveis de retração baseados no swing de N períodos',hasPer:true,hasVal:false,defCond:'Preço toca nível 61.8%',defVal:0,defPer:50 },
+    { id:'fib',    name:'Retração de Fibonacci', desc:'Níveis de retração baseados no swing de N períodos',hasPer:true,hasVal:false,defCond:'Preço toca nível 61.8%',defVal:0,defPer:14,defFibLevel:'61.8%',defFibMode:'touch' },
   ],
   'Volatilidade': [
     { id:'atr',    name:'ATR',              desc:'Average True Range — filtra por volatilidade relativa à média',hasPer:true,hasVal:false,defCond:'ATR está acima de X× a média',defVal:0,defPer:14 },
@@ -700,9 +726,8 @@ const INDS_BY_TAB = {
     { id:'fvg',   name:'Fair Value Gap (FVG)',        desc:'Gap de preço criado por movimento impulsivo',              hasPer:false,hasVal:true,  defCond:'Preço retorna ao FVG',defVal:50 },
     { id:'bos',   name:'Break of Structure (BoS)',     desc:'Rompimento de topo/fundo confirma tendência',             hasPer:true, hasVal:false, defCond:'BoS detectado',defVal:0,defPer:10 },
     { id:'choch', name:'Change of Character (CHoCH)',  desc:'Possível reversão — rompe estrutura oposta',              hasPer:true, hasVal:false, defCond:'CHoCH detectado',defVal:0,defPer:10 },
-    { id:'ob',    name:'Order Block (OB)',             desc:'Zona institucional — último candle oposto antes de impulso',hasPer:false,hasVal:true, defCond:'Preço retesta Order Block',defVal:150 },
-    { id:'sweep', name:'Liquidity Sweep',              desc:'Falso rompimento institucional — varre e reverte',        hasPer:true, hasVal:true,  defCond:'Liquidity Sweep detectado',defVal:10,defPer:20 },
-    { id:'grab',  name:'Liquidity Grab',               desc:'BoS falhado com rejeição — pavio longo e fechamento contra o rompimento', hasPer:true, hasVal:true,  defCond:'Liquidity Grab detectado',defVal:10,defPer:20 },
+    { id:'sweep', name:'Liquidity Sweep',              desc:'BoS confirmado seguido de consolidação e reversão (falso rompimento institucional)',hasPer:true, hasVal:true,  defCond:'Liquidity Sweep detectado',defVal:10,defPer:20 },
+    { id:'grab',  name:'Liquidity Grab',               desc:'BoS falhado com rejeição imediata — pavio penetra o nível mas fecha dentro',hasPer:true, hasVal:false, defCond:'Liquidity Grab detectado',defVal:0,defPer:20 },
   ],
 };
 
@@ -713,8 +738,7 @@ function isMACrossoverBoth(c){return c&&c.startsWith('Cruzamento de médias');}
 const BB_CONDS   = ['Preço toca banda superior','Preço toca banda inferior','Preço cruza banda superior','Preço cruza banda inferior'];
 const VWAP_CONDS = ['Preço está acima do VWAP','Preço está abaixo do VWAP','Preço cruza acima do VWAP','Preço cruza abaixo do VWAP'];
 const MACD_CONDS = ['MACD cruza acima do sinal','MACD cruza abaixo do sinal','MACD acima de zero','MACD abaixo de zero'];
-const VOL_CONDS  = ['é maior que','é menor que'];
-const OBV_CONDS  = ['OBV está acima da sua média','OBV está abaixo da sua média','OBV cruza acima da sua média','OBV cruza abaixo da sua média'];
+
 const RNG_CONDS  = ['é maior que','é menor que'];
 const ADX_CONDS  = ['está acima de','está abaixo de','cruza acima de','cruza abaixo de'];
 const SAR_CONDS  = ['Preço está acima do SAR','Preço está abaixo do SAR','Preço cruza acima do SAR','Preço cruza abaixo do SAR'];
@@ -723,17 +747,19 @@ const ATR_CONDS  = ['ATR está acima de X× a média','ATR está abaixo de X× a
 const HILON_CONDS = ['Preço rompe máxima de N períodos','Preço rompe mínima de N períodos','Preço está acima da máxima de N','Preço está abaixo da mínima de N'];
 const GAP_CONDS  = ['Gap de alta','Gap de baixa','Gap de alta maior que','Gap de baixa maior que'];
 const PREVDAY_CONDS = ['Preço está acima da máxima de ontem','Preço está abaixo da mínima de ontem','Preço cruza acima da máxima de ontem','Preço cruza abaixo da mínima de ontem','Preço está entre máxima e mínima de ontem'];
-const FIB_CONDS = ['Preço toca nível 23.6%','Preço toca nível 38.2%','Preço toca nível 50%','Preço toca nível 61.8%','Preço toca nível 78.6%','Preço cruza acima do nível 61.8%','Preço cruza abaixo do nível 61.8%','Preço está na zona 50%–61.8%','Preço está na zona 61.8%–78.6%'];
+const FIB_LEVELS = ['23.6%','38.2%','50%','61.8%','78.6%','100%'];
+const FIB_MODES  = [['touch','Toque'],['validation','Validação']];
+// FIB_CONDS mantido para compatibilidade com condições já salvas (legado)
+const FIB_CONDS = ['Preço toca nível 23.6%','Preço toca nível 38.2%','Preço toca nível 50%','Preço toca nível 61.8%','Preço toca nível 78.6%','Preço cruza acima do nível 61.8%','Preço cruza abaixo do nível 61.8%'];
 const CANDLE_CONDS = ['Martelo (alta)','Martelo Invertido (alta)','Engolfo de Alta','Engolfo de Baixa','Doji','Estrela da Manhã (alta)','Estrela da Noite (baixa)','Doji da Manhã (alta)','Doji da Noite (baixa)','Harami de Alta','Harami de Baixa','Marubozu de Alta','Marubozu de Baixa','Spinning Top','Pivô de Alta','Pivô de Baixa','3 Soldados Brancos (alta)','3 Corvos Negros (baixa)','Cobertura de Nuvem Negra (baixa)','Linha de Perfuração (alta)','Topo Duplo (baixa)','Fundo Duplo (alta)','Trap de Alta','Trap de Baixa'];
 
 // Smart Money Concepts
 const FVG_CONDS   = ['FVG detectado','Preço retorna ao FVG'];
 const BOS_CONDS   = ['BoS detectado'];
 const CHOCH_CONDS = ['CHoCH detectado'];
-const OB_CONDS    = ['Order Block detectado','Preço retesta Order Block'];
-const SWEEP_CONDS = ['Liquidity Sweep detectado'];
 const GRAB_CONDS  = ['Liquidity Grab detectado'];
-const SMC_IDS     = ['fvg','bos','choch','ob','sweep','grab'];
+const SWEEP_CONDS = ['Liquidity Sweep detectado'];
+const SMC_IDS     = ['fvg','bos','choch','sweep','grab'];
 
 // ─── ESTRATÉGIAS FAMOSAS (templates) ─────────────────────────
 const FAMOUS_STRATEGIES = [
@@ -897,7 +923,7 @@ function openStrategiesModal() {
 
     const tags=div('');tags.style.cssText='display:flex;gap:5px;flex-wrap:wrap';
     strat.conditions.forEach(c=>{
-      const tag=div('');tag.style.cssText='font-size:10px;font-weight:600;color:var(--txm);padding:2px 8px;border-radius:4px;background:var(--bg2);font-family:JetBrains Mono';
+      const tag=div('');tag.style.cssText='font-size:10px;font-weight:600;color:var(--txs);padding:2px 8px;border-radius:4px;background:var(--bg3);border:0.5px solid var(--bd);font-family:JetBrains Mono';
       tag.textContent=condLabel(c);
       tags.appendChild(tag);
     });
@@ -934,11 +960,8 @@ function getCondsFor(id) {
   if (id==='fvg')     return FVG_CONDS;
   if (id==='bos')     return BOS_CONDS;
   if (id==='choch')   return CHOCH_CONDS;
-  if (id==='ob')      return OB_CONDS;
-  if (id==='sweep')   return SWEEP_CONDS;
   if (id==='grab')    return GRAB_CONDS;
-  if (id==='avgvol') return VOL_CONDS;
-  if (id==='obv')     return OBV_CONDS;
+  if (id==='sweep')   return SWEEP_CONDS;
   if (id==='range')   return RNG_CONDS;
   return [];
 }
@@ -1029,15 +1052,13 @@ function condLabel(c) {
     case 'prevday':  return p.cond;
     case 'fib':      return `Fibo(${p.per||50}) — ${p.cond}`;
     case 'candle':   return `Padrão: ${p.cond}`;
-    case 'obv':      return `OBV(${p.per||21}) — ${p.cond}`;
-    case 'avgvol':   return `Volume ${p.cond} Vol.Médio(${p.per||20})`;
+
     case 'range':    return `Range ${p.cond} ${p.val} pts`;
-    case 'fvg':      return `FVG ${p.dir||'Compra'} (≥${p.val} pts) — ${p.cond}`;
-    case 'bos':      return `BoS ${p.dir||'Compra'} (swing ${p.per} candles, ${p.conf||'fechamento'})`;
-    case 'choch':    return `CHoCH ${p.dir||'Compra'} (swing ${p.per} candles, ${p.conf||'fechamento'})`;
-    case 'ob':       return `OB ${p.dir||'Compra'} (impulso ≥${p.val} pts) — ${p.cond}`;
-    case 'sweep':    return `Sweep ${p.dir||'Compra'} (${p.per} candles, ≥${p.val} pts, ${p.confCandles||3} conf.)`;
-    case 'grab':     return `Grab ${p.dir||'Compra'} (${p.per} candles, ≥${p.val} pts, ${p.confCandles||3} conf.)`;
+    case 'fvg':      return `FVG ${p.dir||'Compra'} — ${p.cond||'Gap detectado'}`;
+    case 'bos':      return `BoS ${p.dir||'Compra'} — ${p.cond||'BoS detectado'}`;
+    case 'choch':    return `CHoCH ${p.dir||'Compra'} — ${p.cond||'CHoCH detectado'}`;
+    case 'grab':     return `Grab ${p.dir||'Compra'} — ${p.cond||'Liquidity Grab detectado'}`;
+    case 'sweep':    return `Sweep ${p.dir||'Compra'} — ${p.cond||'Liquidity Sweep detectado'}`;
     default:         return c.name;
   }
 }
@@ -1182,20 +1203,20 @@ function stepperPoints(val, min, max, assetTicker, onChange) {
   return container;
 }
 
-function stepper(val,min=0,max=9999,unit='',onChange) {
+function stepper(val,min=0,max=9999,unit='',onChange,step=1) {
   const inp=h('input',{type:'text',inputmode:'numeric',class:'step-val',value:String(val)});
-  function readVal(){const n=parseInt(inp.value.replace(/[^\d\-]/g,''),10);return isNaN(n)?val:n;}
-  function clamp(n){return Math.max(min,Math.min(max,Math.round(n)));}
+  function readVal(){const n=parseFloat(inp.value.replace(/[^\d\-\.]/g,''));return isNaN(n)?val:n;}
+  function clamp(n){return Math.max(min,Math.min(max,Math.round(n/step)*step));}
   function commit(){const nv=clamp(readVal());inp.value=nv;onChange(nv);}
   inp.addEventListener('change',commit);
   inp.addEventListener('blur',commit);
   inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});
   const dec=h('button',{class:'step-btn',type:'button'});
   dec.textContent='−';
-  dec.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const nv=clamp(readVal()-1);inp.value=nv;onChange(nv);});
+  dec.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const nv=clamp(readVal()-step);inp.value=nv;onChange(nv);});
   const inc=h('button',{class:'step-btn',type:'button'});
   inc.textContent='+';
-  inc.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const nv=clamp(readVal()+1);inp.value=nv;onChange(nv);});
+  inc.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const nv=clamp(readVal()+step);inp.value=nv;onChange(nv);});
   const wrap=div('stepper',dec,inp,inc);
   if(unit) {const u=div('step-unit');u.textContent=unit;wrap.appendChild(u);}
   return wrap;
@@ -1282,8 +1303,26 @@ function slabel(text,tip) {
     tb.textContent=tip;
     tb.style.display='none';
     tw.appendChild(tb);
-    tw.addEventListener('mouseenter',()=>tb.style.display='block');
-    tw.addEventListener('mouseleave',()=>tb.style.display='none');
+    tw.addEventListener('mouseenter',()=>{
+      document.body.appendChild(tb);
+      tb.style.display='block';
+      const r=tw.getBoundingClientRect();
+      const tbW=240;
+      let left=r.left;
+      if(left+tbW>window.innerWidth-8) left=window.innerWidth-tbW-8;
+      tb.style.left=Math.max(8,left)+'px';
+      if(r.top>180){
+        tb.style.top='';
+        tb.style.bottom=(window.innerHeight-r.top+6)+'px';
+      } else {
+        tb.style.bottom='';
+        tb.style.top=(r.bottom+6)+'px';
+      }
+    });
+    tw.addEventListener('mouseleave',()=>{
+      tb.style.display='none';
+      if(tb.parentNode) tb.parentNode.removeChild(tb);
+    });
     sl.appendChild(tw);
   }
   return sl;
@@ -1440,9 +1479,9 @@ function buildHistChart() {
 function buildPreview(step,cfg) {
   const conds=cfg.conditions||[];
   // Classify conditions
-  const overlayConds=conds.filter(c=>['sma','ema','bb','vwap','sar','hilo','prevday','hilon','fib'].includes(c.id));
+  const overlayConds=conds.filter(c=>['sma','ema','bb','vwap','sar','hilo','prevday','hilon','fib','fvg','bos','choch','sweep','grab'].includes(c.id));
   const oscConds=conds.filter(c=>['rsi','stoch','cci','williams','macd','adx','atr'].includes(c.id));
-  const volConds=conds.filter(c=>['avgvol','obv'].includes(c.id));
+  const volConds=[];
   const otherConds=conds.filter(c=>['range','gap','candle'].includes(c.id));
 
   const panelCount=Math.min(oscConds.length+volConds.length,2);
@@ -1490,7 +1529,9 @@ function buildPreview(step,cfg) {
   overlayConds.forEach(cond=>{
     const col=nextCol();
     const ct=(cond.params?.cond||'').toLowerCase();
-    const up=ct.includes('acima')||ct.includes('sup')||ct.includes('alta')||ct.includes('compra')||ct.includes('maior');
+    const smcIds=['fvg','bos','choch','sweep','grab'];
+    const upBySMC=smcIds.includes(cond.id)?(cond.params?.dir||'Compra')==='Compra':false;
+    const up=smcIds.includes(cond.id)?upBySMC:(ct.includes('acima')||ct.includes('sup')||ct.includes('alta')||ct.includes('compra')||ct.includes('maior'));
 
     if(['sma','ema'].includes(cond.id)){
       const isCross=isMACrossover(cond.params?.cond||'');
@@ -1545,9 +1586,99 @@ function buildPreview(step,cfg) {
       badge(candles[0].x,levelY+(up?-5:8),'N per.',col,6);
     }
     else if(cond.id==='fib'){
-      const top=chartH*0.15,bot=chartH*0.85,rng=bot-top;
-      const lvs=[{p:'38.2%',f:0.382},{p:'50%',f:0.5},{p:'61.8%',f:0.618}];
-      lvs.forEach(lv=>{const y=bot-rng*lv.f;const hl=ct.includes(lv.p.replace('%',''));ln(4,y,W-4,y,hl?'#F59E0B':TH.grid,hl?0.8:0.4,hl?'':'2,2');if(hl)badge(W-20,y-3,lv.p,'#F59E0B',6);});
+      // Nível selecionado
+      const fibLvls=[{p:'23.6',f:0.236},{p:'38.2',f:0.382},{p:'50',f:0.5},{p:'61.8',f:0.618},{p:'78.6',f:0.786},{p:'100',f:1.0}];
+      const fibParams=cond.params||{};
+      const selLvl=fibLvls.find(l=>ct.includes(l.p))||{p:'61.8',f:0.618};
+      const isVal=ct.includes('valida')||ct.includes('cruza');
+
+      // Define perna de impulso usando os candles do gráfico
+      // Fundo = mínimo dos candles 0-5, Topo = mínimo dos candles 10-16
+      const fundoIdx=4, topoIdx=14;
+      const fundoY=candles[fundoIdx].l-2;
+      const topoY=candles[topoIdx].h+2;
+      const pRng=fundoY-topoY; // positivo (fundoY > topoY)
+
+      // Nível de retração sobre a perna
+      const trigY=topoY+pRng*selLvl.f;
+
+      // Linha de tendência ZigZag (fundo → topo)
+      ln(candles[fundoIdx].x+candles[fundoIdx].w/2, fundoY,
+         candles[topoIdx].x+candles[topoIdx].w/2, topoY,
+         '#F59E0B',0.5,'4,3');
+
+      // Pivot de fundo
+      cir(candles[fundoIdx].x+candles[fundoIdx].w/2, fundoY,'#10B981',3);
+
+      // Pivot de topo
+      cir(candles[topoIdx].x+candles[topoIdx].w/2, topoY,'#F59E0B',3);
+
+      // Níveis Fibonacci (tracejados, suaves)
+      fibLvls.forEach(lv=>{
+        const ly=topoY+pRng*lv.f;
+        const isSel=lv.p===selLvl.p;
+        ln(candles[topoIdx].x,ly,W-4,ly,
+           isSel?'#F59E0B':TH.grid,
+           isSel?0.85:0.25,
+           isSel?'':'2,4');
+        if(isSel) badge(W-4,ly-2,lv.p+'%','#F59E0B',6,'end');
+      });
+
+      // Candle trigger (após topo, na retração)
+      const trigIdx=topoIdx+2;
+      if(trigIdx<candles.length){
+        const tc=candles[trigIdx];
+        cir(tc.x+tc.w/2, trigY, '#00D4AA',3);
+        // Marca visual se é Validação (linha de pavio até o nível)
+        if(isVal){
+          ln(tc.x+tc.w/2, tc.h, tc.x+tc.w/2, trigY,'#00D4AA',0.7,'2,2');
+          badge(tc.x+tc.w/2, trigY-8,'SINAL','#00D4AA',6,'middle');
+        } else {
+          badge(tc.x+tc.w/2, trigY-8,'SINAL','#00D4AA',6,'middle');
+        }
+      }
+    }
+    // ── SMC CONDITIONS ──
+    else if(cond.id==='fvg'){
+      const isMit=cond.params?.entryMode==='mitigation'||(cond.params?.cond||'').includes('retornar');
+      // Gap zone between candle 7 and 9
+      const zTop=candles[7].l, zBot=candles[9].h;
+      if(zBot<zTop){
+        rc(candles[7].x,zBot,candles[9].x+candles[9].w-candles[7].x,zTop-zBot,'#6366F1',0.12,2);
+        ln(candles[7].x,zTop,W-6,zTop,'#6366F1',0.6,'2,2');
+        ln(candles[7].x,zBot,W-6,zBot,'#6366F1',0.6,'2,2');
+        badge(candles[7].x+2,(zTop+zBot)/2+3,'FVG','#6366F1',6);
+      }
+      if(isMit){
+        // Pullback arrow pointing down to zone
+        const px=candles[15].x+candles[15].w/2;
+        const py=Math.min(...candles.slice(10,16).map(cd=>cd.l))-2;
+        ln(px,py,px,zTop+2,'#00D4AA',1,'3,2');
+        badge(px+4,py-2,'recuo','#00D4AA',6);
+      } else {
+        // Entry arrow after gap
+        const ex=candles[10].x+candles[10].w/2;
+        cir(ex,candles[10].c,'#00D4AA',3);
+        badge(ex,candles[10].c-8,'ENTRADA','#00D4AA',6,'middle');
+      }
+      badge(6,12,'FVG','#6366F1',7);
+    }
+    else if(cond.id==='bos'||cond.id==='choch'){
+      const isBos=cond.id==='bos';
+      const pivotY=up?Math.min(...candles.slice(3,8).map(cd=>cd.h)):Math.max(...candles.slice(3,8).map(cd=>cd.l));
+      ln(4,pivotY,W-4,pivotY,isBos?'#F59E0B':'#EF4444',0.7,'3,3');
+      cir(candles[12].x+candles[12].w/2,pivotY,'#00D4AA',3);
+      badge(candles[12].x+candles[12].w/2,pivotY+(up?-8:8),isBos?'BoS':'CHoCH',isBos?'#F59E0B':'#EF4444',7,'middle');
+      badge(6,12,isBos?'BoS':'CHoCH',isBos?'#F59E0B':'#EF4444',7);
+    }
+    else if(cond.id==='sweep'||cond.id==='grab'){
+      const lvlY=up?Math.min(...candles.slice(0,10).map(cd=>cd.l)):Math.max(...candles.slice(0,10).map(cd=>cd.h));
+      ln(4,lvlY,W-4,lvlY,'#F59E0B',0.7,'4,3');
+      const sweepCd=candles[10];
+      ln(sweepCd.x+sweepCd.w/2,up?sweepCd.h:sweepCd.l,sweepCd.x+sweepCd.w/2,lvlY+(up?4:-4),'#EF4444',1.5);
+      cir(sweepCd.x+sweepCd.w/2,lvlY,'#EF4444',3);
+      cir(candles[13].x+candles[13].w/2,up?candles[13].l:candles[13].h,'#00D4AA',3);
+      badge(6,12,cond.id==='grab'?'Grab':'Sweep','#F59E0B',7);
     }
   });
 
@@ -1745,26 +1876,7 @@ function buildPreview(step,cfg) {
 
   const allPanelConds=[...oscConds,...volConds].slice(0,2);
   allPanelConds.forEach((cond,i)=>{
-    if(cond.id==='avgvol'){
-      const yOff=panelY;
-      rc(4,yOff,W-8,panelH,TH.panelBg,1,3);
-      svgEl.appendChild(hsvg('rect',{x:4,y:yOff,width:W-8,height:panelH,rx:3,fill:'none',stroke:TH.grid,'stroke-width':0.4}));
-      tx(8,yOff+9,'VOL',TH.txm,6);
-      const bars=[];for(let j=0;j<20;j++)bars.push(8+Math.random()*18);
-      const bw=(W-16)/bars.length;
-      bars.forEach((v,j)=>{const x=8+j*bw,hgt=v,y=yOff+panelH-2-hgt;rc(x,y,bw-1,hgt,v>18?'#10B981':TH.txm,v>18?0.5:0.25,0.5);});
-      const avgLine=yOff+panelH-2-16;ln(4,avgLine,W-4,avgLine,'#F59E0B',0.4,'2,2');
-    } else if(cond.id==='obv'){
-      const yOff=panelY;
-      rc(4,yOff,W-8,panelH,TH.panelBg,1,3);
-      svgEl.appendChild(hsvg('rect',{x:4,y:yOff,width:W-8,height:panelH,rx:3,fill:'none',stroke:TH.grid,'stroke-width':0.4}));
-      tx(8,yOff+9,'OBV',TH.txm,6);
-      const obvY=[];let acc=panelH/2;for(let j=0;j<20;j++){acc+=(-2+Math.random()*4);obvY.push(Math.max(4,Math.min(panelH-4,acc)));}
-      const bw=(W-16)/obvY.length;
-      pl(obvY.map((y,j)=>`${8+j*bw},${yOff+y}`).join(' '),'#6366F1',0.8);
-    } else {
-      drawOscPanel(cond,panelY);
-    }
+    drawOscPanel(cond,panelY);
     panelY+=panelH+4;
   });
 
@@ -1950,26 +2062,9 @@ function buildCondPreview(indId, condText, params={}) {
     return svg;
   }
 
-  // ═══ VOLUME ═══
-  if(indId==='avgvol'){
-    const bars=[];for(let i=0;i<n;i++)bars.push(15+Math.random()*35);const avgY=30;
-    const bw=(W-24)/n;
-    bars.forEach((v,i)=>{const x=12+i*bw,hgt=v,y=H-8-hgt;rc(x,y,bw-1,hgt,v>avgY?'#10B981':TH.txm,v>avgY?0.6:0.3,0.5);});
-    ln(12,H-8-avgY,W-12,H-8-avgY,'#F59E0B',0.6,'3,3');tx(W-8,H-8-avgY-3,'MÉD','#F59E0B',6,'end');
-    tx(10,14,'VOL MÉD',TH.txm,8);
-    return svg;
-  }
 
-  // ═══ OBV ═══
-  if(indId==='obv'){
-    const obvY=[];let acc=H/2;for(let i=0;i<n;i++){acc+=(up?-2:2)+Math.random()*2;obvY.push(Math.max(12,Math.min(H-12,acc)));}
-    const avgOBV=obvY.reduce((a,b)=>a+b,0)/obvY.length;
-    pl(obvY.map((y,i)=>`${12+i*((W-24)/n)},${y}`).join(' '),'#6366F1',1.2);
-    ln(12,avgOBV,W-12,avgOBV,'#F59E0B',0.6,'3,3');tx(W-8,avgOBV-3,'MÉD','#F59E0B',6,'end');
-    let d=`M12,${H-8}`;obvY.forEach((y,i)=>{d+=` L${12+i*((W-24)/n)},${y}`;});d+=` L${12+(n-1)*((W-24)/n)},${H-8} Z`;pa(d,sc,0.08);
-    tx(10,14,'OBV','#6366F1',8);
-    return svg;
-  }
+
+
 
   // ═══ RANGE ═══
   if(indId==='range'){
@@ -2012,13 +2107,107 @@ function buildCondPreview(indId, condText, params={}) {
 
   // ═══ FIBONACCI ═══
   if(indId==='fib'){
-    const top=18,bot=100,rng=bot-top;
-    const lvs=[{p:'0%',y:bot},{p:'23.6%',y:bot-rng*0.236},{p:'38.2%',y:bot-rng*0.382},{p:'50%',y:bot-rng*0.5},{p:'61.8%',y:bot-rng*0.618},{p:'78.6%',y:bot-rng*0.786},{p:'100%',y:top}];
-    pl(`25,${top} 70,${top} 110,${bot} 160,${bot}`,TH.txm,0.6);
-    lvs.forEach(lv=>{const hl=ct.includes(lv.p.replace('%',''));ln(90,lv.y,W-10,lv.y,hl?'#F59E0B':TH.grid,hl?0.8:0.3,hl?'':'2,2');tx(W-6,lv.y-2,lv.p,hl?'#F59E0B':TH.txm,6,'end');});
-    if(ct.includes('zona')){const zt=bot-rng*0.618,zb=bot-rng*0.5;rc(90,zt,W-100,zb-zt,sc,0.1,3);}
-    else{const tl=lvs.find(l=>ct.includes(l.p.replace('%','')));if(tl){ci(140,tl.y,sc,4);}}
-    tx(10,14,'FIBONACCI','#F59E0B',8);
+    // Extrai nível selecionado do texto da condição
+    const fibLevels=[
+      {p:'23.6',f:0.236},{p:'38.2',f:0.382},{p:'50',f:0.5},
+      {p:'61.8',f:0.618},{p:'78.6',f:0.786},{p:'100',f:1.0}
+    ];
+    const selLevel = fibLevels.find(l=>ct.includes(l.p)) || {p:'61.8',f:0.618};
+    const isValidation = ct.includes('valida') || ct.includes('cruza');
+
+    // Coordenadas da perna de impulso
+    const fundoY=88, topoY=20, rng=fundoY-topoY;
+    const trigY = topoY + rng*selLevel.f;  // Y do nível selecionado
+
+    // ── Candles da perna de BAIXA (antes do fundo) ──
+    const bearCds=[
+      {x:8,  o:30,c:38,h:28,l:40,w:6},
+      {x:17, o:38,c:47,h:36,l:49,w:6},
+      {x:26, o:47,c:55,h:45,l:57,w:6},
+    ];
+    bearCds.forEach(cd=>{
+      ln(cd.x+cd.w/2,cd.h,cd.x+cd.w/2,cd.l,'#EF4444',0.5);
+      rc(cd.x,cd.o,cd.w,cd.c-cd.o,'#EF4444',0.7,0.5);
+    });
+
+    // ── Fundo (pivot ZigZag) ──
+    const fundoX=38;
+    // Candle de fundo — longa sombra inferior (martelo)
+    ln(fundoX+3,fundoY-12,fundoX+3,fundoY+2,'#10B981',0.6);
+    rc(fundoX,fundoY-8,6,5,'#10B981',0.8,0.5);
+    tx(fundoX-4,fundoY+8,'Fundo','#10B981',5.5);
+    ci(fundoX+3,fundoY,'#10B981',2.5);
+
+    // ── Perna de ALTA (impulso: fundo → topo) ──
+    const bullCds=[
+      {x:47, o:fundoY-4, c:fundoY-16, h:fundoY-17, l:fundoY-2, w:6},
+      {x:56, o:fundoY-16,c:fundoY-30, h:fundoY-31, l:fundoY-14,w:6},
+      {x:65, o:fundoY-30,c:fundoY-44, h:fundoY-45, l:fundoY-28,w:6},
+      {x:74, o:fundoY-44,c:topoY+4,   h:topoY+2,   l:fundoY-42,w:6},
+    ];
+    bullCds.forEach(cd=>{
+      ln(cd.x+cd.w/2,cd.h,cd.x+cd.w/2,cd.l,'#10B981',0.5);
+      rc(cd.x,cd.c,cd.w,cd.o-cd.c,'#10B981',0.75,0.5);
+    });
+
+    // ── Topo (pivot ZigZag) ──
+    const topoX=84;
+    ln(topoX+3,topoY-3,topoX+3,topoY+10,'#F59E0B',0.6);
+    rc(topoX,topoY+2,6,6,'#EF4444',0.7,0.5);
+    tx(topoX-2,topoY-5,'Topo','#F59E0B',5.5);
+    ci(topoX+3,topoY,'#F59E0B',2.5);
+
+    // ── Linha de tendência ZigZag ──
+    ln(fundoX+3,fundoY,topoX+3,topoY,'#F59E0B',0.4,'3,2');
+
+    // ── Retração: candles descendo do topo até o nível ──
+    const retCds=[
+      {x:93, o:topoY+6, c:topoY+16, h:topoY+4,  l:topoY+18, w:6},
+      {x:102,o:topoY+16,c:topoY+27, h:topoY+14, l:topoY+29, w:6},
+    ];
+    // Adicionar mais candles de retração conforme profundidade do nível
+    if(selLevel.f>0.4){
+      retCds.push({x:111,o:topoY+27,c:trigY-4,h:topoY+25,l:trigY-2,w:6});
+    }
+    retCds.forEach(cd=>{
+      ln(cd.x+cd.w/2,cd.h,cd.x+cd.w/2,cd.l,'#EF4444',0.5);
+      rc(cd.x,cd.o,cd.w,cd.c-cd.o,'#EF4444',0.65,0.5);
+    });
+
+    // ── Linha do nível selecionado ──
+    ln(fundoX,trigY,W-4,trigY,'#F59E0B',0.9,'');
+    tx(W-3,trigY-2,selLevel.p+'%','#F59E0B',6,'end');
+
+    // ── Linhas dos outros níveis (tracejadas, suaves) ──
+    fibLevels.filter(l=>l.p!==selLevel.p).forEach(lv=>{
+      const ly=topoY+rng*lv.f;
+      ln(fundoX,ly,W-4,ly,TH.grid,0.3,'2,3');
+      tx(W-3,ly-2,lv.p+'%',TH.txm,5,'end');
+    });
+
+    // ── Candle trigger (toca o nível) ──
+    const trigX=isValidation?128:122;
+    const trigH=isValidation?trigY+8:trigY+2;
+    const trigC=isValidation?trigY-6:trigY+6;
+    ln(trigX+3,trigH-2,trigX+3,trigH+4,'#EF4444',0.5);
+    rc(trigX,Math.min(trigH,trigC),6,Math.abs(trigH-trigC),'#EF4444',0.7,0.5);
+    tx(trigX-2,trigY+16,'Trigger',sc,5.5);
+    ci(trigX+3,trigY,sc,2.5);
+
+    // ── Seta de entrada ──
+    const entX=trigX+14;
+    const entY=trigY-10;
+    rc(entX,entY,5,12,sc,0.85,1);
+    svg.appendChild(hsvg('polygon',{
+      points:`${entX+2.5},${entY-4} ${entX-1.5},${entY+1} ${entX+6.5},${entY+1}`,
+      fill:sc,'fill-opacity':'0.9'
+    }));
+    tx(entX+7,entY+6,'ENTRADA',sc,5);
+
+    // ── Label ──
+    tx(8,11,'FIBONACCI','#F59E0B',7);
+    if(isValidation) tx(8,19,'Validação','#F59E0B',5);
+
     return svg;
   }
 
@@ -2054,14 +2243,41 @@ function buildCondPreview(indId, condText, params={}) {
 
   // ═══ SMART MONEY ═══
   if(indId==='fvg'){
-    drawCds(CDS.slice(0,6),0.4);
-    const imp=[{x:CDS[6].x,o:70,c:35,h:30,l:74,w:5},{x:CDS[7].x,o:35,c:25,h:20,l:38,w:5},{x:CDS[8].x,o:25,c:18,h:14,l:28,w:5}];
-    drawCds(imp,0.7);
-    const fvgTop=CDS[5].l,fvgBot=imp[0].h;
-    rc(CDS[5].x,fvgBot,W-CDS[5].x-8,fvgTop-fvgBot,'#6366F1',0.1,2);
-    ln(CDS[5].x,fvgTop,W-8,fvgTop,'#6366F1',0.6,'2,2');ln(CDS[5].x,fvgBot,W-8,fvgBot,'#6366F1',0.6,'2,2');
-    tx(W/2,((fvgTop+fvgBot)/2)+3,'FVG','#6366F1',8,'middle');
-    tx(10,14,'FVG','#6366F1',8);
+    const isMitigation = params.entryMode==='mitigation' || (params.cond||'').includes('retornar');
+    if(!isMitigation){
+      // Modo imediato: impulso + gap + entrada no candle seguinte
+      drawCds(CDS.slice(0,8),0.35);
+      const imp=[{x:CDS[8].x,o:65,c:28,h:22,l:68,w:5},{x:CDS[9].x,o:28,c:18,h:14,l:30,w:5}];
+      drawCds(imp,0.85);
+      const fvgTop=CDS[7].l+2, fvgBot=imp[0].h-2;
+      rc(CDS[7].x,fvgBot,imp[1].x+5-CDS[7].x,fvgTop-fvgBot,'#6366F1',0.12,2);
+      ln(CDS[7].x,fvgTop,imp[1].x+5,fvgTop,'#6366F1',0.7,'2,2');
+      ln(CDS[7].x,fvgBot,imp[1].x+5,fvgBot,'#6366F1',0.7,'2,2');
+      // Entry arrow
+      const ex=CDS[10]?CDS[10].x:imp[1].x+18;
+      const ey=imp[1].c-4;
+      rc(ex,ey,5,14,'#10B981',0.85,1);
+      svg.appendChild(hsvg('polygon',{points:`${ex+2.5},${ey-5} ${ex-2},${ey+1} ${ex+7},${ey+1}`,fill:'#10B981','fill-opacity':0.9}));
+      tx(ex+8,ey+4,'ENTRADA','#00D4AA',6);
+    } else {
+      // Modo retorno: impulso + subida + recuo até o gap + entrada
+      const pre=[{x:14,o:80,c:50,h:44,l:84,w:6}]; drawCds(pre,0.9);
+      rc(10,52,22,28,'#6366F1',0.12,2);
+      ln(10,52,32,52,'#6366F1',0.7,'2,2'); ln(10,80,32,80,'#6366F1',0.7,'2,2');
+      tx(12,62,'FVG','#6366F1',7);
+      // Continuação subindo
+      const cont=[{x:36,o:46,c:30,h:26,l:48,w:5},{x:46,o:30,c:20,h:16,l:32,w:5},{x:56,o:20,c:14,h:10,l:22,w:5}];
+      drawCds(cont,0.7);
+      // Recuo (candles vermelhos descendo)
+      const pb=[{x:70,o:20,c:30,h:18,l:32,w:5},{x:80,o:30,c:44,h:28,l:46,w:5},{x:90,o:44,c:58,h:42,l:60,w:5},{x:100,o:58,c:68,h:56,l:72,w:5}];
+      drawCds(pb,0.65);
+      // Chegada no gap + entrada
+      rc(10,52,106,28,'#6366F1',0.06,2);
+      svg.appendChild(hsvg('circle',{cx:114,cy:70,r:4,fill:'#00D4AA','fill-opacity':0.25,stroke:'#00D4AA','stroke-width':1}));
+      ln(114,66,114,54,'#00D4AA',1.2); ln(111,58,114,54,'#00D4AA',1.2); ln(117,58,114,54,'#00D4AA',1.2);
+      tx(120,60,'ENTRADA','#00D4AA',6);
+    }
+    tx(10,10,isMitigation?'FVG — Preço retorna ao gap':'FVG — Entrada imediata','#6366F1',7);
     return svg;
   }
 
@@ -2116,8 +2332,11 @@ function buildCondPreview(indId, condText, params={}) {
 }
 
 // ─── VALIDATION ENGINE ────────────────────────────────────────
-const OSC_IDS = ['rsi','stoch','cci','williams'];
-const MA_IDS  = ['sma','ema'];
+const OSC_IDS        = ['rsi','stoch','macd','cci','williams'];
+const MA_IDS         = ['sma','ema'];
+const TREND_IDS      = ['sma','ema','bb','vwap','adx','sar','hilo'];
+const CANDLE_IDS     = ['candle'];
+const SMARTMONEY_IDS = ['fvg','bos','choch','sweep','grab'];
 
 function oscZone(id, cond, val) {
   if (!OSC_IDS.includes(id)) return null;
@@ -2138,12 +2357,86 @@ function validateNewCondition(newCond, existingConds) {
     issues.push({type:'block',rule:'R29',msg:'O Williams %R opera entre -100 e 0.'});
   if (id==='cci' && p.val!=null && Math.abs(p.val)>300)
     issues.push({type:'warn',rule:'R30',msg:'Valores de CCI nesta faixa são muito raros. O backtest pode não encontrar sinais suficientes no histórico.'});
-  if (['avgvol','range'].includes(id) && p.val!=null && p.val<=0)
+  if (id==='range' && p.val!=null && p.val<=0)
     issues.push({type:'block',rule:'R31',msg:'O valor de referência deve ser maior que zero.'});
+
+  // R44-R47: CROSS em extremos de range — condição matematicamente impossível
+  // RSI e Estocástico: range 0-100
+  if ((id==='rsi'||id==='stoch') && p.val!=null) {
+    if (p.cond==='cruza acima de' && p.val<=0)
+      issues.push({type:'block',rule:'R44',msg:'Cruzar acima de 0 é impossível — este oscilador nunca fica abaixo de 0.'});
+    if (p.cond==='cruza abaixo de' && p.val>=100)
+      issues.push({type:'block',rule:'R45',msg:'Cruzar abaixo de 100 é impossível — este oscilador nunca ultrapassa 100.'});
+    if (p.cond==='cruza acima de' && p.val>=100)
+      issues.push({type:'block',rule:'R44',msg:'Cruzar acima de 100 é impossível — este oscilador nunca ultrapassa 100.'});
+    if (p.cond==='cruza abaixo de' && p.val<=0)
+      issues.push({type:'block',rule:'R45',msg:'Cruzar abaixo de 0 é impossível — este oscilador nunca fica abaixo de 0.'});
+  }
+  // Williams %R: range -100 a 0
+  if (id==='williams' && p.val!=null) {
+    if (p.cond==='cruza acima de' && p.val>=0)
+      issues.push({type:'block',rule:'R46',msg:'Cruzar acima de 0 é impossível — o Williams %R nunca ultrapassa 0.'});
+    if (p.cond==='cruza abaixo de' && p.val<=-100)
+      issues.push({type:'block',rule:'R46',msg:'Cruzar abaixo de -100 é impossível — o Williams %R nunca fica abaixo de -100.'});
+    if (p.cond==='cruza abaixo de' && p.val>=0)
+      issues.push({type:'block',rule:'R46',msg:'Cruzar abaixo de 0 é impossível — o Williams %R nunca ultrapassa 0.'});
+    if (p.cond==='cruza acima de' && p.val<=-100)
+      issues.push({type:'block',rule:'R46',msg:'Cruzar acima de -100 é impossível — o Williams %R nunca fica abaixo de -100.'});
+  }
+  // ADX: range 0-100
+  if (id==='adx' && p.val!=null) {
+    if (p.cond==='cruza acima de' && p.val<=0)
+      issues.push({type:'block',rule:'R47',msg:'Cruzar acima de 0 é impossível — o ADX nunca fica abaixo de 0.'});
+    if (p.cond==='cruza abaixo de' && p.val>=100)
+      issues.push({type:'block',rule:'R47',msg:'Cruzar abaixo de 100 é impossível — o ADX nunca ultrapassa 100.'});
+    if (p.cond==='cruza acima de' && p.val>=100)
+      issues.push({type:'block',rule:'R47',msg:'Cruzar acima de 100 é impossível — o ADX nunca ultrapassa 100.'});
+    if (p.cond==='cruza abaixo de' && p.val<=0)
+      issues.push({type:'block',rule:'R47',msg:'Cruzar abaixo de 0 é impossível — o ADX nunca fica abaixo de 0.'});
+  }
+
+  // R48: Bollinger período mínimo 6
+  if (id==='bb' && p.per!=null && p.per < 6)
+    issues.push({type:'block',rule:'R48',msg:'O período mínimo das Bandas de Bollinger é 6. Com períodos menores as bandas recalculam rápido demais e o preço raramente fecha fora delas.'});
 
   // R26: 4+ condições simultâneas
   if (existingConds.length >= 3)
     issues.push({type:'warn',rule:'R26',msg:'Com 4 ou mais condições simultâneas, o número de sinais pode ser insuficiente para análise estatística confiável.'});
+
+  // R40: Osciladores — máximo 1 por backtest
+  if (OSC_IDS.includes(id)) {
+    const existingOsc = existingConds.filter(c => OSC_IDS.includes(c.id));
+    if (existingOsc.length >= 1)
+      issues.push({type:'block',rule:'R40',msg:'Limite de 1 oscilador por backtest. Remova o oscilador existente para adicionar outro.'});
+  }
+
+  // R41: Tendência — máximo 2 (ou 3 se forem apenas médias SMA/EMA)
+  if (TREND_IDS.includes(id)) {
+    const existingTrend = existingConds.filter(c => TREND_IDS.includes(c.id));
+    const newIsMa = MA_IDS.includes(id);
+    const allAreMa = existingTrend.every(c => MA_IDS.includes(c.id));
+    const limit = (newIsMa && allAreMa) ? 3 : 2;
+    if (existingTrend.length >= limit) {
+      if (limit === 3)
+        issues.push({type:'block',rule:'R41',msg:'Limite de 3 médias móveis por backtest atingido.'});
+      else
+        issues.push({type:'block',rule:'R41',msg:'Limite de 2 indicadores de tendência por backtest. Para adicionar 3, use apenas médias móveis (SMA/EMA).'});
+    }
+  }
+
+  // R42: Padrões de Candle — máximo 1 por backtest
+  if (CANDLE_IDS.includes(id)) {
+    const existingCandle = existingConds.filter(c => CANDLE_IDS.includes(c.id));
+    if (existingCandle.length >= 1)
+      issues.push({type:'block',rule:'R42',msg:'Limite de 1 padrão de candle por backtest. Remova o padrão existente para adicionar outro.'});
+  }
+
+  // R43: Smart Money — máximo 1 por backtest
+  if (SMARTMONEY_IDS.includes(id)) {
+    const existingSM = existingConds.filter(c => SMARTMONEY_IDS.includes(c.id));
+    if (existingSM.length >= 1)
+      issues.push({type:'block',rule:'R43',msg:'Limite de 1 conceito Smart Money por backtest. Remova o existente para adicionar outro.'});
+  }
 
   for (const ex of existingConds) {
     const ep = ex.params;
@@ -2188,6 +2481,43 @@ function validateNewCondition(newCond, existingConds) {
         issues.push({type:'warn',rule:'R19',msg:`SMA e EMA com mesmo período e condição produzem sinais quase idênticos. Considere usar apenas uma.`});
     }
 
+    // R49: MA mesmo indicador + mesmo período + condições incoerentes ou impossíveis
+    if (MA_IDS.includes(id) && MA_IDS.includes(ex.id) && id===ex.id && p.per===ep.per && !p.per2 && !ep.per2) {
+      // IMPOSSÍVEL: cruza acima da longa e cruza abaixo da longa no mesmo candle
+      if ((p.cond==='Média curta cruza acima da longa'&&ep.cond==='Média curta cruza abaixo da longa')||
+          (p.cond==='Média curta cruza abaixo da longa'&&ep.cond==='Média curta cruza acima da longa'))
+        issues.push({type:'block',rule:'R49',msg:`A média curta não pode cruzar para cima e para baixo da ${id.toUpperCase()}(${p.per}) no mesmo candle.`});
+      // INCOERENTE: direções opostas — preço cruzando acima + média cruzando abaixo
+      if ((p.cond==='Preço cruza acima'&&ep.cond==='Média curta cruza abaixo da longa')||
+          (p.cond==='Média curta cruza abaixo da longa'&&ep.cond==='Preço cruza acima'))
+        issues.push({type:'block',rule:'R49',msg:`Preço cruzando acima e média cruzando abaixo da ${id.toUpperCase()}(${p.per}) são condições contraditórias.`});
+      // INCOERENTE: direções opostas — preço cruzando abaixo + média cruzando acima
+      if ((p.cond==='Preço cruza abaixo'&&ep.cond==='Média curta cruza acima da longa')||
+          (p.cond==='Média curta cruza acima da longa'&&ep.cond==='Preço cruza abaixo'))
+        issues.push({type:'block',rule:'R49',msg:`Preço cruzando abaixo e média cruzando acima da ${id.toUpperCase()}(${p.per}) são condições contraditórias.`});
+      // INCOERENTE: preço está acima + média cruzando abaixo (sinais opostos)
+      if ((p.cond==='Preço está acima'&&ep.cond==='Média curta cruza abaixo da longa')||
+          (p.cond==='Média curta cruza abaixo da longa'&&ep.cond==='Preço está acima'))
+        issues.push({type:'block',rule:'R49',msg:`Preço acima (tendência de alta) e média cruzando abaixo (sinal de baixa) da ${id.toUpperCase()}(${p.per}) são condições contraditórias.`});
+      // INCOERENTE: preço está abaixo + média cruzando acima (sinais opostos)
+      if ((p.cond==='Preço está abaixo'&&ep.cond==='Média curta cruza acima da longa')||
+          (p.cond==='Média curta cruza acima da longa'&&ep.cond==='Preço está abaixo'))
+        issues.push({type:'block',rule:'R49',msg:`Preço abaixo (tendência de baixa) e média cruzando acima (sinal de alta) da ${id.toUpperCase()}(${p.per}) são condições contraditórias.`});
+      // INCOERENTE: preço cruza acima + MA_CROSS com mesmo período (mistura de comparações)
+      if ((p.cond==='Preço cruza acima'&&ep.cond==='Média curta cruza acima da longa')||
+          (p.cond==='Média curta cruza acima da longa'&&ep.cond==='Preço cruza acima'))
+        issues.push({type:'block',rule:'R49',msg:`Não é possível comparar preço vs ${id.toUpperCase()} e média vs média usando o mesmo período (${p.per}).`});
+      if ((p.cond==='Preço cruza abaixo'&&ep.cond==='Média curta cruza abaixo da longa')||
+          (p.cond==='Média curta cruza abaixo da longa'&&ep.cond==='Preço cruza abaixo'))
+        issues.push({type:'block',rule:'R49',msg:`Não é possível comparar preço vs ${id.toUpperCase()} e média vs média usando o mesmo período (${p.per}).`});
+      // INCOERENTE: bidirecional (compra e venda) + qualquer condição direcional com mesmo período
+      const bidir = 'Cruzamento de médias (compra e venda)';
+      const dirConds = ['Preço cruza acima','Preço cruza abaixo','Preço está acima','Preço está abaixo',
+                        'Média curta cruza acima da longa','Média curta cruza abaixo da longa'];
+      if ((p.cond===bidir && dirConds.includes(ep.cond))||(ep.cond===bidir && dirConds.includes(p.cond)))
+        issues.push({type:'block',rule:'R49',msg:`'Cruzamento de médias (compra e venda)' não pode ser combinado com condição direcional da ${id.toUpperCase()}(${p.per}) — use períodos diferentes.`});
+    }
+
     // R08-R10: VWAP
     if (id==='vwap' && ex.id==='vwap') {
       if ((p.cond==='Preço está acima do VWAP'&&ep.cond==='Preço está abaixo do VWAP')||(p.cond==='Preço está abaixo do VWAP'&&ep.cond==='Preço está acima do VWAP'))
@@ -2208,19 +2538,7 @@ function validateNewCondition(newCond, existingConds) {
         issues.push({type:'block',rule:'R11',msg:'MACD não pode estar acima e abaixo de zero ao mesmo tempo.'});
     }
 
-    // R12: OBV
-    if (id==='obv' && ex.id==='obv') {
-      const above=['OBV está acima da sua média','OBV cruza acima da sua média'];
-      const below=['OBV está abaixo da sua média','OBV cruza abaixo da sua média'];
-      if ((above.includes(p.cond)&&below.includes(ep.cond))||(below.includes(p.cond)&&above.includes(ep.cond)))
-        issues.push({type:'block',rule:'R12',msg:'OBV não pode estar acima e abaixo da média ao mesmo tempo.'});
-    }
 
-    // R13: Volume Médio
-    if (id==='avgvol' && ex.id==='avgvol') {
-      if ((p.cond==='é maior que'&&ep.cond==='é menor que'&&ep.val<=p.val)||(p.cond==='é menor que'&&ep.cond==='é maior que'&&p.val<=ep.val))
-        issues.push({type:'block',rule:'R13',msg:`Volume não pode ser maior que ${Math.max(p.val,ep.val)} e menor que ${Math.min(p.val,ep.val)} ao mesmo tempo.`});
-    }
 
     // R14: Range
     if (id==='range' && ex.id==='range') {
@@ -2237,17 +2555,7 @@ function validateNewCondition(newCond, existingConds) {
     }
   }
 
-  // R20/R21: Múltiplos osciladores mesma zona
-  if (OSC_IDS.includes(id)) {
-    const newZone = oscZone(id, p.cond, p.val);
-    if (newZone) {
-      const sameZone = existingConds.filter(c => OSC_IDS.includes(c.id) && oscZone(c.id,c.params.cond,c.params.val)===newZone);
-      if (sameZone.length >= 2)
-        issues.push({type:'warn',rule:'R21',msg:'Três osciladores de sobrecompra/sobrevenda combinados podem gerar sinais insuficientes para análise estatística.'});
-      else if (sameZone.length === 1)
-        issues.push({type:'warn',rule:'R20',msg:'Dois osciladores de sobrecompra/sobrevenda combinados tendem a gerar poucos sinais. Verifique se o histórico terá operações suficientes.'});
-    }
-  }
+  // R20/R21 removidas: substituídas pela R40 (limite de 1 oscilador por backtest)
 
   // R24: Cruzamento + posição incompatível
   if (OSC_IDS.includes(id) && p.cond==='está acima de') {
@@ -2274,10 +2582,10 @@ function validateStep1(cfg) {
     issues.push({type:'block',rule:'R34',msg:'O horário de início deve ser anterior ao horário de fim.'});
   const tfMin={'1m':1,'2m':2,'5m':5,'10m':10,'15m':15,'30m':30,'60m':60,'D':480};
   const [sh,sm]=cfg.tStart.split(':').map(Number);
-  const [eh,em]=cfg.tEnd.split(':').map(Number);
-  const win=(eh*60+em)-(sh*60+sm);
+  const [lh,lm]=cfg.tLastEntry.split(':').map(Number);
+  const win=(lh*60+lm)-(sh*60+sm);
   if (win>0 && tfMin[cfg.tf] && win<tfMin[cfg.tf])
-    issues.push({type:'warn',rule:'R35',msg:`A janela operacional (${win} min) é menor que o timeframe selecionado (${cfg.tf}). Nenhum candle completo caberá neste período.`});
+    issues.push({type:'block',rule:'R35',msg:`A janela de leitura (${win} min) é menor que o timeframe selecionado (${cfg.tf}). Nenhum candle completo caberá neste período. Aumente a janela ou reduza o timeframe.`});
   return issues;
 }
 
@@ -2379,12 +2687,12 @@ function renderModal() {
           if(ind.id==='bb'){ ms.params.per=20; ms.params.dev=2; }
           if(ind.id==='atr'){ ms.params={per:14,mult:1.0,cond:ATR_CONDS[0]}; }
           // Smart Money Concepts — custom param init
-          if(ind.id==='fvg')  ms.params={dir:'Compra',val:50,cond:FVG_CONDS[1]};
-          if(ind.id==='bos')  ms.params={dir:'Compra',per:10,conf:'fechamento',cond:BOS_CONDS[0]};
-          if(ind.id==='choch')ms.params={dir:'Compra',per:10,conf:'fechamento',cond:CHOCH_CONDS[0]};
-          if(ind.id==='ob')   ms.params={dir:'Compra',val:150,bodyOnly:'Corpo',cond:OB_CONDS[1]};
-          if(ind.id==='sweep')ms.params={dir:'Compra',per:20,val:10,confCandles:3,cond:SWEEP_CONDS[0]};
-          if(ind.id==='grab') ms.params={dir:'Compra',per:20,val:10,confCandles:3,cond:GRAB_CONDS[0]};
+          if(ind.id==='fvg')  ms.params={dir:'Compra',cond:FVG_CONDS[0],entryMode:'aggressive'};
+          if(ind.id==='bos')  ms.params={dir:'Compra',obMit:'none',leg1Min:2,leg1Max:5,corrMax:3,leg2Max:3,cond:BOS_CONDS[0]};
+          if(ind.id==='choch')ms.params={dir:'Compra',obMit:'none',trendMin:5,trendMax:15,ampRatio:40,cond:CHOCH_CONDS[0]};
+          if(ind.id==='grab') ms.params={dir:'Compra',cond:GRAB_CONDS[0]};
+          if(ind.id==='sweep')ms.params={dir:'Compra',cond:SWEEP_CONDS[0]};
+          if(ind.id==='fib')  ms.params={per:14,fibLevel:'61.8%',fibMode:'touch',cond:'Preço toca nível 61.8%'};
           ms.page=1;
           renderModal();
         });
@@ -2484,7 +2792,7 @@ function renderModal() {
         const _tx=(x,y,t,c,sz,a)=>{const e=hsvg('text',{x,y,fill:c,'font-size':sz||7,'font-family':'JetBrains Mono','font-weight':600,'text-anchor':a||'start'});e.textContent=t;s.appendChild(e);};
         const _cd=(x,o,c,hi,lo,op)=>{const bull=c<o;const col=bull?'#10B981':'#EF4444';_ln(x+5,hi,x+5,lo,col,1);_rc(x,Math.min(o,c),10,Math.max(2,Math.abs(o-c)),col,op||0.8,1);};
         const _ci=(x,y,c,r)=>s.appendChild(hsvg('circle',{cx:x,cy:y,r:r||4,fill:c,'fill-opacity':0.25,stroke:c,'stroke-width':1.5}));
-        drawFn(_ln,_rc,_tx,_cd,_ci);
+        drawFn(_ln,_rc,_tx,_cd,_ci,_TH);
         const wrap=div('');wrap.style.cssText='margin:8px 0 4px;border-radius:8px;overflow:hidden';
         wrap.appendChild(s);return wrap;
       };
@@ -2498,128 +2806,341 @@ function renderModal() {
 
       // ── FVG config ──
       if(smcId==='fvg'){
-        frag.appendChild(pills('Direção','Compra = gap de alta (preço subiu rápido). Venda = gap de baixa (preço caiu rápido). Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
-        const vRow=div('');vRow.appendChild(slabel('Tamanho mínimo do gap','O gap precisa ter pelo menos este tamanho em pontos para ser considerado.'));
-        vRow.appendChild(stepper(ms.params.val,1,5000,'pts',v=>{ms.params.val=v;if(window.refreshModalValidation)refreshModalValidation();}));
-        frag.appendChild(vRow);
-        // Visual: what is an FVG
-        frag.appendChild(miniSVG(500,130,(ln,rc,tx,cd,ci)=>{
-          // Before impulse
-          cd(16,75,60,50,82,0.5);cd(46,60,50,42,68,0.5);
-          // Impulse candles leaving gap
-          cd(80,50,22,12,58,0.8);cd(114,22,12,6,28,0.8);
-          // Gap zone
-          rc(76,30,260,24,'#6366F1',0.18,4);
-          ln(76,30,336,30,'#6366F1',1,'4,3');ln(76,54,336,54,'#6366F1',1,'4,3');
-          tx(180,46,'FVG','#6366F1',14,'middle');
-          // After
-          cd(150,14,28,8,34,0.6);cd(184,28,40,20,46,0.6);
-          // Arrow showing return
-          ln(240,24,240,42,'#00D4AA',2);ln(235,37,240,42,'#00D4AA',2);ln(245,37,240,42,'#00D4AA',2);
-          tx(252,38,'retorno','#00D4AA',12);
-          cd(220,42,48,34,56,0.6);
-          tx(370,24,'Gap = zona sem',_TH.txs,11);
-          tx(370,40,'negociação. O preço',_TH.txs,11);
-          tx(370,56,'costuma voltar.',_TH.txs,11);
-        }));
-      }
+        // Direção: no MVP o EA opera compra e venda simultaneamente — informar ao usuário
+        ms.params.dir = 'Compra e Venda';
+        const dirInfo = div('');
+        dirInfo.style.cssText = 'display:flex;align-items:flex-start;gap:8px;background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5';
+        dirInfo.innerHTML = '<span style="color:#00D4AA;font-size:14px;flex-shrink:0">ℹ</span><span>O backtest irá contemplar operações de <strong style="color:var(--tx)">compra e venda</strong> simultaneamente neste padrão. A seleção de direção estará disponível em versões futuras.</span>';
+        frag.appendChild(dirInfo);
 
+        // Condição / modo de entrada — unified selector
+        if(!ms.params.entryMode) ms.params.entryMode='aggressive';
+        if(!ms.params.cond) ms.params.cond=FVG_CONDS[0];
+
+        function syncFVGMode(cond){
+          ms.params.cond=cond;
+          ms.params.entryMode=(cond===FVG_CONDS[0])?'aggressive':'mitigation';
+        }
+
+        const condBlock=div('');
+        condBlock.appendChild(slabel('Quando entrar',
+          'Define o momento da entrada em relação ao gap detectado.'));
+        const condCards=div('');condCards.style.cssText='display:flex;flex-direction:column;gap:8px';
+
+        const COND_OPTIONS=[
+          {
+            cond: FVG_CONDS[0],
+            title: 'Logo após o gap ser formado',
+            desc: 'Quando a mínima do candle [3] fica acima da máxima do candle [1], o gap é confirmado. A entrada ocorre no candle seguinte — apostando na continuação do movimento.',
+            mode: 'aggressive',
+            svgFn: (ln,rc,tx,cd,ci,th)=>{
+              // Contexto — candles anteriores
+              cd(8,68,10,50,74,0.3); ln(13,46,13,78,th.bd,1);
+              cd(22,62,10,44,68,0.3); ln(27,40,27,72,th.bd,1);
+              // [1] Candle 1 — neutro, máxima em y=48
+              rc(36,48,14,18,'#8888A0',0.65,1); ln(43,42,43,70,th.txs,1);
+              tx(36,82,'[1]',th.txs,9,'start');
+              // GAP — entre máxima do [1] (y=48) e mínima do [3] (y=28)
+              // zona em roxo, visível entre os candles
+              rc(32,28,54,20,'#6366F1',0.15,2);
+              ln(32,28,86,28,'#6366F1',1,'3,2');
+              ln(32,48,86,48,'#6366F1',1,'3,2');
+              tx(34,41,'GAP','#6366F1',9);
+              // [2] Candle 2 — impulso forte de alta (cruza o gap)
+              rc(52,12,14,52,'#10B981',0.9,1); ln(59,6,59,68,'#10B981',1.5);
+              tx(52,82,'[2]',th.txs,9,'start');
+              // [3] Candle 3 — pequeno, mínima acima da máxima do [1] (y=28)
+              rc(72,20,14,14,'#10B981',0.65,1); ln(79,14,79,38,'#10B981',1);
+              tx(72,82,'[3]',th.txs,9,'start');
+              // Entrada no candle seguinte ao [3]
+              rc(92,14,14,18,'#10B981',0.85,1); ln(99,8,99,36,'#10B981',1.5);
+              ln(99,6,99,0,'#00D4AA',0); // espaço
+              ln(106,20,99,8,'#00D4AA',2); ln(93,20,99,8,'#00D4AA',2);
+              ln(99,8,99,0,'#00D4AA',2);
+              tx(110,18,'ENTRADA','#00D4AA',10);
+              // Descrição
+              tx(210,22,'FVG altista:',th.txs,10);
+              tx(210,36,'mín. do [3] > máx. do [1]',th.txs,10);
+              tx(210,54,'O gap fica entre os dois.',th.txs,10);
+              tx(210,68,'Entrada: candle após [3]',th.txs,10);
+            }
+          },
+          {
+            cond: FVG_CONDS[1],
+            title: 'Quando o preço retornar ao gap',
+            desc: 'Após o gap ser confirmado, o mercado sobe além do candle [3]. Quando o preço recua até a zona do gap (entre máx. do [1] e mín. do [3]), a entrada ocorre ali.',
+            mode: 'mitigation',
+            svgFn: (ln,rc,tx,cd,ci,th)=>{
+              // [1] Candle 1 — neutro, máxima em y=48
+              rc(8,48,14,18,'#8888A0',0.65,1); ln(15,42,15,70,th.txs,1);
+              tx(8,82,'[1]',th.txs,9,'start');
+              // [2] Candle 2 — impulso forte de alta
+              rc(28,12,14,52,'#10B981',0.9,1); ln(35,6,35,68,'#10B981',1.5);
+              tx(28,82,'[2]',th.txs,9,'start');
+              // [3] Candle 3 — mínima acima da máxima do [1]
+              rc(48,18,14,14,'#10B981',0.65,1); ln(55,12,55,36,'#10B981',1);
+              tx(48,82,'[3]',th.txs,9,'start');
+              // GAP zone (entre máx. [1] y=48 e mín. [3] y=32) — estende à direita
+              rc(4,32,170,16,'#6366F1',0.08,2);
+              ln(4,32,174,32,'#6366F1',0.9,'3,2');
+              ln(4,48,174,48,'#6366F1',0.9,'3,2');
+              tx(6,43,'GAP','#6366F1',8);
+              // Continuação após [3] — 2 candles de alta
+              rc(68,10,12,16,'#10B981',0.7,1); ln(74,4,74,30,'#10B981',1);
+              rc(86,4,12,14,'#10B981',0.6,1); ln(92,0,92,22,'#10B981',1);
+              // Topo — candle doji
+              rc(102,2,10,8,'#8888A0',0.5,1); ln(107,0,107,14,'#8888A0',1);
+              // Recuo — 3 candles vermelhos descendo em direção ao gap
+              rc(118,10,12,18,'#EF4444',0.65,1); ln(124,6,124,32,'#EF4444',1);
+              rc(136,24,12,16,'#EF4444',0.7,1); ln(142,18,142,44,'#EF4444',1);
+              rc(154,36,12,14,'#EF4444',0.6,1); ln(160,30,160,54,'#EF4444',1);
+              // Entrada quando o preço toca o topo do gap (y=32)
+              ci(168,32,'#00D4AA',4);
+              ln(168,28,168,14,'#00D4AA',1.5);
+              ln(164,19,168,14,'#00D4AA',1.5); ln(172,19,168,14,'#00D4AA',1.5);
+              tx(176,18,'ENTRADA','#00D4AA',10);
+              // Labels
+              tx(216,52,'1. Gap: mín.[3] > máx.[1]',th.txs,10);
+              tx(216,66,'2. Mercado sobe além',th.txs,10);
+              tx(216,78,'3. Recua até o gap',th.txs,10);
+              tx(216,90,'4. Entrada no topo do gap',th.txs,10);
+            }
+          }
+        ];
+
+        COND_OPTIONS.forEach(opt=>{
+          const card=div('');
+          const isSel = ms.params.cond===opt.cond;
+          card.style.cssText=`border:1px solid ${isSel?'var(--ac)':'var(--bd)'};border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .15s;background:${isSel?'rgba(0,212,170,0.04)':'transparent'}`;
+          // Top: radio + title + desc
+          const top=div('');top.style.cssText='display:flex;align-items:flex-start;gap:10px;padding:12px 14px 10px';
+          top.appendChild(cring(isSel));
+          const info=div('');
+          const nm=div('');nm.style.cssText='font-size:13px;font-weight:600;color:var(--tx);margin-bottom:3px';nm.textContent=opt.title;
+          const ds=div('');ds.style.cssText='font-size:12px;color:var(--txs);line-height:1.45';ds.textContent=opt.desc;
+          info.append(nm,ds);top.appendChild(info);card.appendChild(top);
+          // SVG illustration
+          const svgEl=miniSVG(420,opt.mode==='mitigation'?110:90,opt.svgFn);
+          svgEl.style.pointerEvents='none';
+          card.appendChild(svgEl);
+          card.dataset.fvgCond=opt.cond;
+          card.addEventListener('click',()=>{
+            syncFVGMode(opt.cond);
+            condCards.querySelectorAll('[data-fvg-cond]').forEach(c2=>{
+              const sel=c2.dataset.fvgCond===ms.params.cond;
+              c2.style.borderColor=sel?'var(--ac)':'var(--bd)';
+              c2.style.background=sel?'rgba(0,212,170,0.04)':'transparent';
+              const ring=c2.querySelector('.cring');
+              if(ring){
+                ring.className='cring'+(sel?' on':'');
+                ring.innerHTML=sel?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0A0A0F" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>':'';
+              }
+            });
+            frag.querySelectorAll('.fvg-mit-note').forEach(n=>n.style.display=ms.params.entryMode==='mitigation'?'flex':'none');
+          });
+          condCards.appendChild(card);
+        });
+        condBlock.appendChild(condCards);
+        frag.appendChild(condBlock);
+
+        // Nota de validade — só no modo recuo, aponta para Step 3
+        const mitNote=div('');mitNote.className='fvg-mit-note';
+        mitNote.style.cssText='display:'+(ms.params.entryMode==='mitigation'?'flex':'none')+';align-items:flex-start;gap:8px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5;margin-top:4px';
+        mitNote.innerHTML='<span style="color:#6366F1;font-size:14px;flex-shrink:0">ℹ</span><span>O sistema aguarda o preço preencher o gap. Se isso não ocorrer dentro do limite definido em <strong style="color:var(--tx)">Passo 3 → Validade do sinal</strong>, a operação não é aberta.</span>';
+        frag.appendChild(mitNote);
+      }
       // ── BoS config ──
       if(smcId==='bos'){
-        frag.appendChild(pills('Direção','Compra = rompe o último topo (tendência de alta). Venda = rompe o último fundo (tendência de baixa). Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
-        const pRow=div('');pRow.appendChild(slabel('Candles para swing','Quantos candles olhar pra trás para identificar o topo ou fundo que será rompido.'));
-        pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;if(window.refreshModalValidation)refreshModalValidation();}));
-        frag.appendChild(pRow);
-        // Confirmation pills with visual
-        frag.appendChild(pills('Confirmação','Fechamento = o candle precisa fechar além do nível. Sombra = basta a sombra ultrapassar.',['Por fechamento','Por sombra'],ms.params.conf==='sombra'?'Por sombra':'Por fechamento',v=>{ms.params.conf=v==='Por sombra'?'sombra':'fechamento';}));
-        frag.appendChild(miniSVG(500,120,(ln,rc,tx,cd,ci)=>{
-          // --- "Por fechamento" side ---
-          ln(8,60,235,60,'#F59E0B',1,'4,3');
-          tx(14,54,'nível','#F59E0B',11);
-          rc(85,24,18,32,'#10B981',0.8,2);ln(94,18,94,56,'#10B981',1.5);
-          tx(114,40,'corpo fecha',_TH.txs,11);
-          tx(114,54,'além do nível ✓','#10B981',11);
-          tx(120,108,'POR FECHAMENTO',_TH.tx,12,'middle');
-          // Divider
-          ln(250,12,250,105,'#2A2A3C',1);
-          // --- "Por sombra" side ---
-          ln(260,60,490,60,'#F59E0B',1,'4,3');
-          tx(266,54,'nível','#F59E0B',11);
-          rc(340,64,18,26,'#10B981',0.8,2);ln(349,26,349,90,'#10B981',1.5);
-          tx(368,40,'sombra passa',_TH.txs,11);
-          tx(368,54,'corpo fica acima ✓','#10B981',11);
-          tx(375,108,'POR SOMBRA',_TH.tx,12,'middle');
+        frag.appendChild(pills('Direção','Compra = detecta BoS de alta (rompimento de topo). Venda = detecta BoS de baixa (rompimento de fundo).',['Compra','Venda'],ms.params.dir,v=>{ms.params.dir=v;}));
+
+        // Limites de pernas do BoS
+        if(!ms.params.leg1Min) ms.params.leg1Min=2;
+        if(!ms.params.leg1Max) ms.params.leg1Max=5;
+        if(!ms.params.corrMax) ms.params.corrMax=3;
+        if(!ms.params.leg2Max) ms.params.leg2Max=3;
+        const leg1MinRow=div('');leg1MinRow.appendChild(slabel('1ª perna — mínimo de candles','Quantidade mínima de candles consecutivos na direção do movimento para qualificar a 1ª perna. Abaixo disso o movimento não tem consistência.'));
+        leg1MinRow.appendChild(stepper(ms.params.leg1Min,2,20,'candles',v=>{ms.params.leg1Min=v;if(window.refreshModalValidation)refreshModalValidation();}));
+        frag.appendChild(leg1MinRow);
+        const leg1MaxRow=div('');leg1MaxRow.appendChild(slabel('1ª perna — máximo de candles','Quantidade máxima de candles na 1ª perna. Acima disso o movimento é considerado esticado demais para o padrão.'));
+        leg1MaxRow.appendChild(stepper(ms.params.leg1Max,2,50,'candles',v=>{ms.params.leg1Max=v;if(window.refreshModalValidation)refreshModalValidation();}));
+        frag.appendChild(leg1MaxRow);
+        const corrMaxRow=div('');corrMaxRow.appendChild(slabel('Correção — máximo de candles','Quantidade máxima de candles na correção. O EA rejeita automaticamente correções com mais candles que a 1ª perna, independente deste valor.'));
+        corrMaxRow.appendChild(stepper(ms.params.corrMax,1,30,'candles',v=>{ms.params.corrMax=v;if(window.refreshModalValidation)refreshModalValidation();}));
+        frag.appendChild(corrMaxRow);
+        // Visualização gráfica do padrão BoS — 3 fases
+        frag.appendChild(miniSVG(500,130,(ln,rc,tx,cd,ci,th)=>{
+          // Contexto — candles anteriores neutros
+          cd(8,80,12,60,86,0.3); cd(22,74,10,56,80,0.3);
+
+          // FASE 1 — 1ª perna de alta (3 candles bullish consecutivos)
+          rc(36,54,12,22,'#10B981',0.85,1); ln(42,48,42,80,'#10B981',1.5);
+          rc(52,36,12,24,'#10B981',0.9,1);  ln(58,30,58,64,'#10B981',1.5);
+          rc(68,22,12,20,'#10B981',0.85,1); ln(74,16,74,46,'#10B981',1.5);
+          // High1 — nível a ser rompido
+          ln(36,22,500,22,'#F59E0B',0.8,'4,3');
+          tx(80,18,'High1',th.txs,9);
+          // Low1 — ponto de invalidação
+          ln(36,76,180,76,'#EF4444',0.5,'3,2');
+          tx(80,82,'Low1 (stop)',th.txs,8);
+          tx(36,120,'FASE 1',th.txm,9,'start');
+
+          // FASE 2 — Correção (2 candles bearish, não rompe Low1)
+          rc(86,38,12,28,'#EF4444',0.7,1); ln(92,32,92,70,'#EF4444',1.2);
+          rc(102,52,12,22,'#EF4444',0.65,1); ln(108,46,108,78,'#EF4444',1.2);
+          tx(86,120,'FASE 2',th.txm,9,'start');
+
+          // FASE 3 — 2ª perna rompe High1
+          rc(118,34,12,28,'#10B981',0.85,1); ln(124,28,124,66,'#10B981',1.5);
+          rc(134,10,12,30,'#10B981',0.9,1);  ln(140,4,140,44,'#10B981',1.5);
+          // Seta de confirmação no rompimento
+          ci(140,10,'#00D4AA',4);
+          ln(148,14,162,14,'#00D4AA',1.5);
+          tx(164,18,'BoS!','#00D4AA',11);
+          tx(118,120,'FASE 3',th.txm,9,'start');
+
+          // Linha divisória entre fases
+          ln(82,10,82,118,th.bd,0.6,'2,3');
+          ln(114,10,114,118,th.bd,0.6,'2,3');
         }));
+
+        // Aviso sobre regra interna do EA
+        const bosNote=div('');bosNote.style.cssText='display:flex;align-items:flex-start;gap:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5';
+        bosNote.innerHTML='<span style="color:#F59E0B;font-size:13px;flex-shrink:0">⚠</span><span>Regras internas: (1) a correção nunca pode ter mais candles que a 1ª perna; (2) a correção não pode romper o Low1 — ponto de origem da 1ª perna. Padrões que violem essas condições são descartados automaticamente.</span>';
+        frag.appendChild(bosNote);
+        const leg2MaxRow=div('');leg2MaxRow.appendChild(slabel('2ª perna — máximo de candles','Quantidade máxima de candles para o rompimento. Se o rompimento não ocorrer dentro deste limite, o padrão é descartado.'));
+        leg2MaxRow.appendChild(stepper(ms.params.leg2Max,1,30,'candles',v=>{ms.params.leg2Max=v;if(window.refreshModalValidation)refreshModalValidation();}));
+        frag.appendChild(leg2MaxRow);
+        // OB Mitigation filter
+        if(!ms.params.obMit) ms.params.obMit='none';
+        const obMitBlock=div('');
+        obMitBlock.appendChild(slabel('Filtro de Order Block','Sem filtro = BoS puro. Toque = a correção precisa tocar a zona OB. Validação = um candle da correção precisa fechar dentro da zona OB.'));
+        const obMitRow=div('');obMitRow.style.cssText='display:flex;gap:7px;flex-wrap:wrap';
+        const OB_MIT_OPTS=[['none','Sem filtro'],['touch','Toque'],['validation','Validação']];
+        OB_MIT_OPTS.forEach(([val,label])=>{
+          const c2=div('chip'+(ms.params.obMit===val?' on':''));c2.textContent=label;
+          c2.addEventListener('click',()=>{ms.params.obMit=val;obMitRow.querySelectorAll('.chip').forEach(ch=>ch.classList.remove('on'));c2.classList.add('on');});
+          obMitRow.appendChild(c2);
+        });
+        obMitBlock.appendChild(obMitRow);frag.appendChild(obMitBlock);
       }
 
       // ── CHoCH config ──
       if(smcId==='choch'){
-        frag.appendChild(pills('Direção','Compra = possível reversão para alta. Venda = possível reversão para baixa. Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
-        const pRow=div('');pRow.appendChild(slabel('Candles para swing','Quantos candles olhar pra trás para identificar a estrutura que será rompida.'));
-        pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;if(window.refreshModalValidation)refreshModalValidation();}));
-        frag.appendChild(pRow);
-        frag.appendChild(pills('Confirmação','Fechamento = o candle precisa fechar além do nível. Sombra = basta a sombra ultrapassar.',['Por fechamento','Por sombra'],ms.params.conf==='sombra'?'Por sombra':'Por fechamento',v=>{ms.params.conf=v==='Por sombra'?'sombra':'fechamento';}));
-        // Same confirmation visual as BoS
-        frag.appendChild(miniSVG(500,120,(ln,rc,tx,cd,ci)=>{
-          ln(8,60,235,60,'#F59E0B',1,'4,3');tx(14,54,'nível','#F59E0B',11);
-          rc(85,24,18,32,'#10B981',0.8,2);ln(94,18,94,56,'#10B981',1.5);
-          tx(114,40,'corpo fecha',_TH.txs,11);tx(114,54,'além do nível ✓','#10B981',11);
-          tx(120,108,'POR FECHAMENTO',_TH.tx,12,'middle');
-          ln(250,12,250,105,'#2A2A3C',1);
-          ln(260,60,490,60,'#F59E0B',1,'4,3');tx(266,54,'nível','#F59E0B',11);
-          rc(340,64,18,26,'#10B981',0.8,2);ln(349,26,349,90,'#10B981',1.5);
-          tx(368,40,'sombra passa',_TH.txs,11);tx(368,54,'corpo fica acima ✓','#10B981',11);
-          tx(375,108,'POR SOMBRA',_TH.tx,12,'middle');
+        frag.appendChild(pills('Direção','Compra = detecta reversão de baixa para alta. Venda = detecta reversão de alta para baixa.',['Compra','Venda'],ms.params.dir,v=>{ms.params.dir=v;}));
+
+        // Visualização das 3 etapas do CHoCH
+        // Divisórias: x=125 e x=240 — calculadas para evitar sobreposição de texto
+        frag.appendChild(miniSVG(500,160,(ln,rc,tx,cd,ci,th)=>{
+          // ── ETAPA 1 — Tendência prévia de BAIXA (x: 0–125) ──
+          rc(8,22,14,32,'#EF4444',0.85,1);  ln(15,17,15,58,'#EF4444',1.5);
+          rc(26,36,14,28,'#EF4444',0.8,1);  ln(33,31,33,68,'#EF4444',1.5);
+          rc(44,50,14,26,'#EF4444',0.75,1); ln(51,45,51,80,'#EF4444',1.5);
+          rc(62,62,14,24,'#EF4444',0.7,1);  ln(69,57,69,90,'#EF4444',1.5);
+          rc(80,74,14,22,'#EF4444',0.65,1); ln(87,69,87,100,'#EF4444',1.5);
+          tx(8,142,'ETAPA 1',th.txm,9,'start');
+          tx(8,155,'Tendência de baixa',th.txs,9,'start');
+
+          // Divisória 1 (x=125)
+          ln(125,6,125,132,th.bd,0.7,'3,3');
+
+          // ── ETAPA 2 — Impulso de alta (x: 125–240) ──
+          // High1 — nível a ser rompido na etapa 3
+          ln(125,46,500,46,'#F59E0B',0.75,'5,4');
+          tx(380,40,'High1','#F59E0B',9);
+          // 3 candles bullish subindo
+          rc(131,58,14,36,'#10B981',0.9,1); ln(138,18,138,98,'#10B981',1.5);
+          rc(149,36,14,32,'#10B981',0.9,1); ln(156,10,156,72,'#10B981',1.5);
+          rc(167,18,14,28,'#10B981',0.85,1);ln(174,6,174,50,'#10B981',1.5);
+          tx(131,142,'ETAPA 2',th.txm,9,'start');
+          tx(131,155,'Impulso de alta',th.txs,9,'start');
+
+          // Divisória 2 (x=240)
+          ln(240,6,240,132,th.bd,0.7,'3,3');
+
+          // ── ETAPA 3 — Correção + rompimento (x: 240–500) ──
+          // Correção: 2 candles bearish
+          rc(246,26,14,24,'#EF4444',0.65,1); ln(253,20,253,54,'#EF4444',1.2);
+          rc(264,36,14,20,'#EF4444',0.6,1);  ln(271,30,271,60,'#EF4444',1.2);
+          // 2ª perna: rompe High1
+          rc(282,18,14,30,'#10B981',0.9,1);  ln(289,4,289,52,'#10B981',1.5);
+          rc(300,4,14,26,'#10B981',0.9,1);   ln(307,0,307,34,'#10B981',1.5);
+          // Confirmação CHoCH
+          ci(307,0,'#00D4AA',5);
+          ln(316,4,336,4,'#00D4AA',1.5);
+          tx(340,8,'CHoCH!','#00D4AA',12);
+          tx(246,142,'ETAPA 3',th.txm,9,'start');
+          tx(246,155,'Correção + ruptura',th.txs,9,'start');
         }));
+
+        // Limites de tendência prévia (CHoCH)
+        if(!ms.params.trendMin) ms.params.trendMin=5;
+        if(!ms.params.trendMax) ms.params.trendMax=15;
+        if(!ms.params.ampRatio) ms.params.ampRatio=40;
+        const trendMinRow=div('');trendMinRow.appendChild(slabel('Tendência prévia — mínimo de candles','Quantidade mínima de candles bearish consecutivos que caracterizam a tendência prévia de baixa. Abaixo disso não há tendência estabelecida para reverter.'));
+        trendMinRow.appendChild(stepper(ms.params.trendMin,2,50,'candles',v=>{ms.params.trendMin=Math.min(v,ms.params.trendMax);if(window.refreshModalValidation)refreshModalValidation();}));
+        frag.appendChild(trendMinRow);
+        const trendMaxRow=div('');trendMaxRow.appendChild(slabel('Tendência prévia — máximo de candles','Quantidade máxima de candles na tendência prévia. Acima disso a tendência é considerada longa demais e o padrão perde relevância temporal.'));
+        trendMaxRow.appendChild(stepper(ms.params.trendMax,2,100,'candles',v=>{ms.params.trendMax=Math.max(v,ms.params.trendMin);if(window.refreshModalValidation)refreshModalValidation();}));
+        frag.appendChild(trendMaxRow);
+        const ampRow=div('');ampRow.appendChild(slabel('Força mínima do impulso (%)','O impulso de reversão (1ª perna de alta) precisa cobrir pelo menos esta porcentagem do range da tendência prévia. Garante que a reversão tem força real — não é um repique fraco.'));
+        ampRow.appendChild(stepper(ms.params.ampRatio,1,100,'%',v=>{ms.params.ampRatio=v;if(window.refreshModalValidation)refreshModalValidation();}));
+        frag.appendChild(ampRow);
+        // Aviso sobre regras internas compartilhadas com BoS
+        const chochNote=div('');chochNote.style.cssText='display:flex;align-items:flex-start;gap:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5';
+        chochNote.innerHTML='<span style="color:#F59E0B;font-size:13px;flex-shrink:0">⚠</span><span>Regras internas: (1) o impulso de reversão não pode ter mais candles que a tendência prévia; (2) a etapa final (correção + rompimento) usa os mesmos limites configurados no padrão BoS.</span>';
+        frag.appendChild(chochNote);
+        // OB Mitigation filter
+        if(!ms.params.obMit) ms.params.obMit='none';
+        const obMitBlock=div('');
+        obMitBlock.appendChild(slabel('Filtro de Order Block','Sem filtro = BoS puro. Toque = a correção precisa tocar a zona OB. Validação = um candle da correção precisa fechar dentro da zona OB.'));
+        const obMitRow=div('');obMitRow.style.cssText='display:flex;gap:7px;flex-wrap:wrap';
+        const OB_MIT_OPTS=[['none','Sem filtro'],['touch','Toque'],['validation','Validação']];
+        OB_MIT_OPTS.forEach(([val,label])=>{
+          const c2=div('chip'+(ms.params.obMit===val?' on':''));c2.textContent=label;
+          c2.addEventListener('click',()=>{ms.params.obMit=val;obMitRow.querySelectorAll('.chip').forEach(ch=>ch.classList.remove('on'));c2.classList.add('on');});
+          obMitRow.appendChild(c2);
+        });
+        obMitBlock.appendChild(obMitRow);frag.appendChild(obMitBlock);
       }
 
-      // ── OB config ──
-      if(smcId==='ob'){
-        frag.appendChild(pills('Direção','Compra = último candle de baixa antes de impulso de alta. Venda = último candle de alta antes de impulso de baixa. Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
-        const vRow=div('');vRow.appendChild(slabel('Impulso mínimo','O movimento após o order block precisa ter pelo menos este tamanho em pontos.'));
-        vRow.appendChild(stepper(ms.params.val,10,10000,'pts',v=>{ms.params.val=v;if(window.refreshModalValidation)refreshModalValidation();}));
-        frag.appendChild(vRow);
-        frag.appendChild(pills('Considerar','Corpo = apenas o corpo do candle define a zona. Corpo + sombras = inclui as sombras na zona.',['Corpo','Corpo + sombras'],ms.params.bodyOnly,v=>{ms.params.bodyOnly=v;}));
-        // OB visual: detected + retest
-        frag.appendChild(miniSVG(500,140,(ln,rc,tx,cd,ci)=>{
-          // --- "Detectado" side ---
-          cd(16,72,86,64,92,0.4);cd(46,86,78,68,96,0.4);
-          // OB candle
-          rc(80,60,18,24,'#EF4444',0.85,2);ln(89,52,89,92,'#EF4444',1.5);
-          tx(74,48,'OB','#6366F1',12,'middle');
-          rc(76,60,80,24,'#6366F1',0.12,3);
-          // Impulse
-          cd(110,56,28,16,64,0.8);cd(140,28,16,10,36,0.8);
-          tx(60,128,'DETECTADO',_TH.tx,12,'middle');
-          // Divider
-          ln(245,14,245,125,'#2A2A3C',1);
-          // --- "Retesta" side ---
-          cd(260,72,86,64,92,0.3);cd(290,86,78,68,96,0.3);
-          rc(324,60,18,24,'#EF4444',0.7,2);ln(333,52,333,92,'#EF4444',1.5);
-          rc(320,60,140,24,'#6366F1',0.1,3);
-          ln(320,60,460,60,'#6366F1',1,'4,3');ln(320,84,460,84,'#6366F1',1,'4,3');
-          cd(354,56,28,16,64,0.6);cd(384,28,16,10,36,0.6);
-          // Return to OB zone
-          cd(414,18,42,12,48,0.5);cd(440,42,66,36,72,0.5);
-          ci(445,72,'#00D4AA',6);
-          tx(380,128,'RETESTA OB',_TH.tx,12,'middle');
+      // ── Grab config ──
+      if(smcId==='grab'){
+        frag.appendChild(pills('Direção','Compra = rejeição em fundo (pavio longo para baixo, fechamento na metade superior). Venda = rejeição em topo (pavio longo para cima, fechamento na metade inferior).',['Compra','Venda'],ms.params.dir,v=>{ms.params.dir=v;}));
+        // Info sobre qualificação interna
+        const grabNote=div('');grabNote.style.cssText='display:flex;align-items:flex-start;gap:8px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5';
+        grabNote.innerHTML='<span style="color:#6366F1;font-size:14px;flex-shrink:0">ℹ</span><span>A qualificação do Grab é automática: o pavio deve representar ≥ 50% do range do candle e o fechamento deve ser na metade oposta. Isso filtra rejeições fraquejadas.</span>';
+        frag.appendChild(grabNote);
+        // Grab visual
+        frag.appendChild(miniSVG(500,140,(ln,rc,tx,cd,ci,th)=>{
+          // Level line
+          ln(8,90,492,90,'#F59E0B',1.5,'5,4');
+          tx(14,108,'nível de liquidez','#F59E0B',11);
+          // Approach candles
+          cd(16,60,54,46,72,0.4);cd(46,72,62,56,82,0.4);cd(76,82,66,64,90,0.4);
+          // Grab candle: large wick below, close above
+          rc(118,64,18,22,'#EF4444',0.85,2);ln(127,50,127,118,'#EF4444',2);
+          tx(148,120,'wick ≥ 50% range','#EF4444',11);
+          tx(148,108,'close na metade sup.','#EF4444',11);
+          // Arrow up = buy signal
+          ln(180,82,180,58,'#10B981',2);ln(175,64,180,58,'#10B981',2);ln(185,64,180,58,'#10B981',2);
+          // Recovery candles
+          cd(200,58,36,28,66,0.7);cd(230,36,24,18,44,0.7);cd(260,22,16,10,30,0.7);
+          tx(340,36,'BoS falhado:',th.txs,12);
+          tx(340,54,'viola o nível mas',th.txs,12);
+          tx(340,72,'fecha dentro → venda',th.txs,12);
+          tx(200,130,'GRAB LOW → COMPRA',th.tx,12,'middle');
         }));
       }
 
       // ── Sweep config ──
       if(smcId==='sweep'){
-        frag.appendChild(pills('Direção','Compra = varre mínimas e reverte pra cima. Venda = varre máximas e reverte pra baixo. Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
-        const pRow=div('');pRow.appendChild(slabel('Candles para nível','Quantos candles olhar pra trás para identificar o nível de liquidez.'));
-        pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;if(window.refreshModalValidation)refreshModalValidation();}));
-        frag.appendChild(pRow);
-        const vRow=div('');vRow.appendChild(slabel('Ultrapassagem mínima','O preço precisa ultrapassar o nível por pelo menos estes pontos antes de reverter.'));
-        vRow.appendChild(stepper(ms.params.val,1,1000,'pts',v=>{ms.params.val=v;if(window.refreshModalValidation)refreshModalValidation();}));
-        frag.appendChild(vRow);
-        const cRow=div('');cRow.appendChild(slabel('Candles de confirmação','Quantos candles o preço precisa fechar na direção oposta para confirmar o sweep.'));
-        cRow.appendChild(stepper(ms.params.confCandles,1,20,'candles',v=>{ms.params.confCandles=v;if(window.refreshModalValidation)refreshModalValidation();}));
-        frag.appendChild(cRow);
+        frag.appendChild(pills('Direção','Compra = sweep de mínimas (falso rompimento para baixo, reversão para cima). Venda = sweep de máximas (falso rompimento para cima, reversão para baixo).',['Compra','Venda'],ms.params.dir,v=>{ms.params.dir=v;}));
+        // Aviso sobre parâmetros internos do EA
+        const sweepNote=div('');sweepNote.style.cssText='display:flex;align-items:flex-start;gap:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5';
+        sweepNote.innerHTML='<span style="color:#F59E0B;font-size:13px;flex-shrink:0">⚠</span><span>Os parâmetros de detecção do Sweep (janela de busca, ultrapassagem mínima e confirmação) são definidos internamente pelo EA e não são configuráveis nesta versão.</span>';
+        frag.appendChild(sweepNote);
         // Sweep visual
-        frag.appendChild(miniSVG(500,150,(ln,rc,tx,cd,ci)=>{
+        frag.appendChild(miniSVG(500,150,(ln,rc,tx,cd,ci,th)=>{
           // Price action approaching level
           cd(16,54,66,46,72,0.4);cd(46,66,58,50,76,0.4);cd(76,58,50,42,68,0.4);cd(106,50,42,34,60,0.4);
           // Liquidity level
@@ -2636,29 +3157,16 @@ function renderModal() {
           cd(230,64,42,34,72,0.7);cd(260,42,30,24,48,0.7);cd(290,30,18,14,36,0.7);
           tx(240,140,'confirmação →','#10B981',11);
           // Summary steps
-          tx(340,36,'1. Preço se aproxima do nível',_TH.txs,12);
-          tx(340,56,'2. Varre além (sweep)',_TH.txs,12);
-          tx(340,76,'3. Reverte e confirma',_TH.txs,12);
-          tx(340,100,'Falso rompimento institucional',_TH.txm,10);
+          tx(310,28,'1. Preço se aproxima',th.txs,11);
+          tx(310,44,'2. Varre além (sweep)',th.txs,11);
+          tx(310,60,'3. Reverte e confirma',th.txs,11);
+          tx(310,80,'Falso rompimento',th.txm,10);
+          tx(310,94,'institucional',th.txm,10);
         }));
       }
 
-      // ── Grab config ──
-      if(smcId==='grab'){
-        frag.appendChild(pills('Direção','Compra = BoS falhado nas mínimas com rejeição pra cima. Venda = BoS falhado nas máximas com rejeição pra baixo. Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
-        const pRow=div('');pRow.appendChild(slabel('Candles para nível','Quantos candles olhar pra trás para identificar o nível de liquidez.'));
-        pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;if(window.refreshModalValidation)refreshModalValidation();}));
-        frag.appendChild(pRow);
-        const vRow=div('');vRow.appendChild(slabel('Ultrapassagem mínima','O preço precisa ultrapassar o nível por pelo menos estes pontos antes de reverter.'));
-        vRow.appendChild(stepper(ms.params.val,1,1000,'pts',v=>{ms.params.val=v;if(window.refreshModalValidation)refreshModalValidation();}));
-        frag.appendChild(vRow);
-        const cRow=div('');cRow.appendChild(slabel('Candles de confirmação','Quantos candles o preço precisa fechar na direção oposta para confirmar o grab.'));
-        cRow.appendChild(stepper(ms.params.confCandles,1,20,'candles',v=>{ms.params.confCandles=v;if(window.refreshModalValidation)refreshModalValidation();}));
-        frag.appendChild(cRow);
-      }
-
-      // ── Conditions radio list (common to all SMC, local update) ──
-      if(conds.length>0){
+      // ── Conditions radio list (common to all SMC except FVG which has its own unified selector) ──
+      if(conds.length>0 && smcId!=='fvg'){
         const row=div('');
         row.appendChild(slabel('Condição'));
         const radios=[];
@@ -2714,7 +3222,10 @@ function renderModal() {
       if(ind.hasPer!==false && ms.params.per!==undefined) {
         const isCross=isMA&&isMACrossover(ms.params.cond);
         const row=div('');
-        row.appendChild(slabel(isCross?'Período da média curta':'Período'));
+        const perTip = ind.id==='fib'
+          ? 'Sensibilidade do ZigZag para identificar topos e fundos. Valores maiores = estruturas maiores (ignora ruídos menores). Padrão: 14. Ex: com 14, o ZigZag só marca um topo se houver pelo menos 14 candles sem uma máxima mais alta ao redor.'
+          : undefined;
+        row.appendChild(slabel(isCross?'Período da média curta':'Período', perTip));
         row.appendChild(stepper(ms.params.per,1,500,'',v=>{ms.params.per=v;refreshCondPreview();}));
         frag.appendChild(row);
 
@@ -2732,7 +3243,59 @@ function renderModal() {
         row.appendChild(stepperDecimal(ms.params.dev,0.5,5,0.5,'σ',v=>{ms.params.dev=v;refreshCondPreview();}));
         frag.appendChild(row);
       }
-      if(conds.length>0){
+
+      // ── Fibonacci: seletores de nível e modo separados ──
+      if(ind.id==='fib'){
+        // helper: reconstrói ms.params.cond a partir de fibLevel + fibMode
+        function syncFibCond(){
+          const lvl=ms.params.fibLevel||'61.8%';
+          const mode=ms.params.fibMode||'touch';
+          ms.params.cond=mode==='touch'
+            ? `Preço toca nível ${lvl}`
+            : `Preço cruza nível ${lvl}`;
+        }
+
+        // Nível de retração
+        const lvlRow=div('');
+        lvlRow.appendChild(slabel('Nível de retração',
+          'O preço precisa atingir este nível de retração da perna de impulso para disparar a condição. Ex: 61.8% significa que o preço recuou 61.8% da perna antes de retomar a direção original.'));
+        const lvlChips=div('');lvlChips.style.cssText='display:flex;gap:7px;flex-wrap:wrap';
+        FIB_LEVELS.forEach(lv=>{
+          const ch=div('chip'+(ms.params.fibLevel===lv?' on':''));
+          ch.textContent=lv;
+          ch.addEventListener('click',()=>{
+            ms.params.fibLevel=lv;
+            lvlChips.querySelectorAll('.chip').forEach(c=>c.className='chip');
+            ch.className='chip on';
+            syncFibCond();
+            refreshCondPreview();
+          });
+          lvlChips.appendChild(ch);
+        });
+        lvlRow.appendChild(lvlChips);
+        frag.appendChild(lvlRow);
+
+        // Modo de confirmação
+        const modeRow=div('');
+        modeRow.appendChild(slabel('Modo de confirmação',
+          'Toque: o pavio do candle basta tocar o nível para disparar — mais sinais, menos filtro.\n\nValidação: o candle precisa fechar confirmando a rejeição (fecha de volta na direção do impulso após tocar o nível) — menos sinais, mais qualidade.\n\nExemplo: candle que tocou 61.8% com o pavio e fechou de volta para cima = Validação.'));
+        const modeChips=div('');modeChips.style.cssText='display:flex;gap:7px';
+        FIB_MODES.forEach(([val,lbl])=>{
+          const ch=div('chip'+(ms.params.fibMode===val?' on':''));
+          ch.textContent=lbl;
+          ch.addEventListener('click',()=>{
+            ms.params.fibMode=val;
+            modeChips.querySelectorAll('.chip').forEach(c=>c.className='chip');
+            ch.className='chip on';
+            syncFibCond();
+            refreshCondPreview();
+          });
+          modeChips.appendChild(ch);
+        });
+        modeRow.appendChild(modeChips);
+        frag.appendChild(modeRow);
+      }
+      if(conds.length>0 && ind.id!=='fvg' && ind.id!=='fib'){
         const row=div('');
         row.appendChild(slabel(ind.id==='candle'?'Padrão':'Condição'));
 
@@ -2929,11 +3492,20 @@ function renderStep1() {
         item.append(tk,nm);
         item.addEventListener('click',()=>{
           cfg.asset=a.t;
-          // Snap existing point values to new asset's tick
+          // Snap risk fields to new asset's tick
           const {tick} = getAssetTick(a.t);
           cfg.stopPts   = snapToTick(Math.max(tick, cfg.stopPts),   tick);
           cfg.stopOffset= snapToTick(cfg.stopOffset,  tick);
           cfg.tpPts     = snapToTick(Math.max(tick, cfg.tpPts),     tick);
+          // Reset management — fields depend on tick size, force user to reconfigure
+          cfg.trailing=false;
+          cfg.trailAct =snapToTick(100, tick);
+          cfg.trailDist=snapToTick(100, tick);
+          cfg.trailStep=snapToTick(50,  tick);
+          cfg.partial=false;
+          cfg.partAt   =snapToTick(200, tick);
+          cfg.partPct  =50;
+          cfg.partMoveStop=true;
           dropdown.classList.remove('open');
           searchInput.value='';
           renderApp();
@@ -3116,7 +3688,8 @@ function renderStep2() {
           const lb=div('');lb.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';
           lb.textContent=p.per2!==undefined?'Período curta':'Período';
           g.appendChild(lb);
-          g.appendChild(stepper(p.per,1,500,'',v=>{p.per=v;updateCondition(lbl,c);}));
+          const _perMin=(c.id==='bb')?6:1;
+          g.appendChild(stepper(p.per,_perMin,500,'',v=>{p.per=v;updateCondition(lbl,c);}));
           paramsRow.appendChild(g);
         }
         if(p.per2!==undefined){
@@ -3130,7 +3703,10 @@ function renderStep2() {
           const g=div('');g.style.cssText='display:flex;flex-direction:column;gap:3px';
           const lb=div('');lb.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';lb.textContent='Valor';
           g.appendChild(lb);
-          g.appendChild(stepper(p.val,-999,99999,'',v=>{p.val=v;updateCondition(lbl,c);}));
+          // Min/max do valor baseado no range do indicador
+          const _vMin=(c.id==='rsi'||c.id==='stoch'||c.id==='adx')?0:c.id==='williams'?-100:-999;
+          const _vMax=(c.id==='rsi'||c.id==='stoch'||c.id==='adx')?100:c.id==='williams'?0:99999;
+          g.appendChild(stepper(p.val,_vMin,_vMax,'',v=>{p.val=v;updateCondition(lbl,c);}));
           paramsRow.appendChild(g);
         }
         if(p.dev!==undefined){
@@ -3224,6 +3800,7 @@ function renderStep4() {
     {id:'hl_candle',label:'Stop na máx/mín do candle de sinal',desc:'Stop na mínima (compra) ou máxima (venda) do candle de sinal.'},
     {id:'n_candles',label:'Stop na máx/mín dos últimos N candles',desc:'Stop na mínima mais baixa ou máxima mais alta de N candles.'},
     {id:'atr',label:'Stop em múltiplo de ATR',desc:'Stop baseado na volatilidade — se adapta automaticamente ao ativo e timeframe.'},
+    {id:'fibo',label:'Stop em nível de Fibonacci',desc:'Stop no nível Fibonacci configurado no módulo Fibonacci (ex: 100% = fim da perna).'},
   ];
   const sList=div('');sList.style.cssText='display:flex;flex-direction:column;gap:7px';
   SL_TYPES.forEach(s=>{
@@ -3239,7 +3816,7 @@ function renderStep4() {
       sub.addEventListener('click',e=>e.stopPropagation());
       if(s.id==='fixed') sub.appendChild(stepperPoints(cfg.stopPts,1,5000,cfg.asset,v=>{cfg.stopPts=v;updatePreview();}));
       if(s.id==='hl_candle') sub.appendChild(stepperPoints(cfg.stopOffset,0,1000,cfg.asset,v=>{cfg.stopOffset=v;updatePreview();}));
-      if(s.id==='n_candles'){sub.appendChild(stepper(cfg.stopCandles,1,50,'candles',v=>{cfg.stopCandles=v;updatePreview();}));sub.appendChild(stepperPoints(cfg.stopOffset,0,1000,cfg.asset,v=>{cfg.stopOffset=v;updatePreview();}));}
+      if(s.id==='n_candles'){sub.appendChild(stepper(cfg.stopCandles,1,50,'candles',v=>{cfg.stopCandles=v;updatePreview();}));}
       if(s.id==='atr'){
         const atrRow=div('');atrRow.style.cssText='display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end';
         const perG=div('');const perL=div('');perL.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px';perL.textContent='Período ATR';
@@ -3251,6 +3828,12 @@ function renderStep4() {
         multG.append(multL,stepperDecimal(cfg.stopAtrMult,0.1,10,0.1,'× ATR',v=>{cfg.stopAtrMult=v;updatePreview();updateStopAtrHint();}));
         atrRow.append(perG,multG);sub.appendChild(atrRow);
         sub.appendChild(atrHint);
+      }
+      if(s.id==='fibo'){
+        const fiboHint=div('');fiboHint.style.cssText='font-size:11px;color:var(--txm);line-height:1.5';
+        fiboHint.textContent='O nível de Fibonacci usado como stop é configurado no módulo Fibonacci (Passo 4 — abaixo).';
+        sub.appendChild(fiboHint);
+        if(!cfg.useFibonacci){const w=div('');w.style.cssText='font-size:11px;color:#F59E0B;margin-top:4px';w.textContent='⚠ Ative o módulo Fibonacci abaixo para usar este tipo de stop.';sub.appendChild(w);}
       }
       c.appendChild(sub);
     }
@@ -3267,6 +3850,7 @@ function renderStep4() {
     {id:'rr',label:'Alvo em múltiplo do risco (R:R)',desc:''},
     {id:'atr',label:'Alvo em múltiplo de ATR',desc:'Alvo baseado na volatilidade — se adapta automaticamente ao ativo e timeframe.'},
     {id:'fib_ext',label:'Extensão de Fibonacci',desc:'Alvo baseado na projeção de Fibonacci da perna anterior.'},
+    {id:'fibo',label:'Alvo em nível de Fibonacci',desc:'Alvo no nível de projeção Fibonacci configurado no módulo Fibonacci (ex: 161.8%).'},
     {id:'none',label:'Sem alvo fixo',desc:'A operação será encerrada pela gestão configurada no próximo passo.'},
   ];
   const tList=div('');tList.style.cssText='display:flex;flex-direction:column;gap:7px';
@@ -3315,6 +3899,12 @@ function renderStep4() {
         hint.textContent=`Alvo na extensão de ${cfg.tpFibLevel}% da perna anterior ao ponto de entrada.`;
         sub.appendChild(hint);
       }
+      if(t.id==='fibo'){
+        const fiboTPHint=div('');fiboTPHint.style.cssText='font-size:11px;color:var(--txm);line-height:1.5';
+        fiboTPHint.textContent='O nível de Fibonacci usado como alvo é configurado no módulo Fibonacci abaixo.';
+        sub.appendChild(fiboTPHint);
+        if(!cfg.useFibonacci){const w=div('');w.style.cssText='font-size:11px;color:#F59E0B;margin-top:4px';w.textContent='⚠ Ative o módulo Fibonacci abaixo para usar este tipo de alvo.';sub.appendChild(w);}
+      }
       if(t.id==='none'&&t.desc){const ds=div('');ds.style.cssText='font-size:11px;color:var(--txs)';ds.textContent=t.desc;sub.appendChild(ds);}
       c.appendChild(sub);
     }
@@ -3322,6 +3912,126 @@ function renderStep4() {
     tList.appendChild(c);
   });
   tBlock.appendChild(tList);el.appendChild(tBlock);
+
+  // ── Módulo Fibonacci ──
+  const FIBO_RETRACE_LEVELS=[['23.6','23.6%'],['38.2','38.2%'],['50.0','50.0%'],['61.8','61.8%'],['78.6','78.6%'],['100.0','100.0%']];
+  const FIBO_ALL_LEVELS=[...FIBO_RETRACE_LEVELS,['127.2','127.2%'],['161.8','161.8%'],['200.0','200.0%'],['261.8','261.8%']];
+  const fiboActive=cfg.useFibonacci||(cfg.stopType==='fibo')||(cfg.tpType==='fibo');
+
+  const fiboBlock=div('');fiboBlock.style.cssText='border:1px solid var(--bd);border-radius:12px;overflow:hidden';
+  const fiboHdr=div('');fiboHdr.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg2);cursor:pointer';
+  const fiboHdrInfo=div('');
+  const fiboHdrTitle=div('');fiboHdrTitle.style.cssText='font-size:14px;font-weight:600;color:var(--tx);margin-bottom:2px';fiboHdrTitle.textContent='Módulo Fibonacci';
+  const fiboHdrSub=div('');fiboHdrSub.style.cssText='font-size:11px;color:var(--txs)';
+  fiboHdrSub.textContent=cfg.useFibonacci?'Ativo como gatilho — substitui as condições do Passo 2':(cfg.stopType==='fibo'||cfg.tpType==='fibo')?'Ativo como referência de SL/TP':'Opcional — use como gatilho ou referência de SL/TP';
+  fiboHdrInfo.append(fiboHdrTitle,fiboHdrSub);
+
+  const fiboToggleWrap=div('');
+  const fiboToggleLbl=div('');fiboToggleLbl.style.cssText='font-size:11px;color:var(--txs);margin-right:8px;white-space:nowrap';fiboToggleLbl.textContent='Usar como gatilho';
+  const fiboToggleEl=toggle(cfg.useFibonacci,v=>{cfg.useFibonacci=v;renderApp();});
+  fiboToggleWrap.style.cssText='display:flex;align-items:center';
+  fiboToggleWrap.append(fiboToggleLbl,fiboToggleEl);
+  fiboHdr.append(fiboHdrInfo,fiboToggleWrap);
+  fiboBlock.appendChild(fiboHdr);
+
+  if(cfg.useFibonacci){
+    const excNote=div('');excNote.style.cssText='display:flex;align-items:flex-start;gap:8px;background:rgba(99,102,241,0.1);border-bottom:1px solid rgba(99,102,241,0.2);padding:10px 16px;font-size:12px;color:var(--txs);line-height:1.5';
+    excNote.innerHTML='<span style="color:#6366F1;font-size:14px;flex-shrink:0">ℹ</span><span>Quando ativo como gatilho, o Fibonacci <strong style="color:var(--tx)">substitui as condições do Passo 2</strong> e o Smart Money. A direção é determinada automaticamente pelo swing do ZigZag.</span>';
+    fiboBlock.appendChild(excNote);
+
+    const reentryNote=div('');reentryNote.style.cssText='display:flex;align-items:flex-start;gap:8px;background:rgba(245,158,11,0.06);border-bottom:1px solid rgba(245,158,11,0.2);padding:10px 16px;font-size:12px;color:var(--txs);line-height:1.5';
+    reentryNote.innerHTML='<span style="color:#F59E0B;font-size:13px;flex-shrink:0">⚠</span><span><strong style="color:var(--tx)">Bloqueio de reentrada:</strong> após uma entrada confirmada na perna atual, o EA aguarda a formação de uma nova perna (novo pivot do ZigZag) antes de gerar um novo sinal do mesmo lado. Isso evita reentradas sequenciais na mesma estrutura após um stop. Ordens pendentes que expirem sem virar posição não ativam o bloqueio.</span>';
+    fiboBlock.appendChild(reentryNote);
+  }
+
+  if(fiboActive){
+    const fiboBody=div('');fiboBody.style.cssText='padding:16px;display:flex;flex-direction:column;gap:14px';
+
+    // ZigZag params
+    const zzTitle=div('');zzTitle.style.cssText='font-size:12px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';zzTitle.textContent='Parâmetros do ZigZag';
+    fiboBody.appendChild(zzTitle);
+    const zzRow=div('');zzRow.style.cssText='display:flex;gap:16px;flex-wrap:wrap';
+    const zzDepthG=div('');const zzDepthL=div('');zzDepthL.style.cssText='font-size:11px;color:var(--txs);margin-bottom:4px';zzDepthL.textContent='Depth (barras entre pivos)';
+    zzDepthG.append(zzDepthL,stepper(cfg.fiboZZDepth,2,100,'',v=>{cfg.fiboZZDepth=v;}));
+    const zzDevG=div('');const zzDevL=div('');zzDevL.style.cssText='font-size:11px;color:var(--txs);margin-bottom:4px';zzDevL.textContent='Deviation (pontos mín. pivo)';
+    zzDevG.append(zzDevL,stepper(cfg.fiboZZDeviation,1,200,'pts',v=>{cfg.fiboZZDeviation=v;}));
+    const zzBsG=div('');const zzBsL=div('');zzBsL.style.cssText='font-size:11px;color:var(--txs);margin-bottom:4px';zzBsL.textContent='Backstep (barras a ignorar)';
+    zzBsG.append(zzBsL,stepper(cfg.fiboZZBackstep,1,50,'',v=>{cfg.fiboZZBackstep=v;}));
+    zzRow.append(zzDepthG,zzDevG,zzBsG);fiboBody.appendChild(zzRow);
+
+    if(cfg.useFibonacci){
+      // Trigger Level
+      const trigTitle=div('');trigTitle.style.cssText='font-size:12px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-top:4px';trigTitle.textContent='Gatilho';
+      fiboBody.appendChild(trigTitle);
+      const trigLevelBlock=div('');trigLevelBlock.appendChild(slabel('Nível de retração monitorado','O preço precisa atingir este nível de retração da perna de impulso para disparar a entrada. Ex: 61.8% significa que o EA aguarda o preço recuar 61.8% da perna antes de entrar.'));
+      const trigLevelRow=div('');trigLevelRow.style.cssText='display:flex;gap:7px;flex-wrap:wrap';
+      FIBO_RETRACE_LEVELS.forEach(([val,lbl])=>{
+        const ch=div('chip'+(cfg.fiboTriggerLevel===val?' on':''));ch.textContent=lbl;
+        ch.addEventListener('click',()=>{cfg.fiboTriggerLevel=val;trigLevelRow.querySelectorAll('.chip').forEach(c2=>c2.classList.remove('on'));ch.classList.add('on');});
+        trigLevelRow.appendChild(ch);
+      });
+      trigLevelBlock.appendChild(trigLevelRow);fiboBody.appendChild(trigLevelBlock);
+
+      // Modo de confirmação com tooltip ?
+      const trigModeBlock=div('');
+      trigModeBlock.appendChild(slabel('Modo de confirmação',
+        'Toque: o pavio do candle basta tocar o nível para disparar a entrada — mais sinais, menos filtro.\n\nValidação: o candle precisa fechar confirmando a rejeição (fecha de volta na direção do impulso após tocar o nível) — menos sinais, mais qualidade.\n\nExemplo da imagem: o candle trigger tocou 61,8% com o pavio e fechou de volta para cima — isso é Validação.'));
+      const trigModeRow=div('');trigModeRow.style.cssText='display:flex;gap:7px';
+      [['touch','Toque'],['validation','Validação']].forEach(([val,lbl])=>{
+        const ch=div('chip'+(cfg.fiboTriggerMode===val?' on':''));ch.textContent=lbl;
+        ch.addEventListener('click',()=>{cfg.fiboTriggerMode=val;trigModeRow.querySelectorAll('.chip').forEach(c2=>c2.classList.remove('on'));ch.classList.add('on');});
+        trigModeRow.appendChild(ch);
+      });
+      trigModeBlock.appendChild(trigModeRow);fiboBody.appendChild(trigModeBlock);
+
+      // Direção da operação
+      const dirBlock=div('');
+      dirBlock.appendChild(slabel('Direção','Define se o EA opera apenas compras, apenas vendas ou ambas as direções quando o Fibonacci disparar.\n\nCompra: busca retrações em pernas de alta (fundo → topo) e entra long.\nVenda: busca retrações em pernas de baixa (topo → fundo) e entra short.\nAmbas: opera nas duas direções conforme a estrutura identificada pelo ZigZag.'));
+      const dirRow=div('');dirRow.style.cssText='display:flex;gap:7px';
+      [['long','Compra'],['short','Venda'],['both','Ambas']].forEach(([val,lbl])=>{
+        const ch=div('chip'+(cfg.fiboDirection===val?' on':''));ch.textContent=lbl;
+        ch.addEventListener('click',()=>{cfg.fiboDirection=val;dirRow.querySelectorAll('.chip').forEach(c2=>c2.classList.remove('on'));ch.classList.add('on');});
+        dirRow.appendChild(ch);
+      });
+      dirBlock.appendChild(dirRow);fiboBody.appendChild(dirBlock);
+    }
+
+    // SL Level (só se stopType=fibo)
+    if(cfg.stopType==='fibo'){
+      const slTitle=div('');slTitle.style.cssText='font-size:12px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-top:4px';slTitle.textContent='Nível de Stop Loss';
+      fiboBody.appendChild(slTitle);
+      const slLevelBlock=div('');slLevelBlock.appendChild(slabel('Nível Fibonacci para SL','Tipicamente 78.6% ou 100.0% (fim da perna). Se o preço romper este nível, o trade foi invalidado.'));
+      const slLevelRow=div('');slLevelRow.style.cssText='display:flex;gap:7px;flex-wrap:wrap';
+      FIBO_ALL_LEVELS.forEach(([val,lbl])=>{
+        const ch=div('chip'+(cfg.fiboSLLevel===val?' on':''));ch.textContent=lbl;
+        ch.addEventListener('click',()=>{cfg.fiboSLLevel=val;slLevelRow.querySelectorAll('.chip').forEach(c2=>c2.classList.remove('on'));ch.classList.add('on');});
+        slLevelRow.appendChild(ch);
+      });
+      slLevelBlock.appendChild(slLevelRow);fiboBody.appendChild(slLevelBlock);
+    }
+
+    // TP Level (só se tpType=fibo)
+    if(cfg.tpType==='fibo'){
+      const tpTitle=div('');tpTitle.style.cssText='font-size:12px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-top:4px';tpTitle.textContent='Nível de Take Profit';
+      fiboBody.appendChild(tpTitle);
+      const tpLevelBlock=div('');tpLevelBlock.appendChild(slabel('Nível Fibonacci para TP','Tipicamente projeções 127.2%, 161.8% ou 200.0%. Representa o alvo da perna de continuação.'));
+      const tpLevelRow=div('');tpLevelRow.style.cssText='display:flex;gap:7px;flex-wrap:wrap';
+      FIBO_ALL_LEVELS.forEach(([val,lbl])=>{
+        const ch=div('chip'+(cfg.fiboTPLevel===val?' on':''));ch.textContent=lbl;
+        ch.addEventListener('click',()=>{cfg.fiboTPLevel=val;tpLevelRow.querySelectorAll('.chip').forEach(c2=>c2.classList.remove('on'));ch.classList.add('on');});
+        tpLevelRow.appendChild(ch);
+      });
+      tpLevelBlock.appendChild(tpLevelRow);fiboBody.appendChild(tpLevelBlock);
+    }
+
+    fiboBlock.appendChild(fiboBody);
+  } else {
+    const fiboCollapsed=div('');fiboCollapsed.style.cssText='padding:12px 16px;font-size:12px;color:var(--txm)';
+    fiboCollapsed.textContent='Ative o toggle acima para usar o Fibonacci como gatilho, ou selecione Fibonacci nos tipos de SL/TP para configurar os níveis.';
+    fiboBlock.appendChild(fiboCollapsed);
+  }
+  el.appendChild(fiboBlock);
+
   return el;
 }
 
@@ -3350,17 +4060,17 @@ function renderStep5() {
   el.appendChild(mgmtBlock('Trailing Stop','O stop se move a favor da operação conforme o preço avança.','Trailing stop protege lucros acumulados movendo o stop automaticamente.',cfg.trailing,v=>{cfg.trailing=v;renderApp();},body=>{
     const r1=div('');r1.style.cssText='margin-bottom:12px';
     r1.appendChild(slabel('Ativar trailing após'));
-    r1.appendChild(stepper(cfg.trailAct,1,5000,'pts de lucro',v=>{cfg.trailAct=v;updateSentence();}));
+    r1.appendChild(stepperPoints(cfg.trailAct,1,5000,cfg.asset,v=>{cfg.trailAct=v;updateSentence();}));
     const r2=div('');r2.style.cssText='display:flex;gap:16px;flex-wrap:wrap';
-    const d=div('');d.appendChild(slabel('Distância'));d.appendChild(stepper(cfg.trailDist,1,2000,'pts',v=>{cfg.trailDist=v;updateSentence();}));
-    const s=div('');s.appendChild(slabel('Step'));s.appendChild(stepper(cfg.trailStep,1,1000,'pts',v=>{cfg.trailStep=v;updateSentence();}));
+    const d=div('');d.appendChild(slabel('Distância'));d.appendChild(stepperPoints(cfg.trailDist,1,2000,cfg.asset,v=>{cfg.trailDist=v;updateSentence();}));
+    const s=div('');s.appendChild(slabel('Step'));s.appendChild(stepperPoints(cfg.trailStep,1,1000,cfg.asset,v=>{cfg.trailStep=v;updateSentence();}));
     r2.append(d,s);body.append(r1,r2);
   }));
 
   el.appendChild(mgmtBlock('Realização Parcial','Parte da posição é encerrada com lucro e o restante continua rodando.','Parcial realiza ganho antes do alvo principal, reduzindo o risco residual.',cfg.partial,v=>{cfg.partial=v;renderApp();},body=>{
     const r1=div('');r1.style.cssText='display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px';
     const p=div('');p.appendChild(slabel('Realizar'));p.appendChild(stepper(cfg.partPct,10,90,'% da posição',v=>{cfg.partPct=v;updateSentence();}));
-    const a=div('');a.appendChild(slabel('Ao atingir'));a.appendChild(stepper(cfg.partAt,1,5000,'pts de lucro',v=>{cfg.partAt=v;updateSentence();}));
+    const a=div('');a.appendChild(slabel('Ao atingir'));a.appendChild(stepperPoints(cfg.partAt,1,5000,cfg.asset,v=>{cfg.partAt=v;updateSentence();}));
     r1.append(p,a);
     body.appendChild(r1);
     body.appendChild(ckbox(cfg.partMoveStop,'Mover stop para a entrada após a parcial',v=>{cfg.partMoveStop=v;renderApp();}));
@@ -3388,7 +4098,7 @@ function renderConfirm() {
   const cfg=state.cfg;
   const asset=findAsset(cfg.asset);
   const entryMap={breakout:'Rompimento da máx/mín do candle de sinal',next_open:'Abertura do próximo candle'};
-  const stopDesc={fixed:`${cfg.stopPts} pts abaixo/acima da entrada`,hl_candle:`Máx/Mín do candle de sinal (+${cfg.stopOffset} pts)`,n_candles:`Máx/Mín dos últimos ${cfg.stopCandles} candles (+${cfg.stopOffset} pts)`,atr:`${cfg.stopAtrMult.toFixed(1)}× ATR(${cfg.stopAtrPer})`}[cfg.stopType];
+  const stopDesc={fixed:`${cfg.stopPts} pts abaixo/acima da entrada`,hl_candle:`Máx/Mín do candle de sinal (+${cfg.stopOffset} pts)`,n_candles:`Máx/Mín dos últimos ${cfg.stopCandles} candles (1 tick de buffer)`,atr:`${cfg.stopAtrMult.toFixed(1)}× ATR(${cfg.stopAtrPer})`}[cfg.stopType];
   const tpDesc={fixed:`${cfg.tpPts} pts`,rr:`${cfg.tpRR}× o risco${cfg.stopType==='fixed'?' = '+(cfg.tpRR*cfg.stopPts).toLocaleString('pt-BR')+' pts':''}`,atr:`${cfg.tpAtrMult.toFixed(1)}× ATR(${cfg.tpAtrPer})`,fib_ext:`Extensão Fibonacci ${cfg.tpFibLevel}%`,none:'Sem alvo fixo'}[cfg.tpType];
   const mgmt=[];
   if(cfg.trailing) mgmt.push(`Trailing após ${cfg.trailAct} pts (dist.${cfg.trailDist}, step ${cfg.trailStep})`);
@@ -3525,7 +4235,13 @@ async function submitBacktestToBackend() {
         'Authorization': `Bearer ${token}`,
         'apikey': SUPA_KEY,
       },
-      body: JSON.stringify({ cfg: state.cfg }),
+      body: JSON.stringify({ cfg: {
+        ...state.cfg,
+        // n_candles: offset fixo em 1 tick — não exposto ao usuário
+        stopOffset: state.cfg.stopType==='n_candles'
+          ? getAssetTick(state.cfg.asset).tick
+          : state.cfg.stopOffset,
+      } }),
     });
 
     const data = await res.json();
@@ -3545,13 +4261,7 @@ async function submitBacktestToBackend() {
 async function pollBacktestResult(backtestId, onProgress, onDone, onError) {
   const maxAttempts = 720; // 720 * 5s = 60 min max
   let attempts = 0;
-  const progressMsgs = [
-    'Backtest na fila, aguardando processamento...',
-    'Analisando 7 anos de dados reais do mercado...',
-    'Simulando cada operacao, candle por candle...',
-    'Calculando o que teria acontecido com o seu dinheiro...',
-    'Medindo drawdowns - os momentos dificeis tambem contam...',
-  ];
+  const progressMsgs = getLoadMsgs();
 
   // Obter token do usuario para RLS
   const session = await db.auth.getSession();
@@ -3605,14 +4315,32 @@ async function pollBacktestResult(backtestId, onProgress, onDone, onError) {
 }
 
 // ─── LOADING ─────────────────────────────────────────────────
-const LOAD_MSGS=[
-  'Enviando para processamento...',
-  'Analisando 7 anos de dados reais do mercado...',
-  'Simulando cada operacao, candle por candle...',
-  'Calculando o que teria acontecido com o seu dinheiro...',
-  'Medindo drawdowns - os momentos dificeis tambem contam...',
-  'Quase la. A verdade sobre esse setup esta chegando...',
-];
+function calcCandles(tf) {
+  // Periodo historico: Jan 2019 - Mar 2026 = ~7.25 anos = ~1856 dias uteis
+  const diasUteis = 1856;
+  const minPorDia = {'1m':480,'2m':480,'5m':480,'10m':480,'15m':480,'30m':480,'60m':480,'D':1};
+  const tfMin = {'1m':1,'2m':2,'5m':5,'10m':10,'15m':15,'30m':30,'60m':60,'D':480};
+  const minDia = minPorDia[tf] || 480;
+  const minTf  = tfMin[tf] || 5;
+  const total  = Math.round((diasUteis * minDia) / minTf);
+  return total.toLocaleString('pt-BR');
+}
+
+function getLoadMsgs() {
+  const tf = state.cfg ? state.cfg.tf : '5m';
+  const nCandles = calcCandles(tf);
+  const tfLabel = {'1m':'1 minuto','2m':'2 minutos','5m':'5 minutos','10m':'10 minutos',
+                   '15m':'15 minutos','30m':'30 minutos','60m':'60 minutos','D':'diário'}[tf] || tf;
+  return [
+    'Enviando para processamento...',
+    'Analisando 7 anos de dados reais do mercado...',
+    `Carregando ${nCandles} candles de ${tfLabel}...`,
+    'Simulando cada operacao, candle por candle...',
+    'Calculando o que teria acontecido com o seu dinheiro...',
+    'Medindo drawdowns - os momentos dificeis tambem contam...',
+    'Quase la. A verdade sobre esse setup esta chegando...',
+  ];
+}
 
 async function startLoading() {
   state.animate=true;state.screen='loading';state.loadMsg=0;renderApp();
@@ -3686,7 +4414,7 @@ function renderLoading() {
   spin.innerHTML=`<div class="spinner-ring"></div><div class="spinner-inner"></div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`;
   const title=div('');title.style.cssText='font-size:19px;font-weight:700;color:var(--tx);margin-bottom:5px';title.textContent='Rodando backtest';
   const tagline=div('');tagline.style.cssText='font-size:12px;color:var(--txm);margin-bottom:14px;font-style:italic';tagline.textContent='Se o assunto for o seu dinheiro, não chute. Teste.';
-  const msg=div('');msg.id='load-msg';msg.style.cssText='font-size:13px;color:var(--txs);margin-bottom:20px;min-height:20px';msg.textContent=LOAD_MSGS[0];
+  const msg=div('');msg.id='load-msg';msg.style.cssText='font-size:13px;color:var(--txs);margin-bottom:20px;min-height:20px';msg.textContent=getLoadMsgs()[0];
   const barWrap=div('load-bar');const fill=div('load-fill');barWrap.appendChild(fill);
   el.append(spin,div('',title,tagline,msg,barWrap));
   return el;
@@ -3869,7 +4597,8 @@ function renderResults() {
 }
 
 // ─── STRATEGY SENTENCE ────────────────────────────────────────
-function buildStrategySentence(cfg) {
+function buildStrategySentence(cfg, step) {
+  if(step === undefined) step = state.step;
   const asset = findAsset(cfg.asset);
   const assetName = asset ? asset.n : cfg.asset;
   const dirText = cfg.direction==='long'
@@ -3884,35 +4613,60 @@ function buildStrategySentence(cfg) {
   const stopMap = {
     fixed: `stop fixo de <strong>${cfg.stopPts} pts</strong>`,
     hl_candle: `stop na máx/mín do candle de sinal`,
-    n_candles: `stop na máx/mín dos últimos <strong>${cfg.stopCandles} candles</strong>`,
+    n_candles: `stop na máx/mín dos últimos <strong>${cfg.stopCandles} candles</strong> (1 tick de buffer)`,
     atr: `stop de <strong>${cfg.stopAtrMult}× ATR(${cfg.stopAtrPer})</strong>`,
+    fibo: `stop no nível Fibonacci configurado`,
   };
   const tpMap = {
     fixed: `alvo de <strong>${cfg.tpPts} pts</strong>`,
     rr: `alvo de <strong>${cfg.tpRR}× o risco</strong>`,
     atr: `alvo de <strong>${cfg.tpAtrMult}× ATR(${cfg.tpAtrPer})</strong>`,
     fib_ext: `alvo na extensão de Fibonacci <strong>${cfg.tpFibLevel}%</strong>`,
+    fibo: `alvo no nível Fibonacci configurado`,
     none: 'sem alvo fixo',
   };
-  const conds = cfg.conditions.length === 0
-    ? '<span style="color:var(--txm)">nenhuma condição definida ainda</span>'
-    : cfg.conditions.map(c => `<strong>${condLabel(c)}</strong>`).join(' <span class="hl">e</span> ');
 
   const parts = [];
-  parts.push(`Sistema vai ${dirText} <strong>${assetName}</strong> no <strong>${cfg.tf}</strong>`);
-  parts.push(`quando ${conds}`);
-  if(cfg.conditions.length > 0) parts.push(entryMap[cfg.entryType] || '');
-  const risk = [stopMap[cfg.stopType], tpMap[cfg.tpType]].filter(Boolean);
-  if(risk.length) parts.push(risk.join(', '));
-  if(cfg.trailing) parts.push(`trailing após <strong>${cfg.trailAct} pts</strong>`);
-  if(cfg.partial) parts.push(`parcial de <strong>${cfg.partPct}%</strong> aos <strong>${cfg.partAt} pts</strong>`);
+
+  // ── Step 0: Mercado ──────────────────────────────────
+  // Sempre presente
+  const timeStr = `das <strong>${cfg.tStart||'09:00'}</strong> às <strong>${cfg.tEnd||'17:30'}</strong>`;
+  parts.push(`Sistema vai ${dirText} <strong>${assetName}</strong> no <strong>${cfg.tf}</strong> · ${timeStr}`);
+
+  // ── Step 1: Condições ────────────────────────────────
+  if(step >= 1) {
+    const conds = cfg.conditions.length === 0
+      ? '<span style="color:var(--txm);font-style:italic">aguardando condições...</span>'
+      : cfg.conditions.map(c => `<strong>${condLabel(c)}</strong>`).join(' <span class="hl">e</span> ');
+    parts.push(`quando ${conds}`);
+  }
+
+  // ── Step 2: Gatilho ──────────────────────────────────
+  if(step >= 2 && cfg.conditions.length > 0) {
+    const entryTxt = entryMap[cfg.entryType];
+    if(entryTxt) parts.push(entryTxt);
+    if(cfg.validity > 1) parts.push(`sinal válido por <strong>${cfg.validity} candles</strong>`);
+  }
+
+  // ── Step 3: Risco ────────────────────────────────────
+  if(step >= 3) {
+    const risk = [stopMap[cfg.stopType], tpMap[cfg.tpType]].filter(Boolean);
+    if(risk.length) parts.push(risk.join(', '));
+  }
+
+  // ── Step 4: Gestão ───────────────────────────────────
+  if(step >= 4) {
+    if(cfg.trailing) parts.push(`trailing após <strong>${cfg.trailAct} pts</strong>`);
+    if(cfg.partial) parts.push(`parcial de <strong>${cfg.partPct}%</strong> aos <strong>${cfg.partAt} pts</strong>`);
+  }
+
   return parts.filter(Boolean).join(' · ');
 }
 
 // Atualiza só a frase sem re-renderizar o DOM inteiro
 function updateSentence() {
   const el = document.getElementById('strategy-sentence-el');
-  if(el) el.innerHTML = buildStrategySentence(state.cfg);
+  if(el) el.innerHTML = buildStrategySentence(state.cfg, state.step);
 }
 
 // Atualiza só o preview SVG sem re-renderizar o DOM inteiro
@@ -3958,6 +4712,10 @@ function renderProgressBar() {
 
 // ─── MAIN RENDER ──────────────────────────────────────────────
 function renderApp() {
+  // Nunca renderizar o wizard sem usuário e assinatura confirmados
+  if (!currentUser) return;
+  if (!currentSub) { showScreen('nosub'); return; }
+
   renderProgressBar();
   const main=document.getElementById('main');
 
@@ -4018,7 +4776,7 @@ function renderApp() {
   sentLabel.innerHTML=`<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--txm)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16" stroke-width="3"/></svg> Sua estratégia em português`;
   const sentEl=div('strategy-sentence');
   sentEl.id='strategy-sentence-el';
-  sentEl.innerHTML=buildStrategySentence(state.cfg);
+  sentEl.innerHTML=buildStrategySentence(state.cfg, state.step);
   sentWrap.append(sentLabel,sentEl);
   previewCard.appendChild(sentWrap);
   right.appendChild(previewCard);
@@ -4107,10 +4865,24 @@ function renderNoSub() {
   const el = document.createElement('div');
   el.className = 'nosub-screen';
   el.innerHTML = `
-    <div class="nosub-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="1.8" stroke-linecap="round"><path d="M3 3v18h18"/><path d="m9 17 3-5 3 3 3-5"/></svg></div>
-    <div class="nosub-title">Escolha seu plano para continuar</div>
-    <div class="nosub-sub">Você ainda não tem uma assinatura ativa.</div>
-    <button onclick="showScreen('plans')" style="padding:13px 32px;border-radius:10px;border:none;background:#00D4AA;color:#0A0A0F;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">Ver planos</button>`;
+    <div class="nosub-glow"></div>
+    <div class="nosub-badge">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      Backtest Pro
+    </div>
+    <div class="nosub-headline">Teste estratégias antes de<br><em>arriscar dinheiro real</em></div>
+    <div class="nosub-desc">340.000+ candles históricos. Backtest completo em segundos. Sem código, sem instalação.</div>
+    <button class="nosub-cta" onclick="showScreen('plans')">
+      Ver planos
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+    <div class="nosub-proof">
+      <div class="nosub-proof-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2.5" stroke-linecap="round"><polyline points="20,6 9,17 4,12"/></svg> Sem recorrência</div>
+      <div class="nosub-proof-dot"></div>
+      <div class="nosub-proof-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2.5" stroke-linecap="round"><polyline points="20,6 9,17 4,12"/></svg> Pix ou cartão</div>
+      <div class="nosub-proof-dot"></div>
+      <div class="nosub-proof-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2.5" stroke-linecap="round"><polyline points="20,6 9,17 4,12"/></svg> Cancele quando quiser</div>
+    </div>`;
   return el;
 }
 
@@ -4123,28 +4895,122 @@ function renderPlans() {
   };
   const cycleLabel = { mensal:'Mensal', semestral:'Semestral', anual:'Anual' };
   const disc = { mensal:'', semestral:' · 11% off', anual:' · 30% off' };
-  el.innerHTML = `
-    <div class="plans-title">Escolha seu plano</div>
-    <div class="plans-sub">Cobrança avulsa · Sem recorrência · Pix ou cartão</div>
-    <div class="cycle-toggle">
-      ${Object.keys(cycleLabel).map(c=>`<button class="cycle-btn${selectedCycle===c?' active':''}" onclick="selectedCycle='${c}';showScreen('plans')">${cycleLabel[c]}${disc[c]}</button>`).join('')}
-    </div>
-    <div class="plans-grid">
-      ${['essencial','pro'].map(plan=>{
-        const price = PRICES[plan][selectedCycle];
-        const isPro = plan==='pro';
-        return `<div class="plan-card${!isPro?' featured':''}">
-          ${!isPro?'<div class="plan-popular">Popular</div>':''}
-          <div class="plan-name">${plan.charAt(0).toUpperCase()+plan.slice(1)}</div>
-          <div class="plan-price">R$ <span>${price.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span></div>
-          <div class="plan-cycle-note">acesso por ${CYCLE_DAYS[selectedCycle]} dias · cobrança única</div>
-          <div class="plan-divider"></div>
-          <div class="plan-features">${feats[plan].map(([ok,txt])=>`<div class="plan-feat"><span class="${ok?'plan-feat-check':'plan-feat-dash'}">${ok?'✓':'—'}</span>${txt}</div>`).join('')}</div>
-          <button class="plan-cta ${isPro?'secondary':'primary'}" onclick="selectedPlan='${plan}';showScreen('payment')">Assinar ${plan.charAt(0).toUpperCase()+plan.slice(1)}</button>
-        </div>`;
-      }).join('')}
-    </div>
-    <div style="text-align:center;font-size:12px;color:var(--txm)">Pagamento seguro via Mercado Pago</div>`;
+
+  // Header
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'text-align:center;margin-bottom:32px';
+  hdr.innerHTML = `
+    <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:99px;border:0.5px solid rgba(0,212,170,.25);background:rgba(0,212,170,.06);font-size:10px;font-weight:700;color:var(--ac);letter-spacing:.1em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:18px">Planos e preços</div>
+    <div style="font-family:'Syne',sans-serif;font-size:clamp(24px,4vw,36px);font-weight:800;color:var(--tx);letter-spacing:-.03em;margin-bottom:8px">Escolha o seu plano</div>
+    <div style="font-size:14px;color:var(--txs);line-height:1.5">Cobrança avulsa · Sem recorrência · Acesso imediato após pagamento</div>`;
+  el.appendChild(hdr);
+
+  // Cycle toggle
+  const cycleWrap = document.createElement('div');
+  cycleWrap.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:32px;background:var(--bg2);border:0.5px solid var(--bd);border-radius:12px;padding:5px;width:fit-content;margin-left:auto;margin-right:auto';
+  Object.keys(cycleLabel).forEach(cy => {
+    const btn = document.createElement('button');
+    btn.style.cssText = `padding:8px 20px;border-radius:8px;border:none;font-size:13px;font-weight:${selectedCycle===cy?'700':'500'};cursor:pointer;font-family:inherit;transition:all .15s;background:${selectedCycle===cy?'var(--ac)':'transparent'};color:${selectedCycle===cy?'#0A0A0F':'var(--txs)'}`;
+    const discText = {mensal:'',semestral:' · 11% off',anual:' · 30% off'}[cy];
+    btn.textContent = cycleLabel[cy] + discText;
+    btn.addEventListener('click', () => { selectedCycle = cy; showScreen('plans'); });
+    cycleWrap.appendChild(btn);
+  });
+  el.appendChild(cycleWrap);
+
+  // Cards grid
+  const grid = document.createElement('div');
+  grid.className = 'plans-grid';
+
+  ['essencial','pro'].forEach(plan => {
+    const price = PRICES[plan][selectedCycle];
+    const isPro = plan === 'pro';
+    const days = CYCLE_DAYS[selectedCycle];
+
+    const card = document.createElement('div');
+    card.className = 'plan-card' + (!isPro ? ' featured' : '');
+
+    // Badge Popular
+    if (!isPro) {
+      const pop = document.createElement('div');
+      pop.className = 'plan-popular';
+      pop.textContent = 'Popular';
+      card.appendChild(pop);
+    }
+
+    // Plan name
+    const nm = document.createElement('div');
+    nm.className = 'plan-name';
+    nm.textContent = plan === 'essencial' ? 'ESSENCIAL' : 'PRO';
+    card.appendChild(nm);
+
+    // Price block
+    const priceBlock = document.createElement('div');
+    priceBlock.style.cssText = 'margin-bottom:4px';
+    const priceEl = document.createElement('div');
+    priceEl.className = 'plan-price';
+    const currency = document.createElement('span');
+    currency.style.cssText = 'font-size:20px;font-weight:500;color:var(--txs);font-family:"DM Sans",sans-serif;vertical-align:top;margin-top:8px;display:inline-block;margin-right:2px';
+    currency.textContent = 'R$';
+    const val = document.createElement('span');
+    val.style.cssText = 'font-size:44px;font-weight:800;color:var(--tx);font-family:"JetBrains Mono",monospace;letter-spacing:-.04em;line-height:1';
+    val.textContent = price.toLocaleString('pt-BR', {minimumFractionDigits:2});
+    priceEl.append(currency, val);
+    priceBlock.appendChild(priceEl);
+    card.appendChild(priceBlock);
+
+    // Cycle note
+    const note = document.createElement('div');
+    note.style.cssText = 'font-size:12px;color:var(--txm);margin-bottom:22px';
+    note.textContent = `acesso por ${days} dias · cobrança única`;
+    card.appendChild(note);
+
+    // Divider
+    const div2 = document.createElement('div');
+    div2.style.cssText = 'height:0.5px;background:var(--bd);margin-bottom:20px';
+    card.appendChild(div2);
+
+    // Features
+    const featList = document.createElement('div');
+    featList.className = 'plan-features';
+    feats[plan].forEach(([ok, txt]) => {
+      const row = document.createElement('div');
+      row.className = 'plan-feature' + (ok ? ' ok' : '');
+      const icon = document.createElement('div');
+      icon.className = 'fi';
+      icon.innerHTML = ok
+        ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20,6 9,17 4,12"/></svg>'
+        : '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+      const label = document.createElement('span');
+      label.textContent = txt;
+      row.append(icon, label);
+      featList.appendChild(row);
+    });
+    card.appendChild(featList);
+
+    // CTA button
+    const cta = document.createElement('button');
+    cta.className = 'plan-btn' + (!isPro ? ' featured-btn' : '');
+    cta.style.cssText = 'margin-top:24px';
+    cta.textContent = 'Assinar ' + (plan === 'essencial' ? 'Essencial' : 'Pro');
+    cta.addEventListener('click', () => { selectedPlan = plan; showScreen('payment'); });
+    card.appendChild(cta);
+
+    grid.appendChild(card);
+  });
+  el.appendChild(grid);
+
+  // Footer trust
+  const trust = document.createElement('div');
+  trust.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:16px;margin-top:24px;flex-wrap:wrap';
+  trust.innerHTML = `
+    <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--txm)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2.5" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Pagamento seguro via Mercado Pago</span>
+    <span style="width:3px;height:3px;border-radius:50%;background:var(--bd)"></span>
+    <span style="font-size:12px;color:var(--txm)">Pix ou cartão de crédito</span>
+    <span style="width:3px;height:3px;border-radius:50%;background:var(--bd)"></span>
+    <span style="font-size:12px;color:var(--txm)">Acesso imediato</span>`;
+  el.appendChild(trust);
+
   return el;
 }
 
@@ -4414,7 +5280,7 @@ const TOUR_STEPS = {
   wizard: [
     {sel:'.prog-bar',title:'Navegação por Passos',body:'O passo a passo tem 5 etapas. Cada uma configura uma parte da sua estratégia. Você pode voltar a qualquer etapa já completada clicando nela.',pos:'bottom'},
     {sel:'.step-icon',title:'Etapa Atual',body:'Aqui você vê o nome e descrição da etapa em que está. Cada passo foca em um aspecto: mercado, condições, gatilho, risco e gestão.',pos:'bottom'},
-    {sel:'.two-col',title:'Configuração + Preview',body:'Na esquerda você configura. Na direita, o preview mostra visualmente a estratégia sendo montada — ele atualiza em tempo real conforme suas escolhas.',pos:'top'},
+    {sel:'.step-title',title:'Configuração + Preview',body:'Na esquerda você configura. Na direita, o preview mostra visualmente a estratégia sendo montada — ele atualiza em tempo real conforme suas escolhas.',pos:'bottom'},
     {sel:'.nav-footer',title:'Navegação',body:'Use Voltar e Avançar para navegar entre as etapas. No último passo, o botão muda para "Confirmar estratégia".',pos:'top'},
     {sel:'#tour-help-btn',title:'Precisa de Ajuda?',body:'Clique neste botão a qualquer momento para reexibir este tour na seção atual. Os ícones de "?" ao lado dos campos também explicam cada opção.',pos:'bottom'},
   ],
@@ -4488,27 +5354,40 @@ function showTourStep(){
   const arrow=div('tour-arrow');
 
   tooltip.append(titleEl,bodyEl,footer);
+  // Renderiza invisível primeiro para medir dimensões reais
+  tooltip.style.cssText='position:fixed;visibility:hidden;left:0;top:0';
   document.body.appendChild(tooltip);
 
-  // Position tooltip
+  // Mede após renderização
   const ttRect=tooltip.getBoundingClientRect();
   let left=rect.left, top;
-  if(step.pos==='bottom'||!step.pos){
+
+  // Tenta posição preferida, faz fallback se não couber
+  const spaceBelow = window.innerHeight - rect.bottom - 12;
+  const spaceAbove = rect.top - 12;
+  let useBottom = (step.pos==='bottom'||!step.pos) ? true : false;
+
+  // Fallback: se não couber na posição preferida, tenta o outro lado
+  if(useBottom && spaceBelow < ttRect.height && spaceAbove >= ttRect.height) useBottom=false;
+  if(!useBottom && spaceAbove < ttRect.height && spaceBelow >= ttRect.height) useBottom=true;
+
+  if(useBottom){
     top=rect.bottom+12;
     arrow.className='tour-arrow tour-arrow-bottom';
-    tooltip.appendChild(arrow);
   } else {
     top=rect.top-ttRect.height-12;
     arrow.className='tour-arrow tour-arrow-top';
-    tooltip.appendChild(arrow);
   }
-  // Keep within viewport
+  tooltip.appendChild(arrow);
+
+  // Mantém dentro da viewport horizontalmente
   if(left+ttRect.width>window.innerWidth-16) left=window.innerWidth-ttRect.width-16;
   if(left<16) left=16;
-  if(top<8) {top=rect.bottom+12;arrow.className='tour-arrow tour-arrow-bottom';}
-  if(top+ttRect.height>window.innerHeight-8){top=rect.top-ttRect.height-12;arrow.className='tour-arrow tour-arrow-top';}
+  // Garante que não sai da viewport verticalmente
+  if(top<8) top=8;
+  if(top+ttRect.height>window.innerHeight-8) top=window.innerHeight-ttRect.height-8;
 
-  tooltip.style.left=left+'px';tooltip.style.top=top+'px';tooltip.style.position='fixed';
+  tooltip.style.cssText=`position:fixed;left:${left}px;top:${top}px`;
 }
 
 function nextTourStep(){tourStepIdx++;showTourStep();}
@@ -4595,6 +5474,18 @@ async function handleAuth(mode) {
 // ─── BOOT ─────────────────────────────────────────────────────
 // Único ponto de entrada de sessão — onAuthStateChange
 let currentScreen = null; // Track current screen to prevent auth override
+let authResolved = false; // Flag para saber se o INITIAL_SESSION já foi processado
+
+// Mostrar spinner de boot enquanto a sessão é verificada
+(function showBootSpinner() {
+  const main = document.getElementById('main');
+  if (!main) return;
+  const spinner = document.createElement('div');
+  spinner.id = 'boot-spinner';
+  spinner.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 56px)';
+  spinner.innerHTML = '<div style="width:28px;height:28px;border:2.5px solid var(--bd);border-top-color:var(--ac);border-radius:50%;animation:spin 0.7s linear infinite"></div>';
+  main.replaceChildren(spinner);
+})();
 
 db.auth.onAuthStateChange(async (event, session) => {
   
@@ -4608,17 +5499,28 @@ db.auth.onAuthStateChange(async (event, session) => {
     if (currentSub) { renderApp(); } else { showScreen('nosub'); }
   }
   if (event === 'INITIAL_SESSION') {
+    authResolved = true;
+    console.log('[AUTH] INITIAL_SESSION — user:', session?.user?.email || 'none');
     if (session?.user) {
       currentUser = session.user;
       await loadSubscription(session.access_token);
+      console.log('[AUTH] loadSubscription result — currentSub:', currentSub);
       updateAvatarUI();
-      if (currentSub) { renderApp(); maybeAutoTour(); } else { showScreen('nosub'); }
+      document.getElementById('boot-spinner')?.remove();
+      if (currentSub) {
+        console.log('[AUTH] → renderApp()');
+        renderApp(); maybeAutoTour();
+      } else {
+        console.log('[AUTH] → showScreen(nosub)');
+        showScreen('nosub');
+      }
     } else {
+      document.getElementById('boot-spinner')?.remove();
       showAuthModal('login');
     }
   }
   if (event === 'SIGNED_OUT') {
-    currentUser=null; currentSub=null; currentScreen=null;
+    currentUser=null; currentSub=null; currentScreen=null; authResolved=false;
     showAuthModal('login');
   }
 });
