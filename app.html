@@ -702,6 +702,7 @@ const INDS_BY_TAB = {
     { id:'choch', name:'Change of Character (CHoCH)',  desc:'Possível reversão — rompe estrutura oposta',              hasPer:true, hasVal:false, defCond:'CHoCH detectado',defVal:0,defPer:10 },
     { id:'ob',    name:'Order Block (OB)',             desc:'Zona institucional — último candle oposto antes de impulso',hasPer:false,hasVal:true, defCond:'Preço retesta Order Block',defVal:150 },
     { id:'sweep', name:'Liquidity Sweep',              desc:'Falso rompimento institucional — varre e reverte',        hasPer:true, hasVal:true,  defCond:'Liquidity Sweep detectado',defVal:10,defPer:20 },
+    { id:'grab',  name:'Liquidity Grab',               desc:'BoS falhado com rejeição — pavio longo e fechamento contra o rompimento', hasPer:true, hasVal:true,  defCond:'Liquidity Grab detectado',defVal:10,defPer:20 },
   ],
 };
 
@@ -731,7 +732,8 @@ const BOS_CONDS   = ['BoS detectado'];
 const CHOCH_CONDS = ['CHoCH detectado'];
 const OB_CONDS    = ['Order Block detectado','Preço retesta Order Block'];
 const SWEEP_CONDS = ['Liquidity Sweep detectado'];
-const SMC_IDS     = ['fvg','bos','choch','ob','sweep'];
+const GRAB_CONDS  = ['Liquidity Grab detectado'];
+const SMC_IDS     = ['fvg','bos','choch','ob','sweep','grab'];
 
 // ─── ESTRATÉGIAS FAMOSAS (templates) ─────────────────────────
 const FAMOUS_STRATEGIES = [
@@ -934,6 +936,7 @@ function getCondsFor(id) {
   if (id==='choch')   return CHOCH_CONDS;
   if (id==='ob')      return OB_CONDS;
   if (id==='sweep')   return SWEEP_CONDS;
+  if (id==='grab')    return GRAB_CONDS;
   if (id==='avgvol') return VOL_CONDS;
   if (id==='obv')     return OBV_CONDS;
   if (id==='range')   return RNG_CONDS;
@@ -1034,6 +1037,7 @@ function condLabel(c) {
     case 'choch':    return `CHoCH ${p.dir||'Compra'} (swing ${p.per} candles, ${p.conf||'fechamento'})`;
     case 'ob':       return `OB ${p.dir||'Compra'} (impulso ≥${p.val} pts) — ${p.cond}`;
     case 'sweep':    return `Sweep ${p.dir||'Compra'} (${p.per} candles, ≥${p.val} pts, ${p.confCandles||3} conf.)`;
+    case 'grab':     return `Grab ${p.dir||'Compra'} (${p.per} candles, ≥${p.val} pts, ${p.confCandles||3} conf.)`;
     default:         return c.name;
   }
 }
@@ -2380,6 +2384,7 @@ function renderModal() {
           if(ind.id==='choch')ms.params={dir:'Compra',per:10,conf:'fechamento',cond:CHOCH_CONDS[0]};
           if(ind.id==='ob')   ms.params={dir:'Compra',val:150,bodyOnly:'Corpo',cond:OB_CONDS[1]};
           if(ind.id==='sweep')ms.params={dir:'Compra',per:20,val:10,confCandles:3,cond:SWEEP_CONDS[0]};
+          if(ind.id==='grab') ms.params={dir:'Compra',per:20,val:10,confCandles:3,cond:GRAB_CONDS[0]};
           ms.page=1;
           renderModal();
         });
@@ -2636,6 +2641,20 @@ function renderModal() {
           tx(340,76,'3. Reverte e confirma',_TH.txs,12);
           tx(340,100,'Falso rompimento institucional',_TH.txm,10);
         }));
+      }
+
+      // ── Grab config ──
+      if(smcId==='grab'){
+        frag.appendChild(pills('Direção','Compra = BoS falhado nas mínimas com rejeição pra cima. Venda = BoS falhado nas máximas com rejeição pra baixo. Compra e Venda = testa ambos.',SMC_DIRS,ms.params.dir,v=>{ms.params.dir=v;}));
+        const pRow=div('');pRow.appendChild(slabel('Candles para nível','Quantos candles olhar pra trás para identificar o nível de liquidez.'));
+        pRow.appendChild(stepper(ms.params.per,3,100,'candles',v=>{ms.params.per=v;if(window.refreshModalValidation)refreshModalValidation();}));
+        frag.appendChild(pRow);
+        const vRow=div('');vRow.appendChild(slabel('Ultrapassagem mínima','O preço precisa ultrapassar o nível por pelo menos estes pontos antes de reverter.'));
+        vRow.appendChild(stepper(ms.params.val,1,1000,'pts',v=>{ms.params.val=v;if(window.refreshModalValidation)refreshModalValidation();}));
+        frag.appendChild(vRow);
+        const cRow=div('');cRow.appendChild(slabel('Candles de confirmação','Quantos candles o preço precisa fechar na direção oposta para confirmar o grab.'));
+        cRow.appendChild(stepper(ms.params.confCandles,1,20,'candles',v=>{ms.params.confCandles=v;if(window.refreshModalValidation)refreshModalValidation();}));
+        frag.appendChild(cRow);
       }
 
       // ── Conditions radio list (common to all SMC, local update) ──
