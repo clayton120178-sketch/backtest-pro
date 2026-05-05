@@ -2088,14 +2088,28 @@ function _lwcFlush() {
 
 // ─── Marker responsivo para osciladores: encontra primeiro candle onde condição é satisfeita ─
 function _findOscSignal(indData, val, cross, up) {
-  for (let i = 1; i < indData.length; i++) {
-    const prev = indData[i-1].value, curr = indData[i].value;
-    if (cross && up && prev <= val && curr > val) return i;
-    if (cross && !up && prev >= val && curr < val) return i;
-    if (!cross && up && curr > val) return i;
-    if (!cross && !up && curr < val) return i;
+  if (cross) {
+    // Cruza: encontrar ÚLTIMO cruzamento (mais ao centro/direita do gráfico)
+    let last = -1;
+    for (let i = 1; i < indData.length; i++) {
+      const prev = indData[i-1].value, curr = indData[i].value;
+      if (up && prev <= val && curr > val) last = i;
+      if (!up && prev >= val && curr < val) last = i;
+    }
+    return last;
   }
-  return -1;
+  // Está acima/abaixo: encontrar candle MAIS PRÓXIMO do threshold no lado correto
+  // (demonstra visualmente onde o indicador está na zona certa)
+  let bestIdx = -1, bestDist = Infinity;
+  for (let i = 0; i < indData.length; i++) {
+    const curr = indData[i].value;
+    const ok = up ? curr > val : curr < val;
+    if (ok) {
+      const dist = Math.abs(curr - val);
+      if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+    }
+  }
+  return bestIdx;
 }
 function _applyOscSignalMarker(cs, lineSeries, indData, times, val, cross, up) {
   const idx = _findOscSignal(indData, val, cross, up);
@@ -2566,15 +2580,19 @@ const chartOpts = {
         if (!bb[i] || !bb[i-1]) continue;
         if (isSup) {
           if (isCross) {
-            if (ohlc[i-1].high <= bb[i-1].upper && ohlc[i].close > bb[i].upper) { sigIdx = i; break; }
+            // Cruza banda superior: high do candle anterior abaixo, high atual acima da banda
+            if (ohlc[i-1].high <= bb[i-1].upper && ohlc[i].high > bb[i].upper) { sigIdx = i; break; }
           } else {
-            if (ohlc[i].high >= bb[i].upper - 0.05) { sigIdx = i; break; }
+            // Toca: high próximo ou acima da banda
+            if (ohlc[i].high >= bb[i].upper * 0.998) { sigIdx = i; break; }
           }
         } else {
           if (isCross) {
-            if (ohlc[i-1].low >= bb[i-1].lower && ohlc[i].close < bb[i].lower) { sigIdx = i; break; }
+            // Cruza banda inferior: low do candle anterior acima, low atual abaixo da banda
+            if (ohlc[i-1].low >= bb[i-1].lower && ohlc[i].low < bb[i].lower) { sigIdx = i; break; }
           } else {
-            if (ohlc[i].low <= bb[i].lower + 0.05) { sigIdx = i; break; }
+            // Toca: low próximo ou abaixo da banda
+            if (ohlc[i].low <= bb[i].lower * 1.002) { sigIdx = i; break; }
           }
         }
       }
@@ -2584,7 +2602,7 @@ const chartOpts = {
           position: isSup ? 'aboveBar' : 'belowBar',
           color: isSup ? '#EF4444' : '#10B981',
           shape: isSup ? 'arrowDown' : 'arrowUp',
-          text: isCross ? 'Cruz' : 'Toque'
+          text: isCross ? 'Cruza' : 'Toque'
         }]);
       }
       chart.timeScale().fitContent();
@@ -2624,8 +2642,33 @@ const chartOpts = {
         return { time: b.time, value: cumTP / cumVol };
       });
       chart.addLineSeries({ color: '#F59E0B', lineWidth: 1.8, priceLineVisible: false }).setData(vwapData);
-      const sigIdx = N - 3;
-      cs.setMarkers([{ time: times[sigIdx], position: up ? 'belowBar' : 'aboveBar', color: '#00D4AA', shape: up ? 'arrowUp' : 'arrowDown', text: 'Sinal' }]);
+      // Marker posicionado conforme condição: cruza/está acima ou abaixo do VWAP
+      let vwapSigIdx = -1;
+      if (cross) {
+        // Encontrar último cruzamento
+        for (let i = 1; i < vwapData.length; i++) {
+          const prevDiff = ohlc[i-1].close - vwapData[i-1].value;
+          const currDiff = ohlc[i].close - vwapData[i].value;
+          if (up && prevDiff <= 0 && currDiff > 0) vwapSigIdx = i;
+          if (!up && prevDiff >= 0 && currDiff < 0) vwapSigIdx = i;
+        }
+      } else {
+        // "Está acima/abaixo": encontrar candle onde preço está claramente acima/abaixo
+        for (let i = ohlc.length - 1; i >= 0; i--) {
+          const diff = ohlc[i].close - vwapData[i].value;
+          if (up && diff > 0) { vwapSigIdx = i; break; }
+          if (!up && diff < 0) { vwapSigIdx = i; break; }
+        }
+      }
+      if (vwapSigIdx >= 0) {
+        cs.setMarkers([{
+          time: times[vwapSigIdx],
+          position: up ? 'aboveBar' : 'belowBar',
+          color: up ? '#10B981' : '#EF4444',
+          shape: up ? 'arrowUp' : 'arrowDown',
+          text: cross ? 'Sinal' : 'Sinal'
+        }]);
+      }
       chart.timeScale().fitContent();
     });
     return container;
@@ -2726,15 +2769,35 @@ const chartOpts = {
       longSeries.setData(sarLong);
       const shortSeries = chart.addLineSeries({ color: '#EF4444', lineWidth: 0, lineType: 1, priceLineVisible: false, lastValueVisible: false, pointMarkersVisible: true, pointMarkersRadius: 3 });
       shortSeries.setData(sarShort);
-      // Marker no primeiro flip
+      // Marker — "cruza acima do SAR" = SAR passa para baixo = compra
+      //          "cruza abaixo do SAR" = SAR passa para cima = venda
+      //          "está acima/abaixo" = candle representativo na zona
+      const wantLong = up; // up=true quando "acima" → preço ACIMA do SAR → SAR embaixo → compra
       let flipIdx = -1;
-      for (let i = 1; i < sar.length; i++) {
-        if (sar[i].isLong !== sar[i-1].isLong) {
-          if (cross || (up && sar[i].isLong) || (!up && !sar[i].isLong)) { flipIdx = i; break; }
+      if (cross) {
+        // Busca ÚLTIMO flip para o lado desejado (mais visível, mais ao centro/direita)
+        for (let i = 1; i < sar.length; i++) {
+          if (sar[i].isLong !== sar[i-1].isLong) {
+            if (wantLong && sar[i].isLong) flipIdx = i;
+            if (!wantLong && !sar[i].isLong) flipIdx = i;
+          }
+        }
+      } else {
+        // "Está acima/abaixo": último candle onde o SAR está no lado correto
+        for (let i = sar.length - 1; i >= 0; i--) {
+          if (wantLong && sar[i].isLong) { flipIdx = i; break; }
+          if (!wantLong && !sar[i].isLong) { flipIdx = i; break; }
         }
       }
       if (flipIdx > 0) {
-        cs.setMarkers([{ time: times[flipIdx], position: sar[flipIdx].isLong ? 'belowBar' : 'aboveBar', color: sar[flipIdx].isLong ? '#10B981' : '#EF4444', shape: sar[flipIdx].isLong ? 'arrowUp' : 'arrowDown', text: sar[flipIdx].isLong ? 'Compra' : 'Venda' }]);
+        const isBuy = sar[flipIdx].isLong;
+        cs.setMarkers([{
+          time: times[flipIdx],
+          position: isBuy ? 'belowBar' : 'aboveBar',
+          color: isBuy ? '#10B981' : '#EF4444',
+          shape: isBuy ? 'arrowUp' : 'arrowDown',
+          text: isBuy ? 'Compra' : 'Venda'
+        }]);
       }
       chart.timeScale().fitContent();
     });
