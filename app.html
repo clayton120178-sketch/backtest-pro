@@ -2131,7 +2131,7 @@ function buildCondPreview(indId, condText, params={}) {
   const sc = up ? '#10B981' : '#EF4444';
 
   // Indicator types that get LWC treatment
-  const LWC_IDS = ['rsi','stoch','cci','williams','macd','atr','sma','ema','bb','vwap','adx','sar','hilo'];
+  const LWC_IDS = ['rsi','stoch','cci','williams','macd','atr','sma','ema','bb','vwap','adx','sar','hilo','range','gap','prevday','fib'];
 
   if (!LWC_IDS.includes(indId)) {
     return _buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct);
@@ -2270,11 +2270,23 @@ const chartOpts = {
       if (indId === 'rsi') {
         const rsi = _calcRSI(closes, per);
         indData = rsi.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+
+        // Zonas fixas de sobrevenda (0-30) e sobrecompra (70-100) com fundo colorido
+        const overboughtZone = chart.addAreaSeries ? null : null; // LWC 4.x compatibility
+        // Usar linhas de zona para dar referência visual
+        const zone30 = botChart.addLineSeries({ color: 'rgba(16,185,129,0.4)', lineWidth: 0.5, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        zone30.setData(times.map(t => ({ time: t, value: 30 })));
+        const zone70 = botChart.addLineSeries({ color: 'rgba(239,68,68,0.4)', lineWidth: 0.5, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        zone70.setData(times.map(t => ({ time: t, value: 70 })));
+
+        // Threshold line (amarela) — move com val do usuário
+        const threshSeries = botChart.addLineSeries({ color: '#F59E0B', lineWidth: 1.5, lineStyle: 0, priceLineVisible: false, lastValueVisible: false });
+        threshSeries.setData(times.map(t => ({ time: t, value: val })));
+
+        // Linha do RSI
         const lineSeries = botChart.addLineSeries({ color: '#6366F1', lineWidth: 1.5, priceLineVisible: false });
         lineSeries.setData(indData);
-        // Threshold line
-        const threshSeries = botChart.addLineSeries({ color: '#F59E0B', lineWidth: 1, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
-        threshSeries.setData(times.map(t => ({ time: t, value: val })));
+
         _applyOscSignalMarker(cs, lineSeries, indData, times, val, cross, up);
         botChart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `RSI(${per})` } });
       }
@@ -2417,7 +2429,7 @@ const chartOpts = {
 
   // ── SMA / EMA ─────────────────────────────────────────────────
   if (['sma','ema'].includes(indId)) {
-    const isCross = ct.includes('longa') || ct.includes('cruzamento');
+    const isCross = (params.per2 != null && params.per2 > 0) || ct.includes('longa') || ct.includes('cruzamento');
     container.style.height = '160px';
     _lwcRender(container, (chartW) => {
       if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
@@ -2874,6 +2886,107 @@ const chartOpts = {
         const isBuy = hilo[flipIdx].mode === 'buy';
         cs.setMarkers([{ time: times[flipIdx], position: isBuy ? 'belowBar' : 'aboveBar', color: isBuy ? '#10B981' : '#EF4444', shape: isBuy ? 'arrowUp' : 'arrowDown', text: isBuy ? 'Compra' : 'Venda' }]);
       }
+      chart.timeScale().fitContent();
+    });
+    return container;
+  }
+
+  // ── RANGE, GAP, PREVDAY, FIBONACCI ────────────────────────────
+  // Todos são conceitos de preço puro — chart de candles com overlay ilustrativo
+  if (['range','gap','prevday','fib'].includes(indId)) {
+    container.style.height = '160px';
+    _lwcRender(container, (chartW) => {
+      if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
+      const chart = LightweightCharts.createChart(container, {
+        width: chartW,
+        layout: { background: { color: bg }, textColor: text },
+        grid: { vertLines: { color: grid }, horzLines: { color: grid } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
+        timeScale: { borderColor: 'transparent', visible: false },
+        crosshair: { mode: 0 },
+        handleScroll: false, handleScale: false,
+        height: 160,
+      });
+      const cs = chart.addCandlestickSeries({
+        upColor: '#10B981', downColor: '#EF4444',
+        borderUpColor: '#10B981', borderDownColor: '#EF4444',
+        wickUpColor: isDark ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.7)',
+        wickDownColor: isDark ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.7)',
+      });
+      cs.setData(ohlc);
+
+      if (indId === 'range') {
+        // Destacar o candle com maior range (amplitude)
+        let maxRange = 0, maxIdx = 0;
+        ohlc.forEach((b, i) => { const r = b.high - b.low; if (r > maxRange) { maxRange = r; maxIdx = i; } });
+        cs.setMarkers([{ time: times[maxIdx], position: 'aboveBar', color: '#F59E0B', shape: 'arrowDown', text: 'Range' }]);
+        chart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: 'Range (Máx−Mín)' } });
+      }
+
+      else if (indId === 'gap') {
+        // Encontrar gap entre fechamento anterior e abertura atual
+        let gapIdx = -1;
+        for (let i = 1; i < ohlc.length; i++) {
+          const gap = ohlc[i].open - ohlc[i-1].close;
+          const isUp = ct.includes('alta');
+          if (isUp && gap > 0.5) { gapIdx = i; break; }
+          if (!isUp && gap < -0.5) { gapIdx = i; break; }
+        }
+        if (gapIdx > 0) {
+          cs.setMarkers([{ time: times[gapIdx], position: up ? 'belowBar' : 'aboveBar', color: up ? '#10B981' : '#EF4444', shape: up ? 'arrowUp' : 'arrowDown', text: 'Gap' }]);
+        }
+        chart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: 'Gap' } });
+      }
+
+      else if (indId === 'prevday') {
+        // Linha horizontal marcando a máxima ou mínima "do dia anterior"
+        // Usa a primeira metade dos candles como "dia anterior"
+        const half = Math.floor(N / 2);
+        const prevHigh = Math.max(...ohlc.slice(0, half).map(b => b.high));
+        const prevLow  = Math.min(...ohlc.slice(0, half).map(b => b.low));
+        const isMax = ct.includes('máxima') || ct.includes('acima');
+        const level = isMax ? prevHigh : prevLow;
+        const levelSeries = chart.addLineSeries({ color: '#F59E0B', lineWidth: 1.5, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        levelSeries.setData(times.map(t => ({ time: t, value: level })));
+        // Marker onde preço cruza/toca o nível na segunda metade
+        let sigIdx = -1;
+        for (let i = half; i < ohlc.length; i++) {
+          if (isMax && ohlc[i].high >= level) { sigIdx = i; break; }
+          if (!isMax && ohlc[i].low <= level) { sigIdx = i; break; }
+        }
+        if (sigIdx > 0) {
+          cs.setMarkers([{ time: times[sigIdx], position: isMax ? 'aboveBar' : 'belowBar', color: isMax ? '#10B981' : '#EF4444', shape: isMax ? 'arrowUp' : 'arrowDown', text: 'Sinal' }]);
+        }
+        chart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: 'Máx/Mín Dia Anterior' } });
+      }
+
+      else if (indId === 'fib') {
+        // Linhas horizontais nos níveis de Fibonacci sobre o swing principal
+        // Usa _crossCloses (tendência V) para swing claro
+        cs.setData(_crossOhlc);
+        const swingHigh = Math.max(..._crossOhlc.map(b => b.high));
+        const swingLow  = Math.min(..._crossOhlc.map(b => b.low));
+        const range = swingHigh - swingLow;
+        const levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+        const levelColors = ['rgba(99,102,241,0.3)','rgba(99,102,241,0.4)','rgba(99,102,241,0.5)','rgba(99,102,241,0.6)','rgba(99,102,241,0.7)','rgba(99,102,241,0.5)','rgba(99,102,241,0.3)'];
+        levels.forEach((lv, idx) => {
+          const price = swingHigh - range * lv;
+          const ls = chart.addLineSeries({ color: levelColors[idx], lineWidth: lv === 0.618 ? 1.5 : 0.8, lineStyle: lv === 0.618 ? 0 : 1, priceLineVisible: false, lastValueVisible: false });
+          ls.setData(times.map(t => ({ time: t, value: price })));
+        });
+        // Marker no nível da condição
+        const fibLevel = ct.includes('61.8') ? 0.618 : ct.includes('50') ? 0.5 : ct.includes('38.2') ? 0.382 : ct.includes('78.6') ? 0.786 : ct.includes('23.6') ? 0.236 : 0.618;
+        const fibPrice = swingHigh - range * fibLevel;
+        let sigIdx = -1;
+        for (let i = 1; i < _crossOhlc.length; i++) {
+          if (Math.abs(_crossOhlc[i].close - fibPrice) < range * 0.03) { sigIdx = i; break; }
+        }
+        if (sigIdx > 0) {
+          cs.setMarkers([{ time: times[sigIdx], position: up ? 'belowBar' : 'aboveBar', color: '#F59E0B', shape: 'circle', text: (fibLevel * 100).toFixed(1) + '%' }]);
+        }
+        chart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: 'Retração de Fibonacci' } });
+      }
+
       chart.timeScale().fitContent();
     });
     return container;
