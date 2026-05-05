@@ -146,12 +146,21 @@ CONDITION_MAP = {
     "preco cruza abaixo da minima de ontem":{"enum": "BP_COND_CROSS_BELOW",  "value": 2},
     "preco esta entre maxima e minima de ontem":{"enum": "BP_COND_IN_ZONE_OB","value": 5},  # Re-usa zona
 
-    # --- Fibonacci ---
+    # --- Fibonacci (modo toque: pavio atinge o nivel) ---
     "preco toca nivel 23.6%":               {"enum": "BP_COND_ABOVE",        "value": 3, "fib_level": 23.6},
     "preco toca nivel 38.2%":               {"enum": "BP_COND_ABOVE",        "value": 3, "fib_level": 38.2},
     "preco toca nivel 50%":                 {"enum": "BP_COND_ABOVE",        "value": 3, "fib_level": 50.0},
     "preco toca nivel 61.8%":               {"enum": "BP_COND_ABOVE",        "value": 3, "fib_level": 61.8},
     "preco toca nivel 78.6%":               {"enum": "BP_COND_ABOVE",        "value": 3, "fib_level": 78.6},
+    "preco toca nivel 100%":                {"enum": "BP_COND_ABOVE",        "value": 3, "fib_level": 100.0},
+    # --- Fibonacci (modo validacao: fechamento confirma rejeicao no nivel) ---
+    "preco cruza nivel 23.6%":              {"enum": "BP_COND_CROSS_ABOVE",  "value": 1, "fib_level": 23.6},
+    "preco cruza nivel 38.2%":              {"enum": "BP_COND_CROSS_ABOVE",  "value": 1, "fib_level": 38.2},
+    "preco cruza nivel 50%":                {"enum": "BP_COND_CROSS_ABOVE",  "value": 1, "fib_level": 50.0},
+    "preco cruza nivel 61.8%":              {"enum": "BP_COND_CROSS_ABOVE",  "value": 1, "fib_level": 61.8},
+    "preco cruza nivel 78.6%":              {"enum": "BP_COND_CROSS_ABOVE",  "value": 1, "fib_level": 78.6},
+    "preco cruza nivel 100%":               {"enum": "BP_COND_CROSS_ABOVE",  "value": 1, "fib_level": 100.0},
+    # --- Fibonacci (legado: condicoes direcionais explicitadas) ---
     "preco cruza acima do nivel 61.8%":     {"enum": "BP_COND_CROSS_ABOVE",  "value": 1, "fib_level": 61.8},
     "preco cruza abaixo do nivel 61.8%":    {"enum": "BP_COND_CROSS_BELOW",  "value": 2, "fib_level": 61.8},
     "preco esta na zona 50%-61.8%":         {"enum": "BP_COND_IN_ZONE_OB",   "value": 5, "fib_level": 50.0},
