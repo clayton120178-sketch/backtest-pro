@@ -2255,11 +2255,17 @@ const chartOpts = {
       const sigIdx = N - 3;  // fallback, cada indicador pode sobrescrever via cs.setMarkers
       topChart.timeScale().fitContent();
 
-      // Bottom: indicator
+      // Bottom: indicator — width explícito do topDiv (já renderizado), height fixo
+      const botW = topDiv.offsetWidth || chartW;
       const botChart = LightweightCharts.createChart(botDiv, {
-        ...chartOpts,
+        width: botW,
         height: 88,
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.15, bottom: 0.15 } },
+        layout: { background: { color: bg }, textColor: text },
+        grid: { vertLines: { color: grid }, horzLines: { color: grid } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.1, bottom: 0.1 } },
+        timeScale: { borderColor: 'transparent', visible: false },
+        crosshair: { mode: 0 },
+        handleScroll: false, handleScale: false,
       });
 
       const per = params.per || (indId === 'rsi' ? 14 : indId === 'atr' ? 14 : 14);
@@ -2723,9 +2729,16 @@ const chartOpts = {
       cs.setData(ohlc);
       topChart.timeScale().fitContent();
 
+      const botW = topDiv.offsetWidth || chartW;
       const botChart = LightweightCharts.createChart(botDiv, {
-        ...chartOpts, height: 88,
-        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.15, bottom: 0.15 } },
+        width: botW,
+        height: 88,
+        layout: { background: { color: bg }, textColor: text },
+        grid: { vertLines: { color: grid }, horzLines: { color: grid } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.1, bottom: 0.1 } },
+        timeScale: { borderColor: 'transparent', visible: false },
+        crosshair: { mode: 0 },
+        handleScroll: false, handleScale: false,
       });
       const per = Math.min(params.per || 14, Math.floor(N/2) - 1);
       const adx = _calcADX(highs, lows, closes, per);
