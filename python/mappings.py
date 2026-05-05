@@ -44,10 +44,11 @@ INDICATOR_MAP = {
     "choch":    {"enum": "BP_SMC_CHOCH",       "value": -1, "group": "smc"},
     "ob":       {"enum": "BP_SMC_OB",          "value": -1, "group": "smc"},
     "sweep":    {"enum": "BP_SMC_SWEEP",       "value": -1, "group": "smc"},
+    "grab":     {"enum": "BP_SMC_GRAB",        "value": -1, "group": "smc"},
 }
 
 # IDs que pertencem ao Smart Money (nao combinam com outros)
-SMC_IDS = {"fvg", "bos", "choch", "ob", "sweep"}
+SMC_IDS = {"fvg", "bos", "choch", "ob", "sweep", "grab"}
 
 
 # ============================================================================

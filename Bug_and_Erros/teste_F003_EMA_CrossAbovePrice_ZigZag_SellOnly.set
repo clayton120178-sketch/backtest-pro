@@ -1,0 +1,101 @@
+; F-003: EMA(20) CROSS_ABOVE_PRICE + TP_ZIGZAG + SELL_ONLY + STOP_ORDER
+; + Cond2: EMA(20) ABOVE + Exit: RSI IN_ZONE_OB
+; Reproducao manual do cenario com zero operacoes
+;
+; === [0] Logger ===
+InpLogLevel=5||0||0||5||N
+InpLogOutput=1||1||0||3||N
+; === [1] Modulos Ativos ===
+InpUseOscillators=true||false||0||true||N
+InpUseIndicators=false||false||0||true||N
+InpUseCandlePatterns=false||false||0||true||N
+InpUseSmartMoney=false||false||0||true||N
+; === [2] Condicao 1 - Oscilador ===
+InpInd1=11||0||0||45||N
+InpCond1=7||0||0||12||N
+InpPeriod1=20||14||1||140||N
+InpPeriod1b=0||0||1||10||N
+InpValue1=0.0||30.0||3.000000||300.000000||N
+; === [3] Condicao 2 - Tendencia ===
+InpUseCond2=true||false||0||true||N
+InpInd2=11||0||0||45||N
+InpCond2=3||0||0||12||N
+InpPeriod2=20||200||1||2000||N
+InpPeriod2b=0||0||1||10||N
+InpValue2=0.0||0.0||0.000000||0.000000||N
+; === [4] Condicao 3 ===
+InpUseCond3=false||false||0||true||N
+InpInd3=0||0||0||45||N
+InpCond3=0||0||0||12||N
+InpPeriod3=14||14||1||140||N
+InpPeriod3b=0||0||1||10||N
+InpValue3=0.0||0.0||0.000000||0.000000||N
+; === [5] Entrada ===
+InpEntryType=1||0||0||2||N
+InpStopOrderBuffer=1||1||1||10||N
+InpStopOrderExpBars=2||1||1||10||N
+InpDirection=-1||0||0||-1||N
+; === [6] Stop Loss ===
+InpSLType=2||0||0||2||N
+InpSL_ATRPeriod=14||14||1||140||N
+InpSL_ATRMult=1.5||1.5||0.150000||15.000000||N
+InpSL_FixedPts=200||100||1||1000||N
+InpSL_Buffer=10||5||1||50||N
+InpSL_CandlesBack=5||1||1||10||N
+InpSL_Min=200||10||1||100||N
+InpSL_Max=5000||5000||1||50000||N
+; === [7] Take Profit ===
+InpTPType=2||0||0||2||N
+InpTP_FixedPts=200||200||1||2000||N
+InpTP_RR=2.0||2.0||0.200000||20.000000||N
+InpTP_ZZDepth=12||12||1||120||N
+InpTP_ZZDeviation=5||5||1||50||N
+InpTP_ZZBackstep=3||3||1||30||N
+InpTP_ZZBuffer=2||2||1||20||N
+InpTP_Min=10||10||1||100||N
+InpTP_Max=0||0||1||10||N
+InpTP_ATRPeriod=14||14||1||140||N
+InpTP_ATRPercent=200.0||100.0||10.000000||1000.000000||N
+InpTP_ATRTF=16408||0||0||49153||N
+; === [8] Risco ===
+InpRiskType=0||0||0||2||N
+InpRiskPercent=1.0||1.0||0.100000||10.000000||N
+InpFixedLots=1||0.1||0.010000||1.000000||N
+InpInitialAlloc=10000.0||10000.0||1000.000000||100000.000000||N
+; === [9] Janela de Operacao ===
+InpStartHour=9||9||1||90||N
+InpStartMin=0||0||1||10||N
+InpEndHour=13||17||1||170||N
+InpEndMin=0||30||1||300||N
+InpCloseHour=13||17||1||170||N
+InpCloseMin=0||45||1||450||N
+InpMaxTradesPerDay=1||0||1||10||N
+; === [10] Padroes de Candle ===
+InpCandleBull=0||0||0||21||N
+InpCandleBear=0||0||0||21||N
+; === [11] Smart Money ===
+InpSMCEntry=0||0||0||10||N
+; === [12] Trailing Stop ===
+InpTrailType=0||0||0||3||N
+InpTrailActMode=0||0||0||2||N
+InpTrailRRBreakeven=1.0||1.0||0.100000||10.000000||N
+InpTrailRRTrailing=1.5||1.5||0.150000||15.000000||N
+InpTrailStepPts=10||10||1||100||N
+InpTrailOnlyFavorable=false||false||0||true||N
+InpTrailBufferTicks=5||5||1||50||N
+InpTrailATRPeriod=14||14||1||140||N
+InpTrailATRBreakMult=0.0||0.0||0.000000||0.000000||N
+InpTrailATRMult=2.0||2.0||0.200000||20.000000||N
+InpTrailMinPoints=10||10||1||100||N
+InpTrailMinProfit=0.0||0.0||0.000000||0.000000||N
+; === [13] Saida Parcial ===
+InpUsePartial=false||false||0||true||N
+InpPartialPct=50||50||1||500||N
+InpPartialTriggerPts=100||100||1||1000||N
+InpPartialMoveSL=true||false||0||true||N
+; === [14] Saida por Condicao ===
+InpUseExitCond=true||false||0||true||N
+InpExitInd=1||0||0||45||N
+InpExitCond=5||0||0||17||N
+InpExitPeriod=14||14||1||140||N
+InpExitValue=0.0||0.0||0.000000||0.000000||N
