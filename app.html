@@ -4735,12 +4735,17 @@ function renderStep2() {
         }
         if(p.val!==undefined){
           const g=div('');g.style.cssText='display:flex;flex-direction:column;gap:3px';
-          const lb=div('');lb.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';lb.textContent='Valor';
+          const lb=div('');lb.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';
+          const _isPts=c.id==='gap'||c.id==='range';
+          lb.textContent=_isPts?'Tamanho mínimo':'Valor';
           g.appendChild(lb);
-          // Min/max do valor baseado no range do indicador
-          const _vMin=(c.id==='rsi'||c.id==='stoch'||c.id==='adx')?0:c.id==='williams'?-100:-999;
-          const _vMax=(c.id==='rsi'||c.id==='stoch'||c.id==='adx')?100:c.id==='williams'?0:99999;
-          g.appendChild(stepper(p.val,_vMin,_vMax,'',v=>{p.val=v;updateCondition(lbl,c);}));
+          if(_isPts){
+            g.appendChild(stepperPoints(p.val,0,5000,cfg.asset,v=>{p.val=v;updateCondition(lbl,c);}));
+          } else {
+            const _vMin=(c.id==='rsi'||c.id==='stoch'||c.id==='adx')?0:c.id==='williams'?-100:-999;
+            const _vMax=(c.id==='rsi'||c.id==='stoch'||c.id==='adx')?100:c.id==='williams'?0:99999;
+            g.appendChild(stepper(p.val,_vMin,_vMax,'',v=>{p.val=v;updateCondition(lbl,c);}));
+          }
           paramsRow.appendChild(g);
         }
         if(p.dev!==undefined){
@@ -4981,17 +4986,7 @@ function renderStep4() {
   if(fiboActive){
     const fiboBody=div('');fiboBody.style.cssText='padding:16px;display:flex;flex-direction:column;gap:14px';
 
-    // ZigZag params
-    const zzTitle=div('');zzTitle.style.cssText='font-size:12px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';zzTitle.textContent='Parâmetros do ZigZag';
-    fiboBody.appendChild(zzTitle);
-    const zzRow=div('');zzRow.style.cssText='display:flex;gap:16px;flex-wrap:wrap';
-    const zzDepthG=div('');const zzDepthL=div('');zzDepthL.style.cssText='font-size:11px;color:var(--txs);margin-bottom:4px';zzDepthL.textContent='Depth (barras entre pivos)';
-    zzDepthG.append(zzDepthL,stepper(cfg.fiboZZDepth,2,100,'',v=>{cfg.fiboZZDepth=v;}));
-    const zzDevG=div('');const zzDevL=div('');zzDevL.style.cssText='font-size:11px;color:var(--txs);margin-bottom:4px';zzDevL.textContent='Deviation (pontos mín. pivo)';
-    zzDevG.append(zzDevL,stepper(cfg.fiboZZDeviation,1,200,'pts',v=>{cfg.fiboZZDeviation=v;}));
-    const zzBsG=div('');const zzBsL=div('');zzBsL.style.cssText='font-size:11px;color:var(--txs);margin-bottom:4px';zzBsL.textContent='Backstep (barras a ignorar)';
-    zzBsG.append(zzBsL,stepper(cfg.fiboZZBackstep,1,50,'',v=>{cfg.fiboZZBackstep=v;}));
-    zzRow.append(zzDepthG,zzDevG,zzBsG);fiboBody.appendChild(zzRow);
+
 
     if(cfg.useFibonacci){
       // Trigger Level
