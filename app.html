@@ -2156,7 +2156,7 @@ function buildCondPreview(indId, condText, params={}) {
   const sc = up ? '#10B981' : '#EF4444';
 
   // Indicator types that get LWC treatment
-  const LWC_IDS = ['rsi','stoch','cci','williams','macd','atr','sma','ema','bb','vwap','adx','sar','hilo','range','gap','prevday','fib'];
+  const LWC_IDS = ['rsi','stoch','cci','williams','macd','atr','sma','ema','bb','vwap','adx','sar','hilo','hilon','range','gap','prevday','fib'];
 
   if (!LWC_IDS.includes(indId)) {
     return _buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct);
@@ -2172,20 +2172,23 @@ function buildCondPreview(indId, condText, params={}) {
   const text = isDark ? '#8888A0' : '#999999';
   const wick = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)';
 
-  // Dados normalizados — escala fixa 100-200, independente do ativo
-  // O preview mostra padrão, não preço absoluto
-  // ── Dados mock: random walk com oscilação cíclica para RSI variar entre 20-80 ──
-  const N = 60;
+  // N dinâmico para osciladores: garante ~45 pontos válidos independente do período
+  // Para outros indicadores N=60 fixo (suficiente)
+  const _isOsc = ['rsi','stoch','cci','williams','atr'].includes(indId);
+  const _oscPer = _isOsc ? (params.per || 14) : 0;
+  const N = _oscPer > 0 ? Math.max(60, _oscPer + 45) : 60;
+  const _p1 = Math.floor(N / 3);
+  const _p2 = Math.floor(2 * N / 3);
   const closes = (() => {
     let s = 77;
     const rng = () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
     const prices = [100];
     for (let i = 1; i < N; i++) {
-      // Tendência em três fases: alta (0-20) → queda (20-40) → alta (40-60)
+      // Três fases proporcionais a N: alta → queda → alta
       // Garante que RSI cubra zonas de sobrevenda (<30) e sobrecompra (>70)
       let trend;
-      if (i < 20) trend = 1.5;
-      else if (i < 40) trend = -1.6;
+      if (i < _p1) trend = 1.5;
+      else if (i < _p2) trend = -1.6;
       else trend = 1.4;
       const noise = (rng() - 0.5) * 3;
       const osc = Math.sin(i * 0.8) * 1.5;
@@ -2929,7 +2932,7 @@ const chartOpts = {
 
   // ── RANGE, GAP, PREVDAY, FIBONACCI ────────────────────────────
   // Todos são conceitos de preço puro — chart de candles com overlay ilustrativo
-  if (['range','gap','prevday','fib'].includes(indId)) {
+  if (['range','gap','hilon','prevday','fib'].includes(indId)) {
     container.style.height = '160px';
     _lwcRender(container, (chartW) => {
       if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
@@ -2960,18 +2963,76 @@ const chartOpts = {
       }
 
       else if (indId === 'gap') {
-        // Encontrar gap entre fechamento anterior e abertura atual
-        let gapIdx = -1;
-        for (let i = 1; i < ohlc.length; i++) {
-          const gap = ohlc[i].open - ohlc[i-1].close;
-          const isUp = ct.includes('alta');
-          if (isUp && gap > 0.5) { gapIdx = i; break; }
-          if (!isUp && gap < -0.5) { gapIdx = i; break; }
+        // Dados dedicados: open de cada bar = close anterior, então ohlc genérico nunca
+        // tem gap. Gera série própria com gap explícito entre bar 7 e bar 8.
+        const isUpGap = up;
+        const gT0 = Math.floor(t0 / 1000);
+        const nPre = 8, nPost = 6;
+        const gapData = [];
+        let gPrice = 100;
+        for (let i = 0; i < nPre; i++) {
+          const o = gPrice;
+          const c = +(o + (isUpGap ? 0.4 : -0.4) + (((i*7+3)%5)-2)*0.25).toFixed(2);
+          gapData.push({ time: gT0+i*barSecs, open: o, high: +(Math.max(o,c)+1.1).toFixed(2), low: +(Math.min(o,c)-1.1).toFixed(2), close: c });
+          gPrice = c;
         }
-        if (gapIdx > 0) {
-          cs.setMarkers([{ time: times[gapIdx], position: up ? 'belowBar' : 'aboveBar', color: up ? '#10B981' : '#EF4444', shape: up ? 'arrowUp' : 'arrowDown', text: 'Gap' }]);
+        const prevClose = gPrice;
+        const gapSize = isUpGap ? 8 : -8;
+        const gOpen = +(prevClose + gapSize).toFixed(2);
+        const gClose = +(gOpen + (isUpGap ? 1.8 : -1.8)).toFixed(2);
+        const gIdx = nPre;
+        gapData.push({ time: gT0+gIdx*barSecs, open: gOpen, high: +(Math.max(gOpen,gClose)+1).toFixed(2), low: +(Math.min(gOpen,gClose)-1).toFixed(2), close: gClose });
+        gPrice = gClose;
+        for (let i = 1; i <= nPost; i++) {
+          const o = gPrice;
+          const c = +(o + (isUpGap ? 0.35 : -0.35) + (((i*11+5)%5)-2)*0.15).toFixed(2);
+          gapData.push({ time: gT0+(gIdx+i)*barSecs, open: o, high: +(Math.max(o,c)+0.8).toFixed(2), low: +(Math.min(o,c)-0.8).toFixed(2), close: c });
+          gPrice = c;
         }
+        cs.setData(gapData);
+        // Zona do gap: duas linhas delimitando o espaço vazio entre fechamento e abertura
+        const gapZoneTimes = gapData.slice(gIdx - 1).map(b => b.time);
+        const topLvl = isUpGap ? gOpen : prevClose;
+        const botLvl = isUpGap ? prevClose : gOpen;
+        const gTopLine = chart.addLineSeries({ color: isUpGap ? 'rgba(16,185,129,0.7)' : 'rgba(239,68,68,0.7)', lineWidth: 1, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        gTopLine.setData(gapZoneTimes.map(t => ({ time: t, value: topLvl })));
+        const gBotLine = chart.addLineSeries({ color: isUpGap ? 'rgba(16,185,129,0.7)' : 'rgba(239,68,68,0.7)', lineWidth: 1, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        gBotLine.setData(gapZoneTimes.map(t => ({ time: t, value: botLvl })));
+        cs.setMarkers([{ time: gapData[gIdx].time, position: isUpGap ? 'belowBar' : 'aboveBar', color: isUpGap ? '#10B981' : '#EF4444', shape: isUpGap ? 'arrowUp' : 'arrowDown', text: 'Gap' }]);
         chart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: 'Gap' } });
+      }
+
+      else if (indId === 'hilon') {
+        // Dados dedicados: consolidação de N períodos seguida de rompimento/perda de nível
+        const per = params.per || 20;
+        const isMax = !ct.includes('mínima') && !ct.includes('abaixo');
+        const totalBars = per + 15;
+        const base = 100;
+        const hilonOhlc = [];
+        const hT0 = Math.floor(t0 / 1000);
+        for (let i = 0; i < totalBars; i++) {
+          let o, c;
+          if (i < per) {
+            o = base + (((i*17+3)%11)-5)*0.4;
+            c = base + (((i*13+7)%9)-4)*0.4;
+          } else {
+            const step = i - per;
+            o = isMax ? base + 3 + step*1.8 : base - 3 - step*1.8;
+            c = isMax ? o + 2 + step*0.6  : o - 2 - step*0.6;
+          }
+          const h = Math.max(o,c) + 1.2 + (i%3)*0.3;
+          const l = Math.min(o,c) - 1.2 - ((i+1)%3)*0.3;
+          hilonOhlc.push({ time: hT0+i*barSecs, open: +o.toFixed(2), high: +h.toFixed(2), low: +l.toFixed(2), close: +c.toFixed(2) });
+        }
+        cs.setData(hilonOhlc);
+        const level = isMax
+          ? Math.max(...hilonOhlc.slice(0,per).map(b => b.high))
+          : Math.min(...hilonOhlc.slice(0,per).map(b => b.low));
+        const hilonTimes = hilonOhlc.map(b => b.time);
+        const lvSeries = chart.addLineSeries({ color: isMax ? '#10B981' : '#EF4444', lineWidth: 1.5, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        lvSeries.setData(hilonTimes.map(t => ({ time: t, value: level })));
+        cs.setMarkers([{ time: hilonOhlc[per].time, position: isMax ? 'aboveBar' : 'belowBar', color: isMax ? '#10B981' : '#EF4444', shape: isMax ? 'arrowUp' : 'arrowDown', text: 'Rompe' }]);
+        chart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `Máx/Mín (${per} per.)` } });
       }
 
       else if (indId === 'prevday') {
