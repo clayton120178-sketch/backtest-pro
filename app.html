@@ -1694,6 +1694,20 @@ function buildPreview(step,cfg) {
     badge(candles[si].x+candles[si].w/2,candles[si].h-18,'SINAL','#00D4AA',6,'middle');
   }
 
+  // ── Step 2 (Gatilho): direção + tipo de entrada ──
+  if(step>=2&&conds.length>0&&!hasCrossoverSignal){
+    const si=14;
+    const isLong=cfg.direction!=='short';
+    const dirCol=cfg.direction==='both'?'#6366F1':isLong?'#10B981':'#EF4444';
+    const dirTxt=cfg.direction==='both'?'AMBOS':isLong?'▲ COMPRA':'▼ VENDA';
+    badge(8,chartH-5,dirTxt,dirCol,7);
+    if(cfg.entryType==='next_open'&&candles[si+1]){
+      const ni=si+1;
+      cir(candles[ni].x+candles[ni].w/2,candles[ni].o,'#F59E0B',3);
+      badge(candles[ni].x+candles[ni].w/2,candles[ni].o-8,'ABERTURA','#F59E0B',6,'middle');
+    }
+  }
+
   // ── Steps 3+: stop/target ──
   if(step>=3){
     const si=15;
@@ -1772,6 +1786,17 @@ function buildPreview(step,cfg) {
       const rr=(targetDistPts/stopDistPts).toFixed(1);
       const rrY=(entryY+targetY)/2;
       badge(x0+2,rrY,'R:'+rr,'#00D4AA',6);
+    }
+
+    // Parcial (step 4+)
+    if(step>=4&&cfg.partial){
+      const partDistPx=Math.min(cfg.partAt*pxPerPt,entryY-4);
+      const partY=Math.max(entryY-Math.max(partDistPx,4),6);
+      if(partY>targetY+2){
+        ln(x0,partY,W-4,partY,'#F59E0B',0.8,'2,2');
+        rc(x0,partY,W-4-x0,entryY-partY,'#F59E0B',0.04,0);
+        badge(W-22,partY-3,(cfg.partPct||50)+'%','#F59E0B',6);
+      }
     }
   }
 
