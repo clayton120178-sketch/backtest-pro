@@ -2302,9 +2302,7 @@ const chartOpts = {
         const rsi = _calcRSI(closes, per);
         indData = rsi.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
 
-        // Zonas fixas de sobrevenda (0-30) e sobrecompra (70-100) com fundo colorido
-        const overboughtZone = chart.addAreaSeries ? null : null; // LWC 4.x compatibility
-        // Usar linhas de zona para dar referência visual
+        // Zonas de sobrevenda (0-30) e sobrecompra (70-100)
         const zone30 = botChart.addLineSeries({ color: 'rgba(16,185,129,0.4)', lineWidth: 0.5, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
         zone30.setData(times.map(t => ({ time: t, value: 30 })));
         const zone70 = botChart.addLineSeries({ color: 'rgba(239,68,68,0.4)', lineWidth: 0.5, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
