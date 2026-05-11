@@ -7,6 +7,7 @@
 <title>Backtest Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -249,7 +250,10 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .modal-body{flex:1;overflow-y:auto;padding:18px 20px}
 .modal-footer{padding:13px 20px;border-top:0.5px solid var(--bd);display:flex;justify-content:flex-end;gap:9px}
 .ind-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:9px}
-.cond-preview{background:var(--bg0);border:0.5px solid var(--bd);border-radius:10px;padding:8px;margin-bottom:4px}
+.cond-preview{background:var(--bg0);border:0.5px solid var(--bd);border-radius:10px;padding:0;margin-bottom:4px;overflow:hidden}
+.cond-preview-chart{width:100%;height:160px;border-radius:10px;overflow:hidden}
+.cond-preview svg{display:block;width:100%;padding:8px}
+.cond-preview-legend{font-size:11px;color:var(--txs);opacity:0.75;text-align:center;padding:0 8px;margin-top:-12px;font-style:italic;line-height:1.4}
 
 /* Loading */
 .loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:55vh;gap:28px;text-align:center}
@@ -1106,6 +1110,10 @@ const DEFAULT_EQ_DATA=[1200,-800,2400,600,-1400,3200,1800,400,-900,2600,1400,-60
 let EQ=(()=>{let v=0,peak=0;return DEFAULT_EQ_DATA.map((x,i)=>{v+=x;if(v>peak)peak=v;const yr=2019+Math.floor(i/12),mo=i%12;return{v:Math.round(v),dd:Math.round(Math.min(0,v-peak)),pnl:x,t:(new Date(yr,mo)).toLocaleDateString('pt-BR',{month:'short'}).replace('.','')+" '"+String(yr).slice(2)};});})();
 let EQ_ANALYSIS=computeAnalysis(EQ,100000);
 
+// Métricas brutas do backend (MT5/parser) — populadas quando backtest real conclui.
+// null = modo demo ou histórico mock → usa EQ_ANALYSIS como fallback.
+let CURRENT_BACKEND_METRICS=null;
+
 // State for history detail view
 let viewingHistoryItem=null;
 
@@ -1740,6 +1748,20 @@ function buildPreview(step,cfg) {
     badge(candles[si].x+candles[si].w/2,candles[si].h-18,'SINAL','#00D4AA',6,'middle');
   }
 
+  // ── Step 2 (Gatilho): direção + tipo de entrada ──
+  if(step>=2&&conds.length>0&&!hasCrossoverSignal){
+    const si=14;
+    const isLong=cfg.direction!=='short';
+    const dirCol=cfg.direction==='both'?'#6366F1':isLong?'#10B981':'#EF4444';
+    const dirTxt=cfg.direction==='both'?'AMBOS':isLong?'▲ COMPRA':'▼ VENDA';
+    badge(8,chartH-5,dirTxt,dirCol,7);
+    if(cfg.entryType==='next_open'&&candles[si+1]){
+      const ni=si+1;
+      cir(candles[ni].x+candles[ni].w/2,candles[ni].o,'#F59E0B',3);
+      badge(candles[ni].x+candles[ni].w/2,candles[ni].o-8,'ABERTURA','#F59E0B',6,'middle');
+    }
+  }
+
   // ── Steps 3+: stop/target ──
   if(step>=3){
     const si=15;
@@ -1818,6 +1840,17 @@ function buildPreview(step,cfg) {
       const rr=(targetDistPts/stopDistPts).toFixed(1);
       const rrY=(entryY+targetY)/2;
       badge(x0+2,rrY,'R:'+rr,'#00D4AA',6);
+    }
+
+    // Parcial (step 4+)
+    if(step>=4&&cfg.partial){
+      const partDistPx=Math.min(cfg.partAt*pxPerPt,entryY-4);
+      const partY=Math.max(entryY-Math.max(partDistPx,4),6);
+      if(partY>targetY+2){
+        ln(x0,partY,W-4,partY,'#F59E0B',0.8,'2,2');
+        rc(x0,partY,W-4-x0,entryY-partY,'#F59E0B',0.04,0);
+        badge(W-22,partY-3,(cfg.partPct||50)+'%','#F59E0B',6);
+      }
     }
   }
 
@@ -1926,16 +1959,1200 @@ function miniCandleIcon(patternName) {
   return svg;
 }
 
+// ─── PRICE DATA GENERATOR (deterministic seed, realistic price action) ────────
+function _seededPrices(n, base, range, seed) {
+  let s = seed || 42;
+  const rng = () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
+  const prices = [base];
+  for (let i = 1; i < n; i++) {
+    const chg = (rng() - 0.48) * range * 0.08;
+    prices.push(Math.max(base * 0.85, Math.min(base * 1.15, prices[i-1] + chg)));
+  }
+  return prices;
+}
+
+function _calcRSI(closes, period) {
+  if (closes.length < period + 1) return closes.map(() => 50);
+  const gains = [], losses = [];
+  for (let i = 1; i < closes.length; i++) {
+    const d = closes[i] - closes[i-1];
+    gains.push(d > 0 ? d : 0);
+    losses.push(d < 0 ? -d : 0);
+  }
+  const result = new Array(period).fill(null);
+  let ag = gains.slice(0, period).reduce((a,b) => a+b, 0) / period;
+  let al = losses.slice(0, period).reduce((a,b) => a+b, 0) / period;
+  result.push(al === 0 ? 100 : 100 - 100 / (1 + ag / al));
+  for (let i = period; i < gains.length; i++) {
+    ag = (ag * (period-1) + gains[i]) / period;
+    al = (al * (period-1) + losses[i]) / period;
+    result.push(al === 0 ? 100 : 100 - 100 / (1 + ag / al));
+  }
+  return result;
+}
+
+function _calcSMA(closes, period) {
+  return closes.map((_, i) => {
+    if (i < period - 1) return null;
+    return closes.slice(i - period + 1, i + 1).reduce((a,b) => a+b, 0) / period;
+  });
+}
+
+function _calcEMA(closes, period) {
+  const k = 2 / (period + 1);
+  const result = [];
+  let ema = null;
+  closes.forEach((c, i) => {
+    if (i < period - 1) { result.push(null); return; }
+    if (ema === null) { ema = closes.slice(0, period).reduce((a,b) => a+b, 0) / period; }
+    else ema = c * k + ema * (1 - k);
+    result.push(ema);
+  });
+  return result;
+}
+
+function _calcBB(closes, period, dev) {
+  const sma = _calcSMA(closes, period);
+  return closes.map((_, i) => {
+    if (sma[i] === null) return null;
+    const slice = closes.slice(i - period + 1, i + 1);
+    const mean = sma[i];
+    const std = Math.sqrt(slice.reduce((s, v) => s + (v - mean) ** 2, 0) / period);
+    return { mid: sma[i], upper: sma[i] + dev * std, lower: sma[i] - dev * std };
+  });
+}
+
+function _calcStoch(highs, lows, closes, k, d) {
+  const result = [];
+  for (let i = 0; i < closes.length; i++) {
+    if (i < k - 1) { result.push(null); continue; }
+    const lo = Math.min(...lows.slice(i - k + 1, i + 1));
+    const hi = Math.max(...highs.slice(i - k + 1, i + 1));
+    result.push(hi === lo ? 50 : ((closes[i] - lo) / (hi - lo)) * 100);
+  }
+  return result;
+}
+
+function _calcMACD(closes, fast, slow, signal) {
+  const emaF = _calcEMA(closes, fast);
+  const emaS = _calcEMA(closes, slow);
+  const macd = closes.map((_, i) => (emaF[i] !== null && emaS[i] !== null) ? emaF[i] - emaS[i] : null);
+  const validMacd = macd.filter(v => v !== null);
+  const sigLine = _calcEMA(validMacd, signal);
+  let si = 0;
+  const fullSig = macd.map(v => v === null ? null : (sigLine[si] !== undefined ? sigLine[si++] : null));
+  const hist = macd.map((v, i) => v !== null && fullSig[i] !== null ? v - fullSig[i] : null);
+  return { macd, signal: fullSig, hist };
+}
+
+function _calcATR(highs, lows, closes, period) {
+  const tr = closes.map((c, i) => {
+    if (i === 0) return highs[i] - lows[i];
+    return Math.max(highs[i] - lows[i], Math.abs(highs[i] - closes[i-1]), Math.abs(lows[i] - closes[i-1]));
+  });
+  return tr.map((_, i) => {
+    if (i < period - 1) return null;
+    return tr.slice(i - period + 1, i + 1).reduce((a,b) => a+b, 0) / period;
+  });
+}
+
+function _calcCCI(highs, lows, closes, period) {
+  return closes.map((_, i) => {
+    if (i < period - 1) return null;
+    const typicals = closes.slice(i - period + 1, i + 1).map((c, j) => (highs[i - period + 1 + j] + lows[i - period + 1 + j] + c) / 3);
+    const mean = typicals.reduce((a,b) => a+b, 0) / period;
+    const mad = typicals.reduce((s, v) => s + Math.abs(v - mean), 0) / period;
+    const tp = (highs[i] + lows[i] + closes[i]) / 3;
+    return mad === 0 ? 0 : (tp - mean) / (0.015 * mad);
+  });
+}
+
+// ADX (Wilder) — força da tendência (0–100), independente de direção
+function _calcADX(highs, lows, closes, period) {
+  const n = closes.length;
+  const tr = [], pdm = [], ndm = [];
+  for (let i = 0; i < n; i++) {
+    if (i === 0) { tr.push(highs[i] - lows[i]); pdm.push(0); ndm.push(0); continue; }
+    const upMove = highs[i] - highs[i-1];
+    const dnMove = lows[i-1] - lows[i];
+    pdm.push(upMove > dnMove && upMove > 0 ? upMove : 0);
+    ndm.push(dnMove > upMove && dnMove > 0 ? dnMove : 0);
+    tr.push(Math.max(highs[i]-lows[i], Math.abs(highs[i]-closes[i-1]), Math.abs(lows[i]-closes[i-1])));
+  }
+  const smooth = (arr) => {
+    const out = new Array(arr.length).fill(null);
+    if (arr.length < period) return out;
+    let s = arr.slice(0, period).reduce((a,b)=>a+b, 0);
+    out[period-1] = s;
+    for (let i = period; i < arr.length; i++) { s = s - s/period + arr[i]; out[i] = s; }
+    return out;
+  };
+  const tr_s = smooth(tr), pdm_s = smooth(pdm), ndm_s = smooth(ndm);
+  const dx = tr_s.map((t, i) => {
+    if (t == null || t === 0) return null;
+    const pdi = (pdm_s[i] / t) * 100;
+    const ndi = (ndm_s[i] / t) * 100;
+    return ((pdi + ndi) === 0) ? 0 : (Math.abs(pdi - ndi) / (pdi + ndi)) * 100;
+  });
+  // ADX = média do DX nos últimos period
+  const adx = dx.map((_, i) => {
+    if (i < period * 2 - 1) return null;
+    let s = 0, c = 0;
+    for (let j = i - period + 1; j <= i; j++) if (dx[j] != null) { s += dx[j]; c++; }
+    return c > 0 ? s / c : null;
+  });
+  return adx;
+}
+
+// SAR Parabólico simplificado — retorna {value, isAbove} por candle
+function _calcSAR(highs, lows, step, max) {
+  step = step || 0.02; max = max || 0.2;
+  const n = highs.length;
+  const out = [];
+  let isLong = true;
+  let af = step;
+  let ep = highs[0]; // extreme point
+  let sar = lows[0];
+  out.push({ value: sar, isLong: true });
+  for (let i = 1; i < n; i++) {
+    sar = sar + af * (ep - sar);
+    if (isLong) {
+      sar = Math.min(sar, lows[i-1], i > 1 ? lows[i-2] : lows[i-1]);
+      if (lows[i] < sar) { // reversão
+        isLong = false; sar = ep; ep = lows[i]; af = step;
+      } else {
+        if (highs[i] > ep) { ep = highs[i]; af = Math.min(af + step, max); }
+      }
+    } else {
+      sar = Math.max(sar, highs[i-1], i > 1 ? highs[i-2] : highs[i-1]);
+      if (highs[i] > sar) {
+        isLong = true; sar = ep; ep = highs[i]; af = step;
+      } else {
+        if (lows[i] < ep) { ep = lows[i]; af = Math.min(af + step, max); }
+      }
+    }
+    out.push({ value: sar, isLong });
+  }
+  return out;
+}
+
+// HiLo Activator — usa SMA da High e SMA da Low; muda lado conforme rompimento
+function _calcHiLo(highs, lows, closes, period) {
+  const smaHigh = _calcSMA(highs, period);
+  const smaLow  = _calcSMA(lows, period);
+  const out = [];
+  let mode = null; // 'buy' (linha = smaLow) ou 'sell' (linha = smaHigh)
+  for (let i = 0; i < closes.length; i++) {
+    if (smaHigh[i] === null || smaLow[i] === null) { out.push(null); continue; }
+    if (mode === null) mode = closes[i] > smaHigh[i] ? 'buy' : 'sell';
+    else if (mode === 'sell' && closes[i] > smaHigh[i]) mode = 'buy';
+    else if (mode === 'buy' && closes[i] < smaLow[i]) mode = 'sell';
+    out.push({ value: mode === 'buy' ? smaLow[i] : smaHigh[i], mode });
+  }
+  return out;
+}
+
+// ─── LWC RENDER — registra chart para render após modal entrar no DOM ────────────
+const _lwcPendingCharts = [];
+function _lwcRender(el, cb) {
+  _lwcPendingCharts.push({ el, cb });
+}
+function _lwcFlush() {
+  while (_lwcPendingCharts.length) {
+    const { el, cb } = _lwcPendingCharts.shift();
+    const w = el.getBoundingClientRect().width || el.offsetWidth || 320;
+    cb(Math.floor(w));
+  }
+}
+
+// ─── Marker responsivo para osciladores: encontra primeiro candle onde condição é satisfeita ─
+function _findOscSignal(indData, val, cross, up) {
+  if (cross) {
+    // Cruza: encontrar ÚLTIMO cruzamento (mais ao centro/direita do gráfico)
+    let last = -1;
+    for (let i = 1; i < indData.length; i++) {
+      const prev = indData[i-1].value, curr = indData[i].value;
+      if (up && prev <= val && curr > val) last = i;
+      if (!up && prev >= val && curr < val) last = i;
+    }
+    return last;
+  }
+  // Está acima/abaixo: encontrar candle MAIS PRÓXIMO do threshold no lado correto
+  // (demonstra visualmente onde o indicador está na zona certa)
+  let bestIdx = -1, bestDist = Infinity;
+  for (let i = 0; i < indData.length; i++) {
+    const curr = indData[i].value;
+    const ok = up ? curr > val : curr < val;
+    if (ok) {
+      const dist = Math.abs(curr - val);
+      if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+    }
+  }
+  return bestIdx;
+}
+function _applyOscSignalMarker(cs, lineSeries, indData, times, val, cross, up) {
+  const idx = _findOscSignal(indData, val, cross, up);
+  if (idx < 0) return;
+  const sigPoint = indData[idx];
+  const candleIdx = times.indexOf(sigPoint.time);
+  if (candleIdx >= 0) {
+    cs.setMarkers([{ time: times[candleIdx], position: up ? 'aboveBar' : 'belowBar', color: up ? '#10B981' : '#EF4444', shape: up ? 'arrowUp' : 'arrowDown', text: 'Sinal' }]);
+  }
+  lineSeries.setMarkers([{ time: sigPoint.time, position: up ? 'belowBar' : 'aboveBar', color: up ? '#10B981' : '#EF4444', shape: 'circle', size: 1 }]);
+}
+
+// ─── LIGHTWEIGHT CHARTS CONDITION PREVIEW ─────────────────────────────────────
 function buildCondPreview(indId, condText, params={}) {
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  const ct = (condText || '').toLowerCase();
+  const up = ct.includes('acima') || ct.includes('sup') || ct.includes('alta') || ct.includes('subindo') || ct.includes('compra') || ct.includes('maior');
+  const cross = ct.includes('cruza') || ct.includes('rompe');
+  const sc = up ? '#10B981' : '#EF4444';
+
+  // Indicator types that get LWC treatment
+  const LWC_IDS = ['rsi','stoch','cci','williams','macd','atr','sma','ema','bb','vwap','adx','sar','hilo','hilon','range','gap','prevday','fib'];
+
+  if (!LWC_IDS.includes(indId)) {
+    return _buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct);
+  }
+
+  // ── LIGHTWEIGHT CHARTS ──────────────────────────────────────
+  const container = document.createElement('div');
+  container.className = 'cond-preview-chart';
+
+  // Colors
+  const bg   = isDark ? '#12121A' : '#F5F5F0';
+  const grid = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)';
+  const text = isDark ? '#8888A0' : '#999999';
+  const wick = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)';
+
+  // N dinâmico para osciladores: garante ~45 pontos válidos independente do período
+  // Para outros indicadores N=60 fixo (suficiente)
+  const _isOsc = ['rsi','stoch','cci','williams','atr'].includes(indId);
+  const _oscPer = _isOsc ? (params.per || 14) : 0;
+  const N = _oscPer > 0 ? Math.max(60, _oscPer + 45) : 60;
+  const _p1 = Math.floor(N / 3);
+  const _p2 = Math.floor(2 * N / 3);
+  const closes = (() => {
+    let s = 77;
+    const rng = () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
+    const prices = [100];
+    for (let i = 1; i < N; i++) {
+      // Três fases proporcionais a N: alta → queda → alta
+      // Garante que RSI cubra zonas de sobrevenda (<30) e sobrecompra (>70)
+      let trend;
+      if (i < _p1) trend = 1.5;
+      else if (i < _p2) trend = -1.6;
+      else trend = 1.4;
+      const noise = (rng() - 0.5) * 3;
+      const osc = Math.sin(i * 0.8) * 1.5;
+      prices.push(+(prices[i-1] + trend + noise + osc).toFixed(2));
+    }
+    return prices;
+  })();
+
+  let seed2 = 12345;
+  const rng2 = () => { seed2 = (seed2 * 1664525 + 1013904223) & 0xffffffff; return (seed2 >>> 0) / 0xffffffff; };
+  const t0 = new Date('2024-01-02').getTime();
+  const barSecs = 5 * 60;
+
+  // Dataset alternativo para crossover de MAs — tendência V garantindo cruzamento
+  // visível no meio do gráfico (usado SOMENTE quando isCross=true em SMA/EMA)
+  const _crossCloses = (() => {
+    const arr = [];
+    // Tendência: alta dos 0-22, baixa dos 22-44, alta dos 44-60 — cruzamento bem no meio
+    for (let i = 0; i < N; i++) {
+      let v;
+      if (i < 22) v = 100 + i * 1.2;
+      else if (i < 44) v = 100 + 22*1.2 - (i - 22) * 1.6;
+      else v = 100 + 22*1.2 - 22*1.6 + (i - 44) * 1.4;
+      v += (((i * 17 + 7) % 13) - 6) * 0.4;
+      arr.push(+v.toFixed(2));
+    }
+    return arr;
+  })();
+  const _crossOhlc = _crossCloses.map((c, i) => {
+    const prev = i > 0 ? _crossCloses[i-1] : c;
+    const o = prev, cl = c;
+    const body = Math.abs(cl - o);
+    const shadow = Math.max(body * 0.4, 1.5) + ((i * 13) % 7) * 0.4;
+    return { time: Math.floor(t0/1000) + i * barSecs, open: +o.toFixed(2), high: +(Math.max(o,cl)+shadow).toFixed(2), low: +(Math.min(o,cl)-shadow).toFixed(2), close: +cl.toFixed(2) };
+  });
+  const ohlc = closes.map((c, i) => {
+    const prev = i > 0 ? closes[i-1] : c;
+    const o = prev, cl = c;
+    const body = Math.abs(cl - o);
+    const shadow = Math.max(body * 0.4, 1.5) + rng2() * 3; // shadow proporcional ao body
+    const hi = Math.max(o, cl) + shadow;
+    const lo = Math.min(o, cl) - shadow;
+    return { time: Math.floor(t0/1000) + i * barSecs, open: +o.toFixed(2), high: +hi.toFixed(2), low: +lo.toFixed(2), close: +cl.toFixed(2) };
+  });
+  const highs  = ohlc.map(b => b.high);
+  const lows   = ohlc.map(b => b.low);
+  const times  = ohlc.map(b => b.time);
+
+  // ── OSCILLATOR PANELS (rsi, stoch, cci, williams, atr) ──────
+  if (['rsi','stoch','cci','williams','atr'].includes(indId)) {
+    // split layout: top=candles (55%), bottom=indicator (45%)
+    container.style.height = '210px';
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+
+    // --- Candle chart (top) ---
+    const topDiv = document.createElement('div');
+    topDiv.style.cssText = 'flex:0 0 120px;overflow:hidden;border-radius:10px 10px 0 0';
+    container.appendChild(topDiv);
+
+    const divider = document.createElement('div');
+    divider.style.cssText = `height:1px;background:${grid}`;
+    container.appendChild(divider);
+
+    // --- Indicator chart (bottom) ---
+    const botDiv = document.createElement('div');
+    botDiv.style.cssText = 'flex:1;overflow:hidden;border-radius:0 0 10px 10px';
+    container.appendChild(botDiv);
+
+    // Create charts after DOM is appended (needs dimensions)
+    _lwcRender(container, (chartW) => {
+      if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
+
+const chartOpts = {
+        width: chartW,
+        layout: { background: { color: bg }, textColor: text },
+        grid: { vertLines: { color: grid }, horzLines: { color: grid } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
+        timeScale: { borderColor: 'transparent', visible: false },
+        crosshair: { mode: 0 },
+        handleScroll: false, handleScale: false,
+      };
+
+      // Top: candles
+      const topChart = LightweightCharts.createChart(topDiv, { ...chartOpts, height: 120 });
+      const cs = topChart.addCandlestickSeries({
+        upColor: '#10B981', downColor: '#EF4444',
+        borderUpColor: '#10B981', borderDownColor: '#EF4444',
+        wickUpColor: '#10B981', wickDownColor: '#EF4444',
+      });
+      cs.setData(ohlc);
+      const sigIdx = N - 3;  // fallback, cada indicador pode sobrescrever via cs.setMarkers
+      topChart.timeScale().fitContent();
+
+      // Bottom: indicator — width explícito do topDiv (já renderizado), height fixo
+      const botW = topDiv.offsetWidth || chartW;
+      const botChart = LightweightCharts.createChart(botDiv, {
+        width: botW,
+        height: 88,
+        layout: { background: { color: bg }, textColor: text },
+        grid: { vertLines: { color: grid }, horzLines: { color: grid } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.1, bottom: 0.1 } },
+        timeScale: { borderColor: 'transparent', visible: false },
+        crosshair: { mode: 0 },
+        handleScroll: false, handleScale: false,
+      });
+
+      const per = params.per || (indId === 'rsi' ? 14 : indId === 'atr' ? 14 : 14);
+      const val = params.val != null ? params.val : (up ? 70 : 30);
+
+      let indData = [];
+
+      if (indId === 'rsi') {
+        const rsi = _calcRSI(closes, per);
+        indData = rsi.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+
+        // Zonas de sobrevenda (0-30) e sobrecompra (70-100)
+        const zone30 = botChart.addLineSeries({ color: 'rgba(16,185,129,0.4)', lineWidth: 0.5, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        zone30.setData(times.map(t => ({ time: t, value: 30 })));
+        const zone70 = botChart.addLineSeries({ color: 'rgba(239,68,68,0.4)', lineWidth: 0.5, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        zone70.setData(times.map(t => ({ time: t, value: 70 })));
+
+        // Threshold line (amarela) — move com val do usuário
+        const threshSeries = botChart.addLineSeries({ color: '#F59E0B', lineWidth: 1.5, lineStyle: 0, priceLineVisible: false, lastValueVisible: false });
+        threshSeries.setData(times.map(t => ({ time: t, value: val })));
+
+        // Linha do RSI
+        const lineSeries = botChart.addLineSeries({ color: '#6366F1', lineWidth: 1.5, priceLineVisible: false });
+        lineSeries.setData(indData);
+
+        _applyOscSignalMarker(cs, lineSeries, indData, times, val, cross, up);
+        botChart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `RSI(${per})` } });
+      }
+      else if (indId === 'stoch') {
+        const k = params.per || 14, d = 3;
+        const stochK = _calcStoch(highs, lows, closes, k, d);
+        const stochD = _calcSMA(stochK.filter(v => v !== null), d);
+        let di = 0;
+        const kData = stochK.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+        const dDataRaw = stochK.map((v, i) => { if (v === null) return null; const dv = stochD[di++]; return dv !== null ? { time: times[i], value: dv } : null; }).filter(Boolean);
+        const kSeries = botChart.addLineSeries({ color: '#6366F1', lineWidth: 1.5, priceLineVisible: false });
+        kSeries.setData(kData);
+        const dSeries = botChart.addLineSeries({ color: '#00D4AA', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
+        dSeries.setData(dDataRaw);
+        const threshSeries = botChart.addLineSeries({ color: '#F59E0B', lineWidth: 1, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        threshSeries.setData(times.map(t => ({ time: t, value: val })));
+        _applyOscSignalMarker(cs, kSeries, kData, times, val, cross, up);
+        botChart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `Stoch(%K${k},%D${d})` } });
+      }
+      else if (indId === 'cci') {
+        const cci = _calcCCI(highs, lows, closes, per);
+        indData = cci.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+        const lineSeries = botChart.addLineSeries({ color: '#6366F1', lineWidth: 1.5, priceLineVisible: false });
+        lineSeries.setData(indData);
+        const refVal = params.val != null ? params.val : (up ? 100 : -100);
+        const threshSeries = botChart.addLineSeries({ color: '#F59E0B', lineWidth: 1, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        threshSeries.setData(times.map(t => ({ time: t, value: refVal })));
+        const zeroSeries = botChart.addLineSeries({ color: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+        zeroSeries.setData(times.map(t => ({ time: t, value: 0 })));
+        _applyOscSignalMarker(cs, lineSeries, indData, times, refVal, cross, up);
+        botChart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `CCI(${per})` } });
+      }
+      else if (indId === 'williams') {
+        const wR = _calcStoch(highs, lows, closes, per, 3).map(v => v !== null ? v - 100 : null);
+        indData = wR.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+        const lineSeries = botChart.addLineSeries({ color: '#6366F1', lineWidth: 1.5, priceLineVisible: false });
+        lineSeries.setData(indData);
+        const refVal = params.val != null ? params.val : (up ? -20 : -80);
+        const threshSeries = botChart.addLineSeries({ color: '#F59E0B', lineWidth: 1, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        threshSeries.setData(times.map(t => ({ time: t, value: refVal })));
+        _applyOscSignalMarker(cs, lineSeries, indData, times, refVal, cross, up);
+        botChart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `W%R(${per})` } });
+      }
+      else if (indId === 'atr') {
+        const atr = _calcATR(highs, lows, closes, per);
+        indData = atr.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+        const lineSeries = botChart.addLineSeries({ color: '#F59E0B', lineWidth: 1.5, priceLineVisible: false });
+        lineSeries.setData(indData);
+        botChart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `ATR(${per})` } });
+      }
+
+      botChart.timeScale().fitContent();
+      topChart.timeScale().fitContent();
+    });
+
+    return container;
+  }
+
+  // ── MACD ──────────────────────────────────────────────────────
+  if (indId === 'macd') {
+    container.style.height = '160px';
+    _lwcRender(container, (chartW) => {
+      if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
+      const chart = LightweightCharts.createChart(container, {
+        width: chartW,
+        layout: { background: { color: bg }, textColor: text },
+        grid: { vertLines: { color: grid }, horzLines: { color: grid } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
+        timeScale: { borderColor: 'transparent', visible: false },
+        crosshair: { mode: 0 },
+        handleScroll: false, handleScale: false,
+        height: 160,
+        watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: 'MACD(12,26,9)' }
+      });
+      const fast = params.fast || 12, slow = params.slow || 26, sig = params.signal || 9;
+      const { macd, signal: sigLine, hist } = _calcMACD(closes, fast, slow, sig);
+      const histData = hist.map((v, i) => v !== null ? { time: times[i], value: v, color: v >= 0 ? 'rgba(16,185,129,0.7)' : 'rgba(239,68,68,0.7)' } : null).filter(Boolean);
+      const macdData = macd.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+      const sigData = sigLine.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
+      const histSeries = chart.addHistogramSeries({ priceLineVisible: false, lastValueVisible: false });
+      histSeries.setData(histData);
+      const macdSeries = chart.addLineSeries({ color: '#00D4AA', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false });
+      macdSeries.setData(macdData);
+      const sigSeries = chart.addLineSeries({ color: '#EF4444', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
+      sigSeries.setData(sigData);
+      // Marker conforme condição:
+      // - "cruza acima do sinal" → MACD cruzando linha signal para cima (compra)
+      // - "cruza abaixo do sinal" → MACD cruzando linha signal para baixo (venda)
+      // - "acima de zero" → primeiro candle em que MACD > 0 (viés alta)
+      // - "abaixo de zero" → primeiro candle em que MACD < 0 (viés baixa)
+      const isAboveZero = ct.includes('acima de zero');
+      const isBelowZero = ct.includes('abaixo de zero');
+      const isCrossUp   = ct.includes('cruza acima');
+      const isCrossDown = ct.includes('cruza abaixo');
+      let macdSig = -1, macdMark = null;
+
+      if (isAboveZero || isBelowZero) {
+        for (let i = 0; i < macdData.length; i++) {
+          if (isAboveZero && macdData[i].value > 0) { macdSig = i; break; }
+          if (isBelowZero && macdData[i].value < 0) { macdSig = i; break; }
+        }
+        if (macdSig >= 0) macdMark = {
+          time: macdData[macdSig].time,
+          position: isAboveZero ? 'belowBar' : 'aboveBar',
+          color: isAboveZero ? '#10B981' : '#EF4444',
+          shape: isAboveZero ? 'arrowUp' : 'arrowDown',
+          text: isAboveZero ? 'MACD>0' : 'MACD<0'
+        };
+      } else {
+        // Cross signal line
+        for (let i = 1; i < macdData.length; i++) {
+          const prev = macdData[i-1].value - (sigData[i-1]?.value || 0);
+          const curr = macdData[i].value - (sigData[i]?.value || 0);
+          if (isCrossUp && prev < 0 && curr >= 0) {
+            macdMark = { time: macdData[i].time, position: 'belowBar', color: '#10B981', shape: 'arrowUp', text: 'Compra' };
+            break;
+          }
+          if (isCrossDown && prev > 0 && curr <= 0) {
+            macdMark = { time: macdData[i].time, position: 'aboveBar', color: '#EF4444', shape: 'arrowDown', text: 'Venda' };
+            break;
+          }
+          // Default: primeiro cruzamento qualquer
+          if (!isCrossUp && !isCrossDown && prev * curr < 0) {
+            macdMark = {
+              time: macdData[i].time,
+              position: curr > 0 ? 'belowBar' : 'aboveBar',
+              color: curr > 0 ? '#10B981' : '#EF4444',
+              shape: curr > 0 ? 'arrowUp' : 'arrowDown',
+              text: curr > 0 ? 'Cruz ↑' : 'Cruz ↓'
+            };
+            break;
+          }
+        }
+      }
+      if (macdMark) macdSeries.setMarkers([macdMark]);
+      chart.timeScale().fitContent();
+    });
+    return container;
+  }
+
+  // ── SMA / EMA ─────────────────────────────────────────────────
+  if (['sma','ema'].includes(indId)) {
+    const isCross = (params.per2 != null && params.per2 > 0) || ct.includes('longa') || ct.includes('cruzamento');
+    container.style.height = '160px';
+    _lwcRender(container, (chartW) => {
+      if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
+      const chart = LightweightCharts.createChart(container, {
+        width: chartW,
+        layout: { background: { color: bg }, textColor: text },
+        grid: { vertLines: { color: grid }, horzLines: { color: grid } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
+        timeScale: { borderColor: 'transparent', visible: false },
+        crosshair: { mode: 0 },
+        handleScroll: false, handleScale: false,
+        height: 160,
+      });
+      const cs = chart.addCandlestickSeries({
+        upColor: '#10B981', downColor: '#EF4444',
+        borderUpColor: '#10B981', borderDownColor: '#EF4444',
+        wickUpColor: isDark ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.7)',
+        wickDownColor: isDark ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.7)',
+      });
+      // Crossover usa dataset alternativo com tendência V (garante cruzamento visível)
+      const _closes = isCross ? _crossCloses : closes;
+      const _ohlc   = isCross ? _crossOhlc   : ohlc;
+      cs.setData(_ohlc);
+
+      if (isCross) {
+        // Clamp visual: períodos limitados a N-2 para sempre haver linha visível no preview
+        const maxPer = N - 2;
+        const per1 = Math.min(params.per || 9, maxPer);
+        const per2 = Math.min(params.per2 || 21, maxPer);
+        const calc = indId === 'ema' ? _calcEMA : _calcSMA;
+        const fast = calc(_closes, per1), slow = calc(_closes, per2);
+        // Estender com primeiro valor válido — não afeta o cruzamento (que ocorre no meio
+        // dos dados onde ambas MAs já estão válidas), mas evita linhas curtas no início
+        const fFirst = fast.findIndex(v => v !== null);
+        const sFirst = slow.findIndex(v => v !== null);
+        const fData = fast.map((v, i) => {
+          if (v !== null) return { time: times[i], value: v };
+          if (fFirst >= 0 && i < fFirst) return { time: times[i], value: fast[fFirst] };
+          return null;
+        }).filter(Boolean);
+        const sData = slow.map((v, i) => {
+          if (v !== null) return { time: times[i], value: v };
+          if (sFirst >= 0 && i < sFirst) return { time: times[i], value: slow[sFirst] };
+          return null;
+        }).filter(Boolean);
+        const fSeries = chart.addLineSeries({ color: '#00D4AA', lineWidth: 1.5, priceLineVisible: false });
+        fSeries.setData(fData);
+        const sSeries = chart.addLineSeries({ color: '#F59E0B', lineWidth: 1.5, lineStyle: 2, priceLineVisible: false });
+        sSeries.setData(sData);
+        // Find crossover — apenas no trecho onde ambas têm valores reais (não estendidos)
+        for (let i = Math.max(fFirst, sFirst) + 1; i < fast.length; i++) {
+          if (fast[i] === null || slow[i] === null || fast[i-1] === null || slow[i-1] === null) continue;
+          const prev = fast[i-1] - slow[i-1];
+          const curr = fast[i] - slow[i];
+          if (prev * curr < 0) {
+            fSeries.setMarkers([{ time: times[i], position: curr > 0 ? 'belowBar' : 'aboveBar', color: curr > 0 ? '#10B981' : '#EF4444', shape: curr > 0 ? 'arrowUp' : 'arrowDown', text: 'Sinal' }]);
+            break;
+          }
+        }
+        chart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `${indId.toUpperCase()}(${per1}) × ${indId.toUpperCase()}(${per2})` } });
+      } else {
+        const maxPer = N - 2;
+        const per = Math.min(params.per || 20, maxPer);
+        const calc = indId === 'ema' ? _calcEMA : _calcSMA;
+        const maVals = calc(closes, per);
+        // Estende o primeiro valor válido para os candles iniciais
+        // (caso contrário, períodos maiores produzem linhas mais curtas e o usuário
+        // tem a impressão de que a MA "diminuiu")
+        const firstValid = maVals.findIndex(v => v !== null);
+        const maData = maVals.map((v, i) => {
+          if (v !== null) return { time: times[i], value: v };
+          if (firstValid >= 0 && i < firstValid) return { time: times[i], value: maVals[firstValid] };
+          return null;
+        }).filter(Boolean);
+        const maSeries = chart.addLineSeries({ color: '#F59E0B', lineWidth: 1.8, priceLineVisible: false });
+        maSeries.setData(maData);
+        // Marker posicionado conforme condição:
+        // - "preço acima" → arrow embaixo apontando para cima (compra) NO candle ACIMA da MA
+        // - "preço abaixo" → arrow em cima apontando para baixo (venda) NO candle ABAIXO da MA
+        // - "cruza acima/abaixo" → no candle de cruzamento
+        let sigIdx = -1;
+        if (cross) {
+          for (let i = 1; i < ohlc.length; i++) {
+            if (maVals[i] === null || maVals[i-1] === null) continue;
+            const prevDiff = ohlc[i-1].close - maVals[i-1];
+            const currDiff = ohlc[i].close - maVals[i];
+            if (up && prevDiff <= 0 && currDiff > 0) { sigIdx = i; break; }
+            if (!up && prevDiff >= 0 && currDiff < 0) { sigIdx = i; break; }
+          }
+        } else {
+          for (let i = ohlc.length - 1; i >= 0; i--) {
+            if (maVals[i] === null) continue;
+            const above = ohlc[i].close > maVals[i];
+            if (up && above) { sigIdx = i; break; }
+            if (!up && !above) { sigIdx = i; break; }
+          }
+        }
+        if (sigIdx > 0) {
+          // up=true → preço acima da MA → arrow ACIMA do candle apontando pra cima
+          // up=false → preço abaixo da MA → arrow ABAIXO do candle apontando pra baixo
+          cs.setMarkers([{
+            time: times[sigIdx],
+            position: up ? 'aboveBar' : 'belowBar',
+            color: up ? '#10B981' : '#EF4444',
+            shape: up ? 'arrowUp' : 'arrowDown',
+            text: cross ? 'Cruz' : 'Sinal'
+          }]);
+        }
+        chart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `${indId.toUpperCase()}(${per})` } });
+      }
+      chart.timeScale().fitContent();
+    });
+    return container;
+  }
+
+  // ── BOLLINGER BANDS ───────────────────────────────────────────
+  if (indId === 'bb') {
+    container.style.height = '160px';
+    _lwcRender(container, (chartW) => {
+      if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
+      const chart = LightweightCharts.createChart(container, {
+        width: chartW,
+        layout: { background: { color: bg }, textColor: text },
+        grid: { vertLines: { color: grid }, horzLines: { color: grid } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
+        timeScale: { borderColor: 'transparent', visible: false },
+        crosshair: { mode: 0 },
+        handleScroll: false, handleScale: false,
+        height: 160,
+        watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `BB(${params.per||20}, ${params.dev||2}σ)` }
+      });
+      const per = params.per || 20, dev = params.dev || 2;
+      const bb = _calcBB(closes, per, dev);
+      const cs = chart.addCandlestickSeries({
+        upColor: '#10B981', downColor: '#EF4444',
+        borderUpColor: '#10B981', borderDownColor: '#EF4444',
+        wickUpColor: isDark ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.7)',
+        wickDownColor: isDark ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.7)',
+      });
+      cs.setData(ohlc);
+      // Estender bandas para os candles iniciais com primeiro valor válido —
+      // assim aumentar o período não diminui a linha visualmente
+      const firstBB = bb.findIndex(v => v !== null);
+      const _ext = (key) => bb.map((v, i) => {
+        if (v) return { time: times[i], value: v[key] };
+        if (firstBB >= 0 && i < firstBB) return { time: times[i], value: bb[firstBB][key] };
+        return null;
+      }).filter(Boolean);
+      const upData  = _ext('upper');
+      const midData = _ext('mid');
+      const loData  = _ext('lower');
+      chart.addLineSeries({ color: 'rgba(99,102,241,0.8)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false }).setData(upData);
+      chart.addLineSeries({ color: 'rgba(99,102,241,0.4)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false }).setData(midData);
+      chart.addLineSeries({ color: 'rgba(99,102,241,0.8)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false }).setData(loData);
+      // Signal posicionamento conforme condição
+      const isSup = ct.includes('superior');
+      const isCross = ct.includes('cruza');
+      let sigIdx = -1;
+      for (let i = 1; i < ohlc.length; i++) {
+        if (!bb[i] || !bb[i-1]) continue;
+        if (isSup) {
+          if (isCross) {
+            // Cruza banda superior: high do candle anterior abaixo, high atual acima da banda
+            if (ohlc[i-1].high <= bb[i-1].upper && ohlc[i].high > bb[i].upper) { sigIdx = i; break; }
+          } else {
+            // Toca: high próximo ou acima da banda
+            if (ohlc[i].high >= bb[i].upper * 0.998) { sigIdx = i; break; }
+          }
+        } else {
+          if (isCross) {
+            // Cruza banda inferior: low do candle anterior acima, low atual abaixo da banda
+            if (ohlc[i-1].low >= bb[i-1].lower && ohlc[i].low < bb[i].lower) { sigIdx = i; break; }
+          } else {
+            // Toca: low próximo ou abaixo da banda
+            if (ohlc[i].low <= bb[i].lower * 1.002) { sigIdx = i; break; }
+          }
+        }
+      }
+      if (sigIdx > 0) {
+        cs.setMarkers([{
+          time: times[sigIdx],
+          position: isSup ? 'aboveBar' : 'belowBar',
+          color: isSup ? '#EF4444' : '#10B981',
+          shape: isSup ? 'arrowDown' : 'arrowUp',
+          text: isCross ? 'Cruza' : 'Toque'
+        }]);
+      }
+      chart.timeScale().fitContent();
+    });
+    return container;
+  }
+
+  // ── VWAP ─────────────────────────────────────────────────────
+  if (indId === 'vwap') {
+    container.style.height = '160px';
+    _lwcRender(container, (chartW) => {
+      if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
+      const chart = LightweightCharts.createChart(container, {
+        width: chartW,
+        layout: { background: { color: bg }, textColor: text },
+        grid: { vertLines: { color: grid }, horzLines: { color: grid } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
+        timeScale: { borderColor: 'transparent', visible: false },
+        crosshair: { mode: 0 },
+        handleScroll: false, handleScale: false,
+        height: 160,
+        watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: 'VWAP' }
+      });
+      const cs = chart.addCandlestickSeries({
+        upColor: '#10B981', downColor: '#EF4444',
+        borderUpColor: '#10B981', borderDownColor: '#EF4444',
+        wickUpColor: isDark ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.7)',
+        wickDownColor: isDark ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.7)',
+      });
+      cs.setData(ohlc);
+      // Approximate VWAP as cumulative typical price (simplified, consistent)
+      let cumTP = 0, cumVol = 0;
+      const vwapData = ohlc.map((b, i) => {
+        const tp = (b.high + b.low + b.close) / 3;
+        const vol = 1000 + Math.sin(i * 0.7) * 300;
+        cumTP += tp * vol; cumVol += vol;
+        return { time: b.time, value: cumTP / cumVol };
+      });
+      chart.addLineSeries({ color: '#F59E0B', lineWidth: 1.8, priceLineVisible: false }).setData(vwapData);
+      // Marker posicionado conforme condição: cruza/está acima ou abaixo do VWAP
+      let vwapSigIdx = -1;
+      if (cross) {
+        // Encontrar último cruzamento
+        for (let i = 1; i < vwapData.length; i++) {
+          const prevDiff = ohlc[i-1].close - vwapData[i-1].value;
+          const currDiff = ohlc[i].close - vwapData[i].value;
+          if (up && prevDiff <= 0 && currDiff > 0) vwapSigIdx = i;
+          if (!up && prevDiff >= 0 && currDiff < 0) vwapSigIdx = i;
+        }
+      } else {
+        // "Está acima/abaixo": encontrar candle onde preço está claramente acima/abaixo
+        for (let i = ohlc.length - 1; i >= 0; i--) {
+          const diff = ohlc[i].close - vwapData[i].value;
+          if (up && diff > 0) { vwapSigIdx = i; break; }
+          if (!up && diff < 0) { vwapSigIdx = i; break; }
+        }
+      }
+      if (vwapSigIdx >= 0) {
+        cs.setMarkers([{
+          time: times[vwapSigIdx],
+          position: up ? 'aboveBar' : 'belowBar',
+          color: up ? '#10B981' : '#EF4444',
+          shape: up ? 'arrowUp' : 'arrowDown',
+          text: cross ? 'Sinal' : 'Sinal'
+        }]);
+      }
+      chart.timeScale().fitContent();
+    });
+    return container;
+  }
+
+  // ── ADX ──────────────────────────────────────────────────────
+  // Panel split como osciladores: candles em cima, ADX (0-100) embaixo
+  if (indId === 'adx') {
+    container.style.height = '210px';
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+
+    const topDiv = document.createElement('div');
+    topDiv.style.cssText = 'flex:0 0 120px;overflow:hidden;border-radius:10px 10px 0 0';
+    container.appendChild(topDiv);
+    const divider = document.createElement('div');
+    divider.style.cssText = `height:1px;background:${grid}`;
+    container.appendChild(divider);
+    const botDiv = document.createElement('div');
+    botDiv.style.cssText = 'flex:1;overflow:hidden;border-radius:0 0 10px 10px';
+    container.appendChild(botDiv);
+
+    _lwcRender(container, (chartW) => {
+      if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
+      const chartOpts = {
+        width: chartW,
+        layout: { background: { color: bg }, textColor: text },
+        grid: { vertLines: { color: grid }, horzLines: { color: grid } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
+        timeScale: { borderColor: 'transparent', visible: false },
+        crosshair: { mode: 0 },
+        handleScroll: false, handleScale: false,
+      };
+      const topChart = LightweightCharts.createChart(topDiv, { ...chartOpts, height: 120 });
+      const cs = topChart.addCandlestickSeries({
+        upColor: '#10B981', downColor: '#EF4444',
+        borderUpColor: '#10B981', borderDownColor: '#EF4444',
+        wickUpColor: '#10B981', wickDownColor: '#EF4444',
+      });
+      cs.setData(ohlc);
+      topChart.timeScale().fitContent();
+
+      const botW = topDiv.offsetWidth || chartW;
+      const botChart = LightweightCharts.createChart(botDiv, {
+        width: botW,
+        height: 88,
+        layout: { background: { color: bg }, textColor: text },
+        grid: { vertLines: { color: grid }, horzLines: { color: grid } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.1, bottom: 0.1 } },
+        timeScale: { borderColor: 'transparent', visible: false },
+        crosshair: { mode: 0 },
+        handleScroll: false, handleScale: false,
+      });
+      const per = Math.min(params.per || 14, Math.floor(N/2) - 1);
+      const adx = _calcADX(highs, lows, closes, per);
+      // Estender linha com primeiro valor válido — período maior não diminui visual
+      const firstAdx = adx.findIndex(v => v !== null);
+      const indData = adx.map((v, i) => {
+        if (v !== null) return { time: times[i], value: v };
+        if (firstAdx >= 0 && i < firstAdx) return { time: times[i], value: adx[firstAdx] };
+        return null;
+      }).filter(Boolean);
+      const lineSeries = botChart.addLineSeries({ color: '#6366F1', lineWidth: 1.5, priceLineVisible: false });
+      lineSeries.setData(indData);
+      const val = params.val != null ? params.val : 25;
+      const threshSeries = botChart.addLineSeries({ color: '#F59E0B', lineWidth: 1, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+      threshSeries.setData(times.map(t => ({ time: t, value: val })));
+      _applyOscSignalMarker(cs, lineSeries, indData, times, val, cross, up);
+      botChart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `ADX(${per})` } });
+      botChart.timeScale().fitContent();
+    });
+    return container;
+  }
+
+  // ── SAR ──────────────────────────────────────────────────────
+  // Overlay nos candles: pontos do SAR acima/abaixo
+  if (indId === 'sar') {
+    container.style.height = '160px';
+    _lwcRender(container, (chartW) => {
+      if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
+      const chart = LightweightCharts.createChart(container, {
+        width: chartW,
+        layout: { background: { color: bg }, textColor: text },
+        grid: { vertLines: { color: grid }, horzLines: { color: grid } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
+        timeScale: { borderColor: 'transparent', visible: false },
+        crosshair: { mode: 0 },
+        handleScroll: false, handleScale: false,
+        height: 160,
+        watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: 'SAR Parabólico' }
+      });
+      const cs = chart.addCandlestickSeries({
+        upColor: '#10B981', downColor: '#EF4444',
+        borderUpColor: '#10B981', borderDownColor: '#EF4444',
+        wickUpColor: isDark ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.7)',
+        wickDownColor: isDark ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.7)',
+      });
+      // SAR funciona melhor em dataset com tendência clara — usa _crossOhlc (V trend)
+      cs.setData(_crossOhlc);
+      const sar = _calcSAR(_crossOhlc.map(b=>b.high), _crossOhlc.map(b=>b.low), 0.02, 0.2);
+      // Pontos SAR — verde quando long (abaixo), vermelho quando short (acima)
+      const sarLong = sar.map((s, i) => s.isLong ? { time: times[i], value: s.value, color: '#10B981' } : null).filter(Boolean);
+      const sarShort = sar.map((s, i) => !s.isLong ? { time: times[i], value: s.value, color: '#EF4444' } : null).filter(Boolean);
+      const longSeries = chart.addLineSeries({ color: '#10B981', lineWidth: 0, lineType: 1, priceLineVisible: false, lastValueVisible: false, pointMarkersVisible: true, pointMarkersRadius: 3 });
+      longSeries.setData(sarLong);
+      const shortSeries = chart.addLineSeries({ color: '#EF4444', lineWidth: 0, lineType: 1, priceLineVisible: false, lastValueVisible: false, pointMarkersVisible: true, pointMarkersRadius: 3 });
+      shortSeries.setData(sarShort);
+      // Marker — "cruza acima do SAR" = SAR passa para baixo = compra
+      //          "cruza abaixo do SAR" = SAR passa para cima = venda
+      //          "está acima/abaixo" = candle representativo na zona
+      const wantLong = up; // up=true quando "acima" → preço ACIMA do SAR → SAR embaixo → compra
+      let flipIdx = -1;
+      if (cross) {
+        // Busca ÚLTIMO flip para o lado desejado (mais visível, mais ao centro/direita)
+        for (let i = 1; i < sar.length; i++) {
+          if (sar[i].isLong !== sar[i-1].isLong) {
+            if (wantLong && sar[i].isLong) flipIdx = i;
+            if (!wantLong && !sar[i].isLong) flipIdx = i;
+          }
+        }
+      } else {
+        // "Está acima/abaixo": último candle onde o SAR está no lado correto
+        for (let i = sar.length - 1; i >= 0; i--) {
+          if (wantLong && sar[i].isLong) { flipIdx = i; break; }
+          if (!wantLong && !sar[i].isLong) { flipIdx = i; break; }
+        }
+      }
+      if (flipIdx > 0) {
+        const isBuy = sar[flipIdx].isLong;
+        cs.setMarkers([{
+          time: times[flipIdx],
+          position: isBuy ? 'belowBar' : 'aboveBar',
+          color: isBuy ? '#10B981' : '#EF4444',
+          shape: isBuy ? 'arrowUp' : 'arrowDown',
+          text: isBuy ? 'Compra' : 'Venda'
+        }]);
+      }
+      chart.timeScale().fitContent();
+    });
+    return container;
+  }
+
+  // ── HiLo Activator ───────────────────────────────────────────
+  // Representação tradicional: linha que segue SMA da High em modo venda (acima dos candles),
+  // pula para SMA da Low em modo compra (abaixo dos candles). Linha em steps (não suave).
+  if (indId === 'hilo') {
+    container.style.height = '160px';
+    _lwcRender(container, (chartW) => {
+      if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
+      const chart = LightweightCharts.createChart(container, {
+        width: chartW,
+        layout: { background: { color: bg }, textColor: text },
+        grid: { vertLines: { color: grid }, horzLines: { color: grid } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
+        timeScale: { borderColor: 'transparent', visible: false },
+        crosshair: { mode: 0 },
+        handleScroll: false, handleScale: false,
+        height: 160,
+        watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `HiLo(${params.per||6})` }
+      });
+      const cs = chart.addCandlestickSeries({
+        upColor: '#10B981', downColor: '#EF4444',
+        borderUpColor: '#10B981', borderDownColor: '#EF4444',
+        wickUpColor: isDark ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.7)',
+        wickDownColor: isDark ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.7)',
+      });
+      cs.setData(_crossOhlc);  // dataset com tendência V (garante flips visíveis)
+      const per = Math.min(params.per || 6, Math.floor(N/3));
+      const hilo = _calcHiLo(_crossOhlc.map(b=>b.high), _crossOhlc.map(b=>b.low), _crossOhlc.map(b=>b.close), per);
+
+      // Construir segmentos contínuos por modo — cada série inclui o ponto de flip
+      // do segmento anterior para que a linha pareça contínua visualmente
+      const segments = []; // [{ mode, points: [{time, value}] }]
+      let curr = null;
+      for (let i = 0; i < hilo.length; i++) {
+        if (!hilo[i]) continue;
+        if (!curr || curr.mode !== hilo[i].mode) {
+          // Flip — adiciona último ponto do segmento anterior como início do novo
+          // (linha "salta" do nível antigo para o novo no mesmo timestamp do flip)
+          if (curr) segments.push(curr);
+          curr = { mode: hilo[i].mode, points: [] };
+        }
+        curr.points.push({ time: times[i], value: hilo[i].value });
+      }
+      if (curr) segments.push(curr);
+
+      // Renderizar cada segmento com sua cor — usa LineStyle Solid + lineType.Stepped
+      segments.forEach(seg => {
+        if (seg.points.length === 0) return;
+        const series = chart.addLineSeries({
+          color: seg.mode === 'buy' ? '#10B981' : '#EF4444',
+          lineWidth: 2,
+          lineType: 1, // WithSteps — comportamento tradicional do HiLo (não suave)
+          priceLineVisible: false,
+          lastValueVisible: false,
+        });
+        series.setData(seg.points);
+      });
+
+      // Marker no primeiro flip que corresponde à condição
+      let flipIdx = -1;
+      const wantBuy = ct.includes('compra');
+      for (let i = 1; i < hilo.length; i++) {
+        if (!hilo[i] || !hilo[i-1]) continue;
+        if (hilo[i].mode !== hilo[i-1].mode) {
+          if (cross || (wantBuy && hilo[i].mode === 'buy') || (!wantBuy && hilo[i].mode === 'sell')) { flipIdx = i; break; }
+        }
+      }
+      if (flipIdx > 0) {
+        const isBuy = hilo[flipIdx].mode === 'buy';
+        cs.setMarkers([{ time: times[flipIdx], position: isBuy ? 'belowBar' : 'aboveBar', color: isBuy ? '#10B981' : '#EF4444', shape: isBuy ? 'arrowUp' : 'arrowDown', text: isBuy ? 'Compra' : 'Venda' }]);
+      }
+      chart.timeScale().fitContent();
+    });
+    return container;
+  }
+
+  // ── RANGE, GAP, PREVDAY, FIBONACCI ────────────────────────────
+  // Todos são conceitos de preço puro — chart de candles com overlay ilustrativo
+  if (['range','gap','hilon','prevday','fib'].includes(indId)) {
+    container.style.height = '160px';
+    _lwcRender(container, (chartW) => {
+      if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct)); return; }
+      const chart = LightweightCharts.createChart(container, {
+        width: chartW,
+        layout: { background: { color: bg }, textColor: text },
+        grid: { vertLines: { color: grid }, horzLines: { color: grid } },
+        rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
+        timeScale: { borderColor: 'transparent', visible: false },
+        crosshair: { mode: 0 },
+        handleScroll: false, handleScale: false,
+        height: 160,
+      });
+      const cs = chart.addCandlestickSeries({
+        upColor: '#10B981', downColor: '#EF4444',
+        borderUpColor: '#10B981', borderDownColor: '#EF4444',
+        wickUpColor: isDark ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.7)',
+        wickDownColor: isDark ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.7)',
+      });
+      cs.setData(ohlc);
+
+      if (indId === 'range') {
+        // Destacar o candle com maior range (amplitude)
+        let maxRange = 0, maxIdx = 0;
+        ohlc.forEach((b, i) => { const r = b.high - b.low; if (r > maxRange) { maxRange = r; maxIdx = i; } });
+        cs.setMarkers([{ time: times[maxIdx], position: 'aboveBar', color: '#F59E0B', shape: 'arrowDown', text: 'Range' }]);
+        chart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: 'Range (Máx−Mín)' } });
+      }
+
+      else if (indId === 'gap') {
+        // Dados dedicados: open de cada bar = close anterior, então ohlc genérico nunca
+        // tem gap. Gera série própria com gap explícito entre bar 7 e bar 8.
+        const isUpGap = up;
+        const gT0 = Math.floor(t0 / 1000);
+        const nPre = 8, nPost = 6;
+        const gapData = [];
+        let gPrice = 100;
+        for (let i = 0; i < nPre; i++) {
+          const o = gPrice;
+          const c = +(o + (isUpGap ? 0.4 : -0.4) + (((i*7+3)%5)-2)*0.25).toFixed(2);
+          gapData.push({ time: gT0+i*barSecs, open: o, high: +(Math.max(o,c)+1.1).toFixed(2), low: +(Math.min(o,c)-1.1).toFixed(2), close: c });
+          gPrice = c;
+        }
+        const prevClose = gPrice;
+        const gapSize = isUpGap ? 8 : -8;
+        const gOpen = +(prevClose + gapSize).toFixed(2);
+        const gClose = +(gOpen + (isUpGap ? 1.8 : -1.8)).toFixed(2);
+        const gIdx = nPre;
+        gapData.push({ time: gT0+gIdx*barSecs, open: gOpen, high: +(Math.max(gOpen,gClose)+1).toFixed(2), low: +(Math.min(gOpen,gClose)-1).toFixed(2), close: gClose });
+        gPrice = gClose;
+        for (let i = 1; i <= nPost; i++) {
+          const o = gPrice;
+          const c = +(o + (isUpGap ? 0.35 : -0.35) + (((i*11+5)%5)-2)*0.15).toFixed(2);
+          gapData.push({ time: gT0+(gIdx+i)*barSecs, open: o, high: +(Math.max(o,c)+0.8).toFixed(2), low: +(Math.min(o,c)-0.8).toFixed(2), close: c });
+          gPrice = c;
+        }
+        cs.setData(gapData);
+        // Zona do gap: duas linhas delimitando o espaço vazio entre fechamento e abertura
+        const gapZoneTimes = gapData.slice(gIdx - 1).map(b => b.time);
+        const topLvl = isUpGap ? gOpen : prevClose;
+        const botLvl = isUpGap ? prevClose : gOpen;
+        const gTopLine = chart.addLineSeries({ color: isUpGap ? 'rgba(16,185,129,0.7)' : 'rgba(239,68,68,0.7)', lineWidth: 1, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        gTopLine.setData(gapZoneTimes.map(t => ({ time: t, value: topLvl })));
+        const gBotLine = chart.addLineSeries({ color: isUpGap ? 'rgba(16,185,129,0.7)' : 'rgba(239,68,68,0.7)', lineWidth: 1, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        gBotLine.setData(gapZoneTimes.map(t => ({ time: t, value: botLvl })));
+        cs.setMarkers([{ time: gapData[gIdx].time, position: isUpGap ? 'belowBar' : 'aboveBar', color: isUpGap ? '#10B981' : '#EF4444', shape: isUpGap ? 'arrowUp' : 'arrowDown', text: 'Gap' }]);
+        chart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: 'Gap' } });
+      }
+
+      else if (indId === 'hilon') {
+        // Dados dedicados: consolidação de N períodos seguida de rompimento/perda de nível
+        const per = params.per || 20;
+        const isMax = !ct.includes('mínima') && !ct.includes('abaixo');
+        const totalBars = per + 15;
+        const base = 100;
+        const hilonOhlc = [];
+        const hT0 = Math.floor(t0 / 1000);
+        for (let i = 0; i < totalBars; i++) {
+          let o, c;
+          if (i < per) {
+            o = base + (((i*17+3)%11)-5)*0.4;
+            c = base + (((i*13+7)%9)-4)*0.4;
+          } else {
+            const step = i - per;
+            o = isMax ? base + 3 + step*1.8 : base - 3 - step*1.8;
+            c = isMax ? o + 2 + step*0.6  : o - 2 - step*0.6;
+          }
+          const h = Math.max(o,c) + 1.2 + (i%3)*0.3;
+          const l = Math.min(o,c) - 1.2 - ((i+1)%3)*0.3;
+          hilonOhlc.push({ time: hT0+i*barSecs, open: +o.toFixed(2), high: +h.toFixed(2), low: +l.toFixed(2), close: +c.toFixed(2) });
+        }
+        cs.setData(hilonOhlc);
+        const level = isMax
+          ? Math.max(...hilonOhlc.slice(0,per).map(b => b.high))
+          : Math.min(...hilonOhlc.slice(0,per).map(b => b.low));
+        const hilonTimes = hilonOhlc.map(b => b.time);
+        const lvSeries = chart.addLineSeries({ color: isMax ? '#10B981' : '#EF4444', lineWidth: 1.5, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        lvSeries.setData(hilonTimes.map(t => ({ time: t, value: level })));
+        cs.setMarkers([{ time: hilonOhlc[per].time, position: isMax ? 'aboveBar' : 'belowBar', color: isMax ? '#10B981' : '#EF4444', shape: isMax ? 'arrowUp' : 'arrowDown', text: 'Rompe' }]);
+        chart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `Máx/Mín (${per} per.)` } });
+      }
+
+      else if (indId === 'prevday') {
+        // Linha horizontal marcando a máxima ou mínima "do dia anterior"
+        // Usa a primeira metade dos candles como "dia anterior"
+        const half = Math.floor(N / 2);
+        const prevHigh = Math.max(...ohlc.slice(0, half).map(b => b.high));
+        const prevLow  = Math.min(...ohlc.slice(0, half).map(b => b.low));
+        const isMax = ct.includes('máxima') || ct.includes('acima');
+        const level = isMax ? prevHigh : prevLow;
+        const levelSeries = chart.addLineSeries({ color: '#F59E0B', lineWidth: 1.5, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        levelSeries.setData(times.map(t => ({ time: t, value: level })));
+        // Marker onde preço cruza/toca o nível na segunda metade
+        let sigIdx = -1;
+        for (let i = half; i < ohlc.length; i++) {
+          if (isMax && ohlc[i].high >= level) { sigIdx = i; break; }
+          if (!isMax && ohlc[i].low <= level) { sigIdx = i; break; }
+        }
+        if (sigIdx > 0) {
+          cs.setMarkers([{ time: times[sigIdx], position: isMax ? 'aboveBar' : 'belowBar', color: isMax ? '#10B981' : '#EF4444', shape: isMax ? 'arrowUp' : 'arrowDown', text: 'Sinal' }]);
+        }
+        chart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: 'Máx/Mín Dia Anterior' } });
+      }
+
+      else if (indId === 'fib') {
+        // Linhas horizontais nos níveis de Fibonacci sobre o swing principal
+        // Usa _crossCloses (tendência V) para swing claro
+        cs.setData(_crossOhlc);
+        const swingHigh = Math.max(..._crossOhlc.map(b => b.high));
+        const swingLow  = Math.min(..._crossOhlc.map(b => b.low));
+        const range = swingHigh - swingLow;
+        const levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+        const levelColors = ['rgba(99,102,241,0.3)','rgba(99,102,241,0.4)','rgba(99,102,241,0.5)','rgba(99,102,241,0.6)','rgba(99,102,241,0.7)','rgba(99,102,241,0.5)','rgba(99,102,241,0.3)'];
+        levels.forEach((lv, idx) => {
+          const price = swingHigh - range * lv;
+          const ls = chart.addLineSeries({ color: levelColors[idx], lineWidth: lv === 0.618 ? 1.5 : 0.8, lineStyle: lv === 0.618 ? 0 : 1, priceLineVisible: false, lastValueVisible: false });
+          ls.setData(times.map(t => ({ time: t, value: price })));
+        });
+        // Marker no nível da condição
+        const fibLevel = ct.includes('61.8') ? 0.618 : ct.includes('50') ? 0.5 : ct.includes('38.2') ? 0.382 : ct.includes('78.6') ? 0.786 : ct.includes('23.6') ? 0.236 : 0.618;
+        const fibPrice = swingHigh - range * fibLevel;
+        let sigIdx = -1;
+        for (let i = 1; i < _crossOhlc.length; i++) {
+          if (Math.abs(_crossOhlc[i].close - fibPrice) < range * 0.03) { sigIdx = i; break; }
+        }
+        if (sigIdx > 0) {
+          cs.setMarkers([{ time: times[sigIdx], position: up ? 'belowBar' : 'aboveBar', color: '#F59E0B', shape: 'circle', text: (fibLevel * 100).toFixed(1) + '%' }]);
+        }
+        chart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: 'Retração de Fibonacci' } });
+      }
+
+      chart.timeScale().fitContent();
+    });
+    return container;
+  }
+
+  // Fallback to SVG for everything else
+  return _buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct);
+}
+
+function _buildCondPreviewSVG(indId, condText, params={}, isDark, up, cross, sc, ct) {
   const W=280,H=120;
   const TH=svgTheme();
   const svg=hsvg('svg',{width:'100%',viewBox:`0 0 ${W} ${H}`});
   svg.appendChild(hsvg('rect',{x:0,y:0,width:W,height:H,rx:6,fill:TH.bg}));
-  const ct=condText.toLowerCase();
-  const up=ct.includes('acima')||ct.includes('sup')||ct.includes('alta')||ct.includes('subindo')||ct.includes('compra')||ct.includes('maior')||ct.includes('manhã');
-  const cross=ct.includes('cruza')||ct.includes('rompe')||ct.includes('virou')||ct.includes('sai');
   const touch=ct.includes('toca');
-  const sc=up?'#10B981':'#EF4444';
   const ln=(x1,y1,x2,y2,c,w,d)=>{const a={x1,y1,x2,y2,stroke:c,'stroke-width':w||0.5};if(d)a['stroke-dasharray']=d;svg.appendChild(hsvg('line',a));};
   const pl=(p,c,w,d)=>{const a={points:p,fill:'none',stroke:c,'stroke-width':w||1};if(d)a['stroke-dasharray']=d;svg.appendChild(hsvg('polyline',a));};
   const rc=(x,y,w,h,c,o,r)=>svg.appendChild(hsvg('rect',{x,y,width:w,height:h,fill:c,'fill-opacity':o!=null?o:1,rx:r||0}));
@@ -2750,7 +3967,7 @@ function renderModal() {
         <div style="font-size:11px;color:var(--txm);margin-top:6px">→ Dois períodos · Média curta vs Média longa</div>`;
       crossCard.addEventListener('click',()=>{
         ms.maMode='crossover';
-        ms.params={per:9,per2:200,cond:'Cruzamento de médias (compra e venda)'};
+        ms.params={per:9,per2:21,cond:'Cruzamento de médias (compra e venda)'};
         renderModal();
       });
       frag.appendChild(crossCard);
@@ -3210,12 +4427,22 @@ function renderModal() {
         previewWrap.id='cond-preview-wrap';
         previewWrap.appendChild(buildCondPreview(ind.id, ms.params.cond||conds[0]||'', ms.params));
         frag.appendChild(previewWrap);
+
+        // Legenda explicativa — escala ilustrativa
+        const legend=div('cond-preview-legend');
+        legend.innerHTML='<span style="opacity:0.6">ⓘ</span> Visualização ilustrativa. Os preços exibidos na grade não correspondem ao ativo selecionado.';
+        frag.appendChild(legend);
       }
 
       // Helper: rebuild the modal preview when any param changes
       function refreshCondPreview(){
         const pw=document.getElementById('cond-preview-wrap');
-        if(pw){pw.innerHTML='';pw.appendChild(buildCondPreview(ind.id,ms.params.cond||'',ms.params));}
+        if(pw){
+          pw.innerHTML='';
+          const newPreview=buildCondPreview(ind.id,ms.params.cond||'',ms.params);
+          pw.appendChild(newPreview); // entra no DOM antes do flush
+          _lwcFlush();               // agora getBoundingClientRect() retorna valor real
+        }
         if(window.refreshModalValidation)refreshModalValidation();
       }
 
@@ -3326,6 +4553,8 @@ function renderModal() {
                 cd.el.querySelector('div:last-child').style.fontWeight=on?'700':'500';
                 cd.el.querySelector('div:last-child').style.color=on?'var(--tx)':'var(--txs)';
               });
+              const pw=document.getElementById('cond-preview-wrap');
+              if(pw){pw.innerHTML='';pw.appendChild(buildCondPreview(ind.id,c,ms.params));_lwcFlush();}
             });
             grid.appendChild(card);
           });
@@ -3351,7 +4580,7 @@ function renderModal() {
               });
               // Update preview SVG
               const pw=document.getElementById('cond-preview-wrap');
-              if(pw){pw.innerHTML='';pw.appendChild(buildCondPreview(ind.id,c,ms.params));}
+              if(pw){pw.innerHTML='';pw.appendChild(buildCondPreview(ind.id,c,ms.params));_lwcFlush();}
             });
             row.appendChild(r);
           });
@@ -3361,7 +4590,15 @@ function renderModal() {
       if(ind.hasVal!==false && ms.params.val!==undefined) {
         const row=div('');
         const valLabel = ind.id==='gap' ? 'Tamanho mínimo (pontos)' : 'Valor de referência';
-        row.appendChild(slabel(valLabel));
+        const valTooltips = {
+          rsi: 'Nível do RSI usado na comparação. Tradicionalmente, valores abaixo de 30 indicam sobrevenda e acima de 70 indicam sobrecompra. Você pode ajustar conforme sua estratégia.',
+          stoch: 'Nível do Estocástico usado na comparação. Tradicionalmente, valores abaixo de 20 indicam sobrevenda e acima de 80 indicam sobrecompra.',
+          cci: 'Nível do CCI usado na comparação. Os limites tradicionais são +100 (sobrecompra) e −100 (sobrevenda), mas o CCI pode chegar a +/−300 em movimentos fortes.',
+          williams: 'Nível do Williams %R usado na comparação. A escala vai de 0 a −100. Valores acima de −20 indicam sobrecompra; abaixo de −80, sobrevenda.',
+          adx: 'Nível do ADX usado na comparação. Valores acima de 25 indicam tendência forte; acima de 40, tendência muito forte. Abaixo de 20, mercado lateralizado.',
+          macd: 'Valor de referência para o MACD. Use 0 para identificar quando o MACD cruza a linha de zero (mudança de viés).',
+        };
+        row.appendChild(slabel(valLabel, valTooltips[ind.id]));
         row.appendChild(stepper(ms.params.val,-999,99999, ind.id==='gap'?'pts':'', v=>{ms.params.val=v;refreshCondPreview();}));
         frag.appendChild(row);
       }
@@ -3441,7 +4678,8 @@ function renderModal() {
 
   modalEl.appendChild(modal);
   document.body.appendChild(modalEl);
-  // Chamar APÓS inserção no DOM (para val-feedback estar acessível)
+  // Chamar APÓS inserção no DOM (para val-feedback e charts LWC)
+  _lwcFlush();
   if(window.refreshModalValidation) refreshModalValidation();
 }
 
@@ -3701,12 +4939,17 @@ function renderStep2() {
         }
         if(p.val!==undefined){
           const g=div('');g.style.cssText='display:flex;flex-direction:column;gap:3px';
-          const lb=div('');lb.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';lb.textContent='Valor';
+          const lb=div('');lb.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';
+          const _isPts=c.id==='gap'||c.id==='range';
+          lb.textContent=_isPts?'Tamanho mínimo':'Valor';
           g.appendChild(lb);
-          // Min/max do valor baseado no range do indicador
-          const _vMin=(c.id==='rsi'||c.id==='stoch'||c.id==='adx')?0:c.id==='williams'?-100:-999;
-          const _vMax=(c.id==='rsi'||c.id==='stoch'||c.id==='adx')?100:c.id==='williams'?0:99999;
-          g.appendChild(stepper(p.val,_vMin,_vMax,'',v=>{p.val=v;updateCondition(lbl,c);}));
+          if(_isPts){
+            g.appendChild(stepperPoints(p.val,0,5000,cfg.asset,v=>{p.val=v;updateCondition(lbl,c);}));
+          } else {
+            const _vMin=(c.id==='rsi'||c.id==='stoch'||c.id==='adx')?0:c.id==='williams'?-100:-999;
+            const _vMax=(c.id==='rsi'||c.id==='stoch'||c.id==='adx')?100:c.id==='williams'?0:99999;
+            g.appendChild(stepper(p.val,_vMin,_vMax,'',v=>{p.val=v;updateCondition(lbl,c);}));
+          }
           paramsRow.appendChild(g);
         }
         if(p.dev!==undefined){
@@ -3947,17 +5190,7 @@ function renderStep4() {
   if(fiboActive){
     const fiboBody=div('');fiboBody.style.cssText='padding:16px;display:flex;flex-direction:column;gap:14px';
 
-    // ZigZag params
-    const zzTitle=div('');zzTitle.style.cssText='font-size:12px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em';zzTitle.textContent='Parâmetros do ZigZag';
-    fiboBody.appendChild(zzTitle);
-    const zzRow=div('');zzRow.style.cssText='display:flex;gap:16px;flex-wrap:wrap';
-    const zzDepthG=div('');const zzDepthL=div('');zzDepthL.style.cssText='font-size:11px;color:var(--txs);margin-bottom:4px';zzDepthL.textContent='Depth (barras entre pivos)';
-    zzDepthG.append(zzDepthL,stepper(cfg.fiboZZDepth,2,100,'',v=>{cfg.fiboZZDepth=v;}));
-    const zzDevG=div('');const zzDevL=div('');zzDevL.style.cssText='font-size:11px;color:var(--txs);margin-bottom:4px';zzDevL.textContent='Deviation (pontos mín. pivo)';
-    zzDevG.append(zzDevL,stepper(cfg.fiboZZDeviation,1,200,'pts',v=>{cfg.fiboZZDeviation=v;}));
-    const zzBsG=div('');const zzBsL=div('');zzBsL.style.cssText='font-size:11px;color:var(--txs);margin-bottom:4px';zzBsL.textContent='Backstep (barras a ignorar)';
-    zzBsG.append(zzBsL,stepper(cfg.fiboZZBackstep,1,50,'',v=>{cfg.fiboZZBackstep=v;}));
-    zzRow.append(zzDepthG,zzDevG,zzBsG);fiboBody.appendChild(zzRow);
+
 
     if(cfg.useFibonacci){
       // Trigger Level
@@ -4374,13 +5607,18 @@ async function startLoading() {
     },
     // onDone
     (result) => {
-      // Converter resultado para formato EQ
-      EQ = convertBackendResult(result, 100000);
+      // Armazenar métricas do backend — fonte da verdade para o relatório
+      CURRENT_BACKEND_METRICS = (result && result.metrics) ? result.metrics : null;
+      // Depósito real usado pelo MT5 (backend informa via initial_deposit)
+      const deposit = (CURRENT_BACKEND_METRICS && CURRENT_BACKEND_METRICS.initial_deposit)
+                      ? CURRENT_BACKEND_METRICS.initial_deposit : 10000;
+      // Converter para formato EQ — usado apenas pelos gráficos (curva de equity)
+      EQ = convertBackendResult(result, deposit);
       if (EQ.length === 0) {
         // Fallback: resultado sem trades
         EQ = [{ v: 0, dd: 0, pnl: 0, t: 'N/A' }];
       }
-      EQ_ANALYSIS = computeAnalysis(EQ, 100000);
+      EQ_ANALYSIS = computeAnalysis(EQ, deposit);
 
       // Completar barra e mostrar resultados
       const fill = document.querySelector('.load-fill');
@@ -4422,20 +5660,34 @@ function renderLoading() {
 
 // ─── RESULTS ─────────────────────────────────────────────────
 function getMetrics(){
-  const A=EQ_ANALYSIS,last=EQ[EQ.length-1].v;
+  const A=EQ_ANALYSIS;
+  const BM=CURRENT_BACKEND_METRICS;
+  // Métricas do backend têm prioridade (calculadas pelo MT5/parser).
+  // Fallback para EQ_ANALYSIS em demos e histórico mock.
+  const totalTrades = BM ? BM.total_trades        : EQ.length;
+  const winRate     = BM ? BM.win_rate             : A.winRate;
+  const netProfit   = BM ? BM.total_net_profit     : EQ[EQ.length-1].v;
+  const ddPct       = BM ? BM.max_drawdown_pct     : A.maxDDPct;
+  const pf          = BM ? BM.profit_factor        : A.profitFactor;
+  const payoff      = BM ? BM.payoff               : A.payoff;
+  const rf          = BM ? BM.recovery_factor      : A.recoveryFactor;
+  const deposit     = BM ? (BM.initial_deposit||10000) : A.cap;
+  const rentab      = deposit>0 ? (netProfit/deposit)*100 : 0;
+  const ok          = netProfit>=0;
   return[
-    {label:'Total de Trades',val:String(EQ.length),color:'var(--tx)'},
-    {label:'Taxa de Acerto',val:A.winRate.toFixed(1)+'%',color:'#F59E0B',pct:A.winRate},
-    {label:'Lucro Total',val:(last>=0?'+':'')+'R$ '+Math.abs(last).toLocaleString('pt-BR'),color:last>=0?'#10B981':'#EF4444'},
-    {label:'Max Drawdown',val:'−'+A.maxDDPct.toFixed(2)+'%',color:'#EF4444'},
-    {label:'Profit Factor',val:A.profitFactor.toFixed(2),color:A.profitFactor>1?'#00D4AA':'#EF4444'},
-    {label:'Payoff',val:A.payoff.toFixed(2),color:A.payoff>1?'#10B981':'#F59E0B'},
-    {label:'Recovery Factor',val:A.recoveryFactor.toFixed(2),color:A.recoveryFactor>2?'#10B981':'#F59E0B'},
-    {label:'Rentabilidade',val:((last/A.cap)*100).toFixed(2)+'%',color:last>=0?'#10B981':'#EF4444'},
+    {label:'Total de Trades',val:totalTrades.toLocaleString('pt-BR'),color:'var(--tx)'},
+    {label:'Taxa de Acerto',val:winRate.toFixed(1)+'%',color:'#F59E0B',pct:winRate},
+    {label:'Lucro Total',val:(ok?'+':'')+'R$ '+Math.abs(netProfit).toLocaleString('pt-BR',{maximumFractionDigits:2}),color:ok?'#10B981':'#EF4444'},
+    {label:'Max Drawdown',val:'−'+ddPct.toFixed(2)+'%',color:'#EF4444'},
+    {label:'Profit Factor',val:pf.toFixed(2),color:pf>1?'#00D4AA':'#EF4444'},
+    {label:'Payoff',val:payoff.toFixed(2),color:payoff>1?'#10B981':'#F59E0B'},
+    {label:'Recovery Factor',val:rf.toFixed(2),color:rf>2?'#10B981':'#F59E0B'},
+    {label:'Rentabilidade',val:rentab.toFixed(2)+'%',color:ok?'#10B981':'#EF4444'},
   ];
 }
 
 function viewHistoryItem(id){
+  CURRENT_BACKEND_METRICS=null; // histórico mock usa EQ_ANALYSIS como fallback
   const bt=MOCK_HISTORY.find(b=>b.id===id);
   if(!bt)return;
   viewingHistoryItem=bt;
@@ -4450,6 +5702,7 @@ function viewHistoryItem(id){
 
 function exitHistoryDetail(){
   viewingHistoryItem=null;
+  CURRENT_BACKEND_METRICS=null; // histórico mock não tem métricas de backend
   // Restore default EQ
   EQ=(()=>{let v=0,peak=0;return DEFAULT_EQ_DATA.map((x,i)=>{v+=x;if(v>peak)peak=v;const yr=2019+Math.floor(i/12),mo=i%12;return{v:Math.round(v),dd:Math.round(Math.min(0,v-peak)),pnl:x,t:(new Date(yr,mo)).toLocaleDateString('pt-BR',{month:'short'}).replace('.','')+" '"+String(yr).slice(2)};});})();
   EQ_ANALYSIS=computeAnalysis(EQ,100000);
@@ -4459,7 +5712,11 @@ function exitHistoryDetail(){
 function renderResults() {
   const TH=svgTheme();
   const A=EQ_ANALYSIS;const METRICS=getMetrics();
-  const last=EQ[EQ.length-1].v;const ok=last>0;
+  const BM=CURRENT_BACKEND_METRICS;
+  // Valores do relatório: backend quando disponível, senão EQ calculado
+  const last=BM ? BM.total_net_profit : EQ[EQ.length-1].v;
+  const totalTrades=BM ? BM.total_trades : EQ.length;
+  const ok=last>=0;
   const el=div(state.animate?'aUp':'');el.style.maxWidth='860px';
 
   // ── History header (when viewing from history) ──
@@ -4486,7 +5743,7 @@ function renderResults() {
   const vText=div('');
   const vLabel=div('');vLabel.style.cssText=`font-size:10px;font-weight:800;color:${ok?'#10B981':'#EF4444'};letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px`;vLabel.textContent='Resultado: '+(ok?'LUCRATIVA':'DEFICITÁRIA');
   const vVal=div('');vVal.style.cssText=`font-size:34px;font-weight:700;color:${ok?'#10B981':'#EF4444'};font-family:'JetBrains Mono';line-height:1`;vVal.textContent=(ok?'+':'−')+'R$ '+Math.abs(last).toLocaleString('pt-BR');
-  const vSub=div('');vSub.style.cssText='font-size:11px;color:var(--txs);margin-top:5px';vSub.textContent=`Jan 2019 – Mar 2026 · 87 meses · ${EQ.length} operações`;
+  const vSub=div('');vSub.style.cssText='font-size:11px;color:var(--txs);margin-top:5px';vSub.textContent=`Jan 2019 – Mar 2026 · 87 meses · ${totalTrades.toLocaleString('pt-BR')} operações`;
   vText.append(vLabel,vVal,vSub);verdict.append(vIco,vText);el.appendChild(verdict);
 
   // ── Metrics Grid (4 columns) ──
@@ -4509,18 +5766,26 @@ function renderResults() {
 
   const leftCol=div('');leftCol.style.cssText='display:flex;flex-direction:column;gap:8px';
   const statRow=(label,val,color)=>{const r=div('');r.style.cssText='display:flex;justify-content:space-between;align-items:center';const l=div('');l.style.cssText='font-size:12px;color:var(--txs)';l.textContent=label;const v=div('');v.style.cssText=`font-size:13px;font-weight:600;color:${color||TH.tx};font-family:'JetBrains Mono'`;v.textContent=val;r.append(l,v);return r;};
+  // Estatísticas de trades: backend quando disponível, senão EQ_ANALYSIS
+  const stWins   = BM ? BM.win_trades   : A.wins;
+  const stLosses = BM ? BM.loss_trades  : A.losses;
+  const stGrossP = BM ? BM.gross_profit : A.totalProfit;
+  const stGrossL = BM ? Math.abs(BM.gross_loss) : A.totalLoss;
+  const stAvgWin = BM && BM.win_trades  > 0 ? stGrossP / BM.win_trades  : A.avgWin;
+  const stAvgLos = BM && BM.loss_trades > 0 ? stGrossL / BM.loss_trades : A.avgLoss;
+  const stResT   = totalTrades > 0 ? last / totalTrades : 0;
   leftCol.append(
-    statRow('Gains',String(A.wins),'#10B981'),
-    statRow('Losses',String(A.losses),'#EF4444'),
-    statRow('Média de Ganho','R$ '+A.avgWin.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#10B981'),
-    statRow('Média de Perda','R$ '+A.avgLoss.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#EF4444')
+    statRow('Gains',stWins.toLocaleString('pt-BR'),'#10B981'),
+    statRow('Losses',stLosses.toLocaleString('pt-BR'),'#EF4444'),
+    statRow('Média de Ganho','R$ '+stAvgWin.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#10B981'),
+    statRow('Média de Perda','R$ '+stAvgLos.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#EF4444')
   );
 
   const rightCol=div('');rightCol.style.cssText='display:flex;flex-direction:column;gap:8px';
   rightCol.append(
-    statRow('Lucro Bruto','R$ '+A.totalProfit.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#10B981'),
-    statRow('Perda Bruta','R$ '+A.totalLoss.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#EF4444'),
-    statRow('Resultado/Trade','R$ '+(last/EQ.length).toFixed(2),last>=0?'#10B981':'#EF4444')
+    statRow('Lucro Bruto','R$ '+stGrossP.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#10B981'),
+    statRow('Perda Bruta','R$ '+stGrossL.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#EF4444'),
+    statRow('Resultado/Trade','R$ '+stResT.toFixed(2),ok?'#10B981':'#EF4444')
   );
   statsGrid.append(leftCol,rightCol);
   statsCard.appendChild(statsGrid);el.appendChild(statsCard);
@@ -4531,14 +5796,20 @@ function renderResults() {
   ec.append(ecl,buildEquityChart());
 
   // DD analysis below equity chart
-  if(A.maxDDPct>0){
+  // Percentual e valor monetário vêm do backend; posicionamento (índices) do EQ_ANALYSIS
+  const ddPctDisplay = BM ? BM.max_drawdown_pct   : A.maxDDPct;
+  const ddValDisplay = BM ? BM.max_drawdown_money  : A.maxDDVal;
+  const capDisplay   = BM ? (BM.initial_deposit||10000) : A.cap;
+  if(ddPctDisplay>0){
     const ddInfo=div('');ddInfo.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)';
     const ddCard=(label,val,sub,color)=>{const c=div('');const l=div('');l.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px';l.textContent=label;const v=div('');v.style.cssText=`font-size:16px;font-weight:700;color:${color||TH.tx};font-family:'JetBrains Mono'`;v.textContent=val;c.append(l,v);if(sub){const s=div('');s.style.cssText='font-size:10px;color:var(--txm);margin-top:2px';s.textContent=sub;c.appendChild(s);}return c;};
     const ddDuration=A.maxDDIdx-A.maxDDPeakIdx;
+    const peakEQ=EQ[A.maxDDPeakIdx]||{v:0,t:'?'};
+    const troughEQ=EQ[A.maxDDIdx]||{v:0,t:'?'};
     ddInfo.append(
-      ddCard('Max Drawdown','-'+A.maxDDPct.toFixed(2)+'%','R$ '+A.maxDDVal.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#EF4444'),
-      ddCard('Duração',ddDuration+' operações',EQ[A.maxDDPeakIdx].t+' → '+EQ[A.maxDDIdx].t),
-      ddCard('Pico → Vale','R$ '+(A.cap+EQ[A.maxDDPeakIdx].v).toLocaleString('pt-BR',{maximumFractionDigits:0}),'→ R$ '+(A.cap+EQ[A.maxDDIdx].v).toLocaleString('pt-BR',{maximumFractionDigits:0}))
+      ddCard('Max Drawdown','-'+ddPctDisplay.toFixed(2)+'%','R$ '+ddValDisplay.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#EF4444'),
+      ddCard('Duração',ddDuration+' operações',peakEQ.t+' → '+troughEQ.t),
+      ddCard('Pico → Vale','R$ '+(capDisplay+peakEQ.v).toLocaleString('pt-BR',{maximumFractionDigits:0}),'→ R$ '+(capDisplay+troughEQ.v).toLocaleString('pt-BR',{maximumFractionDigits:0}))
     );
     ec.appendChild(ddInfo);
   }
@@ -5529,7 +6800,10 @@ db.auth.onAuthStateChange(async (event, session) => {
 function rrect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
 
 async function generateShareCard(){
-  const A=EQ_ANALYSIS,last=EQ[EQ.length-1].v,ok=last>0,cfg=state.cfg;
+  const A=EQ_ANALYSIS,BM=CURRENT_BACKEND_METRICS,cfg=state.cfg;
+  const last=BM ? BM.total_net_profit : EQ[EQ.length-1].v;
+  const ok=last>=0;
+  const scTrades=BM ? BM.total_trades : EQ.length;
   const S=1080,cv=document.createElement('canvas');cv.width=S;cv.height=S;
   const cx=cv.getContext('2d');
   const sc=v=>Math.round(v*2);
@@ -5565,7 +6839,7 @@ async function generateShareCard(){
   const bY=sc(58);
   cx.fillStyle='#12121A';cx.strokeStyle='#1E1E2E';cx.lineWidth=1;
   rrect(cx,sc(28),bY,S-sc(56),sc(38),sc(8));cx.fill();cx.stroke();
-  const si=[['ATIVO',cfg.asset],['TIMEFRAME',cfg.tf],['PER\u00cdODO','Jan/2021 \u2013 Mar/2026'],['OPERA\u00c7\u00d5ES',EQ.length.toLocaleString('pt-BR')]];
+  const si=[['ATIVO',cfg.asset],['TIMEFRAME',cfg.tf],['PER\u00cdODO','Jan/2021 \u2013 Mar/2026'],['OPERA\u00c7\u00d5ES',scTrades.toLocaleString('pt-BR')]];
   let sx=sc(42);
   si.forEach((it,i)=>{
     if(i>0){cx.fillStyle='#1E1E2E';cx.fillRect(sx-sc(10),bY+sc(8),1,sc(22));sx+=sc(6);}
@@ -5581,7 +6855,7 @@ async function generateShareCard(){
   cx.font='800 '+sc(38)+'px "JetBrains Mono",monospace';
   cx.fillText(fr(last),sc(28),vY+sc(38));
   cx.fillStyle='#44445A';cx.font=mn(10);
-  cx.fillText('5 anos \u00b7 '+EQ.length.toLocaleString('pt-BR')+' trades \u00b7 340.000+ candles',sc(28),vY+sc(54));
+  cx.fillText('5 anos \u00b7 '+scTrades.toLocaleString('pt-BR')+' trades \u00b7 340.000+ candles',sc(28),vY+sc(54));
   cx.font=sn(700,10);const bt=ok?'Lucrativa':'Deficit\u00e1ria';
   const bW2=cx.measureText(bt).width+sc(30),bX2=S-sc(28)-bW2;
   cx.fillStyle=ok?'rgba(16,185,129,0.1)':'rgba(239,68,68,0.08)';cx.strokeStyle=ok?'rgba(16,185,129,0.25)':'rgba(239,68,68,0.2)';cx.lineWidth=1;
@@ -5590,7 +6864,11 @@ async function generateShareCard(){
 
   // Metrics
   const mY=sc(188),mW=(S-sc(56)-sc(24))/4;
-  [{l:'TAXA DE ACERTO',v:A.winRate.toFixed(1)+'%',c:'#F59E0B',p:A.winRate},{l:'PROFIT FACTOR',v:A.profitFactor.toFixed(2),c:A.profitFactor>1?'#00D4AA':'#EF4444'},{l:'RESULTADO/TRADE',v:'R$'+(last/EQ.length).toFixed(2),c:last>=0?'#10B981':'#EF4444'},{l:'MAX DRAWDOWN',v:'\u2212R$'+A.maxDDVal.toLocaleString('pt-BR',{maximumFractionDigits:0}),c:'#EF4444'}].forEach((m,i)=>{
+  const scWinRate=BM ? BM.win_rate      : A.winRate;
+  const scPF     =BM ? BM.profit_factor : A.profitFactor;
+  const scDD     =BM ? BM.max_drawdown_money : A.maxDDVal;
+  const scResT   =scTrades>0 ? last/scTrades : 0;
+  [{l:'TAXA DE ACERTO',v:scWinRate.toFixed(1)+'%',c:'#F59E0B',p:scWinRate},{l:'PROFIT FACTOR',v:scPF.toFixed(2),c:scPF>1?'#00D4AA':'#EF4444'},{l:'RESULTADO/TRADE',v:'R$'+scResT.toFixed(2),c:ok?'#10B981':'#EF4444'},{l:'MAX DRAWDOWN',v:'\u2212R$'+scDD.toLocaleString('pt-BR',{maximumFractionDigits:0}),c:'#EF4444'}].forEach((m,i)=>{
     const mx=sc(28)+i*(mW+sc(8));
     cx.fillStyle='#12121A';cx.strokeStyle='#1E1E2E';cx.lineWidth=1;
     rrect(cx,mx,mY,mW,sc(58),sc(8));cx.fill();cx.stroke();
