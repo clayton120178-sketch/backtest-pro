@@ -1402,7 +1402,15 @@ function buildEquityChart() {
     svgEl.appendChild(hsvg('line',{x1:dx,y1:py,x2:dx,y2:dy,stroke:'#EF4444','stroke-width':'1','stroke-dasharray':'3,2','stroke-opacity':'0.6'}));
     // Trough marker
     svgEl.appendChild(hsvg('circle',{cx:dx,cy:dy,r:4,fill:'#EF4444','fill-opacity':'0.2',stroke:'#EF4444','stroke-width':'1.5'}));
-    const ddLabel=hsvg('text',{x:dx+6,y:dy+4,fill:'#EF4444','font-size':'8','font-family':'JetBrains Mono','font-weight':'700'});
+    // Label adaptativo: vira para a esquerda perto da borda direita; sobe perto da borda inferior
+    const _lblNearRight=dx > W-PR-55;
+    const _lblNearBottom=dy > PT+iH-18;
+    const ddLabel=hsvg('text',{
+      x:_lblNearRight ? dx-8 : dx+8,
+      y:_lblNearBottom ? dy-6 : dy+4,
+      fill:'#EF4444','font-size':'8','font-family':'JetBrains Mono','font-weight':'700',
+      'text-anchor':_lblNearRight ? 'end' : 'start'
+    });
     ddLabel.textContent=`-${A.maxDDPct.toFixed(1)}%`;svgEl.appendChild(ddLabel);
   }
   // X labels
@@ -5669,7 +5677,13 @@ function getMetrics(){
   const netProfit   = BM ? (BM.total_net_profit     ?? 0)        : EQ[EQ.length-1].v;
   const ddPct       = BM ? (BM.max_drawdown_pct     ?? 0)        : A.maxDDPct;
   const pf          = BM ? (BM.profit_factor        ?? 0)        : A.profitFactor;
-  const payoff      = BM ? (BM.payoff               ?? 0)        : A.payoff;
+  // Payoff: lê do backend; se vier zero (campo ausente no parser HTML), recalcula a partir dos brutos
+  let payoff = BM ? (BM.payoff ?? 0) : A.payoff;
+  if (BM && !payoff && (BM.win_trades > 0) && (BM.loss_trades > 0)) {
+    const _avgWin = (BM.gross_profit || 0) / BM.win_trades;
+    const _avgLos = Math.abs(BM.gross_loss || 0) / BM.loss_trades;
+    if (_avgLos > 0) payoff = _avgWin / _avgLos;
+  }
   const rf          = BM ? (BM.recovery_factor      ?? 0)        : A.recoveryFactor;
   const deposit     = BM ? (BM.initial_deposit      || 10000)    : A.cap;
   const rentab      = deposit>0 ? (netProfit/deposit)*100 : 0;
@@ -5802,28 +5816,21 @@ function renderResults() {
   const capDisplay   = BM ? (BM.initial_deposit||10000) : A.cap;
   if(ddPctDisplay>0){
     const ddInfo=div('');ddInfo.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)';
-    const ddCard=(label,val,sub,color)=>{const c=div('');const l=div('');l.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px';l.textContent=label;const v=div('');v.style.cssText=`font-size:16px;font-weight:700;color:${color||TH.tx};font-family:'JetBrains Mono'`;v.textContent=val;c.append(l,v);if(sub){const s=div('');s.style.cssText='font-size:10px;color:var(--txm);margin-top:2px';s.textContent=sub;c.appendChild(s);}return c;};
+    // ddCard aceita subColor opcional para colorir a linha secundária
+    const ddCard=(label,val,sub,color,subColor)=>{const c=div('');const l=div('');l.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px';l.textContent=label;const v=div('');v.style.cssText=`font-size:16px;font-weight:700;color:${color||TH.tx};font-family:'JetBrains Mono'`;v.textContent=val;c.append(l,v);if(sub){const s=div('');s.style.cssText=`font-size:10px;color:${subColor||'var(--txm)'};margin-top:2px`;s.textContent=sub;c.appendChild(s);}return c;};
     const ddDuration=A.maxDDIdx-A.maxDDPeakIdx;
     const peakEQ=EQ[A.maxDDPeakIdx]||{v:0,t:'?'};
     const troughEQ=EQ[A.maxDDIdx]||{v:0,t:'?'};
+    // Pico→Vale: valores relativos ao zero (performance), sem somar capital inicial
+    const fmtPnl=v=>(v>=0?'+R$ ':'-R$ ')+Math.abs(v).toLocaleString('pt-BR',{maximumFractionDigits:0});
     ddInfo.append(
-      ddCard('Max Drawdown','-'+ddPctDisplay.toFixed(2)+'%','R$ '+ddValDisplay.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#EF4444'),
-      ddCard('Duração',ddDuration+' operações',peakEQ.t+' → '+troughEQ.t),
-      ddCard('Pico → Vale','R$ '+(capDisplay+peakEQ.v).toLocaleString('pt-BR',{maximumFractionDigits:0}),'→ R$ '+(capDisplay+troughEQ.v).toLocaleString('pt-BR',{maximumFractionDigits:0}))
+      ddCard('Max Drawdown','-'+ddPctDisplay.toFixed(2)+'%','-R$ '+ddValDisplay.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#EF4444','#EF4444'),
+      ddCard('Duração do Drawdown',ddDuration+' operações',peakEQ.t+' → '+troughEQ.t),
+      ddCard('Pico → Vale',fmtPnl(peakEQ.v),'→ '+fmtPnl(troughEQ.v))
     );
     ec.appendChild(ddInfo);
   }
 
-  // Losing streak info
-  if(A.maxStreak>0){
-    const lsInfo=div('');lsInfo.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)';
-    const lsCard=(label,val,color)=>{const c=div('');const l=div('');l.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px';l.textContent=label;const v=div('');v.style.cssText=`font-size:16px;font-weight:700;color:${color||TH.tx};font-family:'JetBrains Mono'`;v.textContent=val;c.append(l,v);return c;};
-    lsInfo.append(
-      lsCard('Max Sequência Negativa',A.maxStreak+' operações','#F59E0B'),
-      lsCard('Período',EQ[A.mStreakS].t+' → '+EQ[A.mStreakE].t,'#F59E0B')
-    );
-    ec.appendChild(lsInfo);
-  }
   el.appendChild(ec);
 
   // ── TUW Equity Chart ──
@@ -5831,20 +5838,16 @@ function renderResults() {
   const tuwl=div('chart-label');tuwl.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1E90FF" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="m9 17 3-5 3 3 3-5"/></svg> Curva de Equity — Time Underwater (TUW)`;
   tuw.append(tuwl,buildTUWChart());
 
-  // TUW stats
-  const tuwStats=div('');tuwStats.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)';
-  const tuwCard=(label,val,color)=>{const c=div('');const l=div('');l.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px';l.textContent=label;const v=div('');v.style.cssText=`font-size:16px;font-weight:700;color:${color||TH.tx};font-family:'JetBrains Mono'`;v.textContent=val;c.append(l,v);return c;};
-  tuwStats.append(
-    tuwCard('Períodos TUW',String(A.uwPeriods.length),'#1E90FF'),
-    tuwCard('TUW Máximo',A.tuwMax+' operações','#EF4444'),
-    tuwCard('TUW Médio',A.tuwAvg.toFixed(1)+' operações','#F59E0B')
-  );
-  tuw.appendChild(tuwStats);
-
-  // Legend
+  // Explicação do TUW
+  const tuwExp=div('');tuwExp.style.cssText='margin-top:14px;padding-top:12px;border-top:1px solid var(--bd)';
+  const tuwExpTitle=div('');tuwExpTitle.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px';tuwExpTitle.textContent='O que é Time Underwater (TUW)?';
+  const tuwExpBody=div('');tuwExpBody.style.cssText='font-size:11px;color:var(--txm);line-height:1.6';
+  tuwExpBody.textContent='TUW (Tempo Submerso) mede quanto tempo a estratégia ficou abaixo da sua máxima histórica de lucro — ou seja, quantas operações foram necessárias para se recuperar de cada período de perda e voltar a marcar novo recorde. As áreas vermelhas no gráfico indicam esses períodos submersos. Os pontos verdes marcam cada vez que a curva de equity bateu uma nova máxima. Quanto menor e mais curtos os períodos TUW, mais resiliente é a estratégia.';
+  tuwExp.append(tuwExpTitle,tuwExpBody);
+  // Legenda visual
   const legend=div('');legend.style.cssText='display:flex;gap:16px;margin-top:10px;font-size:10px;color:var(--txm)';
   legend.innerHTML='<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:rgba(239,68,68,0.15)"></span> Período underwater</span><span style="display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:3px;background:#10B981"></span> Nova máxima</span>';
-  tuw.appendChild(legend);
+  tuw.append(tuwExp,legend);
   el.appendChild(tuw);
 
   // ── Actions ──
