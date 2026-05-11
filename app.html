@@ -1198,8 +1198,7 @@ function stepperPoints(val, min, max, assetTicker, onChange) {
   function updateTickHint() {
     const v = parseFloat(inp.value) || 0;
     if (tickVal !== null && v > 0) {
-      const ticks = v / tick;
-      const financ = (ticks * tickVal).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+      const financ = (v * tickVal).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
       hint.textContent = `≈ ${currency} ${financ} por contrato`;
     } else {
       hint.textContent = `Tick: ${tick} ${unit}`;
@@ -1417,8 +1416,6 @@ function buildEquityChart() {
   [0,12,24,36,48,60,72,84].forEach(i=>{
     if(i<EQ.length){const t=hsvg('text',{x:txf(i),y:H-6,'text-anchor':'middle',fill:TH.txm,'font-size':'9','font-family':'JetBrains Mono'});t.textContent=EQ[i].t.split(' ')[1];svgEl.appendChild(t);}
   });
-  // Y labels
-  [0,0.5,1].forEach(f=>{const v=min+f*rng;const t=hsvg('text',{x:PL-4,y:tyf(v)+4,'text-anchor':'end',fill:TH.txm,'font-size':'9','font-family':'JetBrains Mono'});t.textContent=(v>=0?'+':'')+Math.round(v/1000)+'k';svgEl.appendChild(t);});
   return svgEl;
 }
 
@@ -1450,8 +1447,6 @@ function buildTUWChart() {
   [0,12,24,36,48,60,72,84].forEach(i=>{
     if(i<EQ.length){const t=hsvg('text',{x:txf(i),y:H-6,'text-anchor':'middle',fill:TH.txm,'font-size':'9','font-family':'JetBrains Mono'});t.textContent=EQ[i].t.split(' ')[1];svgEl.appendChild(t);}
   });
-  // Y labels
-  [0,0.5,1].forEach(f=>{const v=min+f*rng;const t=hsvg('text',{x:PL-4,y:tyf(v)+4,'text-anchor':'end',fill:TH.txm,'font-size':'9','font-family':'JetBrains Mono'});t.textContent=(v>=0?'+':'')+Math.round(v/1000)+'k';svgEl.appendChild(t);});
   return svgEl;
 }
 
@@ -5376,7 +5371,8 @@ function renderConfirm() {
   el.appendChild(box);
 
   const period=div('');period.style.cssText='background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.14);border-radius:9px;padding:10px 13px;margin:16px 0 22px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--txs)';
-  period.innerHTML=`<span style="color:#00D4AA;flex-shrink:0">${IC.act}</span> Período: <strong style="color:var(--tx)">Janeiro 2019 — Março 2026</strong> <span style="color:var(--txm)">(todo o histórico disponível)</span>`;
+  const _p=getBacktestPeriod();
+  period.innerHTML=`<span style="color:#00D4AA;flex-shrink:0">${IC.act}</span> Período: <strong style="color:var(--tx)">${_p.startLong} — ${_p.endLong}</strong> <span style="color:var(--txm)">(todo o histórico disponível)</span>`;
   el.appendChild(period);
 
   const btns=div('');btns.style.cssText='display:flex;gap:9px';
@@ -5556,9 +5552,26 @@ async function pollBacktestResult(backtestId, onProgress, onDone, onError) {
 }
 
 // ─── LOADING ─────────────────────────────────────────────────
+function getBacktestPeriod() {
+  const now = new Date();
+  const start = new Date(now);
+  start.setFullYear(start.getFullYear() - 5);
+  const mLong  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                  'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const mShort = ['Jan','Fev','Mar','Abr','Mai','Jun',
+                  'Jul','Ago','Set','Out','Nov','Dez'];
+  const startLong  = `${mLong[start.getMonth()]} ${start.getFullYear()}`;
+  const endLong    = `${mLong[now.getMonth()]} ${now.getFullYear()}`;
+  const startShort = `${mShort[start.getMonth()]} ${start.getFullYear()}`;
+  const endShort   = `${mShort[now.getMonth()]} ${now.getFullYear()}`;
+  const totalMonths = (now.getFullYear() - start.getFullYear()) * 12
+                    + (now.getMonth() - start.getMonth());
+  return { startLong, endLong, startShort, endShort, totalMonths };
+}
+
 function calcCandles(tf) {
-  // Periodo historico: Jan 2019 - Mar 2026 = ~7.25 anos = ~1856 dias uteis
-  const diasUteis = 1856;
+  // Periodo historico: 5 anos a partir de hoje
+  const diasUteis = 5 * 252;
   const minPorDia = {'1m':480,'2m':480,'5m':480,'10m':480,'15m':480,'30m':480,'60m':480,'D':1};
   const tfMin = {'1m':1,'2m':2,'5m':5,'10m':10,'15m':15,'30m':30,'60m':60,'D':480};
   const minDia = minPorDia[tf] || 480;
@@ -5574,7 +5587,7 @@ function getLoadMsgs() {
                    '15m':'15 minutos','30m':'30 minutos','60m':'60 minutos','D':'diário'}[tf] || tf;
   return [
     'Enviando para processamento...',
-    'Analisando 7 anos de dados reais do mercado...',
+    'Analisando 5 anos de dados reais do mercado...',
     `Carregando ${nCandles} candles de ${tfLabel}...`,
     'Simulando cada operacao, candle por candle...',
     'Calculando o que teria acontecido com o seu dinheiro...',
@@ -5757,7 +5770,7 @@ function renderResults() {
   const vText=div('');
   const vLabel=div('');vLabel.style.cssText=`font-size:10px;font-weight:800;color:${ok?'#10B981':'#EF4444'};letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px`;vLabel.textContent='Resultado: '+(ok?'LUCRATIVA':'DEFICITÁRIA');
   const vVal=div('');vVal.style.cssText=`font-size:34px;font-weight:700;color:${ok?'#10B981':'#EF4444'};font-family:'JetBrains Mono';line-height:1`;vVal.textContent=(ok?'+':'−')+'R$ '+Math.abs(last).toLocaleString('pt-BR');
-  const vSub=div('');vSub.style.cssText='font-size:11px;color:var(--txs);margin-top:5px';vSub.textContent=`Jan 2019 – Mar 2026 · 87 meses · ${totalTrades.toLocaleString('pt-BR')} operações`;
+  const vSub=div('');vSub.style.cssText='font-size:11px;color:var(--txs);margin-top:5px';const _vp=getBacktestPeriod();vSub.textContent=`${_vp.startShort} – ${_vp.endShort} · ${_vp.totalMonths} meses · ${totalTrades.toLocaleString('pt-BR')} operações`;
   vText.append(vLabel,vVal,vSub);verdict.append(vIco,vText);el.appendChild(verdict);
 
   // ── Metrics Grid (4 columns) ──
