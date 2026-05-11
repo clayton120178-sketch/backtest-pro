@@ -1412,10 +1412,10 @@ function buildEquityChart() {
     });
     ddLabel.textContent=`-${A.maxDDPct.toFixed(1)}%`;svgEl.appendChild(ddLabel);
   }
-  // X labels
-  [0,12,24,36,48,60,72,84].forEach(i=>{
-    if(i<EQ.length){const t=hsvg('text',{x:txf(i),y:H-6,'text-anchor':'middle',fill:TH.txm,'font-size':'9','font-family':'JetBrains Mono'});t.textContent=EQ[i].t.split(' ')[1];svgEl.appendChild(t);}
-  });
+  // X labels — distribuídos proporcionalmente ao tamanho do EQ
+  {const xS=6;for(let li=0;li<=xS;li++){const idx=Math.round(li*(EQ.length-1)/xS);const anch=li===0?'start':li===xS?'end':'middle';const t=hsvg('text',{x:txf(idx),y:H-6,'text-anchor':anch,fill:TH.txm,'font-size':'9','font-family':'JetBrains Mono'});const lp=(EQ[idx].t||'').split(' ');t.textContent=lp[1]||lp[0]||'';svgEl.appendChild(t);}}
+  // Y labels
+  [0,0.5,1].forEach(f=>{const v=min+f*rng;const t=hsvg('text',{x:PL-4,y:tyf(v)+4,'text-anchor':'end',fill:TH.txm,'font-size':'9','font-family':'JetBrains Mono'});t.textContent=(v>=0?'+':'')+Math.round(v/1000)+'k';svgEl.appendChild(t);});
   return svgEl;
 }
 
@@ -1443,10 +1443,10 @@ function buildTUWChart() {
   // Peak markers
   let peak=EQ[0].v;
   EQ.forEach((d,i)=>{if(d.v>=peak){peak=d.v;svgEl.appendChild(hsvg('circle',{cx:txf(i),cy:tyf(d.v),r:2.5,fill:'#10B981'}));}});
-  // X labels
-  [0,12,24,36,48,60,72,84].forEach(i=>{
-    if(i<EQ.length){const t=hsvg('text',{x:txf(i),y:H-6,'text-anchor':'middle',fill:TH.txm,'font-size':'9','font-family':'JetBrains Mono'});t.textContent=EQ[i].t.split(' ')[1];svgEl.appendChild(t);}
-  });
+  // X labels — distribuídos proporcionalmente ao tamanho do EQ
+  {const xS=6;for(let li=0;li<=xS;li++){const idx=Math.round(li*(EQ.length-1)/xS);const anch=li===0?'start':li===xS?'end':'middle';const t=hsvg('text',{x:txf(idx),y:H-6,'text-anchor':anch,fill:TH.txm,'font-size':'9','font-family':'JetBrains Mono'});const lp=(EQ[idx].t||'').split(' ');t.textContent=lp[1]||lp[0]||'';svgEl.appendChild(t);}}
+  // Y labels
+  [0,0.5,1].forEach(f=>{const v=min+f*rng;const t=hsvg('text',{x:PL-4,y:tyf(v)+4,'text-anchor':'end',fill:TH.txm,'font-size':'9','font-family':'JetBrains Mono'});t.textContent=(v>=0?'+':'')+Math.round(v/1000)+'k';svgEl.appendChild(t);});
   return svgEl;
 }
 
