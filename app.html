@@ -1108,6 +1108,10 @@ const DEFAULT_EQ_DATA=[1200,-800,2400,600,-1400,3200,1800,400,-900,2600,1400,-60
 let EQ=(()=>{let v=0,peak=0;return DEFAULT_EQ_DATA.map((x,i)=>{v+=x;if(v>peak)peak=v;const yr=2019+Math.floor(i/12),mo=i%12;return{v:Math.round(v),dd:Math.round(Math.min(0,v-peak)),pnl:x,t:(new Date(yr,mo)).toLocaleDateString('pt-BR',{month:'short'}).replace('.','')+" '"+String(yr).slice(2)};});})();
 let EQ_ANALYSIS=computeAnalysis(EQ,100000);
 
+// Métricas brutas do backend (MT5/parser) — populadas quando backtest real conclui.
+// null = modo demo ou histórico mock → usa EQ_ANALYSIS como fallback.
+let CURRENT_BACKEND_METRICS=null;
+
 // State for history detail view
 let viewingHistoryItem=null;
 
@@ -5389,13 +5393,18 @@ async function startLoading() {
     },
     // onDone
     (result) => {
-      // Converter resultado para formato EQ
-      EQ = convertBackendResult(result, 100000);
+      // Armazenar métricas do backend — fonte da verdade para o relatório
+      CURRENT_BACKEND_METRICS = (result && result.metrics) ? result.metrics : null;
+      // Depósito real usado pelo MT5 (backend informa via initial_deposit)
+      const deposit = (CURRENT_BACKEND_METRICS && CURRENT_BACKEND_METRICS.initial_deposit)
+                      ? CURRENT_BACKEND_METRICS.initial_deposit : 10000;
+      // Converter para formato EQ — usado apenas pelos gráficos (curva de equity)
+      EQ = convertBackendResult(result, deposit);
       if (EQ.length === 0) {
         // Fallback: resultado sem trades
         EQ = [{ v: 0, dd: 0, pnl: 0, t: 'N/A' }];
       }
-      EQ_ANALYSIS = computeAnalysis(EQ, 100000);
+      EQ_ANALYSIS = computeAnalysis(EQ, deposit);
 
       // Completar barra e mostrar resultados
       const fill = document.querySelector('.load-fill');
@@ -5437,20 +5446,34 @@ function renderLoading() {
 
 // ─── RESULTS ─────────────────────────────────────────────────
 function getMetrics(){
-  const A=EQ_ANALYSIS,last=EQ[EQ.length-1].v;
+  const A=EQ_ANALYSIS;
+  const BM=CURRENT_BACKEND_METRICS;
+  // Métricas do backend têm prioridade (calculadas pelo MT5/parser).
+  // Fallback para EQ_ANALYSIS em demos e histórico mock.
+  const totalTrades = BM ? BM.total_trades        : EQ.length;
+  const winRate     = BM ? BM.win_rate             : A.winRate;
+  const netProfit   = BM ? BM.total_net_profit     : EQ[EQ.length-1].v;
+  const ddPct       = BM ? BM.max_drawdown_pct     : A.maxDDPct;
+  const pf          = BM ? BM.profit_factor        : A.profitFactor;
+  const payoff      = BM ? BM.payoff               : A.payoff;
+  const rf          = BM ? BM.recovery_factor      : A.recoveryFactor;
+  const deposit     = BM ? (BM.initial_deposit||10000) : A.cap;
+  const rentab      = deposit>0 ? (netProfit/deposit)*100 : 0;
+  const ok          = netProfit>=0;
   return[
-    {label:'Total de Trades',val:String(EQ.length),color:'var(--tx)'},
-    {label:'Taxa de Acerto',val:A.winRate.toFixed(1)+'%',color:'#F59E0B',pct:A.winRate},
-    {label:'Lucro Total',val:(last>=0?'+':'')+'R$ '+Math.abs(last).toLocaleString('pt-BR'),color:last>=0?'#10B981':'#EF4444'},
-    {label:'Max Drawdown',val:'−'+A.maxDDPct.toFixed(2)+'%',color:'#EF4444'},
-    {label:'Profit Factor',val:A.profitFactor.toFixed(2),color:A.profitFactor>1?'#00D4AA':'#EF4444'},
-    {label:'Payoff',val:A.payoff.toFixed(2),color:A.payoff>1?'#10B981':'#F59E0B'},
-    {label:'Recovery Factor',val:A.recoveryFactor.toFixed(2),color:A.recoveryFactor>2?'#10B981':'#F59E0B'},
-    {label:'Rentabilidade',val:((last/A.cap)*100).toFixed(2)+'%',color:last>=0?'#10B981':'#EF4444'},
+    {label:'Total de Trades',val:totalTrades.toLocaleString('pt-BR'),color:'var(--tx)'},
+    {label:'Taxa de Acerto',val:winRate.toFixed(1)+'%',color:'#F59E0B',pct:winRate},
+    {label:'Lucro Total',val:(ok?'+':'')+'R$ '+Math.abs(netProfit).toLocaleString('pt-BR',{maximumFractionDigits:2}),color:ok?'#10B981':'#EF4444'},
+    {label:'Max Drawdown',val:'−'+ddPct.toFixed(2)+'%',color:'#EF4444'},
+    {label:'Profit Factor',val:pf.toFixed(2),color:pf>1?'#00D4AA':'#EF4444'},
+    {label:'Payoff',val:payoff.toFixed(2),color:payoff>1?'#10B981':'#F59E0B'},
+    {label:'Recovery Factor',val:rf.toFixed(2),color:rf>2?'#10B981':'#F59E0B'},
+    {label:'Rentabilidade',val:rentab.toFixed(2)+'%',color:ok?'#10B981':'#EF4444'},
   ];
 }
 
 function viewHistoryItem(id){
+  CURRENT_BACKEND_METRICS=null; // histórico mock usa EQ_ANALYSIS como fallback
   const bt=MOCK_HISTORY.find(b=>b.id===id);
   if(!bt)return;
   viewingHistoryItem=bt;
@@ -5465,6 +5488,7 @@ function viewHistoryItem(id){
 
 function exitHistoryDetail(){
   viewingHistoryItem=null;
+  CURRENT_BACKEND_METRICS=null; // histórico mock não tem métricas de backend
   // Restore default EQ
   EQ=(()=>{let v=0,peak=0;return DEFAULT_EQ_DATA.map((x,i)=>{v+=x;if(v>peak)peak=v;const yr=2019+Math.floor(i/12),mo=i%12;return{v:Math.round(v),dd:Math.round(Math.min(0,v-peak)),pnl:x,t:(new Date(yr,mo)).toLocaleDateString('pt-BR',{month:'short'}).replace('.','')+" '"+String(yr).slice(2)};});})();
   EQ_ANALYSIS=computeAnalysis(EQ,100000);
@@ -5474,7 +5498,11 @@ function exitHistoryDetail(){
 function renderResults() {
   const TH=svgTheme();
   const A=EQ_ANALYSIS;const METRICS=getMetrics();
-  const last=EQ[EQ.length-1].v;const ok=last>0;
+  const BM=CURRENT_BACKEND_METRICS;
+  // Valores do relatório: backend quando disponível, senão EQ calculado
+  const last=BM ? BM.total_net_profit : EQ[EQ.length-1].v;
+  const totalTrades=BM ? BM.total_trades : EQ.length;
+  const ok=last>=0;
   const el=div(state.animate?'aUp':'');el.style.maxWidth='860px';
 
   // ── History header (when viewing from history) ──
@@ -5501,7 +5529,7 @@ function renderResults() {
   const vText=div('');
   const vLabel=div('');vLabel.style.cssText=`font-size:10px;font-weight:800;color:${ok?'#10B981':'#EF4444'};letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px`;vLabel.textContent='Resultado: '+(ok?'LUCRATIVA':'DEFICITÁRIA');
   const vVal=div('');vVal.style.cssText=`font-size:34px;font-weight:700;color:${ok?'#10B981':'#EF4444'};font-family:'JetBrains Mono';line-height:1`;vVal.textContent=(ok?'+':'−')+'R$ '+Math.abs(last).toLocaleString('pt-BR');
-  const vSub=div('');vSub.style.cssText='font-size:11px;color:var(--txs);margin-top:5px';vSub.textContent=`Jan 2019 – Mar 2026 · 87 meses · ${EQ.length} operações`;
+  const vSub=div('');vSub.style.cssText='font-size:11px;color:var(--txs);margin-top:5px';vSub.textContent=`Jan 2019 – Mar 2026 · 87 meses · ${totalTrades.toLocaleString('pt-BR')} operações`;
   vText.append(vLabel,vVal,vSub);verdict.append(vIco,vText);el.appendChild(verdict);
 
   // ── Metrics Grid (4 columns) ──
@@ -5524,18 +5552,26 @@ function renderResults() {
 
   const leftCol=div('');leftCol.style.cssText='display:flex;flex-direction:column;gap:8px';
   const statRow=(label,val,color)=>{const r=div('');r.style.cssText='display:flex;justify-content:space-between;align-items:center';const l=div('');l.style.cssText='font-size:12px;color:var(--txs)';l.textContent=label;const v=div('');v.style.cssText=`font-size:13px;font-weight:600;color:${color||TH.tx};font-family:'JetBrains Mono'`;v.textContent=val;r.append(l,v);return r;};
+  // Estatísticas de trades: backend quando disponível, senão EQ_ANALYSIS
+  const stWins   = BM ? BM.win_trades   : A.wins;
+  const stLosses = BM ? BM.loss_trades  : A.losses;
+  const stGrossP = BM ? BM.gross_profit : A.totalProfit;
+  const stGrossL = BM ? Math.abs(BM.gross_loss) : A.totalLoss;
+  const stAvgWin = BM && BM.win_trades  > 0 ? stGrossP / BM.win_trades  : A.avgWin;
+  const stAvgLos = BM && BM.loss_trades > 0 ? stGrossL / BM.loss_trades : A.avgLoss;
+  const stResT   = totalTrades > 0 ? last / totalTrades : 0;
   leftCol.append(
-    statRow('Gains',String(A.wins),'#10B981'),
-    statRow('Losses',String(A.losses),'#EF4444'),
-    statRow('Média de Ganho','R$ '+A.avgWin.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#10B981'),
-    statRow('Média de Perda','R$ '+A.avgLoss.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#EF4444')
+    statRow('Gains',stWins.toLocaleString('pt-BR'),'#10B981'),
+    statRow('Losses',stLosses.toLocaleString('pt-BR'),'#EF4444'),
+    statRow('Média de Ganho','R$ '+stAvgWin.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#10B981'),
+    statRow('Média de Perda','R$ '+stAvgLos.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#EF4444')
   );
 
   const rightCol=div('');rightCol.style.cssText='display:flex;flex-direction:column;gap:8px';
   rightCol.append(
-    statRow('Lucro Bruto','R$ '+A.totalProfit.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#10B981'),
-    statRow('Perda Bruta','R$ '+A.totalLoss.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#EF4444'),
-    statRow('Resultado/Trade','R$ '+(last/EQ.length).toFixed(2),last>=0?'#10B981':'#EF4444')
+    statRow('Lucro Bruto','R$ '+stGrossP.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#10B981'),
+    statRow('Perda Bruta','R$ '+stGrossL.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#EF4444'),
+    statRow('Resultado/Trade','R$ '+stResT.toFixed(2),ok?'#10B981':'#EF4444')
   );
   statsGrid.append(leftCol,rightCol);
   statsCard.appendChild(statsGrid);el.appendChild(statsCard);
@@ -5546,14 +5582,20 @@ function renderResults() {
   ec.append(ecl,buildEquityChart());
 
   // DD analysis below equity chart
-  if(A.maxDDPct>0){
+  // Percentual e valor monetário vêm do backend; posicionamento (índices) do EQ_ANALYSIS
+  const ddPctDisplay = BM ? BM.max_drawdown_pct   : A.maxDDPct;
+  const ddValDisplay = BM ? BM.max_drawdown_money  : A.maxDDVal;
+  const capDisplay   = BM ? (BM.initial_deposit||10000) : A.cap;
+  if(ddPctDisplay>0){
     const ddInfo=div('');ddInfo.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)';
     const ddCard=(label,val,sub,color)=>{const c=div('');const l=div('');l.style.cssText='font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px';l.textContent=label;const v=div('');v.style.cssText=`font-size:16px;font-weight:700;color:${color||TH.tx};font-family:'JetBrains Mono'`;v.textContent=val;c.append(l,v);if(sub){const s=div('');s.style.cssText='font-size:10px;color:var(--txm);margin-top:2px';s.textContent=sub;c.appendChild(s);}return c;};
     const ddDuration=A.maxDDIdx-A.maxDDPeakIdx;
+    const peakEQ=EQ[A.maxDDPeakIdx]||{v:0,t:'?'};
+    const troughEQ=EQ[A.maxDDIdx]||{v:0,t:'?'};
     ddInfo.append(
-      ddCard('Max Drawdown','-'+A.maxDDPct.toFixed(2)+'%','R$ '+A.maxDDVal.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#EF4444'),
-      ddCard('Duração',ddDuration+' operações',EQ[A.maxDDPeakIdx].t+' → '+EQ[A.maxDDIdx].t),
-      ddCard('Pico → Vale','R$ '+(A.cap+EQ[A.maxDDPeakIdx].v).toLocaleString('pt-BR',{maximumFractionDigits:0}),'→ R$ '+(A.cap+EQ[A.maxDDIdx].v).toLocaleString('pt-BR',{maximumFractionDigits:0}))
+      ddCard('Max Drawdown','-'+ddPctDisplay.toFixed(2)+'%','R$ '+ddValDisplay.toLocaleString('pt-BR',{maximumFractionDigits:0}),'#EF4444'),
+      ddCard('Duração',ddDuration+' operações',peakEQ.t+' → '+troughEQ.t),
+      ddCard('Pico → Vale','R$ '+(capDisplay+peakEQ.v).toLocaleString('pt-BR',{maximumFractionDigits:0}),'→ R$ '+(capDisplay+troughEQ.v).toLocaleString('pt-BR',{maximumFractionDigits:0}))
     );
     ec.appendChild(ddInfo);
   }
@@ -6544,7 +6586,10 @@ db.auth.onAuthStateChange(async (event, session) => {
 function rrect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
 
 async function generateShareCard(){
-  const A=EQ_ANALYSIS,last=EQ[EQ.length-1].v,ok=last>0,cfg=state.cfg;
+  const A=EQ_ANALYSIS,BM=CURRENT_BACKEND_METRICS,cfg=state.cfg;
+  const last=BM ? BM.total_net_profit : EQ[EQ.length-1].v;
+  const ok=last>=0;
+  const scTrades=BM ? BM.total_trades : EQ.length;
   const S=1080,cv=document.createElement('canvas');cv.width=S;cv.height=S;
   const cx=cv.getContext('2d');
   const sc=v=>Math.round(v*2);
@@ -6580,7 +6625,7 @@ async function generateShareCard(){
   const bY=sc(58);
   cx.fillStyle='#12121A';cx.strokeStyle='#1E1E2E';cx.lineWidth=1;
   rrect(cx,sc(28),bY,S-sc(56),sc(38),sc(8));cx.fill();cx.stroke();
-  const si=[['ATIVO',cfg.asset],['TIMEFRAME',cfg.tf],['PER\u00cdODO','Jan/2021 \u2013 Mar/2026'],['OPERA\u00c7\u00d5ES',EQ.length.toLocaleString('pt-BR')]];
+  const si=[['ATIVO',cfg.asset],['TIMEFRAME',cfg.tf],['PER\u00cdODO','Jan/2021 \u2013 Mar/2026'],['OPERA\u00c7\u00d5ES',scTrades.toLocaleString('pt-BR')]];
   let sx=sc(42);
   si.forEach((it,i)=>{
     if(i>0){cx.fillStyle='#1E1E2E';cx.fillRect(sx-sc(10),bY+sc(8),1,sc(22));sx+=sc(6);}
@@ -6596,7 +6641,7 @@ async function generateShareCard(){
   cx.font='800 '+sc(38)+'px "JetBrains Mono",monospace';
   cx.fillText(fr(last),sc(28),vY+sc(38));
   cx.fillStyle='#44445A';cx.font=mn(10);
-  cx.fillText('5 anos \u00b7 '+EQ.length.toLocaleString('pt-BR')+' trades \u00b7 340.000+ candles',sc(28),vY+sc(54));
+  cx.fillText('5 anos \u00b7 '+scTrades.toLocaleString('pt-BR')+' trades \u00b7 340.000+ candles',sc(28),vY+sc(54));
   cx.font=sn(700,10);const bt=ok?'Lucrativa':'Deficit\u00e1ria';
   const bW2=cx.measureText(bt).width+sc(30),bX2=S-sc(28)-bW2;
   cx.fillStyle=ok?'rgba(16,185,129,0.1)':'rgba(239,68,68,0.08)';cx.strokeStyle=ok?'rgba(16,185,129,0.25)':'rgba(239,68,68,0.2)';cx.lineWidth=1;
@@ -6605,7 +6650,11 @@ async function generateShareCard(){
 
   // Metrics
   const mY=sc(188),mW=(S-sc(56)-sc(24))/4;
-  [{l:'TAXA DE ACERTO',v:A.winRate.toFixed(1)+'%',c:'#F59E0B',p:A.winRate},{l:'PROFIT FACTOR',v:A.profitFactor.toFixed(2),c:A.profitFactor>1?'#00D4AA':'#EF4444'},{l:'RESULTADO/TRADE',v:'R$'+(last/EQ.length).toFixed(2),c:last>=0?'#10B981':'#EF4444'},{l:'MAX DRAWDOWN',v:'\u2212R$'+A.maxDDVal.toLocaleString('pt-BR',{maximumFractionDigits:0}),c:'#EF4444'}].forEach((m,i)=>{
+  const scWinRate=BM ? BM.win_rate      : A.winRate;
+  const scPF     =BM ? BM.profit_factor : A.profitFactor;
+  const scDD     =BM ? BM.max_drawdown_money : A.maxDDVal;
+  const scResT   =scTrades>0 ? last/scTrades : 0;
+  [{l:'TAXA DE ACERTO',v:scWinRate.toFixed(1)+'%',c:'#F59E0B',p:scWinRate},{l:'PROFIT FACTOR',v:scPF.toFixed(2),c:scPF>1?'#00D4AA':'#EF4444'},{l:'RESULTADO/TRADE',v:'R$'+scResT.toFixed(2),c:ok?'#10B981':'#EF4444'},{l:'MAX DRAWDOWN',v:'\u2212R$'+scDD.toLocaleString('pt-BR',{maximumFractionDigits:0}),c:'#EF4444'}].forEach((m,i)=>{
     const mx=sc(28)+i*(mW+sc(8));
     cx.fillStyle='#12121A';cx.strokeStyle='#1E1E2E';cx.lineWidth=1;
     rrect(cx,mx,mY,mW,sc(58),sc(8));cx.fill();cx.stroke();
