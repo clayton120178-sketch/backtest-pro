@@ -45,7 +45,8 @@ enum ENUM_BP_SL_TYPE
 {
    BP_SL_ATR       = 0,  // Baseado em ATR (= SL_ATR do Framework)
    BP_SL_FIXED_PTS = 1,  // Pontos fixos   (= SL_FIXED do Framework)
-   BP_SL_CANDLE    = 2   // Maxima/minima do candle sinal (= SL_GRAPHIC do Framework)
+   BP_SL_CANDLE    = 2,  // Maxima/minima do candle sinal (= SL_GRAPHIC do Framework)
+   BP_SL_FIBO      = 10  // Nivel de retracao Fibonacci (calculado pelo modulo BP_Fibonacci)
 };
 
 //+------------------------------------------------------------------+
@@ -58,7 +59,8 @@ enum ENUM_BP_TP_TYPE
    BP_TP_FIXED_PTS = 0,  // Pontos fixos           (= TP_FIXED_POINTS do Framework)
    BP_TP_RR        = 1,  // Risk/Reward ratio      (= TP_RR_MULTIPLIER do Framework)
    BP_TP_ZIGZAG    = 2,  // Ultimo pico/vale ZigZag(= TP_ZIGZAG_LEVEL do Framework)
-   BP_TP_ATR       = 3   // Baseado em ATR         (= TP_ATR do Framework)
+   BP_TP_ATR       = 3,  // Baseado em ATR         (= TP_ATR do Framework)
+   BP_TP_FIBO      = 10  // Nivel de projecao Fibonacci (calculado pelo modulo BP_Fibonacci)
 };
 
 //+------------------------------------------------------------------+
@@ -177,10 +179,34 @@ enum ENUM_BP_SMC_CONCEPT
    BP_SMC_BOS_BEAR     = 4,  // Break of Structure de baixa
    BP_SMC_CHOCH_BULL   = 5,  // Change of Character para alta
    BP_SMC_CHOCH_BEAR   = 6,  // Change of Character para baixa
-   BP_SMC_OB_BULL      = 7,  // Order Block de alta
-   BP_SMC_OB_BEAR      = 8,  // Order Block de baixa
-   BP_SMC_SWEEP_HIGH   = 9,  // Liquidity Sweep de maximas
-   BP_SMC_SWEEP_LOW    = 10  // Liquidity Sweep de minimas
+   // 7 e 8 reservados (anteriormente BP_SMC_OB_BULL / BP_SMC_OB_BEAR)
+   // OB agora e filtro de mitigacao dentro de BoS/CHoCH, nao um padrao isolado.
+   BP_SMC_SWEEP_HIGH   = 9,  // Liquidity Sweep de maximas (BoS confirmado + consolidacao + reversao)
+   BP_SMC_SWEEP_LOW    = 10, // Liquidity Sweep de minimas (BoS confirmado + consolidacao + reversao)
+   BP_SMC_GRAB_HIGH    = 11, // Liquidity Grab de maximas (BoS falhado + rejeicao imediata)
+   BP_SMC_GRAB_LOW     = 12  // Liquidity Grab de minimas (BoS falhado + rejeicao imediata)
+};
+
+//+------------------------------------------------------------------+
+//| Modo de mitigacao do Order Block (filtro de BoS/CHoCH)            |
+//| NONE       = sem filtro (BoS/CHoCH puros)                         |
+//| TOUCH      = pullbackLow/High toca a zona do OB (pavio suficiente)|
+//| VALIDATION = algum candle da correcao fecha dentro da zona do OB  |
+//+------------------------------------------------------------------+
+enum ENUM_BP_OB_MITIGATION
+{
+   OB_MITIGATION_NONE       = 0,  // Sem filtro OB
+   OB_MITIGATION_TOUCH      = 1,  // Toque do pavio na zona OB
+   OB_MITIGATION_VALIDATION = 2   // Fechamento de candle dentro da zona OB
+};
+
+//+------------------------------------------------------------------+
+//| Modo de entrada para FVG                                          |
+//+------------------------------------------------------------------+
+enum ENUM_BP_FVG_ENTRY_MODE
+{
+   FVG_ENTRY_AGGRESSIVE = 0,  // Entrada imediata (abertura proximo candle)
+   FVG_ENTRY_MITIGATION = 1   // Ordem limite na zona do FVG (aguarda correcao)
 };
 
 //+------------------------------------------------------------------+
@@ -231,6 +257,59 @@ struct BPRiskParams
    double           tpRR;           // Ratio R:R (TP_RR)
    double           tpAtrMult;      // Multiplicador ATR (TP_ATR)
    double           tpFixedPts;     // Pontos fixos (TP_FIXED_PTS)
+};
+
+//+------------------------------------------------------------------+
+//| Fibonacci: niveis de retracao e projecao                          |
+//|                                                                    |
+//| Convencao: retracao e medida DENTRO da perna de impulso.           |
+//|   Compra: impulso fundo->topo, nivel 61.8% fica entre topo e fundo |
+//|           (preco = topo - 0.618 * (topo - fundo))                  |
+//|   Venda:  impulso topo->fundo, nivel 61.8% fica entre fundo e topo |
+//|           (preco = fundo + 0.618 * (topo - fundo))                 |
+//| Projecao usa 100% = topo (compra) ou fundo (venda) e extrapola.    |
+//+------------------------------------------------------------------+
+enum ENUM_BP_FIBO_LEVEL
+{
+   BP_FIBO_236   =  0,  // Retracao 23.6%
+   BP_FIBO_382   =  1,  // Retracao 38.2%
+   BP_FIBO_500   =  2,  // Retracao 50.0%
+   BP_FIBO_618   =  3,  // Retracao 61.8%
+   BP_FIBO_786   =  4,  // Retracao 78.6%
+   BP_FIBO_100   =  5,  // 100% da retracao = inicio da perna = fundo (compra) / topo (venda)
+   BP_FIBO_1272  =  6,  // Projecao 127.2%
+   BP_FIBO_1618  =  7,  // Projecao 161.8%
+   BP_FIBO_200   =  8,  // Projecao 200%
+   BP_FIBO_2618  =  9   // Projecao 261.8%
+};
+
+//+------------------------------------------------------------------+
+//| Modo de gatilho Fibonacci                                         |
+//|   TOQUE     : pavio toca o nivel (low<=nivel em compra,           |
+//|               high>=nivel em venda)                                |
+//|   VALIDACAO : candle fecha na direcao da reversao esperada        |
+//|               (compra: fecha ACIMA do nivel apos penetra-lo;      |
+//|                venda : fecha ABAIXO do nivel apos penetra-lo)     |
+//+------------------------------------------------------------------+
+enum ENUM_BP_FIBO_TRIGGER_MODE
+{
+   BP_FIBO_TRIG_TOUCH      = 0,  // Toque do pavio no nivel
+   BP_FIBO_TRIG_VALIDATION = 1   // Fechamento de candle confirmando rejeicao
+};
+
+//+------------------------------------------------------------------+
+//| Modo de destaque visual do candle trigger (usado no debug viz)   |
+//|   NONE      : sem destaque                                        |
+//|   ARROW     : seta acima (venda) ou abaixo (compra) do candle     |
+//|   RECTANGLE : retangulo semi-transparente envolvendo o candle     |
+//|   BOTH      : seta + retangulo                                    |
+//+------------------------------------------------------------------+
+enum ENUM_BP_TRIGGER_HIGHLIGHT
+{
+   BP_HL_NONE      = 0,  // Sem destaque
+   BP_HL_ARROW     = 1,  // Apenas seta
+   BP_HL_RECTANGLE = 2,  // Apenas retangulo
+   BP_HL_BOTH      = 3   // Seta + retangulo
 };
 
 //+------------------------------------------------------------------+

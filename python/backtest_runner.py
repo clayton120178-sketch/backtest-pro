@@ -44,6 +44,9 @@ MT5_LOG_DIR = os.path.join(MT5_DATA_DIR, "Tester", "logs")
 # Diretorio de output para .ini/.set
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "_output")
 
+# Arquivo para persistir o PID do MT5 iniciado pelo BackTestPro
+MT5_PID_FILE = os.path.join(OUTPUT_DIR, "mt5_backtest.pid")
+
 # Timeframes MT5 (constantes oficiais)
 MT5_TIMEFRAMES = {
     "M1": 1, "M2": 2, "M3": 3, "M4": 4, "M5": 5,
@@ -100,8 +103,14 @@ ENUM_MAPS = {
     "BP_SMC_FVG_BULL": 1, "BP_SMC_FVG_BEAR": 2,
     "BP_SMC_BOS_BULL": 3, "BP_SMC_BOS_BEAR": 4,
     "BP_SMC_CHOCH_BULL": 5, "BP_SMC_CHOCH_BEAR": 6,
-    "BP_SMC_OB_BULL": 7, "BP_SMC_OB_BEAR": 8,
+    # 7 e 8 reservados (OB_BULL/OB_BEAR removidos - OB virou filtro via InpOB_Mitigation)
     "BP_SMC_SWEEP_HIGH": 9, "BP_SMC_SWEEP_LOW": 10,
+    "BP_SMC_GRAB_HIGH": 11, "BP_SMC_GRAB_LOW": 12,
+
+    # ENUM_BP_OB_MITIGATION (filtro de mitigacao do OB em BoS/CHoCH)
+    "OB_MITIGATION_NONE": 0,
+    "OB_MITIGATION_TOUCH": 1,
+    "OB_MITIGATION_VALIDATION": 2,
 
     # ENUM_BP_SL_TYPE (EA - BP_Constants.mqh)
     # ATENCAO: Valores do EA, NAO do Framework (CommonTypes.mqh)!
@@ -251,28 +260,82 @@ def build_ini_content(
 # CONTROLE DO MT5
 # ============================================================================
 
-def is_mt5_running() -> bool:
-    """Verifica se o terminal MT5 esta rodando."""
-    for proc in psutil.process_iter(["name"]):
+def _get_backtest_mt5_proc() -> Optional[psutil.Process]:
+    """
+    Localiza o processo MT5 do BackTestPro.
+
+    Estrategia (em ordem de prioridade):
+    1. PID persistido em MT5_PID_FILE — rapido e preciso
+    2. Busca por exe path igual a MT5_PATH — fallback se o PID file sumiu
+
+    Retorna o processo se estiver vivo, ou None.
+    """
+    mt5_exe = os.path.normcase(os.path.abspath(MT5_PATH))
+
+    # 1. Tenta pelo PID salvo
+    if os.path.exists(MT5_PID_FILE):
         try:
-            if proc.info["name"] and "terminal64" in proc.info["name"].lower():
-                return True
+            with open(MT5_PID_FILE, "r") as f:
+                pid = int(f.read().strip())
+            proc = psutil.Process(pid)
+            if proc.is_running() and os.path.normcase(proc.exe()) == mt5_exe:
+                return proc
+        except (ValueError, psutil.NoSuchProcess, psutil.AccessDenied, OSError):
+            pass
+        # PID invalido ou processo morto — limpa o arquivo
+        try:
+            os.remove(MT5_PID_FILE)
+        except OSError:
+            pass
+
+    # 2. Fallback: busca pelo caminho do executavel
+    for proc in psutil.process_iter(["exe"]):
+        try:
+            if proc.info["exe"] and os.path.normcase(proc.info["exe"]) == mt5_exe:
+                return proc
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
-    return False
+
+    return None
+
+
+def is_mt5_running() -> bool:
+    """Verifica se o terminal MT5 do BackTestPro esta rodando."""
+    return _get_backtest_mt5_proc() is not None
 
 
 def shutdown_mt5():
-    """Forca encerramento de todas as instancias do MT5."""
-    logger.info("Encerrando instancias do MT5...")
-    subprocess.run(
-        ["taskkill", "/F", "/IM", "terminal64.exe"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
+    """Encerra apenas o terminal MT5 do BackTestPro, sem afetar outros terminais."""
+    proc = _get_backtest_mt5_proc()
+    if proc is None:
+        logger.info("MT5 do BackTestPro nao estava rodando.")
+        return
+
+    logger.info(f"Encerrando MT5 do BackTestPro (PID: {proc.pid})...")
+    try:
+        proc.kill()
+    except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
+        logger.warning(f"Nao foi possivel encerrar PID {proc.pid}: {e}")
+
     while is_mt5_running():
         time.sleep(1)
+
+    # Limpa o PID file
+    try:
+        os.remove(MT5_PID_FILE)
+    except OSError:
+        pass
+
     logger.info("MT5 encerrado.")
+
+
+def _cleanup_pid_file():
+    """Remove o PID file apos o MT5 terminar."""
+    try:
+        if os.path.exists(MT5_PID_FILE):
+            os.remove(MT5_PID_FILE)
+    except OSError:
+        pass
 
 
 def clear_tester_log():
@@ -333,6 +396,14 @@ def start_backtest(ini_path: str, timeout: int = 3600) -> bool:
     )
     logger.info(f"MT5 iniciado - PID: {process.pid}")
 
+    # Persiste o PID para que shutdown_mt5() identifique este processo especificamente
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    try:
+        with open(MT5_PID_FILE, "w") as f:
+            f.write(str(process.pid))
+    except OSError as e:
+        logger.warning(f"Nao foi possivel salvar PID file: {e}")
+
     # 4. Aguarda inicializacao (60s em blocos de 10s)
     logger.info("Aguardando inicializacao do MT5 (60s)...")
     for i in range(6):
@@ -350,11 +421,13 @@ def start_backtest(ini_path: str, timeout: int = 3600) -> bool:
         if time.time() > deadline:
             logger.error(f"Timeout de {timeout}s atingido. Encerrando MT5.")
             process.kill()
+            _cleanup_pid_file()
             return False
         time.sleep(5)
 
     elapsed = (datetime.now() - start_time).total_seconds()
     logger.info(f"MT5 encerrou - return code: {process.returncode} - tempo: {elapsed:.0f}s")
+    _cleanup_pid_file()
 
     # MT5 frequentemente retorna codigos != 0 mesmo em execucoes bem sucedidas.
     # Consideramos sucesso se o processo terminou (nao foi killed por timeout).

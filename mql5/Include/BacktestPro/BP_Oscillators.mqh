@@ -9,6 +9,19 @@
 #include <BacktestPro/BP_Constants.mqh>
 #include <BacktestPro/BP_Indicators.mqh>
 
+//+------------------------------------------------------------------+
+//| Retorna true se o indicador e um oscilador puro (RSI/Stoch/etc) |
+//| Usado para distinguir logica de comparacao: oscilador vs MA     |
+//+------------------------------------------------------------------+
+bool _BP_IsOscillator(ENUM_BP_INDICATOR ind)
+{
+   return (ind == BP_IND_RSI     ||
+           ind == BP_IND_STOCH   ||
+           ind == BP_IND_CCI     ||
+           ind == BP_IND_WILLIAMS||
+           ind == BP_IND_MACD);
+}
+
 #define BP_OSC_MAX_INSTANCES 4
 
 struct BPOscillatorsInstance
@@ -123,6 +136,20 @@ bool BP_Oscillators_EvaluateCondition(int handle, const BPCondition &cond)
          v2 = BP_Indicators_OBV(ih, 2);
          break;
 
+      //--- HiLo Activator: v1/v2 sao +1(buy)/-1(sell)/0(indefinido)
+      case BP_IND_HILO:
+      {
+         int hilo1 = BP_Indicators_HiLo(ih, cond.period, 1);
+         int hilo2 = BP_Indicators_HiLo(ih, cond.period, 2);
+         switch(cond.condition)
+         {
+            case BP_COND_HILO_BUY:     return (hilo1 == +1);
+            case BP_COND_HILO_SELL:    return (hilo1 == -1);
+            case BP_COND_HILO_CHANGED: return (hilo1 != hilo2 && hilo2 != 0);
+            default:                   return false;
+         }
+      }
+
       //--- Bollinger Bands: v1/v2 = banda escolhida, comparacao feita com preco
       //    cond.value seleciona a banda: 0=inferior (default), 1=media, 2=superior
       case BP_IND_BOLLINGER:
@@ -149,11 +176,14 @@ bool BP_Oscillators_EvaluateCondition(int handle, const BPCondition &cond)
          if(v1 == EMPTY_VALUE || v2 == EMPTY_VALUE) return false;
          switch(cond.condition)
          {
-            case BP_COND_CROSS_ABOVE: return _CrossedAbove(preco1, preco2, v1);   // preco cruza acima da banda
-            case BP_COND_CROSS_BELOW: return _CrossedBelow(preco1, preco2, v1);   // preco cruza abaixo da banda
-            case BP_COND_ABOVE:       return (preco1 > v1);                        // preco acima da banda
-            case BP_COND_BELOW:       return (preco1 < v1);                        // preco abaixo da banda
-            default:                  return false;
+            case BP_COND_CROSS_ABOVE:  return _CrossedAbove(preco1, preco2, v1);  // preco cruza acima da banda
+            case BP_COND_CROSS_BELOW:  return _CrossedBelow(preco1, preco2, v1);  // preco cruza abaixo da banda
+            case BP_COND_ABOVE:        return (preco1 > v1);                       // preco acima da banda
+            case BP_COND_BELOW:        return (preco1 < v1);                       // preco abaixo da banda
+            //--- IN_ZONE: preco toca ou ultrapassa a banda
+            case BP_COND_IN_ZONE_OB:   return (preco1 >= v1);  // preco acima/na banda superior -> sobrecompra
+            case BP_COND_IN_ZONE_OS:   return (preco1 <= v1);  // preco abaixo/na banda inferior -> sobrevenda
+            default:                   return false;
          }
       }
 
@@ -174,9 +204,33 @@ bool BP_Oscillators_EvaluateCondition(int handle, const BPCondition &cond)
    switch(cond.condition)
    {
       case BP_COND_CROSS_ABOVE:
+         // value=0 + indicador de tendencia (SMA/EMA/ADX): MA cruzou acima do preco
+         // value=0 + volume: volume atual maior que anterior (expansao de volume)
+         // value=0 + ADX: ADX cruzou acima de 25 (inicio de tendencia)
+         if(ref == 0.0)
+         {
+            if(cond.indicator == BP_IND_VOLUME || cond.indicator == BP_IND_OBV)
+               return (v2 < v1);  // volume/OBV crescendo
+            if(cond.indicator == BP_IND_ADX)
+               return (v2 < 25.0 && v1 >= 25.0);  // ADX cruzou acima de 25
+            if(!_BP_IsOscillator(cond.indicator))
+               return (v2 < preco2 && v1 >= preco1);  // MA cruzou acima do preco
+         }
          return _CrossedAbove(v1, v2, ref);
 
       case BP_COND_CROSS_BELOW:
+         // value=0 + tendencia: MA cruzou abaixo do preco
+         // value=0 + volume: volume caindo
+         // value=0 + ADX: ADX caiu abaixo de 25
+         if(ref == 0.0)
+         {
+            if(cond.indicator == BP_IND_VOLUME || cond.indicator == BP_IND_OBV)
+               return (v2 > v1);  // volume/OBV decrescendo
+            if(cond.indicator == BP_IND_ADX)
+               return (v2 >= 25.0 && v1 < 25.0);  // ADX caiu abaixo de 25
+            if(!_BP_IsOscillator(cond.indicator))
+               return (v2 > preco2 && v1 <= preco1);  // MA cruzou abaixo do preco
+         }
          return _CrossedBelow(v1, v2, ref);
 
       case BP_COND_ABOVE:
@@ -192,17 +246,25 @@ bool BP_Oscillators_EvaluateCondition(int handle, const BPCondition &cond)
          return (v1 < ref);                     // indicador abaixo do valor fixo
 
       case BP_COND_IN_ZONE_OB:
-         // Zona sobrecompra: RSI/Stoch > 70, CCI > 100, Williams > -20
+         // Zona sobrecompra/forca: RSI/Stoch > 70, CCI > 100, Williams > -20
+         // ADX: > 25 = tendencia forte (sem direcao, apenas forca)
+         // Volume: usa ref como limiar minimo (ex: value=1000); se value=0, volume acima da media simples
          if(cond.indicator == BP_IND_RSI  || cond.indicator == BP_IND_STOCH) return (v1 >= 70.0);
          if(cond.indicator == BP_IND_CCI)     return (v1 >= 100.0);
          if(cond.indicator == BP_IND_WILLIAMS)return (v1 >= -20.0);
+         if(cond.indicator == BP_IND_ADX)     return (v1 >= (ref > 0.0 ? ref : 25.0));
+         if(cond.indicator == BP_IND_VOLUME)  return (ref > 0.0) ? (v1 >= ref) : (v1 > v2);
          return (v1 >= ref);
 
       case BP_COND_IN_ZONE_OS:
-         // Zona sobrevenda: RSI/Stoch < 30, CCI < -100, Williams < -80
+         // Zona sobrevenda/fraqueza: RSI/Stoch < 30, CCI < -100, Williams < -80
+         // ADX: < 20 = sem tendencia (range/lateralizacao)
+         // Volume: usa ref como limiar maximo; se value=0, volume abaixo do candle anterior
          if(cond.indicator == BP_IND_RSI  || cond.indicator == BP_IND_STOCH) return (v1 <= 30.0);
          if(cond.indicator == BP_IND_CCI)     return (v1 <= -100.0);
          if(cond.indicator == BP_IND_WILLIAMS)return (v1 <= -80.0);
+         if(cond.indicator == BP_IND_ADX)     return (v1 <= (ref > 0.0 ? ref : 20.0));
+         if(cond.indicator == BP_IND_VOLUME)  return (ref > 0.0) ? (v1 <= ref) : (v1 < v2);
          return (v1 <= ref);
 
       case BP_COND_CROSS_ABOVE_PRICE:
@@ -234,9 +296,11 @@ bool BP_Oscillators_EvaluateCondition(int handle, const BPCondition &cond)
 
       // Cruzamento MA rapida (period) vs MA lenta (period2)
       // Funciona com BP_IND_SMA ou BP_IND_EMA
+      // Requer period2 > 0 (MA lenta configurada)
       case BP_COND_MA_CROSS_ABOVE:
       case BP_COND_MA_CROSS_BELOW:
       {
+         if(cond.period2 <= 0 || cond.period2 <= cond.period) return false;
          double fast1, fast2, slow1, slow2;
          if(cond.indicator == BP_IND_EMA)
          {

@@ -308,20 +308,30 @@ def parse_html_report(html_path: str) -> Optional[Dict[str, Any]]:
     total_trades = int(extract_metric("Total Trades:", content))
     profit_trades_pct = extract_metric_pct("Profit Trades", content)
     win_trades = round(total_trades * profit_trades_pct / 100) if total_trades > 0 else 0
+    loss_trades = total_trades - win_trades
+
+    gross_profit = extract_metric("Gross Profit:", content)
+    gross_loss = abs(extract_metric("Gross Loss:", content))
+    avg_win = (gross_profit / win_trades) if win_trades > 0 else 0.0
+    avg_loss = (gross_loss / loss_trades) if loss_trades > 0 else 0.0
+    payoff = (avg_win / avg_loss) if avg_loss > 0 else 0.0
 
     metrics = {
         "total_net_profit": extract_metric("Total Net Profit:", content),
-        "gross_profit": extract_metric("Gross Profit:", content),
+        "gross_profit": gross_profit,
         "gross_loss": extract_metric("Gross Loss:", content),
         "profit_factor": extract_metric("Profit Factor:", content),
+        "expected_payoff": extract_metric("Expected Payoff:", content),
         "total_trades": total_trades,
+        "win_trades": win_trades,
+        "loss_trades": loss_trades,
+        "win_rate": profit_trades_pct,
+        "payoff": payoff,
         "max_drawdown_money": extract_metric("Equity Drawdown Maximal:", content),
         "max_drawdown_pct": extract_metric_pct("Equity Drawdown Maximal:", content),
         "recovery_factor": extract_metric("Recovery Factor:", content),
         "sharpe_ratio": extract_metric("Sharpe Ratio:", content),
-        "win_trades": win_trades,
-        "loss_trades": total_trades - win_trades,
-        "win_rate": profit_trades_pct,
+        "initial_deposit": extract_metric("Initial Deposit:", content) or 10000.0,
     }
 
     # Extrair trades da tabela de deals (se disponivel)

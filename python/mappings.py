@@ -44,10 +44,11 @@ INDICATOR_MAP = {
     "choch":    {"enum": "BP_SMC_CHOCH",       "value": -1, "group": "smc"},
     "ob":       {"enum": "BP_SMC_OB",          "value": -1, "group": "smc"},
     "sweep":    {"enum": "BP_SMC_SWEEP",       "value": -1, "group": "smc"},
+    "grab":     {"enum": "BP_SMC_GRAB",        "value": -1, "group": "smc"},
 }
 
 # IDs que pertencem ao Smart Money (nao combinam com outros)
-SMC_IDS = {"fvg", "bos", "choch", "ob", "sweep"}
+SMC_IDS = {"fvg", "bos", "choch", "ob", "sweep", "grab"}
 
 
 # ============================================================================
@@ -145,12 +146,21 @@ CONDITION_MAP = {
     "preco cruza abaixo da minima de ontem":{"enum": "BP_COND_CROSS_BELOW",  "value": 2},
     "preco esta entre maxima e minima de ontem":{"enum": "BP_COND_IN_ZONE_OB","value": 5},  # Re-usa zona
 
-    # --- Fibonacci ---
+    # --- Fibonacci (modo toque: pavio atinge o nivel) ---
     "preco toca nivel 23.6%":               {"enum": "BP_COND_ABOVE",        "value": 3, "fib_level": 23.6},
     "preco toca nivel 38.2%":               {"enum": "BP_COND_ABOVE",        "value": 3, "fib_level": 38.2},
     "preco toca nivel 50%":                 {"enum": "BP_COND_ABOVE",        "value": 3, "fib_level": 50.0},
     "preco toca nivel 61.8%":               {"enum": "BP_COND_ABOVE",        "value": 3, "fib_level": 61.8},
     "preco toca nivel 78.6%":               {"enum": "BP_COND_ABOVE",        "value": 3, "fib_level": 78.6},
+    "preco toca nivel 100%":                {"enum": "BP_COND_ABOVE",        "value": 3, "fib_level": 100.0},
+    # --- Fibonacci (modo validacao: fechamento confirma rejeicao no nivel) ---
+    "preco cruza nivel 23.6%":              {"enum": "BP_COND_CROSS_ABOVE",  "value": 1, "fib_level": 23.6},
+    "preco cruza nivel 38.2%":              {"enum": "BP_COND_CROSS_ABOVE",  "value": 1, "fib_level": 38.2},
+    "preco cruza nivel 50%":                {"enum": "BP_COND_CROSS_ABOVE",  "value": 1, "fib_level": 50.0},
+    "preco cruza nivel 61.8%":              {"enum": "BP_COND_CROSS_ABOVE",  "value": 1, "fib_level": 61.8},
+    "preco cruza nivel 78.6%":              {"enum": "BP_COND_CROSS_ABOVE",  "value": 1, "fib_level": 78.6},
+    "preco cruza nivel 100%":               {"enum": "BP_COND_CROSS_ABOVE",  "value": 1, "fib_level": 100.0},
+    # --- Fibonacci (legado: condicoes direcionais explicitadas) ---
     "preco cruza acima do nivel 61.8%":     {"enum": "BP_COND_CROSS_ABOVE",  "value": 1, "fib_level": 61.8},
     "preco cruza abaixo do nivel 61.8%":    {"enum": "BP_COND_CROSS_BELOW",  "value": 2, "fib_level": 61.8},
     "preco esta na zona 50%-61.8%":         {"enum": "BP_COND_IN_ZONE_OB",   "value": 5, "fib_level": 50.0},
@@ -213,14 +223,31 @@ SMC_MAP = {
     # CHoCH
     "choch detectado":               {"enum_bull": "BP_SMC_CHOCH_BULL", "val_bull": 5,
                                       "enum_bear": "BP_SMC_CHOCH_BEAR", "val_bear": 6},
-    # Order Block
-    "order block detectado":         {"enum_bull": "BP_SMC_OB_BULL",    "val_bull": 7,
-                                      "enum_bear": "BP_SMC_OB_BEAR",    "val_bear": 8},
-    "preco retesta order block":     {"enum_bull": "BP_SMC_OB_BULL",    "val_bull": 7,
-                                      "enum_bear": "BP_SMC_OB_BEAR",    "val_bear": 8},
-    # Liquidity Sweep
-    "liquidity sweep detectado":     {"enum_bull": "BP_SMC_SWEEP_HIGH", "val_bull": 9,
-                                      "enum_bear": "BP_SMC_SWEEP_LOW",  "val_bear": 10},
+    # Order Block: REMOVIDO como conceito isolado.
+    # OB agora e filtro de mitigacao em BoS/CHoCH via InpOB_Mitigation
+    # (ver OB_MITIGATION_MAP abaixo). Valores 7/8 do enum estao reservados.
+
+    # Liquidity Sweep: HIGH=SELL (val_bear=9), LOW=BUY (val_bull=10)
+    # Logica: SWEEP_HIGH = BoS_Bull confirmado + reversao -> sinal de venda
+    #         SWEEP_LOW  = BoS_Bear confirmado + reversao -> sinal de compra
+    "liquidity sweep detectado":     {"enum_bull": "BP_SMC_SWEEP_LOW",  "val_bull": 10,
+                                      "enum_bear": "BP_SMC_SWEEP_HIGH", "val_bear": 9},
+    # Liquidity Grab: HIGH=SELL (val_bear=11), LOW=BUY (val_bull=12)
+    # Logica: GRAB_HIGH = BoS_Bull falhado, rejeicao no topo -> sinal de venda
+    #         GRAB_LOW  = BoS_Bear falhado, rejeicao no fundo -> sinal de compra
+    "liquidity grab detectado":      {"enum_bull": "BP_SMC_GRAB_LOW",   "val_bull": 12,
+                                      "enum_bear": "BP_SMC_GRAB_HIGH",  "val_bear": 11},
+}
+
+
+# ============================================================================
+# OB MITIGATION: filtro aplicado em BoS/CHoCH via InpOB_Mitigation
+# ============================================================================
+
+OB_MITIGATION_MAP = {
+    "sem filtro":      {"enum": "OB_MITIGATION_NONE",       "value": 0},
+    "ob touch":        {"enum": "OB_MITIGATION_TOUCH",      "value": 1},
+    "ob validation":   {"enum": "OB_MITIGATION_VALIDATION", "value": 2},
 }
 
 

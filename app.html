@@ -557,7 +557,7 @@ const state = {
     stopType:'fixed', stopPts:200, stopOffset:10, stopCandles:5, stopAtrPer:14, stopAtrMult:1.5,
     tpType:'rr', tpPts:400, tpRR:2, tpFibLevel:'161.8', tpAtrPer:14, tpAtrMult:2.0,
     useFibonacci:false, fiboZZDepth:12, fiboZZDeviation:5, fiboZZBackstep:3,
-    fiboTriggerLevel:'61.8', fiboTriggerMode:'validation', fiboSLLevel:'100.0', fiboTPLevel:'161.8',
+    fiboTriggerLevel:'61.8', fiboTriggerMode:'validation', fiboSLLevel:'100.0', fiboTPLevel:'161.8', fiboDirection:'both',
     trailing:false, trailAct:100, trailDist:100, trailStep:50,
     partial:false, partPct:50, partAt:200, partMoveStop:true,
     exitCond:false, exitCondition:null,
@@ -718,7 +718,7 @@ const INDS_BY_TAB = {
     { id:'hilon',  name:'Máx/Mín de N períodos', desc:'Maior máxima ou menor mínima dos últimos N candles',hasPer:true,hasVal:false,defCond:'Preço rompe máxima de N períodos',defVal:0,defPer:20 },
     { id:'gap',    name:'Gap',               desc:'Diferença entre fechamento anterior e abertura atual',hasPer:false,hasVal:true,defCond:'Gap de alta',defVal:0 },
     { id:'prevday',name:'Máx/Mín Dia Anterior', desc:'Máxima ou mínima do pregão anterior',hasPer:false,hasVal:false,defCond:'Preço está acima da máxima de ontem',defVal:0 },
-    { id:'fib',    name:'Retração de Fibonacci', desc:'Níveis de retração baseados no swing de N períodos',hasPer:true,hasVal:false,defCond:'Preço toca nível 61.8%',defVal:0,defPer:50 },
+    { id:'fib',    name:'Retração de Fibonacci', desc:'Níveis de retração baseados no swing de N períodos',hasPer:true,hasVal:false,defCond:'Preço toca nível 61.8%',defVal:0,defPer:14,defFibLevel:'61.8%',defFibMode:'touch' },
   ],
   'Volatilidade': [
     { id:'atr',    name:'ATR',              desc:'Average True Range — filtra por volatilidade relativa à média',hasPer:true,hasVal:false,defCond:'ATR está acima de X× a média',defVal:0,defPer:14 },
@@ -751,7 +751,10 @@ const ATR_CONDS  = ['ATR está acima de X× a média','ATR está abaixo de X× a
 const HILON_CONDS = ['Preço rompe máxima de N períodos','Preço rompe mínima de N períodos','Preço está acima da máxima de N','Preço está abaixo da mínima de N'];
 const GAP_CONDS  = ['Gap de alta','Gap de baixa','Gap de alta maior que','Gap de baixa maior que'];
 const PREVDAY_CONDS = ['Preço está acima da máxima de ontem','Preço está abaixo da mínima de ontem','Preço cruza acima da máxima de ontem','Preço cruza abaixo da mínima de ontem','Preço está entre máxima e mínima de ontem'];
-const FIB_CONDS = ['Preço toca nível 23.6%','Preço toca nível 38.2%','Preço toca nível 50%','Preço toca nível 61.8%','Preço toca nível 78.6%','Preço cruza acima do nível 61.8%','Preço cruza abaixo do nível 61.8%','Preço está na zona 50%–61.8%','Preço está na zona 61.8%–78.6%'];
+const FIB_LEVELS = ['23.6%','38.2%','50%','61.8%','78.6%','100%'];
+const FIB_MODES  = [['touch','Toque'],['validation','Validação']];
+// FIB_CONDS mantido para compatibilidade com condições já salvas (legado)
+const FIB_CONDS = ['Preço toca nível 23.6%','Preço toca nível 38.2%','Preço toca nível 50%','Preço toca nível 61.8%','Preço toca nível 78.6%','Preço cruza acima do nível 61.8%','Preço cruza abaixo do nível 61.8%'];
 const CANDLE_CONDS = ['Martelo (alta)','Martelo Invertido (alta)','Engolfo de Alta','Engolfo de Baixa','Doji','Estrela da Manhã (alta)','Estrela da Noite (baixa)','Doji da Manhã (alta)','Doji da Noite (baixa)','Harami de Alta','Harami de Baixa','Marubozu de Alta','Marubozu de Baixa','Spinning Top','Pivô de Alta','Pivô de Baixa','3 Soldados Brancos (alta)','3 Corvos Negros (baixa)','Cobertura de Nuvem Negra (baixa)','Linha de Perfuração (alta)','Topo Duplo (baixa)','Fundo Duplo (alta)','Trap de Alta','Trap de Baixa'];
 
 // Smart Money Concepts
@@ -963,7 +966,6 @@ function getCondsFor(id) {
   if (id==='choch')   return CHOCH_CONDS;
   if (id==='grab')    return GRAB_CONDS;
   if (id==='sweep')   return SWEEP_CONDS;
-
   if (id==='range')   return RNG_CONDS;
   return [];
 }
@@ -1592,9 +1594,57 @@ function buildPreview(step,cfg) {
       badge(candles[0].x,levelY+(up?-5:8),'N per.',col,6);
     }
     else if(cond.id==='fib'){
-      const top=chartH*0.15,bot=chartH*0.85,rng=bot-top;
-      const lvs=[{p:'38.2%',f:0.382},{p:'50%',f:0.5},{p:'61.8%',f:0.618}];
-      lvs.forEach(lv=>{const y=bot-rng*lv.f;const hl=ct.includes(lv.p.replace('%',''));ln(4,y,W-4,y,hl?'#F59E0B':TH.grid,hl?0.8:0.4,hl?'':'2,2');if(hl)badge(W-20,y-3,lv.p,'#F59E0B',6);});
+      // Nível selecionado
+      const fibLvls=[{p:'23.6',f:0.236},{p:'38.2',f:0.382},{p:'50',f:0.5},{p:'61.8',f:0.618},{p:'78.6',f:0.786},{p:'100',f:1.0}];
+      const fibParams=cond.params||{};
+      const selLvl=fibLvls.find(l=>ct.includes(l.p))||{p:'61.8',f:0.618};
+      const isVal=ct.includes('valida')||ct.includes('cruza');
+
+      // Define perna de impulso usando os candles do gráfico
+      // Fundo = mínimo dos candles 0-5, Topo = mínimo dos candles 10-16
+      const fundoIdx=4, topoIdx=14;
+      const fundoY=candles[fundoIdx].l-2;
+      const topoY=candles[topoIdx].h+2;
+      const pRng=fundoY-topoY; // positivo (fundoY > topoY)
+
+      // Nível de retração sobre a perna
+      const trigY=topoY+pRng*selLvl.f;
+
+      // Linha de tendência ZigZag (fundo → topo)
+      ln(candles[fundoIdx].x+candles[fundoIdx].w/2, fundoY,
+         candles[topoIdx].x+candles[topoIdx].w/2, topoY,
+         '#F59E0B',0.5,'4,3');
+
+      // Pivot de fundo
+      cir(candles[fundoIdx].x+candles[fundoIdx].w/2, fundoY,'#10B981',3);
+
+      // Pivot de topo
+      cir(candles[topoIdx].x+candles[topoIdx].w/2, topoY,'#F59E0B',3);
+
+      // Níveis Fibonacci (tracejados, suaves)
+      fibLvls.forEach(lv=>{
+        const ly=topoY+pRng*lv.f;
+        const isSel=lv.p===selLvl.p;
+        ln(candles[topoIdx].x,ly,W-4,ly,
+           isSel?'#F59E0B':TH.grid,
+           isSel?0.85:0.25,
+           isSel?'':'2,4');
+        if(isSel) badge(W-4,ly-2,lv.p+'%','#F59E0B',6,'end');
+      });
+
+      // Candle trigger (após topo, na retração)
+      const trigIdx=topoIdx+2;
+      if(trigIdx<candles.length){
+        const tc=candles[trigIdx];
+        cir(tc.x+tc.w/2, trigY, '#00D4AA',3);
+        // Marca visual se é Validação (linha de pavio até o nível)
+        if(isVal){
+          ln(tc.x+tc.w/2, tc.h, tc.x+tc.w/2, trigY,'#00D4AA',0.7,'2,2');
+          badge(tc.x+tc.w/2, trigY-8,'SINAL','#00D4AA',6,'middle');
+        } else {
+          badge(tc.x+tc.w/2, trigY-8,'SINAL','#00D4AA',6,'middle');
+        }
+      }
     }
     // ── SMC CONDITIONS ──
     else if(cond.id==='fvg'){
@@ -3274,13 +3324,107 @@ function _buildCondPreviewSVG(indId, condText, params={}, isDark, up, cross, sc,
 
   // ═══ FIBONACCI ═══
   if(indId==='fib'){
-    const top=18,bot=100,rng=bot-top;
-    const lvs=[{p:'0%',y:bot},{p:'23.6%',y:bot-rng*0.236},{p:'38.2%',y:bot-rng*0.382},{p:'50%',y:bot-rng*0.5},{p:'61.8%',y:bot-rng*0.618},{p:'78.6%',y:bot-rng*0.786},{p:'100%',y:top}];
-    pl(`25,${top} 70,${top} 110,${bot} 160,${bot}`,TH.txm,0.6);
-    lvs.forEach(lv=>{const hl=ct.includes(lv.p.replace('%',''));ln(90,lv.y,W-10,lv.y,hl?'#F59E0B':TH.grid,hl?0.8:0.3,hl?'':'2,2');tx(W-6,lv.y-2,lv.p,hl?'#F59E0B':TH.txm,6,'end');});
-    if(ct.includes('zona')){const zt=bot-rng*0.618,zb=bot-rng*0.5;rc(90,zt,W-100,zb-zt,sc,0.1,3);}
-    else{const tl=lvs.find(l=>ct.includes(l.p.replace('%','')));if(tl){ci(140,tl.y,sc,4);}}
-    tx(10,14,'FIBONACCI','#F59E0B',8);
+    // Extrai nível selecionado do texto da condição
+    const fibLevels=[
+      {p:'23.6',f:0.236},{p:'38.2',f:0.382},{p:'50',f:0.5},
+      {p:'61.8',f:0.618},{p:'78.6',f:0.786},{p:'100',f:1.0}
+    ];
+    const selLevel = fibLevels.find(l=>ct.includes(l.p)) || {p:'61.8',f:0.618};
+    const isValidation = ct.includes('valida') || ct.includes('cruza');
+
+    // Coordenadas da perna de impulso
+    const fundoY=88, topoY=20, rng=fundoY-topoY;
+    const trigY = topoY + rng*selLevel.f;  // Y do nível selecionado
+
+    // ── Candles da perna de BAIXA (antes do fundo) ──
+    const bearCds=[
+      {x:8,  o:30,c:38,h:28,l:40,w:6},
+      {x:17, o:38,c:47,h:36,l:49,w:6},
+      {x:26, o:47,c:55,h:45,l:57,w:6},
+    ];
+    bearCds.forEach(cd=>{
+      ln(cd.x+cd.w/2,cd.h,cd.x+cd.w/2,cd.l,'#EF4444',0.5);
+      rc(cd.x,cd.o,cd.w,cd.c-cd.o,'#EF4444',0.7,0.5);
+    });
+
+    // ── Fundo (pivot ZigZag) ──
+    const fundoX=38;
+    // Candle de fundo — longa sombra inferior (martelo)
+    ln(fundoX+3,fundoY-12,fundoX+3,fundoY+2,'#10B981',0.6);
+    rc(fundoX,fundoY-8,6,5,'#10B981',0.8,0.5);
+    tx(fundoX-4,fundoY+8,'Fundo','#10B981',5.5);
+    ci(fundoX+3,fundoY,'#10B981',2.5);
+
+    // ── Perna de ALTA (impulso: fundo → topo) ──
+    const bullCds=[
+      {x:47, o:fundoY-4, c:fundoY-16, h:fundoY-17, l:fundoY-2, w:6},
+      {x:56, o:fundoY-16,c:fundoY-30, h:fundoY-31, l:fundoY-14,w:6},
+      {x:65, o:fundoY-30,c:fundoY-44, h:fundoY-45, l:fundoY-28,w:6},
+      {x:74, o:fundoY-44,c:topoY+4,   h:topoY+2,   l:fundoY-42,w:6},
+    ];
+    bullCds.forEach(cd=>{
+      ln(cd.x+cd.w/2,cd.h,cd.x+cd.w/2,cd.l,'#10B981',0.5);
+      rc(cd.x,cd.c,cd.w,cd.o-cd.c,'#10B981',0.75,0.5);
+    });
+
+    // ── Topo (pivot ZigZag) ──
+    const topoX=84;
+    ln(topoX+3,topoY-3,topoX+3,topoY+10,'#F59E0B',0.6);
+    rc(topoX,topoY+2,6,6,'#EF4444',0.7,0.5);
+    tx(topoX-2,topoY-5,'Topo','#F59E0B',5.5);
+    ci(topoX+3,topoY,'#F59E0B',2.5);
+
+    // ── Linha de tendência ZigZag ──
+    ln(fundoX+3,fundoY,topoX+3,topoY,'#F59E0B',0.4,'3,2');
+
+    // ── Retração: candles descendo do topo até o nível ──
+    const retCds=[
+      {x:93, o:topoY+6, c:topoY+16, h:topoY+4,  l:topoY+18, w:6},
+      {x:102,o:topoY+16,c:topoY+27, h:topoY+14, l:topoY+29, w:6},
+    ];
+    // Adicionar mais candles de retração conforme profundidade do nível
+    if(selLevel.f>0.4){
+      retCds.push({x:111,o:topoY+27,c:trigY-4,h:topoY+25,l:trigY-2,w:6});
+    }
+    retCds.forEach(cd=>{
+      ln(cd.x+cd.w/2,cd.h,cd.x+cd.w/2,cd.l,'#EF4444',0.5);
+      rc(cd.x,cd.o,cd.w,cd.c-cd.o,'#EF4444',0.65,0.5);
+    });
+
+    // ── Linha do nível selecionado ──
+    ln(fundoX,trigY,W-4,trigY,'#F59E0B',0.9,'');
+    tx(W-3,trigY-2,selLevel.p+'%','#F59E0B',6,'end');
+
+    // ── Linhas dos outros níveis (tracejadas, suaves) ──
+    fibLevels.filter(l=>l.p!==selLevel.p).forEach(lv=>{
+      const ly=topoY+rng*lv.f;
+      ln(fundoX,ly,W-4,ly,TH.grid,0.3,'2,3');
+      tx(W-3,ly-2,lv.p+'%',TH.txm,5,'end');
+    });
+
+    // ── Candle trigger (toca o nível) ──
+    const trigX=isValidation?128:122;
+    const trigH=isValidation?trigY+8:trigY+2;
+    const trigC=isValidation?trigY-6:trigY+6;
+    ln(trigX+3,trigH-2,trigX+3,trigH+4,'#EF4444',0.5);
+    rc(trigX,Math.min(trigH,trigC),6,Math.abs(trigH-trigC),'#EF4444',0.7,0.5);
+    tx(trigX-2,trigY+16,'Trigger',sc,5.5);
+    ci(trigX+3,trigY,sc,2.5);
+
+    // ── Seta de entrada ──
+    const entX=trigX+14;
+    const entY=trigY-10;
+    rc(entX,entY,5,12,sc,0.85,1);
+    svg.appendChild(hsvg('polygon',{
+      points:`${entX+2.5},${entY-4} ${entX-1.5},${entY+1} ${entX+6.5},${entY+1}`,
+      fill:sc,'fill-opacity':'0.9'
+    }));
+    tx(entX+7,entY+6,'ENTRADA',sc,5);
+
+    // ── Label ──
+    tx(8,11,'FIBONACCI','#F59E0B',7);
+    if(isValidation) tx(8,19,'Validação','#F59E0B',5);
+
     return svg;
   }
 
@@ -3765,6 +3909,7 @@ function renderModal() {
           if(ind.id==='choch')ms.params={dir:'Compra',obMit:'none',trendMin:5,trendMax:15,ampRatio:40,cond:CHOCH_CONDS[0]};
           if(ind.id==='grab') ms.params={dir:'Compra',cond:GRAB_CONDS[0]};
           if(ind.id==='sweep')ms.params={dir:'Compra',cond:SWEEP_CONDS[0]};
+          if(ind.id==='fib')  ms.params={per:14,fibLevel:'61.8%',fibMode:'touch',cond:'Preço toca nível 61.8%'};
           ms.page=1;
           renderModal();
         });
@@ -4304,7 +4449,10 @@ function renderModal() {
       if(ind.hasPer!==false && ms.params.per!==undefined) {
         const isCross=isMA&&isMACrossover(ms.params.cond);
         const row=div('');
-        row.appendChild(slabel(isCross?'Período da média curta':'Período'));
+        const perTip = ind.id==='fib'
+          ? 'Sensibilidade do ZigZag para identificar topos e fundos. Valores maiores = estruturas maiores (ignora ruídos menores). Padrão: 14. Ex: com 14, o ZigZag só marca um topo se houver pelo menos 14 candles sem uma máxima mais alta ao redor.'
+          : undefined;
+        row.appendChild(slabel(isCross?'Período da média curta':'Período', perTip));
         row.appendChild(stepper(ms.params.per,1,500,'',v=>{ms.params.per=v;refreshCondPreview();}));
         frag.appendChild(row);
 
@@ -4322,7 +4470,59 @@ function renderModal() {
         row.appendChild(stepperDecimal(ms.params.dev,0.5,5,0.5,'σ',v=>{ms.params.dev=v;refreshCondPreview();}));
         frag.appendChild(row);
       }
-      if(conds.length>0 && ind.id!=='fvg'){
+
+      // ── Fibonacci: seletores de nível e modo separados ──
+      if(ind.id==='fib'){
+        // helper: reconstrói ms.params.cond a partir de fibLevel + fibMode
+        function syncFibCond(){
+          const lvl=ms.params.fibLevel||'61.8%';
+          const mode=ms.params.fibMode||'touch';
+          ms.params.cond=mode==='touch'
+            ? `Preço toca nível ${lvl}`
+            : `Preço cruza nível ${lvl}`;
+        }
+
+        // Nível de retração
+        const lvlRow=div('');
+        lvlRow.appendChild(slabel('Nível de retração',
+          'O preço precisa atingir este nível de retração da perna de impulso para disparar a condição. Ex: 61.8% significa que o preço recuou 61.8% da perna antes de retomar a direção original.'));
+        const lvlChips=div('');lvlChips.style.cssText='display:flex;gap:7px;flex-wrap:wrap';
+        FIB_LEVELS.forEach(lv=>{
+          const ch=div('chip'+(ms.params.fibLevel===lv?' on':''));
+          ch.textContent=lv;
+          ch.addEventListener('click',()=>{
+            ms.params.fibLevel=lv;
+            lvlChips.querySelectorAll('.chip').forEach(c=>c.className='chip');
+            ch.className='chip on';
+            syncFibCond();
+            refreshCondPreview();
+          });
+          lvlChips.appendChild(ch);
+        });
+        lvlRow.appendChild(lvlChips);
+        frag.appendChild(lvlRow);
+
+        // Modo de confirmação
+        const modeRow=div('');
+        modeRow.appendChild(slabel('Modo de confirmação',
+          'Toque: o pavio do candle basta tocar o nível para disparar — mais sinais, menos filtro.\n\nValidação: o candle precisa fechar confirmando a rejeição (fecha de volta na direção do impulso após tocar o nível) — menos sinais, mais qualidade.\n\nExemplo: candle que tocou 61.8% com o pavio e fechou de volta para cima = Validação.'));
+        const modeChips=div('');modeChips.style.cssText='display:flex;gap:7px';
+        FIB_MODES.forEach(([val,lbl])=>{
+          const ch=div('chip'+(ms.params.fibMode===val?' on':''));
+          ch.textContent=lbl;
+          ch.addEventListener('click',()=>{
+            ms.params.fibMode=val;
+            modeChips.querySelectorAll('.chip').forEach(c=>c.className='chip');
+            ch.className='chip on';
+            syncFibCond();
+            refreshCondPreview();
+          });
+          modeChips.appendChild(ch);
+        });
+        modeRow.appendChild(modeChips);
+        frag.appendChild(modeRow);
+      }
+      if(conds.length>0 && ind.id!=='fvg' && ind.id!=='fib'){
         const row=div('');
         row.appendChild(slabel(ind.id==='candle'?'Padrão':'Condição'));
 
@@ -4996,7 +5196,7 @@ function renderStep4() {
       // Trigger Level
       const trigTitle=div('');trigTitle.style.cssText='font-size:12px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.08em;margin-top:4px';trigTitle.textContent='Gatilho';
       fiboBody.appendChild(trigTitle);
-      const trigLevelBlock=div('');trigLevelBlock.appendChild(slabel('Nível de retração monitorado','O preço precisa atingir este nível de retração da perna de impulso para disparar a entrada.'));
+      const trigLevelBlock=div('');trigLevelBlock.appendChild(slabel('Nível de retração monitorado','O preço precisa atingir este nível de retração da perna de impulso para disparar a entrada. Ex: 61.8% significa que o EA aguarda o preço recuar 61.8% da perna antes de entrar.'));
       const trigLevelRow=div('');trigLevelRow.style.cssText='display:flex;gap:7px;flex-wrap:wrap';
       FIBO_RETRACE_LEVELS.forEach(([val,lbl])=>{
         const ch=div('chip'+(cfg.fiboTriggerLevel===val?' on':''));ch.textContent=lbl;
@@ -5005,7 +5205,10 @@ function renderStep4() {
       });
       trigLevelBlock.appendChild(trigLevelRow);fiboBody.appendChild(trigLevelBlock);
 
-      const trigModeBlock=div('');trigModeBlock.appendChild(slabel('Modo de confirmação','Toque = o pavio do candle toca o nível. Validação = o candle fecha confirmando a rejeição (fecha além do nível, de volta na direção do impulso).'));
+      // Modo de confirmação com tooltip ?
+      const trigModeBlock=div('');
+      trigModeBlock.appendChild(slabel('Modo de confirmação',
+        'Toque: o pavio do candle basta tocar o nível para disparar a entrada — mais sinais, menos filtro.\n\nValidação: o candle precisa fechar confirmando a rejeição (fecha de volta na direção do impulso após tocar o nível) — menos sinais, mais qualidade.\n\nExemplo da imagem: o candle trigger tocou 61,8% com o pavio e fechou de volta para cima — isso é Validação.'));
       const trigModeRow=div('');trigModeRow.style.cssText='display:flex;gap:7px';
       [['touch','Toque'],['validation','Validação']].forEach(([val,lbl])=>{
         const ch=div('chip'+(cfg.fiboTriggerMode===val?' on':''));ch.textContent=lbl;
@@ -5013,6 +5216,17 @@ function renderStep4() {
         trigModeRow.appendChild(ch);
       });
       trigModeBlock.appendChild(trigModeRow);fiboBody.appendChild(trigModeBlock);
+
+      // Direção da operação
+      const dirBlock=div('');
+      dirBlock.appendChild(slabel('Direção','Define se o EA opera apenas compras, apenas vendas ou ambas as direções quando o Fibonacci disparar.\n\nCompra: busca retrações em pernas de alta (fundo → topo) e entra long.\nVenda: busca retrações em pernas de baixa (topo → fundo) e entra short.\nAmbas: opera nas duas direções conforme a estrutura identificada pelo ZigZag.'));
+      const dirRow=div('');dirRow.style.cssText='display:flex;gap:7px';
+      [['long','Compra'],['short','Venda'],['both','Ambas']].forEach(([val,lbl])=>{
+        const ch=div('chip'+(cfg.fiboDirection===val?' on':''));ch.textContent=lbl;
+        ch.addEventListener('click',()=>{cfg.fiboDirection=val;dirRow.querySelectorAll('.chip').forEach(c2=>c2.classList.remove('on'));ch.classList.add('on');});
+        dirRow.appendChild(ch);
+      });
+      dirBlock.appendChild(dirRow);fiboBody.appendChild(dirBlock);
     }
 
     // SL Level (só se stopType=fibo)
@@ -5450,14 +5664,14 @@ function getMetrics(){
   const BM=CURRENT_BACKEND_METRICS;
   // Métricas do backend têm prioridade (calculadas pelo MT5/parser).
   // Fallback para EQ_ANALYSIS em demos e histórico mock.
-  const totalTrades = BM ? BM.total_trades        : EQ.length;
-  const winRate     = BM ? BM.win_rate             : A.winRate;
-  const netProfit   = BM ? BM.total_net_profit     : EQ[EQ.length-1].v;
-  const ddPct       = BM ? BM.max_drawdown_pct     : A.maxDDPct;
-  const pf          = BM ? BM.profit_factor        : A.profitFactor;
-  const payoff      = BM ? BM.payoff               : A.payoff;
-  const rf          = BM ? BM.recovery_factor      : A.recoveryFactor;
-  const deposit     = BM ? (BM.initial_deposit||10000) : A.cap;
+  const totalTrades = BM ? (BM.total_trades        ?? 0)        : EQ.length;
+  const winRate     = BM ? (BM.win_rate             ?? 0)        : A.winRate;
+  const netProfit   = BM ? (BM.total_net_profit     ?? 0)        : EQ[EQ.length-1].v;
+  const ddPct       = BM ? (BM.max_drawdown_pct     ?? 0)        : A.maxDDPct;
+  const pf          = BM ? (BM.profit_factor        ?? 0)        : A.profitFactor;
+  const payoff      = BM ? (BM.payoff               ?? 0)        : A.payoff;
+  const rf          = BM ? (BM.recovery_factor      ?? 0)        : A.recoveryFactor;
+  const deposit     = BM ? (BM.initial_deposit      || 10000)    : A.cap;
   const rentab      = deposit>0 ? (netProfit/deposit)*100 : 0;
   const ok          = netProfit>=0;
   return[

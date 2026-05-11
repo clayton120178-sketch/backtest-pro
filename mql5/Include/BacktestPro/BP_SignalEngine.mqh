@@ -68,16 +68,10 @@ bool BP_SignalEngine_Destroy(int handle)
 }
 
 //+------------------------------------------------------------------+
-//| Retorna true se o indicador e um oscilador (RSI, Stoch, etc.)   |
+//| _IsOscillator: alias para _BP_IsOscillator (definida em         |
+//| BP_Oscillators.mqh, incluida via BP_Oscillators.mqh acima)      |
 //+------------------------------------------------------------------+
-bool _IsOscillator(ENUM_BP_INDICATOR ind)
-{
-   return (ind == BP_IND_RSI     ||
-           ind == BP_IND_STOCH   ||
-           ind == BP_IND_CCI     ||
-           ind == BP_IND_WILLIAMS||
-           ind == BP_IND_MACD);
-}
+bool _IsOscillator(ENUM_BP_INDICATOR ind) { return _BP_IsOscillator(ind); }
 
 //+------------------------------------------------------------------+
 //| Determina a direcao do sinal a partir da condicao principal     |
@@ -117,7 +111,14 @@ ENUM_BP_SIGNAL _InferDirection(const BPCondition &cond)
          return BP_SIGNAL_SELL;
 
       case BP_COND_MA_CROSS_ABOVE:
+      case BP_COND_HILO_BUY:
          return BP_SIGNAL_BUY;
+
+      case BP_COND_HILO_SELL:
+         return BP_SIGNAL_SELL;
+
+      case BP_COND_HILO_CHANGED:
+         return BP_SIGNAL_NONE;  // direcao indefinida, requer tradingDir fixo
 
       // ABOVE: para osciladores o valor de referencia define o sentido
       //   Ex: RSI ABOVE 50 -> mercado forte -> BUY (valor >= 50)
