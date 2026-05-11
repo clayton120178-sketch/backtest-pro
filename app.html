@@ -5664,14 +5664,14 @@ function getMetrics(){
   const BM=CURRENT_BACKEND_METRICS;
   // Métricas do backend têm prioridade (calculadas pelo MT5/parser).
   // Fallback para EQ_ANALYSIS em demos e histórico mock.
-  const totalTrades = BM ? BM.total_trades        : EQ.length;
-  const winRate     = BM ? BM.win_rate             : A.winRate;
-  const netProfit   = BM ? BM.total_net_profit     : EQ[EQ.length-1].v;
-  const ddPct       = BM ? BM.max_drawdown_pct     : A.maxDDPct;
-  const pf          = BM ? BM.profit_factor        : A.profitFactor;
-  const payoff      = BM ? BM.payoff               : A.payoff;
-  const rf          = BM ? BM.recovery_factor      : A.recoveryFactor;
-  const deposit     = BM ? (BM.initial_deposit||10000) : A.cap;
+  const totalTrades = BM ? (BM.total_trades        ?? 0)        : EQ.length;
+  const winRate     = BM ? (BM.win_rate             ?? 0)        : A.winRate;
+  const netProfit   = BM ? (BM.total_net_profit     ?? 0)        : EQ[EQ.length-1].v;
+  const ddPct       = BM ? (BM.max_drawdown_pct     ?? 0)        : A.maxDDPct;
+  const pf          = BM ? (BM.profit_factor        ?? 0)        : A.profitFactor;
+  const payoff      = BM ? (BM.payoff               ?? 0)        : A.payoff;
+  const rf          = BM ? (BM.recovery_factor      ?? 0)        : A.recoveryFactor;
+  const deposit     = BM ? (BM.initial_deposit      || 10000)    : A.cap;
   const rentab      = deposit>0 ? (netProfit/deposit)*100 : 0;
   const ok          = netProfit>=0;
   return[
