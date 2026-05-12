@@ -15,7 +15,7 @@ Responsabilidades:
 import hashlib
 import json
 import logging
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 from mappings import (
@@ -58,6 +58,38 @@ class ConversionWarning:
 
     def __repr__(self):
         return f"[{self.code}] {self.message}"
+
+
+def validate_backtest_period(cfg: dict):
+    """
+    Valida backtest_period quando presente no cfg.
+    Levanta ConversionError se as datas forem invalidas.
+    Sem o campo, retorna sem fazer nada (compatibilidade com configs antigas).
+    """
+    period = cfg.get("backtest_period", {})
+    date_from_str = period.get("date_from")
+    date_to_str = period.get("date_to")
+
+    if not date_from_str or not date_to_str:
+        return
+
+    try:
+        date_from = date.fromisoformat(date_from_str)
+        date_to = date.fromisoformat(date_to_str)
+    except ValueError as e:
+        raise ConversionError(f"Formato de data invalido em backtest_period: {e}")
+
+    today = date.today()
+    min_date = today - timedelta(days=5 * 366)
+
+    if date_from < min_date:
+        raise ConversionError(f"date_from excede limite de 5 anos: {date_from_str}")
+    if date_to > today:
+        raise ConversionError(f"date_to e uma data futura: {date_to_str}")
+    if date_from >= date_to:
+        raise ConversionError("date_from deve ser anterior a date_to")
+    if (date_to - date_from).days < 30:
+        raise ConversionError("Periodo minimo do backtest e 30 dias")
 
 
 def validate_cfg(cfg: Dict[str, Any]) -> List[ConversionWarning]:
@@ -466,19 +498,13 @@ def convert_cfg_to_ea_params(cfg: Dict[str, Any]) -> Dict[str, Any]:
 
 def build_backtest_json(
     cfg: Dict[str, Any],
-    from_date: str = "2019.01.02",
-    to_date: Optional[str] = None,
-    deposit: int = 10000,
     model: int = 1,
 ) -> Tuple[Dict[str, Any], List[ConversionWarning]]:
     """
     Gera o JSON completo para o backtest_runner.py.
 
     Args:
-        cfg: state.cfg do frontend
-        from_date: Data inicio (default: Jan 2019)
-        to_date: Data fim (default: hoje)
-        deposit: Capital inicial
+        cfg: state.cfg do frontend (inclui backtest_period, initial_capital, capital_currency)
         model: Modelo de teste MT5 (1=Every tick)
 
     Returns:
@@ -494,12 +520,44 @@ def build_backtest_json(
     tf_frontend = cfg.get("tf", "5m")
     tf_info = TIMEFRAME_MAP.get(tf_frontend, TIMEFRAME_MAP["5m"])
 
-    # Determinar moeda baseado no mercado
-    market = cfg.get("market", "local")
-    currency = "BRL" if market == "local" else "USD"
+    # Periodo: ler do cfg se disponivel, senao usar defaults
+    backtest_period = cfg.get("backtest_period", {})
+    if backtest_period.get("date_from"):
+        from_date = backtest_period["date_from"].replace("-", ".")
+    else:
+        from_date = "2019.01.02"
 
-    if to_date is None:
+    if backtest_period.get("date_to"):
+        to_date = backtest_period["date_to"].replace("-", ".")
+    else:
         to_date = datetime.now().strftime("%Y.%m.%d")
+
+    # Capital: ler do cfg se disponivel, senao usar default
+    if cfg.get("initial_capital") is not None:
+        deposit = int(cfg["initial_capital"])
+    else:
+        deposit = 10000
+
+    # Sobrescrever InpInitialAlloc com o valor real do usuario
+    ea_params["InpInitialAlloc"] = float(deposit)
+
+    # Moeda: usar capital_currency do frontend com mapa completo
+    capital_currency = cfg.get("capital_currency")
+    if capital_currency:
+        currency_map = {
+            "R$":  "BRL",
+            "USD": "USD",
+            "EUR": "EUR",
+            "GBP": "GBP",
+            "JPY": "JPY",
+            "AUD": "AUD",
+            "HKD": "HKD",
+        }
+        currency = currency_map.get(capital_currency, "USD")
+    else:
+        # Fallback para logica anterior (configs antigas sem o campo)
+        market = cfg.get("market", "local")
+        currency = "BRL" if market == "local" else "USD"
 
     config = {
         "ea_name": "BacktestPro_Universal_EA",

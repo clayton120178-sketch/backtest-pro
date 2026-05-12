@@ -23,7 +23,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 from backtest_runner import BacktestRunner
-from cfg_to_json import build_backtest_json, compute_checksum, validate_cfg, ConversionError
+from cfg_to_json import build_backtest_json, compute_checksum, validate_cfg, validate_backtest_period, ConversionError
 from result_parser import get_backtest_result
 
 logger = logging.getLogger(__name__)
@@ -83,15 +83,9 @@ class BacktestPipeline:
         self,
         output_dir: str = "",
         use_cache: bool = True,
-        from_date: str = "2019.01.02",
-        to_date: Optional[str] = None,
-        deposit: int = 10000,
         timeout: int = 3600,
     ):
         self.use_cache = use_cache
-        self.from_date = from_date
-        self.to_date = to_date
-        self.deposit = deposit
         self.timeout = timeout
 
         if output_dir:
@@ -142,6 +136,7 @@ class BacktestPipeline:
 
         # 1. Validar
         try:
+            validate_backtest_period(frontend_cfg)
             warnings = validate_cfg(frontend_cfg)
             response["warnings"] = [str(w) for w in warnings]
         except ConversionError as e:
@@ -151,12 +146,7 @@ class BacktestPipeline:
 
         # 2. Converter frontend cfg -> JSON EA
         try:
-            config, extra_warnings = build_backtest_json(
-                frontend_cfg,
-                from_date=self.from_date,
-                to_date=self.to_date,
-                deposit=self.deposit,
-            )
+            config, extra_warnings = build_backtest_json(frontend_cfg)
             response["config"] = config
             response["warnings"].extend([str(w) for w in extra_warnings])
         except (ConversionError, KeyError, ValueError) as e:
@@ -237,6 +227,7 @@ class BacktestPipeline:
         }
 
         try:
+            validate_backtest_period(frontend_cfg)
             warnings = validate_cfg(frontend_cfg)
             response["warnings"] = [str(w) for w in warnings]
         except ConversionError as e:
@@ -246,12 +237,7 @@ class BacktestPipeline:
             return response
 
         try:
-            config, extra_warnings = build_backtest_json(
-                frontend_cfg,
-                from_date=self.from_date,
-                to_date=self.to_date,
-                deposit=self.deposit,
-            )
+            config, extra_warnings = build_backtest_json(frontend_cfg)
             response["config"] = config
             response["warnings"].extend([str(w) for w in extra_warnings])
         except (ConversionError, KeyError, ValueError) as e:
