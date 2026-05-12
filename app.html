@@ -97,6 +97,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;b
 @keyframes lprog{0%{width:0}15%{width:18%}40%{width:50%}70%{width:75%}95%{width:93%}100%{width:93%}}
 @keyframes stepDone{0%{transform:scale(1)}35%{transform:scale(1.25)}65%{transform:scale(0.92)}100%{transform:scale(1)}}
 @keyframes breathe{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.72)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
 .aFwd{animation:sright .2s var(--out) both}
 .aBwd{animation:sleft .2s var(--out) both}
 .aUp{animation:fadeUp .22s var(--out) both}
@@ -561,6 +562,7 @@ const state = {
     trailing:false, trailAct:100, trailDist:100, trailStep:50,
     partial:false, partPct:50, partAt:200, partMoveStop:true,
     exitCond:false, exitCondition:null,
+    backtestDateFrom: null, backtestDateTo: null, initialCapital: 10000,
   }
 };
 
@@ -5367,18 +5369,200 @@ function renderConfirm() {
   const lastRow=div('confirm-row');lastRow.style.borderBottom='none';lastRow.style.marginBottom='0';lastRow.style.paddingBottom='0';
   const lk=div('confirm-key');lk.textContent='Gestão';
   const lv=div('confirm-val');lv.textContent=mgmt.join(' · ');
-  lastRow.append(lk,lv);box.appendChild(lastRow);
+  lastRow.append(lk,lv);
+
+  // Período row inside summary box
+  const periodRow=div('confirm-row');periodRow.style.cssText='border-bottom:none;margin-bottom:0;padding-bottom:0';
+  const prk=div('confirm-key');prk.textContent='Período';
+  const prv=div('confirm-val');prv.id='bp-period-summary';
+  periodRow.append(prk,prv);box.append(lastRow,periodRow);
   el.appendChild(box);
 
-  const period=div('');period.style.cssText='background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.14);border-radius:9px;padding:10px 13px;margin:16px 0 22px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--txs)';
-  const _p=getBacktestPeriod();
-  period.innerHTML=`<span style="color:#00D4AA;flex-shrink:0">${IC.act}</span> Período: <strong style="color:var(--tx)">${_p.startLong} — ${_p.endLong}</strong> <span style="color:var(--txm)">(todo o histórico disponível)</span>`;
-  el.appendChild(period);
+  // ── Initialize defaults ──
+  const today=new Date();today.setHours(0,0,0,0);
+  if(!state.cfg.backtestDateFrom)state.cfg.backtestDateFrom=new Date(defaultDateFrom());
+  if(!state.cfg.backtestDateTo)state.cfg.backtestDateTo=new Date(today);
+
+  // ── Helpers ──
+  const currencySymbols={'R$':'R$','USD':'$','EUR':'€','GBP':'£','JPY':'¥','AUD':'A$','HKD':'HK$'};
+  const currency=findAsset(cfg.asset)?.currency||'R$';
+  const symbol=currencySymbols[currency]||currency;
+  const mShort=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+  function dateToStr(d){if(!d)return'';const dd=String(d.getDate()).padStart(2,'0');const mm=String(d.getMonth()+1).padStart(2,'0');return dd+'/'+mm+'/'+d.getFullYear();}
+  function strToDate(s){if(!s||s.length!==10)return null;const p=s.split('/');const d=new Date(+p[2],+p[1]-1,+p[0]);return isNaN(d.getTime())?null:d;}
+
+  let infoEl=null;
+  function updatePeriodDisplay(){
+    const df=state.cfg.backtestDateFrom||defaultDateFrom();
+    const dt=state.cfg.backtestDateTo||new Date();
+    const totalDays=Math.round((dt-df)/86400000);
+    const years=(totalDays/365.25).toFixed(1);
+    const workingDays=Math.round(totalDays*(5/7));
+    const candles=calcCandlesForPeriod(cfg.tf,workingDays).toLocaleString('pt-BR');
+    if(infoEl)infoEl.textContent=years+' anos · '+workingDays.toLocaleString('pt-BR')+' dias úteis · ~'+candles+' candles ('+cfg.tf+')';
+    const ps=document.getElementById('bp-period-summary');
+    if(ps)ps.textContent=dateToStr(df)+' → '+dateToStr(dt)+' ('+mShort[df.getMonth()]+' '+df.getFullYear()+' – '+mShort[dt.getMonth()]+' '+dt.getFullYear()+')';
+  }
+
+  // ── Date picker ──
+  function createDatePicker(inputEl,getMin,getMax,onSelect){
+    let pickerEl=null,curYear,curMonth;
+    function renderPicker(){
+      if(!pickerEl)return;pickerEl.innerHTML='';
+      const minD=getMin();const maxD=getMax();const selected=strToDate(inputEl.value);
+      const hdr=div('');hdr.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-bottom:10px';
+      const prevBtn=div('');prevBtn.innerHTML=IC.back;prevBtn.style.cssText='cursor:pointer;color:var(--txs);padding:4px 8px;border-radius:6px';
+      prevBtn.onmouseenter=()=>prevBtn.style.background='var(--bg3)';prevBtn.onmouseleave=()=>prevBtn.style.background='';
+      prevBtn.onclick=(e)=>{e.stopPropagation();curMonth--;if(curMonth<0){curMonth=11;curYear--;}renderPicker();};
+      const nextBtn=div('');nextBtn.innerHTML=IC.fwd;nextBtn.style.cssText='cursor:pointer;color:var(--txs);padding:4px 8px;border-radius:6px';
+      nextBtn.onmouseenter=()=>nextBtn.style.background='var(--bg3)';nextBtn.onmouseleave=()=>nextBtn.style.background='';
+      nextBtn.onclick=(e)=>{e.stopPropagation();curMonth++;if(curMonth>11){curMonth=0;curYear++;}renderPicker();};
+      const mNames=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+      const mLbl=div('');mLbl.style.cssText='font-size:13px;font-weight:700;color:var(--tx)';mLbl.textContent=mNames[curMonth]+' '+curYear;
+      hdr.append(prevBtn,mLbl,nextBtn);pickerEl.appendChild(hdr);
+      const wkRow=div('');wkRow.style.cssText='display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px';
+      ['D','S','T','Q','Q','S','S'].forEach(function(d){const c=div('');c.textContent=d;c.style.cssText='text-align:center;font-size:10px;font-weight:700;color:var(--txm);padding:2px 0';wkRow.appendChild(c);});
+      pickerEl.appendChild(wkRow);
+      const grid=div('');grid.style.cssText='display:grid;grid-template-columns:repeat(7,1fr);gap:2px';
+      const first=new Date(curYear,curMonth,1).getDay();const days=new Date(curYear,curMonth+1,0).getDate();
+      const df2=state.cfg.backtestDateFrom;const dt2=state.cfg.backtestDateTo;
+      for(let i=0;i<first;i++)grid.appendChild(div(''));
+      for(let d=1;d<=days;d++){
+        const c=div('');const td=new Date(curYear,curMonth,d);
+        const isSel=selected&&td.toDateString()===selected.toDateString();
+        const isTdy=td.toDateString()===new Date().toDateString();
+        const isDis=(minD&&td<minD)||(maxD&&td>maxD);
+        const inRng=df2&&dt2&&td>df2&&td<dt2;
+        c.textContent=d;c.style.cssText='text-align:center;padding:5px 2px;border-radius:6px;font-size:12px;font-family:\'JetBrains Mono\',monospace;';
+        if(isDis){c.style.color='var(--txm)';c.style.opacity='0.35';c.style.cursor='not-allowed';}
+        else if(isSel){c.style.background='var(--pr)';c.style.color='#fff';c.style.fontWeight='700';c.style.cursor='pointer';}
+        else if(inRng){c.style.background='var(--prd)';c.style.color='var(--tx)';c.style.cursor='pointer';}
+        else{
+          c.style.color='var(--tx)';c.style.cursor='pointer';
+          if(isTdy){c.style.border='1px solid var(--pr)';c.style.color='var(--pr)';}
+          c.onmouseenter=function(){if(c.style.background==='')c.style.background='var(--bg3)';};
+          c.onmouseleave=function(){if(c.style.background==='var(--bg3)')c.style.background='';};
+        }
+        if(!isDis)c.onclick=(function(date){return function(e){e.stopPropagation();inputEl.value=dateToStr(date);onSelect(date);closePicker();};})(td);
+        grid.appendChild(c);
+      }
+      pickerEl.appendChild(grid);
+    }
+    function openPicker(){
+      if(pickerEl)return;
+      const d=strToDate(inputEl.value)||new Date();curYear=d.getFullYear();curMonth=d.getMonth();
+      pickerEl=div('');pickerEl.style.cssText='position:absolute;z-index:999;background:var(--bg1);border:0.5px solid var(--bdh);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.3);padding:12px;min-width:260px;margin-top:4px;left:0;top:100%';
+      renderPicker();inputEl.parentElement.appendChild(pickerEl);
+      setTimeout(function(){document.addEventListener('click',outsideClick);},0);
+    }
+    function closePicker(){if(pickerEl){pickerEl.remove();pickerEl=null;}document.removeEventListener('click',outsideClick);}
+    function outsideClick(e){if(pickerEl&&!pickerEl.contains(e.target)&&e.target!==inputEl)closePicker();}
+    inputEl.addEventListener('click',function(e){e.stopPropagation();if(pickerEl)closePicker();else openPicker();});
+  }
+
+  function makeDateGroup(lbTxt,initDate,getMin,getMax,onSelect){
+    const g=div('');g.style.cssText='flex:1;display:flex;flex-direction:column;gap:4px';
+    const lbl=div('');lbl.style.cssText='font-size:10px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.09em';lbl.textContent=lbTxt;
+    const wrap=div('');wrap.style.cssText='position:relative;display:flex;align-items:center';
+    const inp=document.createElement('input');inp.type='text';inp.placeholder='DD/MM/AAAA';
+    inp.style.cssText='width:100%;background:var(--bg3);border:0.5px solid var(--bd);border-radius:6px;color:var(--tx);font-family:\'JetBrains Mono\',monospace;font-size:13px;padding:8px 34px 8px 10px;outline:none;box-sizing:border-box;transition:border-color 180ms,box-shadow 180ms';
+    inp.value=dateToStr(initDate);
+    inp.addEventListener('focus',function(){inp.style.borderColor='var(--pr)';inp.style.boxShadow='0 0 0 3px var(--prd)';});
+    inp.addEventListener('blur',function(){inp.style.borderColor='';inp.style.boxShadow='';});
+    inp.addEventListener('input',function(){
+      let v=this.value.replace(/\D/g,'').slice(0,8);
+      if(v.length>=3)v=v.slice(0,2)+'/'+v.slice(2);
+      if(v.length>=6)v=v.slice(0,5)+'/'+v.slice(5);
+      this.value=v;
+      if(v.length===10){const d=strToDate(v);if(d){onSelect(d);updatePeriodDisplay();}}
+    });
+    const calIc=div('');calIc.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+    calIc.style.cssText='position:absolute;right:10px;color:var(--txm);pointer-events:none;display:flex;align-items:center';
+    const errEl=div('');errEl.style.cssText='font-size:11px;color:var(--dg);min-height:14px';
+    wrap.append(inp,calIc);g.append(lbl,wrap,errEl);
+    createDatePicker(inp,getMin,getMax,function(d){onSelect(d);updatePeriodDisplay();});
+    return{el:g,inp:inp,errEl:errEl};
+  }
+
+  const fromGroup=makeDateGroup('De',state.cfg.backtestDateFrom,
+    function(){return defaultDateFrom();},
+    function(){const d=new Date(state.cfg.backtestDateTo||today);d.setDate(d.getDate()-30);return d;},
+    function(d){state.cfg.backtestDateFrom=d;}
+  );
+  const toGroup=makeDateGroup('Até',state.cfg.backtestDateTo,
+    function(){const d=new Date(state.cfg.backtestDateFrom||defaultDateFrom());d.setDate(d.getDate()+30);return d;},
+    function(){return today;},
+    function(d){state.cfg.backtestDateTo=d;}
+  );
+
+  // ── configBox card ──
+  const configBox=div('card');configBox.style.cssText='padding:20px 24px;margin:16px 0 22px';
+  const cbLabel=div('slabel');cbLabel.textContent='Parâmetros do backtest';configBox.appendChild(cbLabel);
+  const ptTitle=div('');ptTitle.style.cssText='font-size:12px;font-weight:700;color:var(--tx);margin-bottom:10px';ptTitle.textContent='Período do teste';configBox.appendChild(ptTitle);
+  const dateRow=div('');dateRow.style.cssText='display:flex;gap:12px;margin-bottom:8px';dateRow.append(fromGroup.el,toGroup.el);configBox.appendChild(dateRow);
+  infoEl=div('');infoEl.style.cssText='font-size:11px;color:var(--txs);margin-bottom:16px;font-family:\'JetBrains Mono\',monospace';configBox.appendChild(infoEl);
+  const dvdr=div('');dvdr.style.cssText='border-top:0.5px solid var(--bd);margin-bottom:16px';configBox.appendChild(dvdr);
+
+  const capTitle=div('');capTitle.style.cssText='font-size:12px;font-weight:700;color:var(--tx);margin-bottom:10px';capTitle.textContent='Capital inicial';configBox.appendChild(capTitle);
+  const capRow=div('');capRow.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px';
+  const capPfx=div('');capPfx.style.cssText='background:var(--bg3);border:0.5px solid var(--bd);border-radius:6px 0 0 6px;padding:8px 10px;font-size:13px;font-weight:700;color:var(--txs);white-space:nowrap;border-right:none;font-family:\'JetBrains Mono\',monospace';capPfx.textContent=symbol;
+  const capInp=document.createElement('input');capInp.type='text';
+  capInp.style.cssText='flex:1;min-width:0;background:var(--bg3);border:0.5px solid var(--bd);border-radius:0 6px 6px 0;color:var(--tx);font-family:\'JetBrains Mono\',monospace;font-size:13px;padding:8px 10px;outline:none;transition:border-color 180ms,box-shadow 180ms';
+  function fmtCap(n){return currency==='R$'?n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+  capInp.value=fmtCap(state.cfg.initialCapital||10000);
+  capInp.addEventListener('focus',function(){capInp.style.borderColor='var(--pr)';capInp.style.boxShadow='0 0 0 3px var(--prd)';capPfx.style.borderColor='var(--pr)';});
+  capInp.addEventListener('blur',function(){
+    capInp.style.borderColor='';capInp.style.boxShadow='';capPfx.style.borderColor='';
+    const raw=parseFloat(capInp.value.replace(/\./g,'').replace(',','.').replace(/[^\d.]/g,''));
+    if(!isNaN(raw)&&raw>=1000&&raw<=10000000){state.cfg.initialCapital=raw;capInp.value=fmtCap(raw);capErrEl.textContent='';chipsRow.querySelectorAll('.chip').forEach(function(x){x.classList.remove('on');});}
+    else capInp.value=fmtCap(state.cfg.initialCapital||10000);
+  });
+  const ttWrap=div('');ttWrap.style.cssText='position:relative;display:inline-flex;align-items:center;cursor:help;flex-shrink:0';ttWrap.innerHTML=IC.help;
+  const tt=div('');tt.style.cssText='position:absolute;bottom:calc(100%+6px);left:50%;transform:translateX(-50%);background:var(--bg2);border:0.5px solid var(--bdh);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--txs);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity 150ms;z-index:10';
+  tt.textContent='Capital em '+currency+' · mín 1.000 · máx 10.000.000';
+  ttWrap.appendChild(tt);ttWrap.onmouseenter=function(){tt.style.opacity='1';};ttWrap.onmouseleave=function(){tt.style.opacity='0';};
+  capRow.append(capPfx,capInp,ttWrap);configBox.appendChild(capRow);
+  const capErrEl=div('');capErrEl.style.cssText='font-size:11px;color:var(--dg);min-height:14px;margin-bottom:10px';configBox.appendChild(capErrEl);
+  const chipsRow=div('');chipsRow.style.cssText='display:flex;flex-wrap:wrap;gap:6px';
+  [1000,5000,10000,25000,50000].forEach(function(v){
+    const c=div('chip');c.textContent=(currency==='R$'?'R$ ':'$ ')+v.toLocaleString(currency==='R$'?'pt-BR':'en-US');
+    if((state.cfg.initialCapital||10000)===v)c.classList.add('on');
+    c.onclick=function(){state.cfg.initialCapital=v;capInp.value=fmtCap(v);capErrEl.textContent='';chipsRow.querySelectorAll('.chip').forEach(function(x){x.classList.remove('on');});c.classList.add('on');};
+    chipsRow.appendChild(c);
+  });
+  configBox.appendChild(chipsRow);
+  el.appendChild(configBox);
+  updatePeriodDisplay();
+
+  // ── Validation ──
+  function validateAndStart(){
+    const df=state.cfg.backtestDateFrom;const dt=state.cfg.backtestDateTo;
+    const tdy=new Date();tdy.setHours(0,0,0,0);
+    const minD=defaultDateFrom();let firstErrEl=null;
+    function setErr(errEl,msg){errEl.textContent=msg;if(!firstErrEl){const wrap=errEl.parentElement;firstErrEl=wrap||errEl;}}
+    fromGroup.errEl.textContent='';toGroup.errEl.textContent='';capErrEl.textContent='';
+    const dfs=fromGroup.inp.value;const dts=toGroup.inp.value;
+    if(!dfs||dfs.length<10||!df){setErr(fromGroup.errEl,'Preencha a data de início no formato DD/MM/AAAA.');}
+    else if(df<minD){setErr(fromGroup.errEl,'O histórico disponível é de no máximo 5 anos.');}
+    if(!dts||dts.length<10||!dt){setErr(toGroup.errEl,'Preencha a data de fim no formato DD/MM/AAAA.');}
+    else if(dt>tdy){setErr(toGroup.errEl,'A data de fim não pode ser no futuro.');}
+    if(df&&dt){
+      if(df>=dt){setErr(fromGroup.errEl,'A data de início deve ser anterior à data de fim.');}
+      else{const days=Math.round((dt-df)/86400000);if(days<30)setErr(fromGroup.errEl,'O período mínimo para backtest é de 30 dias.');}
+    }
+    const raw=parseFloat(capInp.value.replace(/\./g,'').replace(',','.').replace(/[^\d.]/g,''));
+    if(!capInp.value.trim()){setErr(capErrEl,'Informe o capital inicial.');}
+    else if(isNaN(raw)||raw<1000){setErr(capErrEl,'O capital mínimo é 1.000.');}
+    else if(raw>10000000){setErr(capErrEl,'O capital máximo é 10.000.000.');}
+    if(firstErrEl){firstErrEl.scrollIntoView({behavior:'smooth',block:'center'});firstErrEl.style.animation='shake 0.4s ease';setTimeout(function(){firstErrEl.style.animation='';},500);return;}
+    startLoading();
+  }
 
   const btns=div('');btns.style.cssText='display:flex;gap:9px';
-  const backBtn=h('button',{class:'btn btnS',onclick:()=>{state.animate=true;state.screen='wizard';renderApp();}});
+  const backBtn=h('button',{class:'btn btnS',onclick:function(){state.animate=true;state.screen='wizard';renderApp();}});
   backBtn.innerHTML=IC.back+' Editar';
-  const runBtn=h('button',{class:'btn btnP',style:{flex:'1',justifyContent:'center',padding:'13px',fontSize:'15px'},onclick:startLoading});
+  const runBtn=h('button',{class:'btn btnP',style:{flex:'1',justifyContent:'center',padding:'13px',fontSize:'15px'},onclick:validateAndStart});
   runBtn.innerHTML=IC.play+' Rodar Backtest';
   btns.append(backBtn,runBtn);el.appendChild(btns);
   return el;
@@ -5478,6 +5662,12 @@ async function submitBacktestToBackend() {
         stopOffset: state.cfg.stopType==='n_candles'
           ? getAssetTick(state.cfg.asset).tick
           : state.cfg.stopOffset,
+        backtest_period: {
+          date_from: toISO(state.cfg.backtestDateFrom || defaultDateFrom()),
+          date_to:   toISO(state.cfg.backtestDateTo   || new Date()),
+        },
+        initial_capital:  state.cfg.initialCapital || 10000,
+        capital_currency: findAsset(state.cfg.asset)?.currency || 'R$',
       } }),
     });
 
@@ -5552,10 +5742,17 @@ async function pollBacktestResult(backtestId, onProgress, onDone, onError) {
 }
 
 // ─── LOADING ─────────────────────────────────────────────────
+function defaultDateFrom() {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 5);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
 function getBacktestPeriod() {
-  const now = new Date();
-  const start = new Date(now);
-  start.setFullYear(start.getFullYear() - 5);
+  const start = state.cfg.backtestDateFrom ? new Date(state.cfg.backtestDateFrom) : defaultDateFrom();
+  const now   = state.cfg.backtestDateTo   ? new Date(state.cfg.backtestDateTo)   : new Date();
+  start.setHours(0,0,0,0); now.setHours(0,0,0,0);
   const mLong  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const mShort = ['Jan','Fev','Mar','Abr','Mai','Jun',
@@ -5566,29 +5763,36 @@ function getBacktestPeriod() {
   const endShort   = `${mShort[now.getMonth()]} ${now.getFullYear()}`;
   const totalMonths = (now.getFullYear() - start.getFullYear()) * 12
                     + (now.getMonth() - start.getMonth());
-  return { startLong, endLong, startShort, endShort, totalMonths };
+  return { startLong, endLong, startShort, endShort, totalMonths, start, end: now };
 }
 
 function calcCandles(tf) {
-  // Periodo historico: 5 anos a partir de hoje
   const diasUteis = 5 * 252;
-  const minPorDia = {'1m':480,'2m':480,'5m':480,'10m':480,'15m':480,'30m':480,'60m':480,'D':1};
-  const tfMin = {'1m':1,'2m':2,'5m':5,'10m':10,'15m':15,'30m':30,'60m':60,'D':480};
-  const minDia = minPorDia[tf] || 480;
-  const minTf  = tfMin[tf] || 5;
-  const total  = Math.round((diasUteis * minDia) / minTf);
-  return total.toLocaleString('pt-BR');
+  return calcCandlesForPeriod(tf, diasUteis).toLocaleString('pt-BR');
 }
+
+function calcCandlesForPeriod(tf, workingDays) {
+  const tfMin = {'1m':1,'2m':2,'5m':5,'10m':10,'15m':15,'30m':30,'60m':60,'D':480};
+  const minTf = tfMin[tf] || 5;
+  return Math.round((510 / minTf) * workingDays); // 510 min = 09:00-17:30
+}
+
+function toISO(d) { return d.toISOString().slice(0,10); }
 
 function getLoadMsgs() {
   const tf = state.cfg ? state.cfg.tf : '5m';
-  const nCandles = calcCandles(tf);
   const tfLabel = {'1m':'1 minuto','2m':'2 minutos','5m':'5 minutos','10m':'10 minutos',
                    '15m':'15 minutos','30m':'30 minutos','60m':'60 minutos','D':'diário'}[tf] || tf;
+  const dateFrom   = state.cfg.backtestDateFrom || defaultDateFrom();
+  const dateTo     = state.cfg.backtestDateTo   || new Date();
+  const totalDays  = Math.round((dateTo - dateFrom) / 86400000);
+  const years      = Math.round(totalDays / 365);
+  const workingDays = Math.round(totalDays * 5/7);
+  const candles    = calcCandlesForPeriod(tf, workingDays).toLocaleString('pt-BR');
   return [
     'Enviando para processamento...',
-    'Analisando 5 anos de dados reais do mercado...',
-    `Carregando ${nCandles} candles de ${tfLabel}...`,
+    `Analisando ${years} ${years===1?'ano':'anos'} de dados reais do mercado...`,
+    `Carregando ~${candles} candles de ${tfLabel}...`,
     'Simulando cada operacao, candle por candle...',
     'Calculando o que teria acontecido com o seu dinheiro...',
     'Medindo drawdowns - os momentos dificeis tambem contam...',
