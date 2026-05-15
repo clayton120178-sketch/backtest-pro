@@ -243,7 +243,7 @@ def build_ini_content(
     lines.append("Optimization=0")           # 0 = backtest simples (sem otimizacao)
     lines.append("OptimizationCriterion=0")
     if report_file:
-        lines.append(f"Report={report_file}")
+        lines.append(f"Report=Tester\\Reports\\{report_file}")
         lines.append("ReplaceReport=1")
     lines.append("ShutdownTerminal=1")        # Fecha MT5 ao terminar
     lines.append("")
