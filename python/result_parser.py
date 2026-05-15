@@ -282,19 +282,20 @@ def parse_html_report(html_path: str) -> Optional[Dict[str, Any]]:
         logger.error(f"Arquivo HTML nao encontrado: {html_path}")
         return None
 
-    # MT5 gera HTML em UTF-16 com BOM — tentar encodings em ordem de prioridade
-    content = None
-    for enc in ("utf-16", "utf-16-le", "utf-16-be", "utf-8"):
-        try:
-            with open(html_path, "r", encoding=enc, errors="replace") as f:
-                content = f.read()
-            # Verificar se o decode faz sentido (sem espacos espurios entre chars)
-            if "<td" in content or "<TD" in content:
-                break
-        except Exception:
-            continue
-    if content is None:
-        logger.error(f"Nao foi possivel ler HTML com nenhum encoding: {html_path}")
+    # MT5 gera HTML em UTF-16 com BOM (ff fe) — usar utf-16 para leitura correta.
+    # utf-16-le ignora o BOM e causa espacos espurios entre cada caractere.
+    try:
+        with open(html_path, "rb") as f:
+            raw = f.read()
+        # Detectar BOM e escolher encoding correto
+        if raw[:2] == b'\xff\xfe':
+            content = raw.decode("utf-16-le", errors="replace")[1:]  # pula o char do BOM
+        elif raw[:2] == b'\xfe\xff':
+            content = raw.decode("utf-16-be", errors="replace")[1:]
+        else:
+            content = raw.decode("utf-8", errors="replace")
+    except Exception as e:
+        logger.error(f"Erro ao ler HTML: {e}")
         return None
 
     def extract_metric(label, text, default=0.0):
