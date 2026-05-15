@@ -23,6 +23,13 @@ serve(async (req) => {
     return new Response("Method Not Allowed", { status: 405 });
   }
 
+  // Verificar que o chamador e o Database Webhook do Supabase (service role)
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  if (authHeader !== `Bearer ${serviceKey}`) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await req.json() as Record<string, unknown>;
