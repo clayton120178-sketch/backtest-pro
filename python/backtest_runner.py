@@ -36,10 +36,10 @@ logger = logging.getLogger(__name__)
 # Caminhos MT5 — configurar via .env na maquina/VPS
 MT5_PATH = os.getenv("MT5_PATH", r"C:\Program Files\MetaTrader 5\terminal64.exe")
 MT5_GUID = os.getenv("MT5_GUID", "")
-APPDATA = os.getenv("APPDATA", "")
+APPDATA = os.getenv("APPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Roaming")
 
 # Diretorios derivados
-MT5_DATA_DIR = os.path.join(APPDATA, "MetaQuotes", "Terminal", MT5_GUID)
+MT5_DATA_DIR = os.getenv("MT5_DATA_DIR") or os.path.join(APPDATA, "MetaQuotes", "Terminal", MT5_GUID)
 MT5_EXPERTS_DIR = os.path.join(MT5_DATA_DIR, "MQL5", "Experts")
 MT5_TESTER_DIR = os.path.join(MT5_DATA_DIR, "MQL5", "Profiles", "Tester")
 MT5_LOG_DIR = os.path.join(MT5_DATA_DIR, "Tester", "logs")

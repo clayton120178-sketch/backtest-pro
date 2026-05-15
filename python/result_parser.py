@@ -442,7 +442,9 @@ def find_report_file(
         Caminho absoluto do arquivo, ou None
     """
     if not mt5_data_dir:
-        appdata = os.getenv("APPDATA", "")
+        mt5_data_dir = os.getenv("MT5_DATA_DIR", "")
+    if not mt5_data_dir:
+        appdata = os.getenv("APPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Roaming")
         mt5_guid = os.getenv("MT5_GUID", "")
         mt5_data_dir = os.path.join(appdata, "MetaQuotes", "Terminal", mt5_guid)
 
