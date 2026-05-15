@@ -195,6 +195,14 @@ def parse_xml_report(xml_path: str) -> Optional[Dict[str, Any]]:
         logger.error(f"Erro ao parsear XML: {e}")
         return None
 
+    # Log das tags de primeiro nivel para diagnostico de formato
+    top_tags = [child.tag for child in root]
+    logger.info(f"XML root='{root.tag}' children={top_tags}")
+    summary_el = root.find(".//Summary")
+    if summary_el is not None:
+        summary_tags = [c.tag for c in summary_el]
+        logger.info(f"Summary tags={summary_tags}")
+
     # Buscar elemento Summary (pode estar em varios niveis)
     summary = root.find(".//Summary")
     if summary is None:

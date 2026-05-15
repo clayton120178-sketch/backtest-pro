@@ -434,9 +434,28 @@ def start_backtest(ini_path: str, timeout: int = 3600) -> bool:
     logger.info(f"MT5 encerrou - return code: {process.returncode} - tempo: {elapsed:.0f}s")
     _cleanup_pid_file()
 
-    # MT5 frequentemente retorna codigos != 0 mesmo em execucoes bem sucedidas.
-    # Consideramos sucesso se o processo terminou (nao foi killed por timeout).
+    # Mover reports gerados de Tester\ para Tester\Reports\
+    # O MT5 nao aceita subpasta em Report=, entao movemos apos o termino.
+    _move_reports_to_folder()
+
     return True
+
+
+def _move_reports_to_folder():
+    """Move arquivos BP_*.xml e BP_*.htm de Tester\ para Tester\Reports\."""
+    tester_dir = os.path.join(MT5_DATA_DIR, "Tester")
+    if not os.path.isdir(tester_dir):
+        return
+    os.makedirs(MT5_REPORTS_DIR, exist_ok=True)
+    for fname in os.listdir(tester_dir):
+        if fname.startswith("BP_") and fname.split(".")[-1] in ("xml", "htm", "html"):
+            src = os.path.join(tester_dir, fname)
+            dst = os.path.join(MT5_REPORTS_DIR, fname)
+            try:
+                os.replace(src, dst)
+                logger.info(f"Report movido: {fname} -> Reports/")
+            except OSError as e:
+                logger.warning(f"Nao foi possivel mover report {fname}: {e}")
 
 
 # ============================================================================
