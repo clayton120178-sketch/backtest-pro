@@ -443,7 +443,7 @@ def find_report_file(
     """
     if not mt5_data_dir:
         appdata = os.getenv("APPDATA", "")
-        mt5_guid = "84064CA60B86A0341461272DFBBA7B87"
+        mt5_guid = os.getenv("MT5_GUID", "")
         mt5_data_dir = os.path.join(appdata, "MetaQuotes", "Terminal", mt5_guid)
 
     # MT5 pode salvar reports em Tester/ ou na raiz do terminal

@@ -22,6 +22,9 @@ import psutil
 from datetime import datetime
 from typing import Dict, Any, Optional
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +33,9 @@ logger = logging.getLogger(__name__)
 # CONSTANTES
 # ============================================================================
 
-# Caminhos MT5 (mesmos do WFA Automatico)
-MT5_PATH = r"C:\Program Files\MetaTrader_Teste\terminal64.exe"
-MT5_GUID = "84064CA60B86A0341461272DFBBA7B87"
+# Caminhos MT5 — configurar via .env na maquina/VPS
+MT5_PATH = os.getenv("MT5_PATH", r"C:\Program Files\MetaTrader 5\terminal64.exe")
+MT5_GUID = os.getenv("MT5_GUID", "")
 APPDATA = os.getenv("APPDATA", "")
 
 # Diretorios derivados
