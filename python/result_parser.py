@@ -448,8 +448,9 @@ def find_report_file(
         mt5_guid = os.getenv("MT5_GUID", "")
         mt5_data_dir = os.path.join(appdata, "MetaQuotes", "Terminal", mt5_guid)
 
-    # MT5 pode salvar reports em Tester/ ou na raiz do terminal
+    # MT5 pode salvar reports em Tester/Reports/, Tester/ ou na raiz do terminal
     search_dirs = [
+        os.path.join(mt5_data_dir, "Tester", "Reports"),
         os.path.join(mt5_data_dir, "Tester"),
         mt5_data_dir,
     ]

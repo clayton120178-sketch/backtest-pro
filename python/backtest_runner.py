@@ -43,6 +43,7 @@ MT5_DATA_DIR = os.getenv("MT5_DATA_DIR") or os.path.join(APPDATA, "MetaQuotes", 
 MT5_EXPERTS_DIR = os.path.join(MT5_DATA_DIR, "MQL5", "Experts")
 MT5_TESTER_DIR = os.path.join(MT5_DATA_DIR, "MQL5", "Profiles", "Tester")
 MT5_LOG_DIR = os.path.join(MT5_DATA_DIR, "Tester", "logs")
+MT5_REPORTS_DIR = os.path.join(MT5_DATA_DIR, "Tester", "Reports")
 
 # Diretorio de output para .ini/.set
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "_output")
@@ -548,7 +549,10 @@ class BacktestRunner:
         unique_id = uuid.uuid4().hex[:8]
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         base_name = f"BP_{symbol}_{timeframe}_{unique_id}_{timestamp}"
-        report_file = f"{base_name}.xml"
+
+        # Garante que a pasta de reports existe e usa caminho absoluto no .ini
+        os.makedirs(MT5_REPORTS_DIR, exist_ok=True)
+        report_file = os.path.join(MT5_REPORTS_DIR, f"{base_name}.xml")
 
         set_path = os.path.join(self.output_dir, f"{base_name}.set")
         ini_path = os.path.join(self.output_dir, f"{base_name}.ini")
