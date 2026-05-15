@@ -390,12 +390,13 @@ def start_backtest(ini_path: str, timeout: int = 3600) -> bool:
 
     # 3. Inicia processo
     start_time = datetime.now()
+    cwd = MT5_EXPERTS_DIR if os.path.isdir(MT5_EXPERTS_DIR) else os.path.dirname(MT5_PATH)
     process = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
-        cwd=MT5_EXPERTS_DIR,
+        cwd=cwd,
     )
     logger.info(f"MT5 iniciado - PID: {process.pid}")
 
