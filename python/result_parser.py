@@ -333,9 +333,9 @@ def parse_html_report(html_path: str) -> Optional[Dict[str, Any]]:
         return default
 
     total_trades = int(extract_first(
-        ["Total de Negociacoes:", "Total Trades:"], content))
+        ["Total de Negociações:", "Total Trades:"], content))
     profit_trades_pct = extract_first_pct(
-        ["Negociacoes com Lucro", "Profit Trades"], content)
+        ["Negociações com Lucro", "Profit Trades"], content)
     win_trades = round(total_trades * profit_trades_pct / 100) if total_trades > 0 else 0
     loss_trades = total_trades - win_trades
 
@@ -346,7 +346,7 @@ def parse_html_report(html_path: str) -> Optional[Dict[str, Any]]:
     payoff = (avg_win / avg_loss) if avg_loss > 0 else 0.0
 
     metrics = {
-        "total_net_profit": extract_first(["Lucro Liquido Total:", "Total Net Profit:"], content),
+        "total_net_profit": extract_first(["Lucro Líquido Total:", "Total Net Profit:"], content),
         "gross_profit": gross_profit,
         "gross_loss": extract_first(["Perda Bruta:", "Gross Loss:"], content),
         "profit_factor": extract_first(["Fator de Lucro:", "Profit Factor:"], content),
@@ -357,12 +357,12 @@ def parse_html_report(html_path: str) -> Optional[Dict[str, Any]]:
         "win_rate": profit_trades_pct,
         "payoff": payoff,
         "max_drawdown_money": extract_first(
-            ["Rebaixamento Maximo do Capital Liquido:", "Equity Drawdown Maximal:"], content),
+            ["Rebaixamento Máximo do Capital Líquido:", "Equity Drawdown Maximal:"], content),
         "max_drawdown_pct": extract_first_pct(
-            ["Rebaixamento Maximo do Capital Liquido:", "Equity Drawdown Maximal:"], content),
-        "recovery_factor": extract_first(["Fator de Recuperacao:", "Recovery Factor:"], content),
-        "sharpe_ratio": extract_first(["Indice de Sharpe:", "Sharpe Ratio:"], content),
-        "initial_deposit": extract_first(["Deposito Inicial:", "Initial Deposit:"], content) or 10000.0,
+            ["Rebaixamento Máximo do Capital Líquido:", "Equity Drawdown Maximal:"], content),
+        "recovery_factor": extract_first(["Fator de Recuperação:", "Recovery Factor:"], content),
+        "sharpe_ratio": extract_first(["Índice de Sharpe:", "Sharpe Ratio:"], content),
+        "initial_deposit": extract_first(["Depósito Inicial:", "Initial Deposit:"], content) or 10000.0,
     }
 
     # Extrair trades da tabela de deals (se disponivel)
