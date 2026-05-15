@@ -1138,12 +1138,14 @@ function showWhatsappModal(userId,accessToken){
         style="width:100%;background:#1A1A28;border:1px solid #2A2A3C;border-radius:9px;padding:12px 13px;font-size:14px;color:#E8E8ED;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:16px;box-sizing:border-box;transition:border-color .15s,box-shadow .15s"
         onfocus="this.style.borderColor='#00D4AA';this.style.boxShadow='0 0 0 3px rgba(0,212,170,.1)'"
         onblur="this.style.borderColor='#2A2A3C';this.style.boxShadow='none'">
-      <button id="wa-btn" onclick="saveWhatsapp('${userId}','${accessToken}')"
+      <button id="wa-btn"
         style="width:100%;background:#00D4AA;color:#0A0A0F;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:800;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .18s">
         Continuar para a plataforma
       </button>
     </div>`;
   document.body.appendChild(overlay);
+  // Evento via addEventListener — evita interpolacao de valores em onclick inline
+  document.getElementById('wa-btn').addEventListener('click',()=>saveWhatsapp(userId,accessToken));
   // Máscara no input do modal
   const inp=document.getElementById('wa-input');
   inp.addEventListener('input',function(){

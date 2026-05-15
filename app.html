@@ -5692,7 +5692,8 @@ async function pollBacktestResult(backtestId, onProgress, onDone, onError) {
 
   // Obter token do usuario para RLS
   const session = await db.auth.getSession();
-  const userToken = session?.data?.session?.access_token || SUPA_KEY;
+  const userToken = session?.data?.session?.access_token;
+  if (!userToken) { onError('Sessão expirada. Faça login novamente.'); return; }
 
   const poll = async () => {
     if (attempts >= maxAttempts) {
