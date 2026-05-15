@@ -442,7 +442,7 @@ def start_backtest(ini_path: str, timeout: int = 3600) -> bool:
 
 
 def _move_reports_to_folder():
-    """Move arquivos BP_*.xml e BP_*.htm de Tester\ para Tester\Reports\."""
+    """Move arquivos BP_*.xml e BP_*.htm de Tester para Tester\\Reports."""
     tester_dir = os.path.join(MT5_DATA_DIR, "Tester")
     if not os.path.isdir(tester_dir):
         return
