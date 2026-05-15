@@ -195,6 +195,14 @@ def parse_xml_report(xml_path: str) -> Optional[Dict[str, Any]]:
         logger.error(f"Erro ao parsear XML: {e}")
         return None
 
+    # Log das tags de primeiro nivel para diagnostico de formato
+    top_tags = [child.tag for child in root]
+    logger.info(f"XML root='{root.tag}' children={top_tags}")
+    summary_el = root.find(".//Summary")
+    if summary_el is not None:
+        summary_tags = [c.tag for c in summary_el]
+        logger.info(f"Summary tags={summary_tags}")
+
     # Buscar elemento Summary (pode estar em varios niveis)
     summary = root.find(".//Summary")
     if summary is None:
@@ -274,16 +282,21 @@ def parse_html_report(html_path: str) -> Optional[Dict[str, Any]]:
         logger.error(f"Arquivo HTML nao encontrado: {html_path}")
         return None
 
+    # MT5 gera HTML em UTF-16 com BOM (ff fe) — usar utf-16 para leitura correta.
+    # utf-16-le ignora o BOM e causa espacos espurios entre cada caractere.
     try:
-        with open(html_path, "r", encoding="utf-16-le", errors="replace") as f:
-            content = f.read()
-    except Exception:
-        try:
-            with open(html_path, "r", encoding="utf-8", errors="replace") as f:
-                content = f.read()
-        except Exception as e:
-            logger.error(f"Erro ao ler HTML: {e}")
-            return None
+        with open(html_path, "rb") as f:
+            raw = f.read()
+        # Detectar BOM e escolher encoding correto
+        if raw[:2] == b'\xff\xfe':
+            content = raw.decode("utf-16-le", errors="replace")[1:]  # pula o char do BOM
+        elif raw[:2] == b'\xfe\xff':
+            content = raw.decode("utf-16-be", errors="replace")[1:]
+        else:
+            content = raw.decode("utf-8", errors="replace")
+    except Exception as e:
+        logger.error(f"Erro ao ler HTML: {e}")
+        return None
 
     def extract_metric(label, text, default=0.0):
         """Extrai valor da celula seguinte ao label no HTML do MT5.
@@ -291,10 +304,9 @@ def parse_html_report(html_path: str) -> Optional[Dict[str, Any]]:
         pattern = re.escape(label) + r'.*?</td>\s*<td[^>]*>\s*(?:<b>)?\s*([-\d.,\s]+)'
         m = re.search(pattern, text, re.S | re.IGNORECASE)
         if m:
-            # MT5 usa espaco como separador de milhar (ex: "-9 861.00")
             raw = m.group(1).replace('\xa0', '').replace(' ', '').replace(',', '.')
             return _safe_float(raw)
-        return default
+        return default  # None quando chamado por extract_first
 
     def extract_metric_pct(label, text, default=0.0):
         """Extrai percentual entre parenteses, ex: '1 234.56 (12.34%)'"""
@@ -303,35 +315,54 @@ def parse_html_report(html_path: str) -> Optional[Dict[str, Any]]:
         if m:
             raw = m.group(1).replace('\xa0', '').replace(' ', '').replace(',', '.')
             return _safe_float(raw)
+        return default  # None quando chamado por extract_first_pct
+
+    def extract_first(labels, text, default=0.0):
+        """Tenta extrair usando lista de labels (PT-BR + EN)."""
+        for label in labels:
+            val = extract_metric(label, text, None)
+            if val is not None:
+                return val
         return default
 
-    total_trades = int(extract_metric("Total Trades:", content))
-    profit_trades_pct = extract_metric_pct("Profit Trades", content)
+    def extract_first_pct(labels, text, default=0.0):
+        for label in labels:
+            val = extract_metric_pct(label, text, None)
+            if val is not None:
+                return val
+        return default
+
+    total_trades = int(extract_first(
+        ["Total de Negociações:", "Total Trades:"], content))
+    profit_trades_pct = extract_first_pct(
+        ["Negociações com Lucro", "Profit Trades"], content)
     win_trades = round(total_trades * profit_trades_pct / 100) if total_trades > 0 else 0
     loss_trades = total_trades - win_trades
 
-    gross_profit = extract_metric("Gross Profit:", content)
-    gross_loss = abs(extract_metric("Gross Loss:", content))
+    gross_profit = extract_first(["Lucro Bruto:", "Gross Profit:"], content)
+    gross_loss = abs(extract_first(["Perda Bruta:", "Gross Loss:"], content))
     avg_win = (gross_profit / win_trades) if win_trades > 0 else 0.0
     avg_loss = (gross_loss / loss_trades) if loss_trades > 0 else 0.0
     payoff = (avg_win / avg_loss) if avg_loss > 0 else 0.0
 
     metrics = {
-        "total_net_profit": extract_metric("Total Net Profit:", content),
+        "total_net_profit": extract_first(["Lucro Líquido Total:", "Total Net Profit:"], content),
         "gross_profit": gross_profit,
-        "gross_loss": extract_metric("Gross Loss:", content),
-        "profit_factor": extract_metric("Profit Factor:", content),
-        "expected_payoff": extract_metric("Expected Payoff:", content),
+        "gross_loss": extract_first(["Perda Bruta:", "Gross Loss:"], content),
+        "profit_factor": extract_first(["Fator de Lucro:", "Profit Factor:"], content),
+        "expected_payoff": extract_first(["Retorno Esperado (Payoff):", "Expected Payoff:"], content),
         "total_trades": total_trades,
         "win_trades": win_trades,
         "loss_trades": loss_trades,
         "win_rate": profit_trades_pct,
         "payoff": payoff,
-        "max_drawdown_money": extract_metric("Equity Drawdown Maximal:", content),
-        "max_drawdown_pct": extract_metric_pct("Equity Drawdown Maximal:", content),
-        "recovery_factor": extract_metric("Recovery Factor:", content),
-        "sharpe_ratio": extract_metric("Sharpe Ratio:", content),
-        "initial_deposit": extract_metric("Initial Deposit:", content) or 10000.0,
+        "max_drawdown_money": extract_first(
+            ["Rebaixamento Máximo do Capital Líquido:", "Equity Drawdown Maximal:"], content),
+        "max_drawdown_pct": extract_first_pct(
+            ["Rebaixamento Máximo do Capital Líquido:", "Equity Drawdown Maximal:"], content),
+        "recovery_factor": extract_first(["Fator de Recuperação:", "Recovery Factor:"], content),
+        "sharpe_ratio": extract_first(["Índice de Sharpe:", "Sharpe Ratio:"], content),
+        "initial_deposit": extract_first(["Depósito Inicial:", "Initial Deposit:"], content) or 10000.0,
     }
 
     # Extrair trades da tabela de deals (se disponivel)
@@ -359,7 +390,7 @@ def _extract_html_trades(content: str) -> list:
     trades = []
 
     deals_match = re.search(
-        r'<b>Deals</b>.*?<tr[^>]*>.*?Deal.*?</tr>(.*?)(?:<tr>\s*<td[^>]*colspan|</table>)',
+        r'<b>(?:Deals|Ordens)</b>.*?<tr[^>]*>.*?(?:Deal|Ordem).*?</tr>(.*?)(?:<tr>\s*<td[^>]*colspan|</table>)',
         content, re.S | re.IGNORECASE,
     )
     if not deals_match:
@@ -442,12 +473,15 @@ def find_report_file(
         Caminho absoluto do arquivo, ou None
     """
     if not mt5_data_dir:
-        appdata = os.getenv("APPDATA", "")
-        mt5_guid = "84064CA60B86A0341461272DFBBA7B87"
+        mt5_data_dir = os.getenv("MT5_DATA_DIR", "")
+    if not mt5_data_dir:
+        appdata = os.getenv("APPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Roaming")
+        mt5_guid = os.getenv("MT5_GUID", "")
         mt5_data_dir = os.path.join(appdata, "MetaQuotes", "Terminal", mt5_guid)
 
-    # MT5 pode salvar reports em Tester/ ou na raiz do terminal
+    # MT5 pode salvar reports em Tester/Reports/, Tester/ ou na raiz do terminal
     search_dirs = [
+        os.path.join(mt5_data_dir, "Tester", "Reports"),
         os.path.join(mt5_data_dir, "Tester"),
         mt5_data_dir,
     ]

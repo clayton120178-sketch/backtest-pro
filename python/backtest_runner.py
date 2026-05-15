@@ -22,6 +22,9 @@ import psutil
 from datetime import datetime
 from typing import Dict, Any, Optional
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 logger = logging.getLogger(__name__)
 
@@ -30,16 +33,17 @@ logger = logging.getLogger(__name__)
 # CONSTANTES
 # ============================================================================
 
-# Caminhos MT5 (mesmos do WFA Automatico)
-MT5_PATH = r"C:\Program Files\MetaTrader_Teste\terminal64.exe"
-MT5_GUID = "84064CA60B86A0341461272DFBBA7B87"
-APPDATA = os.getenv("APPDATA", "")
+# Caminhos MT5 — configurar via .env na maquina/VPS
+MT5_PATH = os.getenv("MT5_PATH", r"C:\Program Files\MetaTrader 5\terminal64.exe")
+MT5_GUID = os.getenv("MT5_GUID", "")
+APPDATA = os.getenv("APPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Roaming")
 
 # Diretorios derivados
-MT5_DATA_DIR = os.path.join(APPDATA, "MetaQuotes", "Terminal", MT5_GUID)
+MT5_DATA_DIR = os.getenv("MT5_DATA_DIR") or os.path.join(APPDATA, "MetaQuotes", "Terminal", MT5_GUID)
 MT5_EXPERTS_DIR = os.path.join(MT5_DATA_DIR, "MQL5", "Experts")
 MT5_TESTER_DIR = os.path.join(MT5_DATA_DIR, "MQL5", "Profiles", "Tester")
 MT5_LOG_DIR = os.path.join(MT5_DATA_DIR, "Tester", "logs")
+MT5_REPORTS_DIR = os.path.join(MT5_DATA_DIR, "Tester", "Reports")
 
 # Diretorio de output para .ini/.set
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "_output")
@@ -239,7 +243,7 @@ def build_ini_content(
     lines.append("Optimization=0")           # 0 = backtest simples (sem otimizacao)
     lines.append("OptimizationCriterion=0")
     if report_file:
-        lines.append(f"Report={report_file}")
+        lines.append(f"Report=Tester\\Reports\\{report_file}")
         lines.append("ReplaceReport=1")
     lines.append("ShutdownTerminal=1")        # Fecha MT5 ao terminar
     lines.append("")
@@ -387,12 +391,13 @@ def start_backtest(ini_path: str, timeout: int = 3600) -> bool:
 
     # 3. Inicia processo
     start_time = datetime.now()
+    cwd = MT5_EXPERTS_DIR if os.path.isdir(MT5_EXPERTS_DIR) else os.path.dirname(MT5_PATH)
     process = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
-        cwd=MT5_EXPERTS_DIR,
+        cwd=cwd,
     )
     logger.info(f"MT5 iniciado - PID: {process.pid}")
 
@@ -429,9 +434,28 @@ def start_backtest(ini_path: str, timeout: int = 3600) -> bool:
     logger.info(f"MT5 encerrou - return code: {process.returncode} - tempo: {elapsed:.0f}s")
     _cleanup_pid_file()
 
-    # MT5 frequentemente retorna codigos != 0 mesmo em execucoes bem sucedidas.
-    # Consideramos sucesso se o processo terminou (nao foi killed por timeout).
+    # Mover reports gerados de Tester\ para Tester\Reports\
+    # O MT5 nao aceita subpasta em Report=, entao movemos apos o termino.
+    _move_reports_to_folder()
+
     return True
+
+
+def _move_reports_to_folder():
+    """Move arquivos BP_*.xml e BP_*.htm de Tester para Tester\\Reports."""
+    tester_dir = os.path.join(MT5_DATA_DIR, "Tester")
+    if not os.path.isdir(tester_dir):
+        return
+    os.makedirs(MT5_REPORTS_DIR, exist_ok=True)
+    for fname in os.listdir(tester_dir):
+        if fname.startswith("BP_") and fname.split(".")[-1] in ("xml", "htm", "html"):
+            src = os.path.join(tester_dir, fname)
+            dst = os.path.join(MT5_REPORTS_DIR, fname)
+            try:
+                os.replace(src, dst)
+                logger.info(f"Report movido: {fname} -> Reports/")
+            except OSError as e:
+                logger.warning(f"Nao foi possivel mover report {fname}: {e}")
 
 
 # ============================================================================
@@ -544,6 +568,10 @@ class BacktestRunner:
         unique_id = uuid.uuid4().hex[:8]
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         base_name = f"BP_{symbol}_{timeframe}_{unique_id}_{timestamp}"
+
+        # MT5 interpreta Report= como relativo a Tester\ — passa apenas o nome do arquivo.
+        # O parser busca o arquivo em Tester/Reports/, Tester/ e raiz do terminal.
+        os.makedirs(MT5_REPORTS_DIR, exist_ok=True)
         report_file = f"{base_name}.xml"
 
         set_path = os.path.join(self.output_dir, f"{base_name}.set")
