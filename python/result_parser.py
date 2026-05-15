@@ -282,16 +282,20 @@ def parse_html_report(html_path: str) -> Optional[Dict[str, Any]]:
         logger.error(f"Arquivo HTML nao encontrado: {html_path}")
         return None
 
-    try:
-        with open(html_path, "r", encoding="utf-16-le", errors="replace") as f:
-            content = f.read()
-    except Exception:
+    # MT5 gera HTML em UTF-16 com BOM — tentar encodings em ordem de prioridade
+    content = None
+    for enc in ("utf-16", "utf-16-le", "utf-16-be", "utf-8"):
         try:
-            with open(html_path, "r", encoding="utf-8", errors="replace") as f:
+            with open(html_path, "r", encoding=enc, errors="replace") as f:
                 content = f.read()
-        except Exception as e:
-            logger.error(f"Erro ao ler HTML: {e}")
-            return None
+            # Verificar se o decode faz sentido (sem espacos espurios entre chars)
+            if "<td" in content or "<TD" in content:
+                break
+        except Exception:
+            continue
+    if content is None:
+        logger.error(f"Nao foi possivel ler HTML com nenhum encoding: {html_path}")
+        return None
 
     def extract_metric(label, text, default=0.0):
         """Extrai valor da celula seguinte ao label no HTML do MT5.
@@ -299,10 +303,9 @@ def parse_html_report(html_path: str) -> Optional[Dict[str, Any]]:
         pattern = re.escape(label) + r'.*?</td>\s*<td[^>]*>\s*(?:<b>)?\s*([-\d.,\s]+)'
         m = re.search(pattern, text, re.S | re.IGNORECASE)
         if m:
-            # MT5 usa espaco como separador de milhar (ex: "-9 861.00")
             raw = m.group(1).replace('\xa0', '').replace(' ', '').replace(',', '.')
             return _safe_float(raw)
-        return default
+        return default  # None quando chamado por extract_first
 
     def extract_metric_pct(label, text, default=0.0):
         """Extrai percentual entre parenteses, ex: '1 234.56 (12.34%)'"""
@@ -311,35 +314,54 @@ def parse_html_report(html_path: str) -> Optional[Dict[str, Any]]:
         if m:
             raw = m.group(1).replace('\xa0', '').replace(' ', '').replace(',', '.')
             return _safe_float(raw)
+        return default  # None quando chamado por extract_first_pct
+
+    def extract_first(labels, text, default=0.0):
+        """Tenta extrair usando lista de labels (PT-BR + EN)."""
+        for label in labels:
+            val = extract_metric(label, text, None)
+            if val is not None:
+                return val
         return default
 
-    total_trades = int(extract_metric("Total Trades:", content))
-    profit_trades_pct = extract_metric_pct("Profit Trades", content)
+    def extract_first_pct(labels, text, default=0.0):
+        for label in labels:
+            val = extract_metric_pct(label, text, None)
+            if val is not None:
+                return val
+        return default
+
+    total_trades = int(extract_first(
+        ["Total de Negociacoes:", "Total Trades:"], content))
+    profit_trades_pct = extract_first_pct(
+        ["Negociacoes com Lucro", "Profit Trades"], content)
     win_trades = round(total_trades * profit_trades_pct / 100) if total_trades > 0 else 0
     loss_trades = total_trades - win_trades
 
-    gross_profit = extract_metric("Gross Profit:", content)
-    gross_loss = abs(extract_metric("Gross Loss:", content))
+    gross_profit = extract_first(["Lucro Bruto:", "Gross Profit:"], content)
+    gross_loss = abs(extract_first(["Perda Bruta:", "Gross Loss:"], content))
     avg_win = (gross_profit / win_trades) if win_trades > 0 else 0.0
     avg_loss = (gross_loss / loss_trades) if loss_trades > 0 else 0.0
     payoff = (avg_win / avg_loss) if avg_loss > 0 else 0.0
 
     metrics = {
-        "total_net_profit": extract_metric("Total Net Profit:", content),
+        "total_net_profit": extract_first(["Lucro Liquido Total:", "Total Net Profit:"], content),
         "gross_profit": gross_profit,
-        "gross_loss": extract_metric("Gross Loss:", content),
-        "profit_factor": extract_metric("Profit Factor:", content),
-        "expected_payoff": extract_metric("Expected Payoff:", content),
+        "gross_loss": extract_first(["Perda Bruta:", "Gross Loss:"], content),
+        "profit_factor": extract_first(["Fator de Lucro:", "Profit Factor:"], content),
+        "expected_payoff": extract_first(["Retorno Esperado (Payoff):", "Expected Payoff:"], content),
         "total_trades": total_trades,
         "win_trades": win_trades,
         "loss_trades": loss_trades,
         "win_rate": profit_trades_pct,
         "payoff": payoff,
-        "max_drawdown_money": extract_metric("Equity Drawdown Maximal:", content),
-        "max_drawdown_pct": extract_metric_pct("Equity Drawdown Maximal:", content),
-        "recovery_factor": extract_metric("Recovery Factor:", content),
-        "sharpe_ratio": extract_metric("Sharpe Ratio:", content),
-        "initial_deposit": extract_metric("Initial Deposit:", content) or 10000.0,
+        "max_drawdown_money": extract_first(
+            ["Rebaixamento Maximo do Capital Liquido:", "Equity Drawdown Maximal:"], content),
+        "max_drawdown_pct": extract_first_pct(
+            ["Rebaixamento Maximo do Capital Liquido:", "Equity Drawdown Maximal:"], content),
+        "recovery_factor": extract_first(["Fator de Recuperacao:", "Recovery Factor:"], content),
+        "sharpe_ratio": extract_first(["Indice de Sharpe:", "Sharpe Ratio:"], content),
+        "initial_deposit": extract_first(["Deposito Inicial:", "Initial Deposit:"], content) or 10000.0,
     }
 
     # Extrair trades da tabela de deals (se disponivel)
@@ -367,7 +389,7 @@ def _extract_html_trades(content: str) -> list:
     trades = []
 
     deals_match = re.search(
-        r'<b>Deals</b>.*?<tr[^>]*>.*?Deal.*?</tr>(.*?)(?:<tr>\s*<td[^>]*colspan|</table>)',
+        r'<b>(?:Deals|Ordens)</b>.*?<tr[^>]*>.*?(?:Deal|Ordem).*?</tr>(.*?)(?:<tr>\s*<td[^>]*colspan|</table>)',
         content, re.S | re.IGNORECASE,
     )
     if not deals_match:
