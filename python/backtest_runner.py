@@ -550,9 +550,10 @@ class BacktestRunner:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         base_name = f"BP_{symbol}_{timeframe}_{unique_id}_{timestamp}"
 
-        # Garante que a pasta de reports existe e usa caminho absoluto no .ini
+        # MT5 interpreta Report= como relativo a Tester\ — passa apenas o nome do arquivo.
+        # O parser busca o arquivo em Tester/Reports/, Tester/ e raiz do terminal.
         os.makedirs(MT5_REPORTS_DIR, exist_ok=True)
-        report_file = os.path.join(MT5_REPORTS_DIR, f"{base_name}.xml")
+        report_file = f"{base_name}.xml"
 
         set_path = os.path.join(self.output_dir, f"{base_name}.set")
         ini_path = os.path.join(self.output_dir, f"{base_name}.ini")
