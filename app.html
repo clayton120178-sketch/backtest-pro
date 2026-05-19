@@ -1546,59 +1546,40 @@ function buildPreview(step,cfg) {
 
   const badge=(x,y,t,c,s,a)=>{const fs=s||7;const tw=t.length*(fs*0.58);const ax=a==='end'?x-tw-3:a==='middle'?x-tw/2-1.5:x-1.5;rc(ax,y-fs+1,tw+3,fs+2,TH.badgeBg,0.92,2);tx(x,y,t,c,fs,a);};
 
-  // Professional candle data — 20 candles, deterministic (no Math.random)
-  const rawPrices=[130,128,132,134,131,136,138,135,140,142,139,144,146,143,148,150,147,152,149,154];
-  const candles=rawPrices.map((p,i)=>{
-    const prevP=i>0?rawPrices[i-1]:p;
-    const o=prevP,c=p;
-    const wickU=2+(i*37)%30/10;const wickD=2+(i*53)%30/10;
-    const hi=Math.max(o,c)+wickU;const lo=Math.min(o,c)-wickD;
-    const cw=6;const spacing=(W-12)/(rawPrices.length);
-    return{x:6+i*spacing,cx:6+i*spacing+cw/2,o:chartH-((o-124)*((chartH-10)/34)),c:chartH-((c-124)*((chartH-10)/34)),h:chartH-((hi-124)*((chartH-10)/34)),l:chartH-((lo-124)*((chartH-10)/34)),w:cw,isBull:c>=o};
+  // ── Sistema de coordenadas único — escala real por ativo ──
+  const {base:assetBase,range:assetRange}=getAssetPriceRange(cfg.asset,cfg.market);
+  const PT=8,PB=4,PL=4,PR=38;
+  const _deltas=[0,-1.1,1.5,2.2,0.8,3.2,4.5,2.8,5.1,6.2,4.8,7.1,8.3,6.5,9.0,9.9,8.2,10.5,9.1,11.2];
+  const _priceScale=assetRange/12;
+  const _rawPrices=_deltas.map(d=>assetBase-assetRange*0.4+d*_priceScale);
+  const _minP=Math.min(..._rawPrices)-assetRange*0.08;
+  const _maxP=Math.max(..._rawPrices)+assetRange*0.08;
+  const _rangeP=_maxP-_minP||1;
+  const py=p=>PT+(chartH-PT-PB)*(1-(p-_minP)/_rangeP);
+  const _spacing=(W-PL-PR)/_rawPrices.length;
+  const _cw=Math.max(4,Math.floor(_spacing*0.55));
+  const candles=_rawPrices.map((close,i)=>{
+    const open=i>0?_rawPrices[i-1]:close*(1-_priceScale*0.005);
+    const wickU=assetRange*0.015+(i*37%100)*assetRange*0.0003;
+    const wickD=assetRange*0.010+(i*53%100)*assetRange*0.0002;
+    const high=Math.max(open,close)+wickU;
+    const low=Math.min(open,close)-wickD;
+    return{x:PL+i*_spacing,cx:PL+i*_spacing+_cw/2,o:py(open),c:py(close),h:py(high),l:py(low),w:_cw,isBull:close>=open,priceOpen:open,priceClose:close};
   });
-
-  // Step 0: rebuild candles scaled to selected asset's price range
-  let activeCandles=candles;
-  if(step===0){
-    const _apr=getAssetPriceRange(cfg.asset,cfg.market);
-    const _deltas=[0,-1.1,1.5,2.2,0.8,3.2,4.5,2.8,5.1,6.2,4.8,7.1,8.3,6.5,9.0,9.9,8.2,10.5,9.1,11.2];
-    const _ps=_apr.range/12;
-    const _rp=_deltas.map(d=>_apr.base-_apr.range*0.4+d*_ps);
-    const _minP=Math.min(..._rp)-_apr.range*0.1;
-    const _maxP=Math.max(..._rp)+_apr.range*0.1;
-    const _rangeP=_maxP-_minP;
-    const PT=8,PL=4,PB=2,PR=40;
-    const py=p=>PT+(chartH-PT-PB)*(1-(p-_minP)/_rangeP);
-    const _sp=(W-PL-PR)/_rp.length;
-    const _cw=Math.floor(_sp*0.55);
-    activeCandles=_rp.map((close,i)=>{
-      const open=i>0?_rp[i-1]:close*0.999;
-      const wU=(_apr.range*0.015)+(i*0.037%(_apr.range*0.025));
-      const wD=(_apr.range*0.010)+(i*0.053%(_apr.range*0.020));
-      const high=Math.max(open,close)+wU;
-      const low=Math.min(open,close)-wD;
-      return{x:PL+i*_sp,cx:PL+i*_sp+_cw/2,o:py(open),c:py(close),h:py(high),l:py(low),w:_cw,isBull:close>=open};
-    });
-    // Y-axis labels with asset-aware formatting
-    const _fmt=p=>{
-      if(_apr.base>=10000)return Math.round(p/1000)+'k';
-      if(_apr.base>=100)return Math.round(p).toLocaleString('pt-BR');
-      if(_apr.base>=1)return p.toFixed(2);
-      return p.toFixed(4);
-    };
-    [0.1,0.4,0.7,1.0].forEach(f=>{
-      const p=_minP+_rangeP*f;const y=py(p);
-      if(y<PT||y>chartH)return;
-      const t=hsvg('text',{x:W-PR+4,y:y+3,fill:TH.txm,'font-size':7,'font-family':'JetBrains Mono','font-weight':500,'text-anchor':'start'});
-      t.textContent=_fmt(p);svgEl.appendChild(t);
-    });
-  }
-
-  // Subtle grid
-  for(let i=0;i<4;i++){const y=10+i*((chartH-20)/3);if(y<chartH)ln(4,y,W-4,y,TH.grid,0.4);}
-
-  // Y-axis price labels (generic, skipped for step 0 which uses asset-scaled labels)
-  if(step!==0){const priceRange=[128,136,144,152];priceRange.forEach((p,i)=>{const y=chartH-((p-124)*((chartH-10)/34));tx(W-3,y+3,p.toString(),TH.txm,6,'end');});}
+  // Grid horizontal
+  for(let i=0;i<4;i++){const y=PT+i*((chartH-PT-PB)/3);if(y<chartH)ln(PL,y,W-PR,y,TH.grid,0.4);}
+  // Y-axis labels — formatação adaptada ao ativo
+  const _formatPrice=p=>{
+    if(assetBase>=10000)return Math.round(p/1000)+'k';
+    if(assetBase>=100)return Math.round(p).toString();
+    if(assetBase>=1)return p.toFixed(2);
+    return p.toFixed(4);
+  };
+  [0.1,0.4,0.7,1.0].forEach(f=>{
+    const p=_minP+_rangeP*f;const y=py(p);
+    if(y<PT||y>chartH-PB)return;
+    tx(W-PR+3,y+3,_formatPrice(p),TH.txm,6,'start');
+  });
 
   // ── Overlay indicators (on price chart) ──
   const colors=['#F59E0B','#6366F1','#EC4899','#06B6D4','#8B5CF6'];
@@ -1622,31 +1603,31 @@ function buildPreview(step,cfg) {
         const amplitude=Math.max(2, 14-per*0.04);
         const freq=Math.max(0.08, 0.25-per*0.001);
         const maY=candles.map((c,i)=>{const base=chartH/2+15;return base+Math.sin((i-5)*freq)*amplitude;});
-        pl(candles.map((c,i)=>`${c.x+c.w/2},${maY[i]}`).join(' '),col,1);
+        pl(candles.map((c,i)=>`${c.cx},${maY[i]}`).join(' '),col,1);
         badge(candles[0].x,maY[0]-6,cond.id.toUpperCase()+(cond.params?.per?'('+cond.params.per+')':''),col,6);
-        if(ct.includes('cruza')){cir(candles[13].x+candles[13].w/2,maY[13],'#00D4AA',3);}
+        if(ct.includes('cruza')){cir(candles[13].cx,maY[13],'#00D4AA',3);}
       }
     }
     else if(cond.id==='bb'){
       const dev=cond.params?.dev||2;
       const bw=5+dev*3; // dev 1→8px, dev 2→11px, dev 3→14px, dev 4→17px
       const mid=candles.map(c=>(c.o+c.c)/2);
-      let bp=`M${candles[0].x+candles[0].w/2},${mid[0]-bw}`;
-      for(let i=1;i<candles.length;i++)bp+=` L${candles[i].x+candles[i].w/2},${mid[i]-bw}`;
-      for(let i=candles.length-1;i>=0;i--)bp+=` L${candles[i].x+candles[i].w/2},${mid[i]+bw}`;
+      let bp=`M${candles[0].cx},${mid[0]-bw}`;
+      for(let i=1;i<candles.length;i++)bp+=` L${candles[i].cx},${mid[i]-bw}`;
+      for(let i=candles.length-1;i>=0;i--)bp+=` L${candles[i].cx},${mid[i]+bw}`;
       bp+=' Z';pa(bp,col,0.05);
-      pl(candles.map((c,i)=>`${c.x+c.w/2},${mid[i]-bw}`).join(' '),col,0.6,'2,2');
-      pl(candles.map((c,i)=>`${c.x+c.w/2},${mid[i]+bw}`).join(' '),col,0.6,'2,2');
-      pl(candles.map((c,i)=>`${c.x+c.w/2},${mid[i]}`).join(' '),col,0.5);
+      pl(candles.map((c,i)=>`${c.cx},${mid[i]-bw}`).join(' '),col,0.6,'2,2');
+      pl(candles.map((c,i)=>`${c.cx},${mid[i]+bw}`).join(' '),col,0.6,'2,2');
+      pl(candles.map((c,i)=>`${c.cx},${mid[i]}`).join(' '),col,0.5);
       badge(candles[0].x,mid[0]-bw-4,'BB'+(cond.params?.per?'('+cond.params.per+','+dev+'σ)':''),col,6);
     }
     else if(cond.id==='vwap'){
       const vwY=candles.map((c,i)=>{const base=chartH/2+8;return base+Math.sin((i-3)*0.15)*8;});
-      pl(candles.map((c,i)=>`${c.x+c.w/2},${vwY[i]}`).join(' '),col,1);
+      pl(candles.map((c,i)=>`${c.cx},${vwY[i]}`).join(' '),col,1);
       badge(candles[0].x,vwY[0]-5,'VWAP',col,6);
     }
     else if(cond.id==='sar'){
-      candles.forEach((cd,i)=>{const above=i<10;const dy=above?cd.l+5:cd.h-5;svgEl.appendChild(hsvg('circle',{cx:cd.x+cd.w/2,cy:dy,r:1.2,fill:above?'#EF4444':'#10B981'}));});
+      candles.forEach((cd,i)=>{const above=i<10;const dy=above?cd.l+5:cd.h-5;svgEl.appendChild(hsvg('circle',{cx:cd.cx,cy:dy,r:1.2,fill:above?'#EF4444':'#10B981'}));});
       badge(candles[0].x,candles[0].l+10,'SAR',col,6);
     }
     else if(cond.id==='hilo'){
@@ -1661,7 +1642,7 @@ function buildPreview(step,cfg) {
     else if(cond.id==='hilon'){
       const levelY=up?Math.min(...candles.slice(0,14).map(c=>c.h)):Math.max(...candles.slice(0,14).map(c=>c.l));
       ln(candles[0].x,levelY,candles[14].x+candles[14].w,levelY,col,0.8,'3,3');
-      cir(candles[14].x+candles[14].w/2,levelY,'#00D4AA',3);
+      cir(candles[14].cx,levelY,'#00D4AA',3);
       badge(candles[0].x,levelY+(up?-5:8),'N per.',col,6);
     }
     else if(cond.id==='fib'){
@@ -1682,15 +1663,15 @@ function buildPreview(step,cfg) {
       const trigY=topoY+pRng*selLvl.f;
 
       // Linha de tendência ZigZag (fundo → topo)
-      ln(candles[fundoIdx].x+candles[fundoIdx].w/2, fundoY,
-         candles[topoIdx].x+candles[topoIdx].w/2, topoY,
+      ln(candles[fundoIdx].cx, fundoY,
+         candles[topoIdx].cx, topoY,
          '#F59E0B',0.5,'4,3');
 
       // Pivot de fundo
-      cir(candles[fundoIdx].x+candles[fundoIdx].w/2, fundoY,'#10B981',3);
+      cir(candles[fundoIdx].cx, fundoY,'#10B981',3);
 
       // Pivot de topo
-      cir(candles[topoIdx].x+candles[topoIdx].w/2, topoY,'#F59E0B',3);
+      cir(candles[topoIdx].cx, topoY,'#F59E0B',3);
 
       // Níveis Fibonacci (tracejados, suaves)
       fibLvls.forEach(lv=>{
@@ -1707,13 +1688,13 @@ function buildPreview(step,cfg) {
       const trigIdx=topoIdx+2;
       if(trigIdx<candles.length){
         const tc=candles[trigIdx];
-        cir(tc.x+tc.w/2, trigY, '#00D4AA',3);
+        cir(tc.cx, trigY, '#00D4AA',3);
         // Marca visual se é Validação (linha de pavio até o nível)
         if(isVal){
-          ln(tc.x+tc.w/2, tc.h, tc.x+tc.w/2, trigY,'#00D4AA',0.7,'2,2');
-          badge(tc.x+tc.w/2, trigY-8,'SINAL','#00D4AA',6,'middle');
+          ln(tc.cx, tc.h, tc.cx, trigY,'#00D4AA',0.7,'2,2');
+          badge(tc.cx, trigY-8,'SINAL','#00D4AA',6,'middle');
         } else {
-          badge(tc.x+tc.w/2, trigY-8,'SINAL','#00D4AA',6,'middle');
+          badge(tc.cx, trigY-8,'SINAL','#00D4AA',6,'middle');
         }
       }
     }
@@ -1730,13 +1711,13 @@ function buildPreview(step,cfg) {
       }
       if(isMit){
         // Pullback arrow pointing down to zone
-        const px=candles[15].x+candles[15].w/2;
+        const px=candles[15].cx;
         const py=Math.min(...candles.slice(10,16).map(cd=>cd.l))-2;
         ln(px,py,px,zTop+2,'#00D4AA',1,'3,2');
         badge(px+4,py-2,'recuo','#00D4AA',6);
       } else {
         // Entry arrow after gap
-        const ex=candles[10].x+candles[10].w/2;
+        const ex=candles[10].cx;
         cir(ex,candles[10].c,'#00D4AA',3);
         badge(ex,candles[10].c-8,'ENTRADA','#00D4AA',6,'middle');
       }
@@ -1746,29 +1727,29 @@ function buildPreview(step,cfg) {
       const isBos=cond.id==='bos';
       const pivotY=up?Math.min(...candles.slice(3,8).map(cd=>cd.h)):Math.max(...candles.slice(3,8).map(cd=>cd.l));
       ln(4,pivotY,W-4,pivotY,isBos?'#F59E0B':'#EF4444',0.7,'3,3');
-      cir(candles[12].x+candles[12].w/2,pivotY,'#00D4AA',3);
-      badge(candles[12].x+candles[12].w/2,pivotY+(up?-8:8),isBos?'BoS':'CHoCH',isBos?'#F59E0B':'#EF4444',7,'middle');
+      cir(candles[12].cx,pivotY,'#00D4AA',3);
+      badge(candles[12].cx,pivotY+(up?-8:8),isBos?'BoS':'CHoCH',isBos?'#F59E0B':'#EF4444',7,'middle');
       badge(6,12,isBos?'BoS':'CHoCH',isBos?'#F59E0B':'#EF4444',7);
     }
     else if(cond.id==='sweep'||cond.id==='grab'){
       const lvlY=up?Math.min(...candles.slice(0,10).map(cd=>cd.l)):Math.max(...candles.slice(0,10).map(cd=>cd.h));
       ln(4,lvlY,W-4,lvlY,'#F59E0B',0.7,'4,3');
       const sweepCd=candles[10];
-      ln(sweepCd.x+sweepCd.w/2,up?sweepCd.h:sweepCd.l,sweepCd.x+sweepCd.w/2,lvlY+(up?4:-4),'#EF4444',1.5);
-      cir(sweepCd.x+sweepCd.w/2,lvlY,'#EF4444',3);
-      cir(candles[13].x+candles[13].w/2,up?candles[13].l:candles[13].h,'#00D4AA',3);
+      ln(sweepCd.cx,up?sweepCd.h:sweepCd.l,sweepCd.cx,lvlY+(up?4:-4),'#EF4444',1.5);
+      cir(sweepCd.cx,lvlY,'#EF4444',3);
+      cir(candles[13].cx,up?candles[13].l:candles[13].h,'#00D4AA',3);
       badge(6,12,cond.id==='grab'?'Grab':'Sweep','#F59E0B',7);
     }
   });
 
   // Candles (drawn after overlays)
   const hasMACross=!!svgEl._maCrossover;
-  activeCandles.forEach(cd=>{
-    const isBull=cd.c<=cd.o;const col=isBull?'#10B981':'#EF4444';const wickCol=TH.wickColor;
-    const bodyTop=Math.min(cd.o,cd.c),bodyH=Math.max(1,Math.abs(cd.o-cd.c));
-    const op=hasMACross?0.15:0.9;const fop=hasMACross?0.2:0.8;
-    svgEl.appendChild(hsvg('line',{x1:cd.x+cd.w/2,y1:cd.h,x2:cd.x+cd.w/2,y2:cd.l,stroke:wickCol,'stroke-width':0.8,'stroke-opacity':op}));
-    svgEl.appendChild(hsvg('rect',{x:cd.x,y:bodyTop,width:cd.w,height:bodyH,rx:1,fill:col,'fill-opacity':fop}));
+  candles.forEach(cd=>{
+    const col=cd.isBull?'#10B981':'#EF4444';const wickCol=TH.wickColor;
+    const bodyTop=Math.min(cd.o,cd.c);const bodyH=Math.max(1,Math.abs(cd.o-cd.c));
+    const wickOp=hasMACross?0.15:1;const bodyOp=hasMACross?0.20:1;
+    svgEl.appendChild(hsvg('line',{x1:cd.cx,y1:cd.h,x2:cd.cx,y2:cd.l,stroke:wickCol,'stroke-width':0.8,'stroke-opacity':wickOp}));
+    svgEl.appendChild(hsvg('rect',{x:cd.x,y:bodyTop,width:cd.w,height:bodyH,fill:col,rx:1,'fill-opacity':bodyOp}));
   });
 
   // ── MA Crossover (drawn ON TOP of faded candles) ──
@@ -1778,11 +1759,11 @@ function buildPreview(step,cfg) {
     const longName=cnd.id.toUpperCase()+'('+(cnd.params?.per2||200)+')';
     const shortY=candles.map((_,i)=>{const mid=chartH/2;return mid+Math.cos((i-8)*0.35)*((chartH/2)-15);});
     const longY=candles.map((_,i)=>{const mid=chartH/2+5;return mid+Math.sin((i-5)*0.12)*10;});
-    pl(candles.map((c,i)=>`${c.x+c.w/2},${longY[i].toFixed(1)}`).join(' '),mcCol,1.5,'4,3');
-    pl(candles.map((c,i)=>`${c.x+c.w/2},${shortY[i].toFixed(1)}`).join(' '),'#00D4AA',1.8);
+    pl(candles.map((c,i)=>`${c.cx},${longY[i].toFixed(1)}`).join(' '),mcCol,1.5,'4,3');
+    pl(candles.map((c,i)=>`${c.cx},${shortY[i].toFixed(1)}`).join(' '),'#00D4AA',1.8);
     let crossIdx=8;
     for(let i=1;i<candles.length;i++){if((shortY[i-1]-longY[i-1])*(shortY[i]-longY[i])<=0){crossIdx=i;break;}}
-    const cx=candles[crossIdx].x+candles[crossIdx].w/2,cy=(shortY[crossIdx]+longY[crossIdx])/2;
+    const cx=candles[crossIdx].cx,cy=(shortY[crossIdx]+longY[crossIdx])/2;
     svgEl.appendChild(hsvg('circle',{cx,cy,r:4,fill:'#00D4AA','fill-opacity':0.15,stroke:'#00D4AA','stroke-width':1}));
     badge(8,14,shortName,'#00D4AA',7);
     badge(8,24,longName,mcCol,7);
@@ -1827,8 +1808,8 @@ function buildPreview(step,cfg) {
   if(step>=1&&conds.length>0&&!hasCrossoverSignal){
     const si=14;
     rc(candles[si].x-1,candles[si].h-3,candles[si].w+2,candles[si].l-candles[si].h+6,'#00D4AA',0.05,2);
-    ln(candles[si].x+candles[si].w/2,candles[si].h-6,candles[si].x+candles[si].w/2,candles[si].h-14,'#00D4AA',0.6);
-    badge(candles[si].x+candles[si].w/2,candles[si].h-18,'SINAL','#00D4AA',6,'middle');
+    ln(candles[si].cx,candles[si].h-6,candles[si].cx,candles[si].h-14,'#00D4AA',0.6);
+    badge(candles[si].cx,candles[si].h-18,'SINAL','#00D4AA',6,'middle');
   }
 
   // ── Step 2 (Gatilho): direção + tipo de entrada ──
@@ -1840,8 +1821,8 @@ function buildPreview(step,cfg) {
     badge(8,chartH-5,dirTxt,dirCol,7);
     if(cfg.entryType==='next_open'&&candles[si+1]){
       const ni=si+1;
-      cir(candles[ni].x+candles[ni].w/2,candles[ni].o,'#F59E0B',3);
-      badge(candles[ni].x+candles[ni].w/2,candles[ni].o-8,'ABERTURA','#F59E0B',6,'middle');
+      cir(candles[ni].cx,candles[ni].o,'#F59E0B',3);
+      badge(candles[ni].cx,candles[ni].o-8,'ABERTURA','#F59E0B',6,'middle');
     }
   }
 
@@ -1850,44 +1831,16 @@ function buildPreview(step,cfg) {
     const si=15;
     const entryY=candles[si].o;
 
-    // Scale: convert real pts to preview pixels proportionally
-    // Preview chart spans ~34 "price units" over (chartH-10) pixels
-    // We need to know how many real pts that represents for the selected asset
-    const assetTick=getAssetTick(cfg.asset);
-    // Approximate pts-per-preview-unit by asset category
-    const previewRangePts=(()=>{
-      const t=cfg.asset;
-      if(t==='WIN$N'||t==='IND$N'||t==='ISP$N') return 1700;  // WIN: ~1700 pts/pregão
-      if(t==='WDO$N'||t==='DOL$N') return 170;                 // WDO: ~170 pts
-      if(t==='DI1$N') return 0.5;
-      if(['EURUSD','GBPUSD','AUDUSD','NZDUSD','USDCAD','USDCHF','USDBRL','EURCAD','AUDCAD','GBPAUD','EURGBP','EURCHF','EURAUD'].includes(t)) return 0.02;
-      if(['USDJPY','EURJPY','GBPJPY','AUDJPY','CADJPY','NZDJPY'].includes(t)) return 3;
-      if(t==='XAUUSD') return 50;
-      if(t==='XAGUSD') return 2;
-      if(['WTICOUSD','BRENTCMDUSD'].includes(t)) return 5;
-      if(t==='US500') return 100;
-      if(t==='NAS100') return 400;
-      if(t==='US30') return 800;
-      if(t==='DE40'||t==='GER40') return 300;
-      if(t==='UK100') return 150;
-      if(t==='FR40') return 150;
-      if(t==='JP225') return 500;
-      if(t==='AU200') return 80;
-      if(t==='HK50') return 400;
-      // Ações BR / US / ETFs
-      return 10;
-    })();
-
-    // px per real pt
-    const pxPerPt=(chartH-10)/previewRangePts;
+    // px per real pt — derivado do mesmo sistema de coordenadas dos candles
+    const pxPerPt=(chartH-PT-PB)/assetRange;
 
     // Stop distance in pixels
     const stopDistPts=(()=>{
       if(cfg.stopType==='fixed') return cfg.stopPts;
-      if(cfg.stopType==='hl_candle') return previewRangePts*0.08+cfg.stopOffset;
-      if(cfg.stopType==='n_candles') return previewRangePts*0.12+cfg.stopOffset;
-      if(cfg.stopType==='atr') return previewRangePts*0.10*cfg.stopAtrMult;
-      return previewRangePts*0.10;
+      if(cfg.stopType==='hl_candle') return assetRange*0.08+cfg.stopOffset;
+      if(cfg.stopType==='n_candles') return assetRange*0.12+cfg.stopOffset;
+      if(cfg.stopType==='atr') return assetRange*0.10*cfg.stopAtrMult;
+      return assetRange*0.10;
     })();
     const stopDistPx=Math.min(stopDistPts*pxPerPt, chartH-entryY-4);
     const stopY=Math.min(entryY+Math.max(stopDistPx,6), chartH-4);
@@ -1896,7 +1849,7 @@ function buildPreview(step,cfg) {
     const targetDistPts=(()=>{
       if(cfg.tpType==='fixed') return cfg.tpPts;
       if(cfg.tpType==='rr') return stopDistPts*cfg.tpRR;
-      if(cfg.tpType==='atr') return previewRangePts*0.10*cfg.tpAtrMult;
+      if(cfg.tpType==='atr') return assetRange*0.10*cfg.tpAtrMult;
       if(cfg.tpType==='fib_ext') return stopDistPts*(parseFloat(cfg.tpFibLevel)/100);
       return stopDistPts*2; // fallback for 'none'
     })();
