@@ -541,6 +541,7 @@ function svgTheme(){
     grid:document.documentElement.getAttribute('data-theme')==='light'?'rgba(0,0,0,0.06)':'#1E1E2E',
     panelBg:document.documentElement.getAttribute('data-theme')==='light'?'#F0EDE6':'#0F0F14',
     badgeBg:document.documentElement.getAttribute('data-theme')==='light'?'#FDFCF9':'#0A0A0F',
+    wickColor:document.documentElement.getAttribute('data-theme')==='light'?'#B4B2A9':'#3A3A4A',
   };
 }
 
@@ -1489,6 +1490,33 @@ function buildHistChart() {
 }
 
 // ─── PREVIEW SVG ─────────────────────────────────────────────
+// Tabela de preços de referência por ticker (base + range típico diário)
+const ASSET_PRICE_RANGES = {
+  'WIN$N':{base:128000,range:4000},'IND$N':{base:128000,range:4000},'ISP$N':{base:128000,range:4000},
+  'WDO$N':{base:5950,range:200},'DOL$N':{base:5950,range:200},
+  'DI1$N':{base:10.50,range:0.30},'BGI$N':{base:320,range:20},'CCM$N':{base:85,range:8},
+  'ICF$N':{base:1200,range:60},'SFI$N':{base:140,range:12},'OZ1D$N':{base:320,range:20},
+  'ETH$N':{base:18000,range:800},'BIT$N':{base:480000,range:20000},
+  'PETR4':{base:36,range:3},'PETR3':{base:36,range:3},'VALE3':{base:62,range:5},
+  'ITUB4':{base:34,range:3},'BBDC4':{base:15,range:2},
+  'BOVA11':{base:128,range:8},'IVVB11':{base:320,range:15},
+  'EURUSD':{base:1.085,range:0.015},'GBPUSD':{base:1.270,range:0.018},
+  'USDJPY':{base:148.5,range:2.5},'USDCHF':{base:0.895,range:0.012},
+  'AUDUSD':{base:0.645,range:0.012},'USDCAD':{base:1.365,range:0.015},
+  'USDBRL':{base:5.80,range:0.15},
+  'US500':{base:5250,range:120},'US30':{base:39500,range:600},'NAS100':{base:18200,range:400},
+  'DE40':{base:18500,range:350},'UK100':{base:8200,range:150},'JP225':{base:38500,range:800},
+  'VIX':{base:18,range:4},
+  'XAUUSD':{base:2320,range:50},'XAGUSD':{base:27.5,range:1.2},
+  'WTICOUSD':{base:78,range:4},'BRENTCMDUSD':{base:82,range:4},
+  'BTCUSD':{base:68000,range:3000},'ETHUSD':{base:3400,range:200},'SOLUSD':{base:165,range:20},
+};
+function getAssetPriceRange(ticker, market) {
+  if (ASSET_PRICE_RANGES[ticker]) return ASSET_PRICE_RANGES[ticker];
+  if (market === 'local') return {base:100, range:10};
+  return {base:1.0, range:0.05};
+}
+
 function buildPreview(step,cfg) {
   const conds=cfg.conditions||[];
   // Classify conditions
@@ -1500,7 +1528,7 @@ function buildPreview(step,cfg) {
   const panelCount=Math.min(oscConds.length+volConds.length,2);
   const panelH=32;
   const chartH=panelCount>0?148:185;
-  const labelPad=(step===0)?72:0;
+  const labelPad=(step===0)?85:0;
   const totalH=chartH+(panelCount>0?8+panelCount*panelH+(panelCount-1)*4:0)+8+labelPad;
   const W=300;
   const svgEl=hsvg('svg',{width:'100%',viewBox:`0 0 ${W} ${totalH}`});
@@ -1518,21 +1546,59 @@ function buildPreview(step,cfg) {
 
   const badge=(x,y,t,c,s,a)=>{const fs=s||7;const tw=t.length*(fs*0.58);const ax=a==='end'?x-tw-3:a==='middle'?x-tw/2-1.5:x-1.5;rc(ax,y-fs+1,tw+3,fs+2,TH.badgeBg,0.92,2);tx(x,y,t,c,fs,a);};
 
-  // Professional candle data — 20 candles with realistic price action
+  // Professional candle data — 20 candles, deterministic (no Math.random)
   const rawPrices=[130,128,132,134,131,136,138,135,140,142,139,144,146,143,148,150,147,152,149,154];
   const candles=rawPrices.map((p,i)=>{
     const prevP=i>0?rawPrices[i-1]:p;
-    const o=prevP,c=p;const hi=Math.max(o,c)+2+Math.random()*3;const lo=Math.min(o,c)-2-Math.random()*3;
-    const cw=6;const gap=1;const spacing=(W-12)/(rawPrices.length);
-    return{x:6+i*spacing,o:chartH-((o-124)*((chartH-10)/34)),c:chartH-((c-124)*((chartH-10)/34)),h:chartH-((hi-124)*((chartH-10)/34)),l:chartH-((lo-124)*((chartH-10)/34)),w:cw};
+    const o=prevP,c=p;
+    const wickU=2+(i*37)%30/10;const wickD=2+(i*53)%30/10;
+    const hi=Math.max(o,c)+wickU;const lo=Math.min(o,c)-wickD;
+    const cw=6;const spacing=(W-12)/(rawPrices.length);
+    return{x:6+i*spacing,cx:6+i*spacing+cw/2,o:chartH-((o-124)*((chartH-10)/34)),c:chartH-((c-124)*((chartH-10)/34)),h:chartH-((hi-124)*((chartH-10)/34)),l:chartH-((lo-124)*((chartH-10)/34)),w:cw,isBull:c>=o};
   });
+
+  // Step 0: rebuild candles scaled to selected asset's price range
+  let activeCandles=candles;
+  if(step===0){
+    const _apr=getAssetPriceRange(cfg.asset,cfg.market);
+    const _deltas=[0,-1.1,1.5,2.2,0.8,3.2,4.5,2.8,5.1,6.2,4.8,7.1,8.3,6.5,9.0,9.9,8.2,10.5,9.1,11.2];
+    const _ps=_apr.range/12;
+    const _rp=_deltas.map(d=>_apr.base-_apr.range*0.4+d*_ps);
+    const _minP=Math.min(..._rp)-_apr.range*0.1;
+    const _maxP=Math.max(..._rp)+_apr.range*0.1;
+    const _rangeP=_maxP-_minP;
+    const PT=8,PL=4,PB=2,PR=40;
+    const py=p=>PT+(chartH-PT-PB)*(1-(p-_minP)/_rangeP);
+    const _sp=(W-PL-PR)/_rp.length;
+    const _cw=Math.floor(_sp*0.55);
+    activeCandles=_rp.map((close,i)=>{
+      const open=i>0?_rp[i-1]:close*0.999;
+      const wU=(_apr.range*0.015)+(i*0.037%(_apr.range*0.025));
+      const wD=(_apr.range*0.010)+(i*0.053%(_apr.range*0.020));
+      const high=Math.max(open,close)+wU;
+      const low=Math.min(open,close)-wD;
+      return{x:PL+i*_sp,cx:PL+i*_sp+_cw/2,o:py(open),c:py(close),h:py(high),l:py(low),w:_cw,isBull:close>=open};
+    });
+    // Y-axis labels with asset-aware formatting
+    const _fmt=p=>{
+      if(_apr.base>=10000)return Math.round(p/1000)+'k';
+      if(_apr.base>=100)return Math.round(p).toLocaleString('pt-BR');
+      if(_apr.base>=1)return p.toFixed(2);
+      return p.toFixed(4);
+    };
+    [0.1,0.4,0.7,1.0].forEach(f=>{
+      const p=_minP+_rangeP*f;const y=py(p);
+      if(y<PT||y>chartH)return;
+      const t=hsvg('text',{x:W-PR+4,y:y+3,fill:TH.txm,'font-size':7,'font-family':'JetBrains Mono','font-weight':500,'text-anchor':'start'});
+      t.textContent=_fmt(p);svgEl.appendChild(t);
+    });
+  }
 
   // Subtle grid
   for(let i=0;i<4;i++){const y=10+i*((chartH-20)/3);if(y<chartH)ln(4,y,W-4,y,TH.grid,0.4);}
 
-  // Y-axis price labels
-  const priceRange=[128,136,144,152];
-  priceRange.forEach((p,i)=>{const y=chartH-((p-124)*((chartH-10)/34));tx(W-3,y+3,p.toString(),TH.txm,6,'end');});
+  // Y-axis price labels (generic, skipped for step 0 which uses asset-scaled labels)
+  if(step!==0){const priceRange=[128,136,144,152];priceRange.forEach((p,i)=>{const y=chartH-((p-124)*((chartH-10)/34));tx(W-3,y+3,p.toString(),TH.txm,6,'end');});}
 
   // ── Overlay indicators (on price chart) ──
   const colors=['#F59E0B','#6366F1','#EC4899','#06B6D4','#8B5CF6'];
@@ -1697,12 +1763,12 @@ function buildPreview(step,cfg) {
 
   // Candles (drawn after overlays)
   const hasMACross=!!svgEl._maCrossover;
-  candles.forEach(cd=>{
-    const bull=cd.c<cd.o;const col=bull?'#10B981':'#EF4444';
-    const top=Math.min(cd.o,cd.c),bh=Math.max(1,Math.abs(cd.o-cd.c));
+  activeCandles.forEach(cd=>{
+    const isBull=cd.c<=cd.o;const col=isBull?'#10B981':'#EF4444';const wickCol=TH.wickColor;
+    const bodyTop=Math.min(cd.o,cd.c),bodyH=Math.max(1,Math.abs(cd.o-cd.c));
     const op=hasMACross?0.15:0.9;const fop=hasMACross?0.2:0.8;
-    svgEl.appendChild(hsvg('line',{x1:cd.x+cd.w/2,y1:cd.h,x2:cd.x+cd.w/2,y2:cd.l,stroke:col,'stroke-width':'0.6','stroke-opacity':op}));
-    svgEl.appendChild(hsvg('rect',{x:cd.x,y:top,width:cd.w,height:bh,rx:'0.5',fill:col,'fill-opacity':fop}));
+    svgEl.appendChild(hsvg('line',{x1:cd.x+cd.w/2,y1:cd.h,x2:cd.x+cd.w/2,y2:cd.l,stroke:wickCol,'stroke-width':0.8,'stroke-opacity':op}));
+    svgEl.appendChild(hsvg('rect',{x:cd.x,y:bodyTop,width:cd.w,height:bodyH,rx:1,fill:col,'fill-opacity':fop}));
   });
 
   // ── MA Crossover (drawn ON TOP of faded candles) ──
@@ -1731,15 +1797,27 @@ function buildPreview(step,cfg) {
     const dayStart=toMin(isLocal?'08:00':'00:00'), dayEnd=toMin(isLocal?'18:30':'23:59'), dayRange=dayEnd-dayStart||1;
     const timeX=s=>{const m=toMin(s);return 6+((Math.max(dayStart,Math.min(dayEnd,m))-dayStart)/dayRange)*(W-12);};
     const x1=timeX(cfg.tStart), x2=timeX(cfg.tLastEntry), x3=timeX(cfg.tEnd);
-    rc(x1,0,Math.max(1,x2-x1),chartH,'#00D4AA',0.03,0);
-    rc(x2,0,Math.max(1,x3-x2),chartH,'#F59E0B',0.03,0);
-    ln(x1,0,x1,chartH,'#00D4AA',0.6);
-    ln(x2,0,x2,chartH,'#F59E0B',0.6,'2,2');
-    ln(x3,0,x3,chartH,'#EF4444',0.6);
-    const lbY=chartH+2;
-    rc(0,lbY,W,68,TH.panelBg,1,0);
+    // Zone fills — perceptível
+    rc(x1,0,Math.max(1,x2-x1),chartH,'#00C896',0.08,0);
+    rc(x2,0,Math.max(1,x3-x2),chartH,'#F59E0B',0.07,0);
+    rc(x3,0,Math.max(1,W-4-x3),chartH,'#EF4444',0.05,0);
+    // Vertical lines
+    ln(x1,0,x1,chartH,'#00C896',1.5);
+    svgEl.appendChild(hsvg('line',{x1:x2,y1:0,x2:x2,y2:chartH,stroke:'#F59E0B','stroke-width':1.2,'stroke-dasharray':'3,2'}));
+    ln(x3,0,x3,chartH,'#EF4444',1.5);
+    // X-axis time labels
+    const _tlbls=isLocal
+      ?[{m:540,l:'09:00'},{m:720,l:'12:00'},{m:900,l:'15:00'},{m:1050,l:'17:30'}]
+      :[{m:0,l:'00:00'},{m:360,l:'06:00'},{m:720,l:'12:00'},{m:1080,l:'18:00'},{m:1439,l:'23:59'}];
+    _tlbls.forEach(({m,l})=>{
+      const x=6+((Math.max(dayStart,Math.min(dayEnd,m))-dayStart)/dayRange)*(W-12);
+      const t=hsvg('text',{x,y:chartH+13,fill:TH.txm,'font-size':6.5,'font-family':'JetBrains Mono','font-weight':400,'text-anchor':'middle'});
+      t.textContent=l;svgEl.appendChild(t);
+    });
+    const lbY=chartH+18;
+    rc(0,lbY,W,65,TH.panelBg,1,0);
     ln(4,lbY,W-4,lbY,TH.grid,0.4);
-    tx(8,lbY+16,cfg.tStart,'#00D4AA',13);tx(60,lbY+16,'Início da leitura',TH.txs,10);
+    tx(8,lbY+16,cfg.tStart,'#00C896',13);tx(60,lbY+16,'Início da leitura',TH.txs,10);
     tx(8,lbY+34,cfg.tLastEntry,'#F59E0B',13);tx(60,lbY+34,'Última abertura',TH.txs,10);
     tx(8,lbY+52,cfg.tEnd,'#EF4444',13);tx(60,lbY+52,'Encerramento',TH.txs,10);
   }
