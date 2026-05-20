@@ -6277,9 +6277,8 @@ function renderProgressBar() {
 
 // ─── MAIN RENDER ──────────────────────────────────────────────
 function renderApp() {
-  // Nunca renderizar o wizard sem usuário e assinatura confirmados
   if (!currentUser) return;
-  if (!currentSub) { showScreen('nosub'); return; }
+  if (!currentSub && currentTrialCount >= FREE_TRIAL.backtests_max) { showScreen('nosub'); return; }
 
   renderProgressBar();
   const main=document.getElementById('main');
