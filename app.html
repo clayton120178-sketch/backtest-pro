@@ -6585,6 +6585,10 @@ const CYCLE_DAYS = { mensal: 30, semestral: 180, anual: 365 };
 
 // ─── SUPABASE ─────────────────────────────────────────────────
 const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+window.db = db;
+window.loginGoogle = function() {
+  db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/app.html' } });
+};
 
 // ─── STATE ────────────────────────────────────────────────────
 let currentUser = null;
@@ -6631,9 +6635,16 @@ async function loadSubscription(accessToken) {
       'Content-Type': 'application/json',
     }
   });
-  if (!res.ok) { currentSub = null; return; }
-  const data = await res.json();
-  currentSub = (Array.isArray(data) && data.length > 0) ? data[0] : null;
+  if (!res.ok) { currentSub = null; }
+  else {
+    const data = await res.json();
+    currentSub = (Array.isArray(data) && data.length > 0) ? data[0] : null;
+  }
+  if (!currentSub) {
+    currentTrialCount = await contarBacktestsSalvos(currentUser.id);
+  } else {
+    currentTrialCount = 0;
+  }
 }
 
 // ─── SCREENS ──────────────────────────────────────────────────
@@ -7218,7 +7229,7 @@ function showAuthModal(mode) {
       <div class="auth-field"><label>Senha</label><input class="auth-input" id="auth-pass" type="password" placeholder="••••••••"></div>
       <button class="auth-btn" id="auth-submit" onclick="handleAuth('${mode}')">${isLogin?'Entrar':'Criar conta'}</button>
       <div class="auth-divider">ou</div>
-      <button class="auth-google" onclick="db.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.href}})">
+      <button class="auth-google" onclick="loginGoogle()">
         <svg width="16" height="16" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
         Continuar com Google
       </button>
@@ -7280,30 +7291,17 @@ let authResolved = false; // Flag para saber se o INITIAL_SESSION já foi proces
 })();
 
 db.auth.onAuthStateChange(async (event, session) => {
-  
-  if (event === 'SIGNED_IN' && session?.user) {
-    currentUser = session.user;
-    await loadSubscription(session.access_token);
-    updateAvatarUI();
-    document.getElementById('auth-overlay')?.remove();
-    // Don't override if user is already on plans/payment screens
-    if (currentScreen === 'plans' || currentScreen === 'payment' || currentScreen === 'history') return;
-    if (currentSub) { renderApp(); } else { showScreen('nosub'); }
-  }
-  if (event === 'INITIAL_SESSION') {
-    authResolved = true;
-    console.log('[AUTH] INITIAL_SESSION — user:', session?.user?.email || 'none');
+  if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
     if (session?.user) {
       currentUser = session.user;
       await loadSubscription(session.access_token);
-      console.log('[AUTH] loadSubscription result — currentSub:', currentSub);
       updateAvatarUI();
+      document.getElementById('auth-overlay')?.remove();
       document.getElementById('boot-spinner')?.remove();
-      if (currentSub) {
-        console.log('[AUTH] → renderApp()');
+      if (currentScreen === 'plans' || currentScreen === 'payment' || currentScreen === 'history') return;
+      if (currentSub || currentTrialCount < FREE_TRIAL.backtests_max) {
         renderApp(); maybeAutoTour();
       } else {
-        console.log('[AUTH] → showScreen(nosub)');
         showScreen('nosub');
       }
     } else {
@@ -7312,7 +7310,7 @@ db.auth.onAuthStateChange(async (event, session) => {
     }
   }
   if (event === 'SIGNED_OUT') {
-    currentUser=null; currentSub=null; currentScreen=null; authResolved=false;
+    currentUser=null; currentSub=null; currentTrialCount=0; currentScreen=null; authResolved=false;
     showAuthModal('login');
   }
 });
