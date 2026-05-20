@@ -270,6 +270,27 @@ footer a{color:var(--txs)}
 @media(max-width:500px){
   .proof-inner{gap:28px;justify-content:flex-start;padding:0 24px}
 }
+/* ─── PRICING ─── */
+.pricing-section{padding:80px 0;background:var(--bg0,#0A0A0F)}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:880px;margin:40px auto 0}
+@media(max-width:700px){.pricing-grid{grid-template-columns:1fr}}
+.pricing-card{background:var(--bg1,#12121A);border:0.5px solid var(--bd,rgba(255,255,255,.08));border-radius:16px;padding:28px 24px;position:relative;transition:border-color .2s}
+.pricing-card.featured{border-color:rgba(0,212,170,.4);background:linear-gradient(160deg,rgba(0,212,170,.04) 0%,var(--bg1,#12121A) 60%)}
+.pricing-popular{display:inline-flex;align-items:center;padding:3px 10px;border-radius:99px;background:rgba(0,212,170,.12);border:0.5px solid rgba(0,212,170,.3);font-size:10px;font-weight:700;color:#00D4AA;letter-spacing:.08em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:14px}
+.pricing-plan-name{font-size:11px;font-weight:700;color:var(--txm,#8A8A9A);text-transform:uppercase;letter-spacing:.12em;font-family:'JetBrains Mono',monospace;margin-bottom:16px}
+.pricing-price{display:flex;align-items:flex-end;gap:2px;margin-bottom:4px}
+.pricing-price-currency{font-size:17px;font-weight:500;color:var(--txs,#6B6B7A);margin-bottom:6px}
+.pricing-price-val{font-size:40px;font-weight:800;color:var(--tx,#F0F0F5);font-family:'JetBrains Mono',monospace;letter-spacing:-.04em;line-height:1}
+.pricing-note{font-size:11px;color:var(--txm,#8A8A9A);margin-bottom:20px;min-height:16px}
+.pricing-divider{height:0.5px;background:var(--bd,rgba(255,255,255,.08));margin-bottom:18px}
+.pricing-feat{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txs,#6B6B7A);margin-bottom:10px}
+.pricing-feat svg{flex-shrink:0;color:#00D4AA}
+.pricing-feat strong{color:var(--tx,#F0F0F5)}
+.pricing-cycle-toggle{display:flex;align-items:center;justify-content:center;gap:6px;margin:32px auto 0;background:var(--bg1,#12121A);border:0.5px solid var(--bd,rgba(255,255,255,.08));border-radius:12px;padding:5px;width:fit-content}
+.pricing-cycle-btn{padding:8px 20px;border-radius:8px;border:none;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;background:transparent;color:var(--txs,#6B6B7A)}
+.pricing-cycle-btn.active{background:#00D4AA;color:#0A0A0F;font-weight:700}
+.pricing-footer-note{text-align:center;font-size:13px;color:var(--txm,#8A8A9A);margin-top:24px;line-height:1.6}
+
 </style>
 </head>
 <body>
@@ -286,6 +307,7 @@ footer a{color:var(--txs)}
     <div class="nav-links">
       <a href="#como-funciona">Como funciona</a>
       <a href="#por-que">Por que testar</a>
+      <a href="#pricing">Planos</a>
       <a href="#faq">FAQ</a>
 
     </div>
@@ -761,6 +783,96 @@ footer a{color:var(--txs)}
     </div>
   </div>
 </section>
+
+<!-- ═══ PRICING ═══ -->
+<section class="pricing-section" id="pricing">
+  <div class="container">
+    <div style="text-align:center" class="reveal">
+      <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:99px;border:0.5px solid rgba(0,212,170,.25);background:rgba(0,212,170,.06);font-size:10px;font-weight:700;color:#00D4AA;letter-spacing:.1em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:18px">Planos e preços</div>
+      <h2 style="font-family:'Syne',sans-serif;font-size:clamp(28px,5vw,42px);font-weight:800;color:var(--tx,#F0F0F5);letter-spacing:-.03em;margin-bottom:10px">Escolha o seu plano</h2>
+      <p style="font-size:15px;color:var(--txs,#6B6B7A);max-width:480px;margin:0 auto">Cobrança avulsa · Sem renovação automática · Acesso imediato</p>
+    </div>
+
+    <!-- Cycle toggle -->
+    <div class="pricing-cycle-toggle" id="pricing-toggle">
+      <button class="pricing-cycle-btn active" data-cycle="mensal">Mensal</button>
+      <button class="pricing-cycle-btn" data-cycle="semestral">Semestral · 11% off</button>
+      <button class="pricing-cycle-btn" data-cycle="anual">Anual · 30% off</button>
+    </div>
+
+    <div class="pricing-grid" id="pricing-grid">
+      <!-- Cards gerados pelo JS abaixo -->
+    </div>
+
+    <p class="pricing-footer-note reveal">
+      Cobrança avulsa — sem renovação automática.<br>
+      Você paga uma vez e tem acesso pelo período contratado.<br>
+      Pix preferencial. Cartão aceito.
+    </p>
+  </div>
+</section>
+
+<script>
+(function() {
+  const PLANOS_LP = {
+    starter:  { nome:'Starter',  backtests:100, salvos:20,  precos:{ mensal:{parcela:109.90,total:109.90,meses:1},  semestral:{parcela:99.90, total:599.40, meses:6},  anual:{parcela:87.00, total:1044.00,meses:12} } },
+    advanced: { nome:'Advanced', backtests:150, salvos:40,  precos:{ mensal:{parcela:139.90,total:139.90,meses:1},  semestral:{parcela:129.90,total:779.40, meses:6},  anual:{parcela:109.90,total:1318.80,meses:12} } },
+    elite:    { nome:'Elite',    backtests:200, salvos:60,  precos:{ mensal:{parcela:159.90,total:159.90,meses:1},  semestral:{parcela:149.90,total:899.40, meses:6},  anual:{parcela:129.90,total:1558.80,meses:12} } }
+  };
+  const CYCLE_DAYS_LP = { mensal:30, semestral:180, anual:365 };
+  let activeCycle = 'mensal';
+
+  function fmtBRL(v) { return v.toLocaleString('pt-BR', {minimumFractionDigits:2}); }
+
+  function renderPricingCards() {
+    const grid = document.getElementById('pricing-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    ['starter','advanced','elite'].forEach(function(key) {
+      var pl = PLANOS_LP[key];
+      var pr = pl.precos[activeCycle];
+      var isFeat = key === 'advanced';
+      var days = CYCLE_DAYS_LP[activeCycle];
+
+      var card = document.createElement('div');
+      card.className = 'pricing-card reveal' + (isFeat ? ' featured' : '');
+
+      var html = '';
+      if (isFeat) html += '<div class="pricing-popular">Popular</div>';
+      html += '<div class="pricing-plan-name">' + pl.nome + '</div>';
+      html += '<div class="pricing-price"><span class="pricing-price-currency">R$</span><span class="pricing-price-val">' + fmtBRL(pr.parcela) + '</span></div>';
+      if (activeCycle === 'mensal') {
+        html += '<div class="pricing-note">acesso por ' + days + ' dias &middot; cobran&ccedil;a &uacute;nica</div>';
+      } else {
+        html += '<div class="pricing-note">/m&ecirc;s &middot; <strong>R$ ' + fmtBRL(pr.total) + '</strong> cobrado de uma vez &middot; ' + days + ' dias</div>';
+      }
+      html += '<div class="pricing-divider"></div>';
+      html += '<div class="pricing-feat"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20,6 9,17 4,12"/></svg><span><strong>' + pl.backtests + '</strong> backtests/m&ecirc;s</span></div>';
+      html += '<div class="pricing-feat"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20,6 9,17 4,12"/></svg><span><strong>' + pl.salvos + '</strong> estrat&eacute;gias salvas simult&acirc;neas</span></div>';
+      html += '<div class="pricing-feat"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20,6 9,17 4,12"/></svg><span>Todos os indicadores e ativos</span></div>';
+      html += '<div class="pricing-feat"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20,6 9,17 4,12"/></svg><span>Relat&oacute;rio de performance completo</span></div>';
+      card.innerHTML = html;
+      grid.appendChild(card);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    renderPricingCards();
+    var toggle = document.getElementById('pricing-toggle');
+    if (!toggle) return;
+    toggle.addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-cycle]');
+      if (!btn) return;
+      activeCycle = btn.dataset.cycle;
+      toggle.querySelectorAll('.pricing-cycle-btn').forEach(function(b) {
+        b.classList.toggle('active', b === btn);
+      });
+      renderPricingCards();
+    });
+  });
+})();
+</script>
+
 
 <!-- ═══ FAQ ═══ -->
 <section class="section" id="faq" style="background:var(--bg1);border-top:1px solid var(--bd);border-bottom:1px solid var(--bd)">

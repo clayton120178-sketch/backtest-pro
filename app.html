@@ -462,9 +462,28 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .asset-selected .asset-ticker{font-size:13px;font-weight:800;color:var(--pr);font-family:'JetBrains Mono',monospace}
 .asset-selected .asset-name{font-size:13px;color:var(--tx);flex:1}
 
+/* ─── STORAGE MODALS ─── */
+.storage-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px}
+.storage-modal{background:var(--bg2);border:0.5px solid var(--bd);border-radius:16px;padding:28px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.storage-modal-title{font-size:15px;font-weight:700;color:var(--tx);margin-bottom:12px;line-height:1.4}
+.storage-modal-body{font-size:13px;color:var(--txs);line-height:1.6;margin-bottom:20px}
+.storage-modal-body strong{color:var(--tx)}
+.storage-modal-oldest{background:var(--bg3);border:0.5px solid var(--bd);border-radius:8px;padding:10px 14px;margin:12px 0;font-size:12px;color:var(--txm);font-family:'JetBrains Mono',monospace}
+.storage-modal-btns{display:flex;gap:10px;flex-wrap:wrap}
+.storage-modal-btns button{flex:1;padding:12px 16px;border-radius:10px;border:0.5px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;min-width:140px}
+.storage-modal-btns button:hover{background:var(--bg2);border-color:var(--bdh)}
+.storage-modal-trial-btn{width:100%;padding:13px 16px;border-radius:10px;border:none;background:#00D4AA;color:#0A0A0F;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;transition:opacity .15s}
+.storage-modal-trial-btn:hover{opacity:.9}
+.storage-modal-close-link{display:block;text-align:center;font-size:12px;color:var(--txm);cursor:pointer;margin-top:4px;text-decoration:underline;text-underline-offset:3px}
+/* Toast */
+#storage-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(40px);background:var(--bg2);border:0.5px solid var(--bd);color:var(--tx);font-size:13px;padding:10px 18px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:10000;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap}
+#storage-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
 </style>
 </head>
 <body>
+<div id="storage-modal-overlay" class="storage-modal-overlay" style="display:none"></div>
+<div id="storage-toast"></div>
 <div id="app">
   <header>
     <div class="logo">
@@ -5877,6 +5896,7 @@ async function startLoading() {
       }
       EQ_ANALYSIS = computeAnalysis(EQ, deposit);
 
+      CURRENT_BACKTEST_ID = submission.backtest_id || null;
       // Completar barra e mostrar resultados
       const fill = document.querySelector('.load-fill');
       if (fill) fill.style.width = '100%';
@@ -6108,14 +6128,36 @@ function renderResults() {
     const shBtn=h('button',{class:'btn btnS',onclick:shareResult});shBtn.innerHTML=IC.share+' Compartilhar';
     acts.append(backBtn,dlBtn,shBtn);
   } else {
-    const resetBtn=h('button',{class:'btn btnP',style:{flex:'1 1 auto',justifyContent:'center'},onclick:()=>{state.animate=true;state.screen='wizard';state.step=0;state.maxDone=0;renderApp();}});
+    const resetBtn=h('button',{class:'btn btnP',style:{flex:'1 1 auto',justifyContent:'center'},onclick:()=>verificarArmazenagemAoSair(()=>{state.animate=true;state.screen='wizard';state.step=0;state.maxDone=0;renderApp();})});
     resetBtn.innerHTML=IC.ref+' Ajustar e testar novamente';
     const dlBtn=h('button',{class:'btn btnS'});dlBtn.innerHTML=IC.dl+' Exportar PDF';
-    const svBtn=h('button',{class:'btn btnS'});svBtn.innerHTML=IC.save+' Salvar';
+    const svBtn=h('button',{class:'btn btnS',onclick:()=>verificarArmazenagemAoSair(null)});svBtn.innerHTML=IC.save+' Salvar';
     const shBtn=h('button',{class:'btn btnS',onclick:shareResult});shBtn.innerHTML=IC.share+' Compartilhar';
     acts.append(resetBtn,dlBtn,svBtn,shBtn);
   }
   el.appendChild(acts);
+
+  // Interceptar navegação de saída da tela de resultados
+  history.pushState({ backtestResult: true }, '');
+  const _popstateHandler = (e) => {
+    if (!e.state || !e.state.backtestResult) {
+      window.removeEventListener('popstate', _popstateHandler);
+      verificarArmazenagemAoSair(() => {});
+    }
+  };
+  window.addEventListener('popstate', _popstateHandler);
+
+  const _beforeUnloadHandler = (e) => {
+    e.preventDefault();
+    e.returnValue = '';
+  };
+  window.addEventListener('beforeunload', _beforeUnloadHandler);
+  // Remove beforeunload quando sair da tela via navegação interna
+  el._cleanupResultListeners = () => {
+    window.removeEventListener('popstate', _popstateHandler);
+    window.removeEventListener('beforeunload', _beforeUnloadHandler);
+  };
+
   return el;
 }
 
@@ -6309,14 +6351,236 @@ function renderApp() {
   state.animate=false;
 }
 
+// ─── ARMAZENAGEM DE BACKTESTS ────────────────────────────────
+async function contarBacktestsSalvos(userId) {
+  const session = await db.auth.getSession();
+  const token = session?.data?.session?.access_token;
+  if (!token) return 0;
+  const res = await fetch(
+    SUPA_URL + '/rest/v1/backtests?select=id&user_id=eq.' + userId + '&saved=eq.true',
+    { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + token, 'Prefer': 'count=exact', 'Range': '0-0' } }
+  );
+  const range = res.headers.get('Content-Range');
+  if (!range) return 0;
+  const total = parseInt(range.split('/')[1], 10);
+  return isNaN(total) ? 0 : total;
+}
+
+async function buscarBacktestMaisAntigo(userId) {
+  const session = await db.auth.getSession();
+  const token = session?.data?.session?.access_token;
+  if (!token) return null;
+  const res = await fetch(
+    SUPA_URL + '/rest/v1/backtests?select=id,created_at,config&user_id=eq.' + userId + '&saved=eq.true&order=created_at.asc&limit=1',
+    { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + token } }
+  );
+  const data = await res.json();
+  return (Array.isArray(data) && data.length > 0) ? data[0] : null;
+}
+
+async function salvarBacktest(backtestId) {
+  if (!backtestId) return;
+  const session = await db.auth.getSession();
+  const token = session?.data?.session?.access_token;
+  if (!token) return;
+  await fetch(
+    SUPA_URL + '/rest/v1/backtests?id=eq.' + backtestId,
+    {
+      method: 'PATCH',
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ saved: true })
+    }
+  );
+}
+
+async function removerSalvo(backtestId) {
+  if (!backtestId) return;
+  const session = await db.auth.getSession();
+  const token = session?.data?.session?.access_token;
+  if (!token) return;
+  await fetch(
+    SUPA_URL + '/rest/v1/backtests?id=eq.' + backtestId,
+    {
+      method: 'PATCH',
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ saved: false })
+    }
+  );
+}
+
+function showStorageToast(msg) {
+  const toast = document.getElementById('storage-toast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 4000);
+}
+
+function fecharModalArmazenagem() {
+  const overlay = document.getElementById('storage-modal-overlay');
+  if (overlay) { overlay.style.display = 'none'; overlay.innerHTML = ''; }
+}
+
+function exibirModalLimiteSalvos(limite, maisAntigo, onSalvar, onSairSemSalvar) {
+  const overlay = document.getElementById('storage-modal-overlay');
+  if (!overlay) return;
+
+  const planoNome = currentSub ? (PLANOS[currentSub.plan] ? PLANOS[currentSub.plan].nome : currentSub.plan) : 'atual';
+
+  let olderDesc = 'Backtest mais antigo';
+  if (maisAntigo) {
+    const d = new Date(maisAntigo.created_at);
+    const dateStr = d.toLocaleDateString('pt-BR');
+    const timeStr = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const cfg = maisAntigo.config || {};
+    const asset = cfg.asset || '?';
+    const tf = cfg.tf || '?';
+    const cond = (cfg.conditions && cfg.conditions[0]) ? cfg.conditions[0].indicator || '?' : '?';
+    olderDesc = asset + ' \u00b7 ' + tf + ' \u00b7 ' + cond + ' \u00b7 ' + dateStr + ' \u00e0s ' + timeStr;
+  }
+
+  overlay.style.display = 'flex';
+  overlay.innerHTML = '<div class="storage-modal">' +
+    '<div class="storage-modal-title">Limite de ' + limite + ' estrat\u00e9gias salvas atingido</div>' +
+    '<div class="storage-modal-body">' +
+      'Voc\u00ea atingiu o limite de <strong>' + limite + ' estrat\u00e9gias salvas</strong> do seu plano <strong>' + planoNome + '</strong>.' +
+      '<br><br>Este backtest n\u00e3o foi adicionado ao seu hist\u00f3rico de consultas.' +
+      '<br><br>Para salvar este resultado, o backtest mais antigo do seu hist\u00f3rico ser\u00e1 removido:' +
+      '<div class="storage-modal-oldest">' + olderDesc + '</div>' +
+      'Deseja salvar este resultado e remover o backtest acima?' +
+    '</div>' +
+    '<div class="storage-modal-btns">' +
+      '<button id="storage-btn-save">Salvar e remover o mais antigo</button>' +
+      '<button id="storage-btn-skip">Sair sem salvar</button>' +
+    '</div>' +
+  '</div>';
+
+  document.getElementById('storage-btn-save').addEventListener('click', async () => {
+    fecharModalArmazenagem();
+    if (maisAntigo) await removerSalvo(maisAntigo.id);
+    await salvarBacktest(CURRENT_BACKTEST_ID);
+    const d = maisAntigo ? new Date(maisAntigo.created_at).toLocaleDateString('pt-BR') : '';
+    showStorageToast('Backtest salvo. O registro de ' + d + ' foi removido do hist\u00f3rico.');
+    if (onSalvar) onSalvar();
+  });
+
+  document.getElementById('storage-btn-skip').addEventListener('click', () => {
+    fecharModalArmazenagem();
+    if (onSairSemSalvar) onSairSemSalvar();
+  });
+}
+
+function exibirModalFimTrial(onContinuar) {
+  const overlay = document.getElementById('storage-modal-overlay');
+  if (!overlay) return;
+
+  overlay.style.display = 'flex';
+  overlay.innerHTML = '<div class="storage-modal">' +
+    '<div class="storage-modal-title">Voc\u00ea utilizou todos os 5 backtests gratuitos.</div>' +
+    '<div class="storage-modal-body">' +
+      'Seus 5 resultados est\u00e3o salvos no seu hist\u00f3rico e continuar\u00e3o acess\u00edveis ap\u00f3s a assinatura.' +
+      '<br><br>Para continuar testando suas estrat\u00e9gias, escolha um plano.' +
+    '</div>' +
+    '<button class="storage-modal-trial-btn" id="storage-btn-plans">Ver planos e assinar</button>' +
+    '<span class="storage-modal-close-link" id="storage-btn-close">Fechar</span>' +
+  '</div>';
+
+  document.getElementById('storage-btn-plans').addEventListener('click', () => {
+    fecharModalArmazenagem();
+    showScreen('plans');
+  });
+
+  document.getElementById('storage-btn-close').addEventListener('click', () => {
+    fecharModalArmazenagem();
+    if (onContinuar) onContinuar();
+  });
+}
+
+async function verificarArmazenagemAoSair(onProsseguir) {
+  // Sem backtest atual para salvar
+  if (!CURRENT_BACKTEST_ID || !currentUser) {
+    if (onProsseguir) onProsseguir();
+    return;
+  }
+
+  // Limpar listeners da tela de resultados
+  const resultsEl = document.querySelector('.results-screen');
+  if (resultsEl && resultsEl._cleanupResultListeners) resultsEl._cleanupResultListeners();
+
+  const plan = currentSub ? currentSub.plan : 'trial';
+
+  // Trial: verificar se é o 5º
+  if (plan === 'trial' || !currentSub) {
+    // Contar quantos backtests o usuário tem salvos
+    const salvos = await contarBacktestsSalvos(currentUser.id);
+    if (salvos >= FREE_TRIAL.backtests_max) {
+      exibirModalFimTrial(onProsseguir);
+      return;
+    }
+    // Ainda dentro do trial: salvar automaticamente
+    await salvarBacktest(CURRENT_BACKTEST_ID);
+    if (onProsseguir) onProsseguir();
+    return;
+  }
+
+  // Usuário pago: verificar limite de salvos
+  if (!PLANOS[plan]) {
+    if (onProsseguir) onProsseguir();
+    return;
+  }
+
+  const limite = PLANOS[plan].salvos_max;
+  const salvosAtuais = await contarBacktestsSalvos(currentUser.id);
+
+  if (salvosAtuais < limite) {
+    await salvarBacktest(CURRENT_BACKTEST_ID);
+    if (onProsseguir) onProsseguir();
+  } else {
+    const maisAntigo = await buscarBacktestMaisAntigo(currentUser.id);
+    exibirModalLimiteSalvos(limite, maisAntigo,
+      () => { if (onProsseguir) onProsseguir(); },
+      () => { if (onProsseguir) onProsseguir(); }
+    );
+  }
+}
+
 // ─── CONFIG ───────────────────────────────────────────────────
 const SUPA_URL = 'https://lmrpxtshdiwufbfkaymg.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtcnB4dHNoZGl3dWZiZmtheW1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4OTM1MjQsImV4cCI6MjA4OTQ2OTUyNH0.c8giT7wbSAcHecrHR9IMB1x39Uy_TTA5p2-Q_QyQvXs';
 const MP_PUBLIC_KEY = 'APP_USR-f040f8b2-6edf-4ace-abfb-4f03653bfbc2';
-const PRICES = {
-  essencial: { mensal: 149.90, semestral: 799.90, anual: 1499.90 },
-  pro:       { mensal: 199.90, semestral: 999.90, anual: 2199.90 },
+const PLANOS = {
+  starter: {
+    nome: 'Starter',
+    backtests_mes: 100,
+    salvos_max: 20,
+    precos: {
+      mensal:    { parcela: 109.90, total: 109.90,  meses: 1  },
+      semestral: { parcela:  99.90, total: 599.40,  meses: 6  },
+      anual:     { parcela:  87.00, total: 1044.00, meses: 12 }
+    }
+  },
+  advanced: {
+    nome: 'Advanced',
+    backtests_mes: 150,
+    salvos_max: 40,
+    precos: {
+      mensal:    { parcela: 139.90, total: 139.90,  meses: 1  },
+      semestral: { parcela: 129.90, total: 779.40,  meses: 6  },
+      anual:     { parcela: 109.90, total: 1318.80, meses: 12 }
+    }
+  },
+  elite: {
+    nome: 'Elite',
+    backtests_mes: 200,
+    salvos_max: 60,
+    precos: {
+      mensal:    { parcela: 159.90, total: 159.90,  meses: 1  },
+      semestral: { parcela: 149.90, total: 899.40,  meses: 6  },
+      anual:     { parcela: 129.90, total: 1558.80, meses: 12 }
+    }
+  }
 };
+const FREE_TRIAL = { backtests_max: 5, salvos_max: 5 };
 const CYCLE_DAYS = { mensal: 30, semestral: 180, anual: 365 };
 
 // ─── SUPABASE ─────────────────────────────────────────────────
@@ -6325,8 +6589,9 @@ const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 // ─── STATE ────────────────────────────────────────────────────
 let currentUser = null;
 let currentSub  = null;
-let selectedPlan  = 'essencial';
+let selectedPlan  = 'starter';
 let selectedCycle = 'mensal';
+let CURRENT_BACKTEST_ID = null;
 let payMethod = 'pix';
 let mpInstance = null;
 let cardForm = null;
@@ -6373,6 +6638,9 @@ async function loadSubscription(accessToken) {
 
 // ─── SCREENS ──────────────────────────────────────────────────
 function showScreen(name) {
+  // Limpar listeners da tela de resultados se existirem
+  const resultsEl = document.querySelector('.results-screen');
+  if (resultsEl && resultsEl._cleanupResultListeners) resultsEl._cleanupResultListeners();
   currentScreen = name;
   if (window.cardPaymentBrickController) { try { window.cardPaymentBrickController.unmount(); } catch(e){} window.cardPaymentBrickController = null; }
   cardForm = null; mpInstance = null; mpMounted = false;
@@ -6412,12 +6680,7 @@ function renderNoSub() {
 function renderPlans() {
   const el = document.createElement('div');
   el.className = 'plans-screen';
-  const feats = {
-    essencial: [[true,'Backtests ilimitados'],[true,'Todos os indicadores e ativos'],[true,'Relatório de performance completo'],[true,'Histórico de backtests salvos'],[true,'Ranking e portfólio de estratégias'],[false,'Otimização de parâmetros'],[false,'Teste de robustez']],
-    pro: [[true,'Tudo do Essencial'],[true,'Otimização de parâmetros'],[true,'Teste de robustez (anti-overfitting)'],[true,'Exportação de relatório PDF'],[true,'Compartilhamento de resultado']],
-  };
   const cycleLabel = { mensal:'Mensal', semestral:'Semestral', anual:'Anual' };
-  const disc = { mensal:'', semestral:' · 11% off', anual:' · 30% off' };
 
   // Header
   const hdr = document.createElement('div');
@@ -6445,29 +6708,27 @@ function renderPlans() {
   const grid = document.createElement('div');
   grid.className = 'plans-grid';
 
-  ['essencial','pro'].forEach(plan => {
-    const price = PRICES[plan][selectedCycle];
-    const isPro = plan === 'pro';
+  ['starter','advanced','elite'].forEach(plan => {
+    const plano = PLANOS[plan];
+    const preco = plano.precos[selectedCycle];
+    const isAdvanced = plan === 'advanced';
     const days = CYCLE_DAYS[selectedCycle];
 
     const card = document.createElement('div');
-    card.className = 'plan-card' + (!isPro ? ' featured' : '');
+    card.className = 'plan-card' + (isAdvanced ? ' featured' : '');
 
-    // Badge Popular
-    if (!isPro) {
+    if (isAdvanced) {
       const pop = document.createElement('div');
       pop.className = 'plan-popular';
       pop.textContent = 'Popular';
       card.appendChild(pop);
     }
 
-    // Plan name
     const nm = document.createElement('div');
     nm.className = 'plan-name';
-    nm.textContent = plan === 'essencial' ? 'ESSENCIAL' : 'PRO';
+    nm.textContent = plano.nome.toUpperCase();
     card.appendChild(nm);
 
-    // Price block
     const priceBlock = document.createElement('div');
     priceBlock.style.cssText = 'margin-bottom:4px';
     const priceEl = document.createElement('div');
@@ -6477,26 +6738,33 @@ function renderPlans() {
     currency.textContent = 'R$';
     const val = document.createElement('span');
     val.style.cssText = 'font-size:44px;font-weight:800;color:var(--tx);font-family:"JetBrains Mono",monospace;letter-spacing:-.04em;line-height:1';
-    val.textContent = price.toLocaleString('pt-BR', {minimumFractionDigits:2});
+    val.textContent = preco.parcela.toLocaleString('pt-BR', {minimumFractionDigits:2});
     priceEl.append(currency, val);
     priceBlock.appendChild(priceEl);
     card.appendChild(priceBlock);
 
-    // Cycle note
     const note = document.createElement('div');
     note.style.cssText = 'font-size:12px;color:var(--txm);margin-bottom:22px';
-    note.textContent = `acesso por ${days} dias · cobrança única`;
+    if (selectedCycle === 'mensal') {
+      note.textContent = 'acesso por ' + days + ' dias \u00b7 cobran\u00e7a \u00fanica';
+    } else {
+      note.innerHTML = '/m\u00eas \u00b7 <strong>R$ ' + preco.total.toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</strong> cobrado de uma vez \u00b7 ' + days + ' dias';
+    }
     card.appendChild(note);
 
-    // Divider
     const div2 = document.createElement('div');
     div2.style.cssText = 'height:0.5px;background:var(--bd);margin-bottom:20px';
     card.appendChild(div2);
 
-    // Features
     const featList = document.createElement('div');
     featList.className = 'plan-features';
-    feats[plan].forEach(([ok, txt]) => {
+    [
+      [true, plano.backtests_mes + ' backtests/m\u00eas'],
+      [true, plano.salvos_max + ' estrat\u00e9gias salvas simult\u00e2neas'],
+      [true, 'Todos os indicadores e ativos'],
+      [true, 'Relat\u00f3rio de performance completo'],
+      [true, 'Hist\u00f3rico de backtests'],
+    ].forEach(([ok, txt]) => {
       const row = document.createElement('div');
       row.className = 'plan-feature' + (ok ? ' ok' : '');
       const icon = document.createElement('div');
@@ -6511,11 +6779,10 @@ function renderPlans() {
     });
     card.appendChild(featList);
 
-    // CTA button
     const cta = document.createElement('button');
-    cta.className = 'plan-btn' + (!isPro ? ' featured-btn' : '');
+    cta.className = 'plan-btn' + (isAdvanced ? ' featured-btn' : '');
     cta.style.cssText = 'margin-top:24px';
-    cta.textContent = 'Assinar ' + (plan === 'essencial' ? 'Essencial' : 'Pro');
+    cta.textContent = 'Assinar ' + plano.nome;
     cta.addEventListener('click', () => { selectedPlan = plan; showScreen('payment'); });
     card.appendChild(cta);
 
@@ -6538,15 +6805,17 @@ function renderPlans() {
 }
 
 function renderPayment() {
-  const price = PRICES[selectedPlan][selectedCycle];
+  const planoAtual = PLANOS[selectedPlan];
+  const precoAtual = planoAtual.precos[selectedCycle];
+  const price = precoAtual.total;
   const el = document.createElement('div');
   el.className = 'pay-screen';
   el.innerHTML = `
     <button class="pay-back" onclick="showScreen('plans')">← Voltar aos planos</button>
     <div class="pay-title">Finalizar assinatura</div>
-    <div class="pay-sub">Plano ${selectedPlan.charAt(0).toUpperCase()+selectedPlan.slice(1)} · ${selectedCycle.charAt(0).toUpperCase()+selectedCycle.slice(1)}</div>
+    <div class="pay-sub">Plano ${PLANOS[selectedPlan].nome} · ${selectedCycle.charAt(0).toUpperCase()+selectedCycle.slice(1)}</div>
     <div class="pay-summary">
-      <span class="pay-summary-label">${selectedPlan.charAt(0).toUpperCase()+selectedPlan.slice(1)} · ${selectedCycle} · ${CYCLE_DAYS[selectedCycle]} dias</span>
+      <span class="pay-summary-label">${PLANOS[selectedPlan].nome} · ${selectedCycle} · ${CYCLE_DAYS[selectedCycle]} dias</span>
       <span class="pay-summary-val">R$ ${price.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
     </div>
     <div class="pay-methods" id="pay-methods">
@@ -6607,7 +6876,7 @@ async function renderCardBrick() {
   if (!container) return;
   if (mpMounted) return;
   mpMounted = true;
-  const price = PRICES[selectedPlan][selectedCycle];
+  const price = PLANOS[selectedPlan].precos[selectedCycle].total;
   try {
     mpInstance = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
     const bricksBuilder = mpInstance.bricks();
@@ -6715,7 +6984,7 @@ function showPaySuccess() {
     <div class="pay-screen"><div class="pay-success">
       <div class="pay-success-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
       <h3>Assinatura ativada!</h3>
-      <p>Plano <strong>${selectedPlan.charAt(0).toUpperCase()+selectedPlan.slice(1)}</strong> ativo por ${CYCLE_DAYS[selectedCycle]} dias.</p>
+      <p>Plano <strong>${PLANOS[selectedPlan].nome}</strong> ativo por ${CYCLE_DAYS[selectedCycle]} dias.</p>
       <button onclick="renderApp()" style="padding:13px 32px;border-radius:10px;border:none;background:#00D4AA;color:#0A0A0F;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">Acessar o Backtest Pro</button>
     </div></div>`;
 }
