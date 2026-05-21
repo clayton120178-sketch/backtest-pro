@@ -111,7 +111,7 @@ def cmd_install():
   </Triggers>
   <Principals>
     <Principal id="Author">
-      <LogonType>S4U</LogonType>
+      <LogonType>InteractiveToken</LogonType>
       <RunLevel>HighestAvailable</RunLevel>
     </Principal>
   </Principals>
