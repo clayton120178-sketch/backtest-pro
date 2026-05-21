@@ -283,32 +283,6 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .confirm-key{font-size:10px;font-weight:800;color:var(--txs);text-transform:uppercase;letter-spacing:.09em;margin-bottom:3px}
 .confirm-val{font-size:14px;color:var(--tx);line-height:1.6}
 
-/* ── AUTH ────────────────────────────────────────────────── */
-.auth-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(12px);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px}
-.auth-modal{background:var(--bg1);border:0.5px solid var(--bdh);border-radius:20px;width:100%;max-width:420px;padding:36px 32px;box-shadow:0 32px 80px rgba(0,0,0,.8)}
-.auth-logo{display:flex;align-items:center;gap:9px;margin-bottom:28px;justify-content:center}
-.auth-logo-icon{width:32px;height:32px;border-radius:8px;background:var(--acd2);border:0.5px solid var(--ac);display:flex;align-items:center;justify-content:center}
-.auth-logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--tx);letter-spacing:-.02em}
-.auth-logo-text span{color:var(--ac)}
-.auth-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--tx);margin-bottom:6px;text-align:center;letter-spacing:-.02em}
-.auth-sub{font-size:13px;color:var(--txs);text-align:center;margin-bottom:24px;line-height:1.5}
-.auth-field{margin-bottom:14px}
-.auth-field label{display:block;font-size:10px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.09em;margin-bottom:7px}
-.auth-input{width:100%;background:var(--bg3);border:0.5px solid var(--bd);border-radius:9px;color:var(--tx);padding:11px 14px;font-size:14px;font-family:inherit;outline:none;transition:border-color var(--t2),box-shadow var(--t2);box-sizing:border-box}
-.auth-input:focus{border-color:var(--ac);box-shadow:0 0 0 3px var(--acd)}
-.auth-input::placeholder{color:var(--txm)}
-.auth-btn{width:100%;padding:13px;border-radius:9px;border:none;background:var(--pr);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all var(--t1) var(--spring);margin-top:4px;letter-spacing:-.01em}
-.auth-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,187,128,.25)}
-.auth-btn:active{transform:scale(.97)}
-.auth-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
-.auth-error{background:var(--dgd);border:0.5px solid rgba(238,58,58,.2);border-radius:8px;padding:10px 13px;font-size:12px;color:var(--dg);margin-bottom:14px;display:none}
-.auth-error.show{display:block}
-.auth-divider{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--txm);font-size:12px}
-.auth-divider::before,.auth-divider::after{content:'';flex:1;height:0.5px;background:var(--bd)}
-.auth-google{width:100%;padding:11px;border-radius:9px;border:0.5px solid var(--bd);background:transparent;color:var(--txs);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all var(--t1) var(--spring);display:flex;align-items:center;justify-content:center;gap:9px;box-sizing:border-box}
-.auth-google:hover{color:var(--tx);border-color:var(--bdh);transform:translateY(-1px)}
-.auth-toggle{text-align:center;margin-top:20px;font-size:13px;color:var(--txs)}
-.auth-toggle a{color:var(--ac);cursor:pointer;font-weight:600}
 
 /* Avatar menu */
 .avatar-wrap{position:relative}
@@ -479,9 +453,148 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 #storage-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(40px);background:var(--bg2);border:0.5px solid var(--bd);color:var(--tx);font-size:13px;padding:10px 18px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:10000;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap}
 #storage-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* ─── AUTH SCREENS ─────────────────────────────────────────── */
+#loading-oauth{
+  position:fixed;inset:0;background:var(--bg0);z-index:9999;
+  display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;
+}
+#loading-oauth .spin{
+  width:32px;height:32px;border:2.5px solid var(--bd);
+  border-top-color:var(--ac);border-radius:50%;animation:spin .7s linear infinite;
+}
+#loading-oauth p{font-size:13px;color:var(--txs);}
+#auth-login{
+  position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(12px);
+  z-index:2000;display:none;align-items:center;justify-content:center;padding:16px;
+}
+#auth-cadastro{
+  position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(12px);
+  z-index:2000;display:none;align-items:center;justify-content:center;padding:16px;
+}
+.auth-modal{
+  background:var(--bg1);border:0.5px solid var(--bdh);border-radius:20px;
+  width:100%;max-width:420px;padding:36px 32px;box-shadow:0 32px 80px rgba(0,0,0,.8);
+}
+.auth-logo{display:flex;align-items:center;gap:9px;margin-bottom:28px;justify-content:center}
+.auth-logo-icon{
+  width:32px;height:32px;border-radius:8px;background:var(--acd2);
+  border:0.5px solid var(--ac);display:flex;align-items:center;justify-content:center;
+}
+.auth-logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--tx);letter-spacing:-.02em}
+.auth-logo-text span{color:var(--ac)}
+.auth-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--tx);margin-bottom:6px;text-align:center;letter-spacing:-.02em}
+.auth-sub{font-size:13px;color:var(--txs);text-align:center;margin-bottom:24px;line-height:1.5}
+.auth-field{margin-bottom:14px}
+.auth-field label{display:block;font-size:10px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.09em;margin-bottom:7px}
+.auth-input{
+  width:100%;background:var(--bg3);border:0.5px solid var(--bd);border-radius:9px;
+  color:var(--tx);padding:11px 14px;font-size:14px;font-family:inherit;outline:none;
+  transition:border-color var(--t2),box-shadow var(--t2);box-sizing:border-box;
+}
+.auth-input:focus{border-color:var(--ac);box-shadow:0 0 0 3px var(--acd)}
+.auth-input::placeholder{color:var(--txm)}
+.auth-btn{
+  width:100%;padding:13px;border-radius:9px;border:none;background:var(--pr);color:#fff;
+  font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;
+  transition:all var(--t1) var(--spring);margin-top:4px;letter-spacing:-.01em;
+}
+.auth-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,187,128,.25)}
+.auth-btn:active{transform:scale(.97)}
+.auth-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.auth-error{
+  background:var(--dgd);border:0.5px solid rgba(238,58,58,.2);border-radius:8px;
+  padding:10px 13px;font-size:12px;color:var(--dg);margin-bottom:14px;display:none;
+}
+.auth-error.show{display:block}
+.auth-divider{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--txm);font-size:12px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:0.5px;background:var(--bd)}
+.auth-google{
+  width:100%;padding:11px;border-radius:9px;border:0.5px solid var(--bd);background:transparent;
+  color:var(--txs);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;
+  transition:all var(--t1) var(--spring);display:flex;align-items:center;
+  justify-content:center;gap:9px;box-sizing:border-box;
+}
+.auth-google:hover{color:var(--tx);border-color:var(--bdh);transform:translateY(-1px)}
+.auth-toggle{text-align:center;margin-top:20px;font-size:13px;color:var(--txs)}
+.auth-toggle a{color:var(--ac);cursor:pointer;font-weight:600}
+
 </style>
 </head>
 <body>
+<!-- LOADING OAUTH -->
+<div id="loading-oauth">
+  <div class="spin"></div>
+  <p>Autenticando...</p>
+</div>
+
+<!-- TELA DE LOGIN -->
+<div id="auth-login">
+  <div class="auth-modal">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round">
+          <path d="M3 3v18h18"/><path d="m9 17 3-5 3 3 3-5"/>
+        </svg>
+      </div>
+      <div class="auth-logo-text">Backtest<span> Pro</span></div>
+    </div>
+    <div class="auth-title">Entrar na sua conta</div>
+    <div class="auth-sub">Acesse sua conta para continuar.</div>
+    <div class="auth-error" id="login-error"></div>
+    <div class="auth-field">
+      <label>E-mail</label>
+      <input class="auth-input" id="login-email" type="email" placeholder="seu@email.com">
+    </div>
+    <div class="auth-field">
+      <label>Senha</label>
+      <input class="auth-input" id="login-senha" type="password" placeholder="••••••••">
+    </div>
+    <button class="auth-btn" id="login-submit" onclick="loginEmail()">Entrar</button>
+    <div class="auth-divider">ou</div>
+    <button class="auth-google" onclick="loginGoogle()">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+      Continuar com Google
+    </button>
+    <div class="auth-toggle">Não tem conta? <a onclick="mostrarCadastro()">Criar conta</a></div>
+  </div>
+</div>
+
+<!-- TELA DE CADASTRO -->
+<div id="auth-cadastro">
+  <div class="auth-modal">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round">
+          <path d="M3 3v18h18"/><path d="m9 17 3-5 3 3 3-5"/>
+        </svg>
+      </div>
+      <div class="auth-logo-text">Backtest<span> Pro</span></div>
+    </div>
+    <div class="auth-title">Criar conta</div>
+    <div class="auth-sub">Crie sua conta para começar.</div>
+    <div class="auth-error" id="cad-error"></div>
+    <div class="auth-field">
+      <label>Nome</label>
+      <input class="auth-input" id="cad-nome" type="text" placeholder="Seu nome">
+    </div>
+    <div class="auth-field">
+      <label>E-mail</label>
+      <input class="auth-input" id="cad-email" type="email" placeholder="seu@email.com">
+    </div>
+    <div class="auth-field">
+      <label>Senha</label>
+      <input class="auth-input" id="cad-senha" type="password" placeholder="Mínimo 6 caracteres">
+    </div>
+    <button class="auth-btn" id="cad-submit" onclick="cadastrar()">Criar conta</button>
+    <div class="auth-divider">ou</div>
+    <button class="auth-google" onclick="loginGoogle()">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+      Continuar com Google
+    </button>
+    <div class="auth-toggle">Já tem conta? <a onclick="mostrarLogin()">Entrar</a></div>
+  </div>
+</div>
+
 <div id="storage-modal-overlay" class="storage-modal-overlay" style="display:none"></div>
 <div id="storage-toast"></div>
 <div id="app">
@@ -6543,9 +6656,6 @@ async function verificarArmazenagemAoSair(onProsseguir) {
   }
 }
 
-// ─── CONFIG ───────────────────────────────────────────────────
-const SUPA_URL = 'https://lmrpxtshdiwufbfkaymg.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtcnB4dHNoZGl3dWZiZmtheW1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4OTM1MjQsImV4cCI6MjA4OTQ2OTUyNH0.c8giT7wbSAcHecrHR9IMB1x39Uy_TTA5p2-Q_QyQvXs';
 const MP_PUBLIC_KEY = 'APP_USR-f040f8b2-6edf-4ace-abfb-4f03653bfbc2';
 const PLANOS = {
   starter: {
@@ -6581,17 +6691,199 @@ const PLANOS = {
 };
 const FREE_TRIAL = { backtests_max: 5, salvos_max: 5 };
 const CYCLE_DAYS = { mensal: 30, semestral: 180, anual: 365 };
+// ─── CONFIG ──────────────────────────────────────────────────────────
+const SUPA_URL = 'https://lmrpxtshdiwufbfkaymg.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtcnB4dHNoZGl3dWZiZmtheW1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4OTM1MjQsImV4cCI6MjA4OTQ2OTUyNH0.c8giT7wbSAcHecrHR9IMB1x39Uy_TTA5p2-Q_QyQvXs';
 
-// ─── SUPABASE ─────────────────────────────────────────────────
-const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+// ─── SUPABASE CLIENT ──────────────────────────────────────────────
+const { createClient } = supabase;
+const db = createClient(SUPA_URL, SUPA_KEY);
 window.db = db;
-window.loginGoogle = function() {
-  db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/app.html' } });
-};
+
+// ─── ESTADOS GLOBAIS DE AUTH ─────────────────────────────────────
+let currentUser       = null;
+let currentUsuario    = null;
+let currentSub        = null;
+let currentScreen     = null;
+let currentTrialCount = 0;
+
+// ─── IIFE: detecta retorno de OAuth ───────────────────────────
+(function(){
+  const h = window.location.hash;
+  if(h && (h.includes('access_token') || h.includes('error_description'))){
+    const lo = document.getElementById('loading-oauth');
+    if(lo) lo.style.display = 'flex';
+    const al = document.getElementById('auth-login');
+    if(al) al.style.display = 'none';
+  }
+})();
+
+function hideAllAuth(){
+  ['loading-oauth','auth-login','auth-cadastro'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.style.display = 'none';
+  });
+}
+
+function mostrarLogin(){
+  hideAllAuth();
+  const el = document.getElementById('auth-login');
+  if(el) el.style.display = 'flex';
+  setTimeout(()=>document.getElementById('login-email')?.focus(), 100);
+}
+
+function mostrarCadastro(){
+  hideAllAuth();
+  const el = document.getElementById('auth-cadastro');
+  if(el) el.style.display = 'flex';
+  setTimeout(()=>document.getElementById('cad-nome')?.focus(), 100);
+}
+
+function traduzirErro(msg){
+  if(msg.includes('Invalid login'))       return 'E-mail ou senha incorretos.';
+  if(msg.includes('Email not confirmed')) return 'Confirme seu e-mail antes de entrar.';
+  if(msg.includes('already registered')) return 'Este e-mail já está cadastrado.';
+  if(msg.includes('User already registered')) return 'E-mail já cadastrado. Faça login.';
+  if(msg.includes('Password should'))    return 'A senha deve ter pelo menos 6 caracteres.';
+  return msg;
+}
+
+function mostrarErroAuth(elId, msg){
+  const el = document.getElementById(elId);
+  if(!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+}
+function limparErroAuth(elId){
+  const el = document.getElementById(elId);
+  if(el){ el.textContent=''; el.classList.remove('show'); }
+}
+
+async function loginEmail(){
+  limparErroAuth('login-error');
+  const email = document.getElementById('login-email')?.value?.trim();
+  const senha  = document.getElementById('login-senha')?.value;
+  const btn    = document.getElementById('login-submit');
+  if(!email || !senha){ mostrarErroAuth('login-error','Preencha todos os campos.'); return; }
+  if(btn){ btn.disabled=true; btn.textContent='Entrando...'; }
+  const { error } = await db.auth.signInWithPassword({ email, password: senha });
+  if(error){
+    mostrarErroAuth('login-error', traduzirErro(error.message));
+    if(btn){ btn.disabled=false; btn.textContent='Entrar'; }
+    return;
+  }
+}
+
+async function cadastrar(){
+  limparErroAuth('cad-error');
+  const nome  = document.getElementById('cad-nome')?.value?.trim();
+  const email = document.getElementById('cad-email')?.value?.trim();
+  const senha  = document.getElementById('cad-senha')?.value;
+  const btn    = document.getElementById('cad-submit');
+  if(!nome || !email || !senha){ mostrarErroAuth('cad-error','Preencha todos os campos.'); return; }
+  if(senha.length < 6){ mostrarErroAuth('cad-error','A senha deve ter pelo menos 6 caracteres.'); return; }
+  if(btn){ btn.disabled=true; btn.textContent='Criando conta...'; }
+  const { data, error } = await db.auth.signUp({
+    email, password: senha, options: { data: { full_name: nome } }
+  });
+  if(error){
+    mostrarErroAuth('cad-error', traduzirErro(error.message));
+    if(btn){ btn.disabled=false; btn.textContent='Criar conta'; }
+    return;
+  }
+  if(!data.session){
+    hideAllAuth();
+    alert('Verifique seu e-mail para confirmar o cadastro. Depois faça login.');
+    mostrarLogin();
+    return;
+  }
+}
+
+function loginGoogle(){
+  db.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin + '/app.html' }
+  });
+}
+window.loginGoogle = loginGoogle;
+
+async function handleLogout(){
+  await db.auth.signOut();
+}
+
+async function verificarAcesso(){
+  try {
+    let tentativas = 0;
+    let data = null;
+    while(!data && tentativas < 5){
+      const res = await db.from('acesso_status').select('*').eq('id', currentUser.id).maybeSingle();
+      if(res.data){ data = res.data; break; }
+      tentativas++;
+      await new Promise(r => setTimeout(r, 1000));
+    }
+    if(!data){
+      await db.from('usuarios').insert({
+        id: currentUser.id, email: currentUser.email,
+        nome: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email.split('@')[0]
+      }).onConflict('id').ignore();
+      await new Promise(r => setTimeout(r, 1000));
+      const res2 = await db.from('acesso_status').select('*').eq('id', currentUser.id).maybeSingle();
+      data = res2.data;
+      if(!data){ mostrarLogin(); return; }
+    }
+    currentUsuario = data;
+    if(data.tipo_acesso === 'starter' || data.tipo_acesso === 'advanced' || data.tipo_acesso === 'elite'){
+      currentSub = { plan: data.tipo_acesso, status: 'active', expires_at: data.acesso_anual_fim || data.trial_fim || null };
+    } else {
+      currentSub = null;
+    }
+    if(!currentSub){
+      currentTrialCount = await contarBacktestsSalvos(currentUser.id);
+    } else {
+      currentTrialCount = 0;
+    }
+    await db.from('usuarios').update({ ultimo_acesso: new Date().toISOString() }).eq('id', currentUser.id);
+    hideAllAuth();
+    document.getElementById('boot-spinner')?.remove();
+    if(data.status === 'ativo' || data.status === 'trial' || data.tipo_acesso === 'admin'){
+      updateAvatarUI();
+      if(currentScreen === 'plans' || currentScreen === 'payment' || currentScreen === 'history') return;
+      if(currentSub || currentTrialCount < FREE_TRIAL.backtests_max){ renderApp(); maybeAutoTour(); }
+      else { showScreen('nosub'); }
+    } else {
+      showScreen('nosub');
+    }
+  } catch(e){
+    console.error('[verificarAcesso]', e);
+    mostrarLogin();
+  }
+}
+
+db.auth.onAuthStateChange(async (event, session) => {
+  if(event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED'){
+    if(session?.user){ currentUser = session.user; hideAllAuth(); await verificarAcesso(); }
+    else { document.getElementById('boot-spinner')?.remove(); mostrarLogin(); }
+  } else if(event === 'INITIAL_SESSION'){
+    if(session?.user){ currentUser = session.user; await verificarAcesso(); }
+    else { document.getElementById('boot-spinner')?.remove(); mostrarLogin(); }
+  } else if(event === 'SIGNED_OUT'){
+    currentUser = null; currentUsuario = null; currentSub = null; currentTrialCount = 0; currentScreen = null;
+    mostrarLogin();
+  }
+});
+
+(function showBootSpinner(){
+  const main = document.getElementById('main');
+  if(!main) return;
+  const spinner = document.createElement('div');
+  spinner.id = 'boot-spinner';
+  spinner.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 56px)';
+  spinner.innerHTML = '<div style="width:28px;height:28px;border:2.5px solid var(--bd);border-top-color:var(--ac);border-radius:50%;animation:spin 0.7s linear infinite"></div>';
+  main.replaceChildren(spinner);
+})();
+
 
 // ─── STATE ────────────────────────────────────────────────────
-let currentUser = null;
-let currentSub  = null;
 let selectedPlan  = 'starter';
 let selectedCycle = 'mensal';
 let CURRENT_BACKTEST_ID = null;
@@ -6602,7 +6894,7 @@ let mpMounted = false;
 
 // ─── AVATAR ───────────────────────────────────────────────────
 function toggleAvatarMenu() {
-  if (!currentUser) { showAuthModal('login'); return; }
+  if (!currentUser) { mostrarLogin(); return; }
   document.getElementById('avatar-menu').classList.toggle('open');
 }
 document.addEventListener('click', e => {
@@ -6620,32 +6912,6 @@ function updateAvatarUI() {
   if (verEl) verEl.textContent = 'v' + APP_VERSION;
   if (nameEl) nameEl.innerHTML = `<div style="font-weight:600;color:var(--tx);font-size:13px">${name}</div><div style="font-size:11px;color:var(--txm);margin-top:2px">${email}</div>${currentSub?`<div style="margin-top:5px;font-size:11px;color:#00D4AA;font-weight:700">${currentSub.plan.toUpperCase()} · ativo até ${new Date(currentSub.expires_at).toLocaleDateString('pt-BR')}</div>`:'<div style="margin-top:5px;font-size:11px;color:#EF4444">Sem assinatura ativa</div>'}`;
 }
-async function handleLogout() {
-  await db.auth.signOut();
-}
-
-// ─── SUBSCRIPTION ─────────────────────────────────────────────
-async function loadSubscription(accessToken) {
-  const now = new Date().toISOString();
-  const res = await fetch(`${SUPA_URL}/rest/v1/subscriptions?select=*&user_id=eq.${currentUser.id}&status=eq.active&expires_at=gt.${encodeURIComponent(now)}&order=expires_at.desc&limit=1`, {
-    headers: {
-      'apikey': SUPA_KEY,
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    }
-  });
-  if (!res.ok) { currentSub = null; }
-  else {
-    const data = await res.json();
-    currentSub = (Array.isArray(data) && data.length > 0) ? data[0] : null;
-  }
-  if (!currentSub) {
-    currentTrialCount = await contarBacktestsSalvos(currentUser.id);
-  } else {
-    currentTrialCount = 0;
-  }
-}
-
 // ─── SCREENS ──────────────────────────────────────────────────
 function showScreen(name) {
   // Limpar listeners da tela de resultados se existirem
@@ -6940,7 +7206,7 @@ async function renderCardBrick() {
             if (!res.ok || data.error) { showPayError(data.error||'Erro no pagamento.'); return; }
             if (data.status==='approved') {
               const { data: { session: s } } = await db.auth.getSession();
-              await loadSubscription(s.access_token);
+              await verificarAcesso();
               updateAvatarUI();
               showPaySuccess();
             } else {
@@ -6982,7 +7248,7 @@ async function submitPix() {
 async function checkPix(paymentId) {
   const btn = event.target; btn.disabled=true; btn.textContent='Verificando...';
   const { data: { session } } = await db.auth.getSession();
-  await loadSubscription(session.access_token);
+  await verificarAcesso();
   if (currentSub) { updateAvatarUI(); showPaySuccess(); }
   else { btn.disabled=false; btn.textContent='Verificar novamente'; showPayError('Pagamento ainda não confirmado. Aguarde e tente novamente.'); }
 }
@@ -7210,109 +7476,6 @@ function maybeAutoTour(){
   try{if(localStorage.getItem('bt_tour_done'))return;}catch(e){}
   setTimeout(()=>{if(state.screen==='wizard')startTour(TOUR_STEPS.wizard);},600);
 }
-
-// ─── AUTH MODAL ───────────────────────────────────────────────
-function showAuthModal(mode) {
-  document.getElementById('auth-overlay')?.remove();
-  const isLogin = mode==='login';
-  const el = document.createElement('div');
-  el.className='auth-overlay'; el.id='auth-overlay';
-  el.innerHTML = `
-    <div class="auth-modal">
-      <div class="auth-logo"><div class="auth-logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="m9 17 3-5 3 3 3-5"/></svg></div><div class="auth-logo-text">Backtest<span> Pro</span></div></div>
-      <div class="auth-title">${isLogin?'Entrar na sua conta':'Criar conta'}</div>
-      <div class="auth-sub">${isLogin?'Acesse sua conta para continuar.':'Crie sua conta para começar.'}</div>
-      <div class="auth-error" id="auth-error"></div>
-      ${!isLogin?`<div class="auth-field"><label>Nome</label><input class="auth-input" id="auth-name" type="text" placeholder="Seu nome"></div>`:''}
-      <div class="auth-field"><label>E-mail</label><input class="auth-input" id="auth-email" type="email" placeholder="seu@email.com"></div>
-      <div class="auth-field"><label>Senha</label><input class="auth-input" id="auth-pass" type="password" placeholder="••••••••"></div>
-      <button class="auth-btn" id="auth-submit" onclick="handleAuth('${mode}')">${isLogin?'Entrar':'Criar conta'}</button>
-      <div class="auth-divider">ou</div>
-      <button class="auth-google" onclick="loginGoogle()">
-        <svg width="16" height="16" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-        Continuar com Google
-      </button>
-      <div class="auth-toggle">${isLogin?`Não tem conta? <a onclick="showAuthModal('signup')">Criar conta</a>`:`Já tem conta? <a onclick="showAuthModal('login')">Entrar</a>`}</div>
-    </div>`;
-  document.body.appendChild(el);
-  setTimeout(()=>document.getElementById('auth-email')?.focus(),100);
-}
-
-// Rate limiting simples no cliente
-const _authAttempts = { count: 0, resetAt: 0 };
-async function handleAuth(mode) {
-  const now = Date.now();
-  if (now > _authAttempts.resetAt) { _authAttempts.count = 0; _authAttempts.resetAt = now + 60000; }
-  if (++_authAttempts.count > 5) {
-    const w = Math.ceil((_authAttempts.resetAt - now) / 1000);
-    const e = document.getElementById('auth-error');
-    if (e) { e.textContent = `Muitas tentativas. Aguarde ${w}s.`; e.classList.add('show'); }
-    _authAttempts.count--;
-    return;
-  }
-  const email=document.getElementById('auth-email')?.value?.trim();
-  const pass=document.getElementById('auth-pass')?.value;
-  const name=document.getElementById('auth-name')?.value?.trim();
-  const btn=document.getElementById('auth-submit');
-  const errEl=document.getElementById('auth-error');
-  if(!email||!pass){errEl.textContent='Preencha e-mail e senha.';errEl.classList.add('show');return;}
-  btn.disabled=true;btn.textContent='Aguarde...';
-  let result;
-  if(mode==='login') result=await db.auth.signInWithPassword({email,password:pass});
-  else result=await db.auth.signUp({email,password:pass,options:{data:{full_name:name||email.split('@')[0]}}});
-  if(result.error){
-    const msgs={'Invalid login credentials':'E-mail ou senha incorretos.','User already registered':'E-mail já cadastrado. Faça login.','Password should be at least 6 characters':'Senha deve ter pelo menos 6 caracteres.'};
-    errEl.textContent=msgs[result.error.message]||result.error.message;errEl.classList.add('show');
-    btn.disabled=false;btn.textContent=mode==='login'?'Entrar':'Criar conta';return;
-  }
-  if(mode==='signup'&&!result.data.session){
-    document.getElementById('auth-overlay')?.remove();
-    alert('Verifique seu e-mail para confirmar o cadastro.');
-    showAuthModal('login');return;
-  }
-  // Login bem sucedido — onAuthStateChange vai cuidar do resto
-}
-
-// ─── BOOT ─────────────────────────────────────────────────────
-// Único ponto de entrada de sessão — onAuthStateChange
-let currentScreen = null; // Track current screen to prevent auth override
-let authResolved = false; // Flag para saber se o INITIAL_SESSION já foi processado
-
-// Mostrar spinner de boot enquanto a sessão é verificada
-(function showBootSpinner() {
-  const main = document.getElementById('main');
-  if (!main) return;
-  const spinner = document.createElement('div');
-  spinner.id = 'boot-spinner';
-  spinner.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 56px)';
-  spinner.innerHTML = '<div style="width:28px;height:28px;border:2.5px solid var(--bd);border-top-color:var(--ac);border-radius:50%;animation:spin 0.7s linear infinite"></div>';
-  main.replaceChildren(spinner);
-})();
-
-db.auth.onAuthStateChange(async (event, session) => {
-  if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
-    if (session?.user) {
-      currentUser = session.user;
-      await loadSubscription(session.access_token);
-      updateAvatarUI();
-      document.getElementById('auth-overlay')?.remove();
-      document.getElementById('boot-spinner')?.remove();
-      if (currentScreen === 'plans' || currentScreen === 'payment' || currentScreen === 'history') return;
-      if (currentSub || currentTrialCount < FREE_TRIAL.backtests_max) {
-        renderApp(); maybeAutoTour();
-      } else {
-        showScreen('nosub');
-      }
-    } else {
-      document.getElementById('boot-spinner')?.remove();
-      showAuthModal('login');
-    }
-  }
-  if (event === 'SIGNED_OUT') {
-    currentUser=null; currentSub=null; currentTrialCount=0; currentScreen=null; authResolved=false;
-    showAuthModal('login');
-  }
-});
 
 // ─── SHARE CARD GENERATOR ──────────────────────────────────────
 function rrect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
