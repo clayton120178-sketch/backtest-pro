@@ -5980,11 +5980,12 @@ async function submitBacktestToBackend() {
     return null;
   }
 
-  // Refresh para garantir token valido
-  const { data: refreshData, error: refreshErr } = await db.auth.refreshSession();
-  const token = refreshData?.session?.access_token;
-  if (refreshErr || !token) {
+  // Obter sessão corrente (Supabase JS v2 gerencia refresh automaticamente)
+  const { data: sessionData } = await db.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if (!token) {
     alert('Sessao expirada. Faca login novamente.');
+    await db.auth.signOut();
     return null;
   }
 
