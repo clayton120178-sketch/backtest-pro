@@ -179,19 +179,21 @@ def _require_pywin32():
         sys.exit(1)
 
 
-def cmd_install():
+def _scm_command(*args):
+    """Executa um comando via HandleCommandLine do pywin32."""
     _require_pywin32()
-    win32serviceutil.InstallService(
-        BackTestProService._svc_reg_class_,
-        SERVICE_NAME,
-        SERVICE_DISPLAY,
-        description=SERVICE_DESCRIPTION,
-        startType=win32service.SERVICE_AUTO_START,
-        exeName=_get_python_exe(),
-    )
-    # Configura reinicio automatico em caso de falha (3 tentativas, 1 min entre elas)
+    old_argv = sys.argv[:]
+    sys.argv = [sys.argv[0]] + list(args)
     try:
-        import win32api
+        win32serviceutil.HandleCommandLine(BackTestProService)
+    finally:
+        sys.argv = old_argv
+
+
+def cmd_install():
+    _scm_command("--startup=auto", "install")
+    # Configura reinicio automatico em caso de falha (3 tentativas, 60s entre elas)
+    try:
         hscm = win32service.OpenSCManager(None, None, win32service.SC_MANAGER_ALL_ACCESS)
         hs = win32service.OpenService(hscm, SERVICE_NAME, win32service.SERVICE_ALL_ACCESS)
         win32service.ChangeServiceConfig2(
@@ -210,10 +212,10 @@ def cmd_install():
         )
         win32service.CloseServiceHandle(hs)
         win32service.CloseServiceHandle(hscm)
+        print("Acoes de reinicio automatico configuradas (3x, 60s entre tentativas).")
     except Exception as e:
         logger.warning(f"Nao foi possivel configurar acoes de falha: {e}")
 
-    print(f"Servico '{SERVICE_DISPLAY}' instalado com sucesso.")
     print("Para iniciar: python worker_service.py start")
 
 
