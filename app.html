@@ -5068,7 +5068,9 @@ function renderStep1() {
   const mktBlock=div('');
   mktBlock.appendChild(slabel('Mercado'));
   const mktRow=div('');mktRow.style.cssText='display:flex;gap:7px;margin-bottom:4px';
-  ['local','internacional'].forEach(m=>{
+  // 'internacional' indisponível nesta versão — mantido no código para reativar quando necessário
+  if (cfg.market === 'internacional') { cfg.market = 'local'; cfg.asset = 'WIN$N'; }
+  ['local'].forEach(m=>{
     const c=div('chip'+(cfg.market===m?' on':''));
     c.textContent=m==='local'?'🇧🇷 Brasil (B3)':'🌎 Internacional';
     c.addEventListener('click',()=>{cfg.market=m;cfg.asset=m==='local'?'WIN$N':'EURUSD';renderApp();});
