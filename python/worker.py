@@ -21,6 +21,7 @@ Uso:
 
 import json
 import logging
+import logging.handlers
 import os
 import signal
 import sys
@@ -268,12 +269,37 @@ class BacktestWorker:
 # CLI
 # ============================================================================
 
-def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%H:%M:%S",
+def _setup_logging():
+    _script_dir = os.path.dirname(os.path.abspath(__file__))
+    logs_dir = os.path.join(_script_dir, "Logs")
+    os.makedirs(logs_dir, exist_ok=True)
+
+    fmt = logging.Formatter(
+        "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
+
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+
+    rotating = logging.handlers.RotatingFileHandler(
+        os.path.join(logs_dir, "worker.log"),
+        maxBytes=5 * 1024 * 1024,  # 5 MB por arquivo
+        backupCount=5,              # 5 backups = maximo 25 MB total
+        encoding="utf-8",
+    )
+    rotating.setFormatter(fmt)
+    root.addHandler(rotating)
+
+    # Console apenas quando ha terminal disponivel (nao quando rodando via pythonw)
+    if sys.stdout is not None:
+        console = logging.StreamHandler(sys.stdout)
+        console.setFormatter(fmt)
+        root.addHandler(console)
+
+
+def main():
+    _setup_logging()
 
     # Validar config
     if not SUPABASE_URL:
