@@ -5,8 +5,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const ALLOWED_ORIGIN = "https://backtestpro-app.vercel.app";
 
 const PRICES: Record<string, Record<string, number>> = {
-  essencial: { mensal: 149.90, semestral: 799.90, anual: 1499.90 },
-  pro:       { mensal: 199.90, semestral: 999.90, anual: 2199.90 },
+  starter:  { mensal: 109.90, semestral: 599.40, anual: 1044.00 },
+  advanced: { mensal: 139.90, semestral: 779.40, anual: 1318.80 },
+  elite:    { mensal: 159.90, semestral: 899.40, anual: 1558.80 },
 };
 
 const CYCLE_DAYS: Record<string, number> = { mensal: 30, semestral: 180, anual: 365 };

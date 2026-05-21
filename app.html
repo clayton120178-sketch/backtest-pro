@@ -7177,10 +7177,22 @@ function switchPayMethod(method, btnEl) {
 }
 
 function initCardBrick() {
+  const container = document.getElementById('cardPaymentBrick_container');
+  if (container) {
+    container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:32px 0;color:var(--txs);font-size:13px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="animation:spin 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+      Carregando formulário de pagamento...
+    </div>`;
+  }
   if (!window.MercadoPago) {
     const s = document.createElement('script');
     s.src = 'https://sdk.mercadopago.com/js/v2';
-    s.onload = () => setTimeout(renderCardBrick, 200);
+    s.onload = () => renderCardBrick();
+    s.onerror = () => {
+      if (container) container.innerHTML = '';
+      showPayError('Falha ao carregar o formulário de pagamento. Verifique sua conexão e tente novamente.');
+      mpMounted = false;
+    };
     document.head.appendChild(s);
   } else {
     renderCardBrick();
@@ -7199,9 +7211,7 @@ async function renderCardBrick() {
     window.cardPaymentBrickController = await bricksBuilder.create('cardPayment', 'cardPaymentBrick_container', {
       initialization: {
         amount: price,
-        payer: {
-          email: currentUser.email,
-        },
+        payer: { email: currentUser?.email || '' },
       },
       customization: {
         visual: {
@@ -7209,7 +7219,7 @@ async function renderCardBrick() {
             theme: 'dark',
             customVariables: {
               formBackgroundColor: '#12121A',
-              baseColor: '#00D4AA',
+              baseColor: '#F0A020',
             }
           },
           hideFormTitle: true,
@@ -7237,27 +7247,35 @@ async function renderCardBrick() {
                 issuer_id: formData.issuer_id || null,
                 installments: formData.installments || 1,
                 payer: {
-                  email: currentUser.email,
-                  identification: formData.payer?.identification || { type:'CPF', number:'' },
+                  email: currentUser?.email || '',
+                  identification: formData.payer?.identification || { type: 'CPF', number: '' },
                 },
               }),
             });
             const data = await res.json();
-            if (!res.ok || data.error) { showPayError(data.error||'Erro no pagamento.'); return; }
-            if (data.status==='approved') {
-              const { data: { session: s } } = await db.auth.getSession();
+            if (!res.ok || data.error) { showPayError(data.error || 'Erro no pagamento.'); return; }
+            if (data.status === 'approved') {
               await verificarAcesso();
               updateAvatarUI();
               showPaySuccess();
             } else {
               showPayError('Pagamento recusado. Verifique os dados ou tente outro método.');
             }
-          } catch(e) { showPayError('Erro ao processar pagamento.'); }
+          } catch(e) { showPayError('Erro ao processar pagamento. Tente novamente.'); }
         },
-        onError: () => {},
+        onError: (err) => {
+          console.error('[MP Brick] onError:', err);
+          mpMounted = false;
+          showPayError('Erro ao inicializar o formulário de pagamento. Tente recarregar a página.');
+        },
       },
     });
-  } catch(e) { console.error('MP Brick init error:', e); }
+  } catch(e) {
+    console.error('[MP Brick] init error:', e);
+    mpMounted = false;
+    if (container) container.innerHTML = '';
+    showPayError('Erro ao carregar o formulário. Tente recarregar a página.');
+  }
 }
 
 async function submitPix() {
