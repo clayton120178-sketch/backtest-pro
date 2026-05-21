@@ -70,8 +70,13 @@ SERVICE_DESCRIPTION = "Processa backtests na fila do Supabase usando MetaTrader 
 
 
 def _get_python_exe() -> str:
-    """Retorna o executavel Python do ambiente atual."""
-    return sys.executable
+    """Retorna o executavel Python real (nao pythonservice.exe)."""
+    exe = sys.executable
+    # Quando rodando sob SCM, sys.executable aponta para pythonservice.exe
+    # Precisamos do python.exe real na mesma pasta
+    if os.path.basename(exe).lower() == "pythonservice.exe":
+        exe = os.path.join(os.path.dirname(exe), "python.exe")
+    return exe
 
 
 def _get_worker_script() -> str:
