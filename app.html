@@ -465,7 +465,7 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 #loading-oauth p{font-size:13px;color:var(--txs);}
 #auth-login{
   position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(12px);
-  z-index:2000;display:none;align-items:center;justify-content:center;padding:16px;
+  z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px;
 }
 #auth-cadastro{
   position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(12px);
@@ -793,7 +793,6 @@ async function verificarAcesso(){
       currentTrialCount = 0;
     }
     hideAllAuth();
-    document.getElementById('boot-spinner')?.remove();
     if(data.status === 'ativo' || data.status === 'trial' || data.tipo_acesso === 'admin'){
       updateAvatarUI();
       if(currentScreen === 'plans' || currentScreen === 'payment' || currentScreen === 'history') return;
@@ -810,26 +809,15 @@ async function verificarAcesso(){
 
 db.auth.onAuthStateChange(async (event, session) => {
   if(event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED'){
-    if(session?.user){ currentUser = session.user; hideAllAuth(); await verificarAcesso(); }
-    else { document.getElementById('boot-spinner')?.remove(); mostrarLogin(); }
+    if(session?.user){ currentUser = session.user; await verificarAcesso(); }
   } else if(event === 'INITIAL_SESSION'){
     if(session?.user){ currentUser = session.user; await verificarAcesso(); }
-    else { document.getElementById('boot-spinner')?.remove(); mostrarLogin(); }
+    else { mostrarLogin(); }
   } else if(event === 'SIGNED_OUT'){
     currentUser = null; currentUsuario = null; currentSub = null; currentTrialCount = 0; currentScreen = null;
     mostrarLogin();
   }
 });
-
-(function showBootSpinner(){
-  const main = document.getElementById('main');
-  if(!main) return;
-  const spinner = document.createElement('div');
-  spinner.id = 'boot-spinner';
-  spinner.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 56px)';
-  spinner.innerHTML = '<div style="width:28px;height:28px;border:2.5px solid var(--bd);border-top-color:var(--ac);border-radius:50%;animation:spin 0.7s linear infinite"></div>';
-  main.replaceChildren(spinner);
-})();
 
 // ─── STATE ────────────────────────────────────────────────────
 const APP_VERSION = '2.0.0'; // Versão do produto — atualizar a cada release
