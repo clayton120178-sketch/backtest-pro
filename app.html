@@ -797,9 +797,9 @@ async function verificarAcesso(){
       updateAvatarUI();
       if(currentScreen === 'plans' || currentScreen === 'payment' || currentScreen === 'history') return;
       if(currentSub || currentTrialCount < FREE_TRIAL.backtests_max){ renderApp(); maybeAutoTour(); }
-      else { showScreen('nosub'); }
+      else { showScreen('plans'); }
     } else {
-      showScreen('nosub');
+      showScreen('plans');
     }
   } catch(e){
     console.error('[verificarAcesso]', e);
@@ -6570,7 +6570,7 @@ function renderProgressBar() {
 // ─── MAIN RENDER ──────────────────────────────────────────────
 function renderApp() {
   if (!currentUser) return;
-  if (!currentSub && currentTrialCount >= FREE_TRIAL.backtests_max) { showScreen('nosub'); return; }
+  if (!currentSub && currentTrialCount >= FREE_TRIAL.backtests_max) { showScreen('plans'); return; }
 
   renderProgressBar();
   const main=document.getElementById('main');

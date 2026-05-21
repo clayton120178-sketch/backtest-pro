@@ -83,10 +83,21 @@ serve(async (req: Request) => {
       .limit(1);
 
     if (!subs || subs.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "Assinatura ativa necessaria para rodar backtests" }),
-        { status: 403, headers: { ...cors, "Content-Type": "application/json" } }
-      );
+      // Sem assinatura ativa — verificar se ainda está dentro do free trial
+      const { count: trialCount } = await serviceClient
+        .from("backtests")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("saved", true);
+
+      const TRIAL_MAX = 5;
+      if ((trialCount ?? 0) >= TRIAL_MAX) {
+        return new Response(
+          JSON.stringify({ error: "Trial expirado. Assine um plano para continuar rodando backtests." }),
+          { status: 403, headers: { ...cors, "Content-Type": "application/json" } }
+        );
+      }
+      // Dentro do trial — prosseguir com a execução
     }
 
     // 3. Parsear body (state.cfg do frontend)
