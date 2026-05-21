@@ -6822,9 +6822,9 @@ async function verificarAcesso(){
       await new Promise(r => setTimeout(r, 1000));
     }
     if(!data){
-      await db.from('usuarios').insert({
+      await db.from('users').insert({
         id: currentUser.id, email: currentUser.email,
-        nome: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email.split('@')[0]
+        name: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email.split('@')[0]
       }).onConflict('id').ignore();
       await new Promise(r => setTimeout(r, 1000));
       const res2 = await db.from('acesso_status').select('*').eq('id', currentUser.id).maybeSingle();
@@ -6842,7 +6842,6 @@ async function verificarAcesso(){
     } else {
       currentTrialCount = 0;
     }
-    await db.from('usuarios').update({ ultimo_acesso: new Date().toISOString() }).eq('id', currentUser.id);
     hideAllAuth();
     document.getElementById('boot-spinner')?.remove();
     if(data.status === 'ativo' || data.status === 'trial' || data.tipo_acesso === 'admin'){
