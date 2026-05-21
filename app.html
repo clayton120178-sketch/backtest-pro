@@ -6822,10 +6822,10 @@ async function verificarAcesso(){
       await new Promise(r => setTimeout(r, 1000));
     }
     if(!data){
-      await db.from('users').insert({
+      await db.from('users').upsert({
         id: currentUser.id, email: currentUser.email,
         name: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email.split('@')[0]
-      }).onConflict('id').ignore();
+      }, { onConflict: 'id', ignoreDuplicates: true });
       await new Promise(r => setTimeout(r, 1000));
       const res2 = await db.from('acesso_status').select('*').eq('id', currentUser.id).maybeSingle();
       data = res2.data;
