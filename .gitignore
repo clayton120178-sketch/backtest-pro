@@ -4,6 +4,7 @@ __pycache__/
 *.pyo
 python/_output/
 python/_cache/
+python/Logs/
 
 # Node
 node_modules/
