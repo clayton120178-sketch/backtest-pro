@@ -333,16 +333,39 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .plan-btn.featured-btn:hover{box-shadow:0 6px 20px rgba(255,255,255,.12)}
 
 /* ── PAYMENT ─────────────────────────────────────────────── */
-.payment-screen{max-width:520px;margin:0 auto;padding:24px 20px}
-.payment-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--tx);margin-bottom:6px;letter-spacing:-.02em}
-.payment-sub{font-size:13px;color:var(--txs);margin-bottom:24px;line-height:1.5}
-.payment-summary{background:var(--bg1);border:0.5px solid var(--bdh);border-radius:12px;padding:16px 18px;margin-bottom:20px}
-.payment-method-tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
-.payment-tab{flex:1;min-width:100px;padding:10px;border:0.5px solid var(--bd);border-radius:9px;background:var(--bg2);cursor:pointer;text-align:center;font-size:13px;font-weight:500;color:var(--txs);transition:all var(--t2) var(--smooth)}
-.payment-tab:hover{border-color:var(--bdh);color:var(--tx)}
-.payment-tab.active{border-color:var(--ac);background:var(--acd);color:var(--tx)}
-.pix-container{text-align:center;padding:20px}
-.pix-qr{width:180px;height:180px;background:var(--bg3);border-radius:12px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;border:0.5px solid var(--bd)}
+.pay-screen{max-width:520px;margin:0 auto;padding:28px 20px}
+.pay-back{background:transparent;border:none;color:var(--txs);font-size:13px;cursor:pointer;padding:0 0 22px;display:flex;align-items:center;gap:5px;font-family:inherit;transition:color var(--t1)}
+.pay-back:hover{color:var(--tx)}
+.pay-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--tx);margin-bottom:4px;letter-spacing:-.03em}
+.pay-sub{font-size:13px;color:var(--txs);margin-bottom:20px}
+.pay-summary{background:var(--bg1);border:0.5px solid var(--bdh);border-radius:13px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.pay-summary-info{display:flex;flex-direction:column;gap:2px}
+.pay-summary-plan{font-size:13px;font-weight:700;color:var(--tx)}
+.pay-summary-detail{font-size:11px;color:var(--txm)}
+.pay-summary-val{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--tx);flex-shrink:0}
+.pay-methods{display:flex;gap:4px;margin-bottom:20px;background:var(--bg2);border:0.5px solid var(--bd);border-radius:12px;padding:4px}
+.pay-method-btn{flex:1;padding:9px 6px;border:none;border-radius:9px;background:transparent;cursor:pointer;text-align:center;font-size:13px;font-weight:500;color:var(--txs);transition:all var(--t2) var(--smooth);font-family:inherit;display:flex;align-items:center;justify-content:center;gap:5px}
+.pay-method-btn:hover{color:var(--tx)}
+.pay-method-btn.active{background:var(--bg3);color:var(--tx);font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.pay-btn{width:100%;padding:14px;border-radius:11px;border:none;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all var(--t1) var(--spring);background:var(--ac);color:#08080B;margin-top:8px;letter-spacing:-.01em}
+.pay-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(240,160,32,.25)}
+.pay-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.pay-error{font-size:13px;color:#EF4444;background:rgba(239,68,68,.08);border:0.5px solid rgba(239,68,68,.2);border-radius:9px;padding:10px 14px;margin-bottom:14px;display:none;animation:fadeUp .15s var(--out)}
+.pay-error.show{display:block}
+.pay-secure{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;color:var(--txm);margin-top:24px;padding-top:18px;border-top:0.5px solid var(--bd)}
+.pay-success{display:flex;flex-direction:column;align-items:center;text-align:center;padding:56px 20px}
+.pay-success-icon{width:64px;height:64px;border-radius:50%;background:rgba(0,187,128,.1);border:0.5px solid rgba(0,187,128,.3);display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+.pay-success h3{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--tx);margin-bottom:8px;letter-spacing:-.02em}
+.pay-success p{font-size:14px;color:var(--txs);margin-bottom:28px;line-height:1.6}
+.pix-area{animation:fadeUp .2s var(--out)}
+.pix-box{background:var(--bg1);border:0.5px solid var(--bdh);border-radius:14px;padding:24px;text-align:center;margin-bottom:12px}
+.pix-qr-img{width:180px;height:180px;border-radius:10px;margin:0 auto 16px;display:block;border:0.5px solid var(--bd)}
+.pix-qr-placeholder{width:180px;height:180px;border-radius:10px;margin:0 auto 16px;background:var(--bg3);border:0.5px solid var(--bd);display:flex;align-items:center;justify-content:center;color:var(--txm);font-size:12px}
+.pix-label{font-size:13px;font-weight:600;color:var(--tx);margin-bottom:12px}
+.pix-copy{width:100%;background:var(--bg2);border:0.5px solid var(--bd);border-radius:9px;color:var(--txs);font-size:11px;padding:10px 12px;cursor:pointer;font-family:'JetBrains Mono',monospace;word-break:break-all;text-align:left;transition:all var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.pix-copy:hover{border-color:var(--ac);color:var(--tx)}
+.pix-note{font-size:11px;color:var(--txm);margin-top:10px;line-height:1.5}
+.pix-timer{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ac);font-weight:700;margin-top:4px}
 .nosub-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 56px);padding:32px 20px;position:relative;overflow:hidden}
 .nosub-glow{position:absolute;width:480px;height:480px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,212,170,.07) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
 .nosub-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;border:0.5px solid rgba(0,212,170,.3);background:rgba(0,212,170,.07);font-size:11px;font-weight:700;color:var(--ac);letter-spacing:.08em;text-transform:uppercase;margin-bottom:24px;font-family:'JetBrains Mono',monospace}
@@ -7078,27 +7101,46 @@ function renderPayment() {
   const planoAtual = PLANOS[selectedPlan];
   const precoAtual = planoAtual.precos[selectedCycle];
   const price = precoAtual.total;
+  const cycleLabel = { mensal: 'Mensal', semestral: 'Semestral', anual: 'Anual' }[selectedCycle];
   const el = document.createElement('div');
   el.className = 'pay-screen';
   el.innerHTML = `
-    <button class="pay-back" onclick="showScreen('plans')">← Voltar aos planos</button>
+    <button class="pay-back" onclick="showScreen('plans')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Voltar aos planos
+    </button>
     <div class="pay-title">Finalizar assinatura</div>
-    <div class="pay-sub">Plano ${PLANOS[selectedPlan].nome} · ${selectedCycle.charAt(0).toUpperCase()+selectedCycle.slice(1)}</div>
+    <div class="pay-sub">Complete o pagamento para ativar seu acesso imediatamente.</div>
     <div class="pay-summary">
-      <span class="pay-summary-label">${PLANOS[selectedPlan].nome} · ${selectedCycle} · ${CYCLE_DAYS[selectedCycle]} dias</span>
-      <span class="pay-summary-val">R$ ${price.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+      <div class="pay-summary-info">
+        <div class="pay-summary-plan">${planoAtual.nome} · ${cycleLabel}</div>
+        <div class="pay-summary-detail">${CYCLE_DAYS[selectedCycle]} dias de acesso · cobrança única</div>
+      </div>
+      <div class="pay-summary-val">R$ ${price.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
     </div>
     <div class="pay-methods" id="pay-methods">
-      <button class="pay-method-btn${payMethod==='pix'?' active':''}" onclick="switchPayMethod('pix',this)">Pix</button>
-      <button class="pay-method-btn${payMethod==='credit_card'?' active':''}" onclick="switchPayMethod('credit_card',this)">Crédito</button>
-      <button class="pay-method-btn${payMethod==='debit_card'?' active':''}" onclick="switchPayMethod('debit_card',this)">Débito</button>
+      <button class="pay-method-btn${payMethod==='pix'?' active':''}" onclick="switchPayMethod('pix',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        Pix
+      </button>
+      <button class="pay-method-btn${payMethod==='credit_card'?' active':''}" onclick="switchPayMethod('credit_card',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Crédito
+      </button>
+      <button class="pay-method-btn${payMethod==='debit_card'?' active':''}" onclick="switchPayMethod('debit_card',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/><circle cx="7" cy="15" r="1" fill="currentColor"/></svg>
+        Débito
+      </button>
     </div>
     <div class="pay-error" id="pay-error"></div>
     <div id="pix-form-area" style="display:${payMethod==='pix'?'block':'none'}">
       <button class="pay-btn" id="pay-submit-pix" onclick="submitPix()">Gerar QR Code Pix</button>
     </div>
     <div id="cardPaymentBrick_container" style="display:${payMethod!=='pix'?'block':'none'}"></div>
-    <div class="pay-secure">🔒 Pagamento seguro via Mercado Pago</div>`;
+    <div class="pay-secure">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Pagamento seguro via Mercado Pago &nbsp;·&nbsp; SSL 256-bit
+    </div>`;
 
   if (payMethod !== 'pix') {
     setTimeout(() => initCardBrick(), 50);
@@ -7217,7 +7259,7 @@ async function renderCardBrick() {
 async function submitPix() {
   const btn = document.getElementById('pay-submit-pix');
   btn.disabled = true;
-  btn.textContent = 'Gerando Pix...';
+  btn.textContent = 'Gerando código Pix...';
   try {
     const { data: { session } } = await db.auth.getSession();
     const res = await fetch(`${SUPA_URL}/functions/v1/create-payment`, {
@@ -7228,15 +7270,43 @@ async function submitPix() {
     const data = await res.json();
     if (!res.ok || data.error) { showPayError(data.error||'Erro ao gerar Pix.'); btn.disabled=false; btn.textContent='Gerar QR Code Pix'; return; }
     const area = document.getElementById('pix-form-area');
+    const copyCode = (data.pix_copy_paste||'').replace(/'/g, "\\'");
     area.innerHTML = `
-      <div class="pix-box">
-        ${data.pix_qr_base64?`<img class="pix-qr" src="data:image/png;base64,${data.pix_qr_base64}" alt="QR Pix">`:''}
-        <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:10px">Escaneie o QR Code ou copie o código</div>
-        <button class="pix-copy" id="pix-btn" onclick="navigator.clipboard.writeText('${data.pix_copy_paste}');this.textContent='✓ Copiado!';this.style.color='#10B981'">${data.pix_copy_paste}</button>
-        <div class="pix-note">Após o pagamento aguarde até 1 minuto. O código expira em 30 minutos.</div>
-      </div>
-      <button class="pay-btn" onclick="checkPix('${data.payment_id}')">Já paguei — Verificar acesso</button>`;
+      <div class="pix-area">
+        <div class="pix-box">
+          ${data.pix_qr_base64
+            ? `<img class="pix-qr-img" src="data:image/png;base64,${data.pix_qr_base64}" alt="QR Code Pix">`
+            : `<div class="pix-qr-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".4"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h1v1h-1zM17 14h1v1h-1zM14 17h1v1h-1zM17 17h1v1h-1zM20 14h1v1h-1zM14 20h1v1h-1zM20 20h1v1h-1z"/></svg></div>`
+          }
+          <div class="pix-label">Escaneie o QR Code ou copie o código Pix</div>
+          <button class="pix-copy" id="pix-copy-btn" onclick="
+            navigator.clipboard.writeText('${copyCode}');
+            this.textContent='✓ Copiado!';
+            this.style.color='var(--pr)';
+            this.style.borderColor='var(--pr)';
+            setTimeout(()=>{this.textContent='${copyCode.slice(0,60)}...';this.style.color='';this.style.borderColor='';},3000)
+          ">${data.pix_copy_paste ? data.pix_copy_paste.slice(0,60)+'...' : ''}</button>
+          <div class="pix-note">Código válido por <span class="pix-timer" id="pix-timer">30:00</span> · após o pagamento o acesso é liberado em até 1 minuto</div>
+        </div>
+        <button class="pay-btn" onclick="checkPix('${data.payment_id}')">Já paguei — Verificar acesso</button>
+      </div>`;
+    startPixTimer();
   } catch(e) { console.error(e); showPayError('Erro ao gerar Pix.'); btn.disabled=false; btn.textContent='Gerar QR Code Pix'; }
+}
+
+function startPixTimer() {
+  let secs = 30 * 60;
+  const el = document.getElementById('pix-timer');
+  if (!el) return;
+  const iv = setInterval(() => {
+    secs--;
+    if (!document.getElementById('pix-timer')) { clearInterval(iv); return; }
+    if (secs <= 0) { clearInterval(iv); el.textContent = 'expirado'; el.style.color = 'var(--dg)'; return; }
+    const m = String(Math.floor(secs/60)).padStart(2,'0');
+    const s = String(secs%60).padStart(2,'0');
+    el.textContent = `${m}:${s}`;
+    if (secs < 300) el.style.color = 'var(--dg)';
+  }, 1000);
 }
 
 async function checkPix(paymentId) {
@@ -7252,10 +7322,14 @@ function showPayError(msg) { const el=document.getElementById('pay-error'); if(e
 function showPaySuccess() {
   document.getElementById('main').innerHTML = `
     <div class="pay-screen"><div class="pay-success">
-      <div class="pay-success-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div class="pay-success-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--pr)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
       <h3>Assinatura ativada!</h3>
-      <p>Plano <strong>${PLANOS[selectedPlan].nome}</strong> ativo por ${CYCLE_DAYS[selectedCycle]} dias.</p>
-      <button onclick="renderApp()" style="padding:13px 32px;border-radius:10px;border:none;background:#00D4AA;color:#0A0A0F;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">Acessar o Backtest Pro</button>
+      <p>Plano <strong>${PLANOS[selectedPlan].nome}</strong> ativo por <strong>${CYCLE_DAYS[selectedCycle]} dias</strong>.<br>Bons backtests!</p>
+      <button onclick="renderApp()" style="padding:14px 36px;border-radius:11px;border:none;background:var(--ac);color:#08080B;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:-.01em;transition:all .15s var(--spring)" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
+        Acessar o Backtest Pro
+      </button>
     </div></div>`;
 }
 
