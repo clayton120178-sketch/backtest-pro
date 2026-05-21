@@ -5162,7 +5162,9 @@ function renderStep1() {
   // Timeframe
   const tfBlock=div('');
   tfBlock.appendChild(slabel('Timeframe'));
-  tfBlock.appendChild(chipsWrap(TFS,cfg.tf,v=>{cfg.tf=v;renderApp();}));
+  // 'D' indisponível nesta versão — mantido em TFS para reativar quando necessário
+  if (cfg.tf === 'D') cfg.tf = '60m';
+  tfBlock.appendChild(chipsWrap(TFS.filter(tf => tf !== 'D'), cfg.tf, v => { cfg.tf = v; renderApp(); }));
   el.appendChild(tfBlock);
 
   // Window
