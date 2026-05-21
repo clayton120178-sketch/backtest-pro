@@ -6902,7 +6902,7 @@ const FREE_TRIAL = { backtests_max: 5, salvos_max: 5 };
 const CYCLE_DAYS = { mensal: 30, semestral: 180, anual: 365 };
 // ─── STATE ────────────────────────────────────────────────────
 let selectedPlan  = 'starter';
-let selectedCycle = 'mensal';
+let selectedCycle = 'anual';
 let CURRENT_BACKTEST_ID = null;
 let payMethod = 'pix';
 let mpInstance = null;
@@ -6980,8 +6980,8 @@ function renderPlans() {
   hdr.style.cssText = 'text-align:center;margin-bottom:32px';
   hdr.innerHTML = `
     <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:99px;border:0.5px solid rgba(0,212,170,.25);background:rgba(0,212,170,.06);font-size:10px;font-weight:700;color:var(--ac);letter-spacing:.1em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:18px">Planos e preços</div>
-    <div style="font-family:'Syne',sans-serif;font-size:clamp(24px,4vw,36px);font-weight:800;color:var(--tx);letter-spacing:-.03em;margin-bottom:8px">Escolha o seu plano</div>
-    <div style="font-size:14px;color:var(--txs);line-height:1.5">Cobrança avulsa · Sem recorrência · Acesso imediato após pagamento</div>`;
+    <div style="font-family:'Syne',sans-serif;font-size:clamp(22px,4vw,32px);font-weight:800;color:var(--tx);letter-spacing:-.03em;margin-bottom:6px;line-height:1.15">Você usou seus 5 testes gratuitos.<br>Mas isso foi só o começo.</div>
+    <div style="font-size:14px;color:var(--txs);line-height:1.6;max-width:420px;margin:0 auto">Continue testando e validando suas estratégias, antes de arriscar seu dinheiro no mercado.</div>`;
   el.appendChild(hdr);
 
   // Cycle toggle
@@ -7053,10 +7053,14 @@ function renderPlans() {
     featList.className = 'plan-features';
     [
       [true, plano.backtests_mes + ' backtests/m\u00eas'],
-      [true, plano.salvos_max + ' estrat\u00e9gias salvas simult\u00e2neas'],
-      [true, 'Todos os indicadores e ativos'],
+      [true, 'Dezenas de ativos'],
+      [true, '28 indicadores \u2014 t\u00e9cnica, price action, Smart Money'],
       [true, 'Relat\u00f3rio de performance completo'],
-      [true, 'Hist\u00f3rico de backtests'],
+      [true, 'An\u00e1lise de drawdown'],
+      [true, 'At\u00e9 5 anos de dados hist\u00f3ricos'],
+      [true, 'Trades, acerto, profit factor, payoff, recovery factor'],
+      [true, 'M\u00faltiplos tempos gr\u00e1ficos'],
+      [true, plano.salvos_max + ' backtests completos armazenados'],
     ].forEach(([ok, txt]) => {
       const row = document.createElement('div');
       row.className = 'plan-feature' + (ok ? ' ok' : '');
