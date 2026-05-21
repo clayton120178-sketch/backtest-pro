@@ -370,6 +370,13 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .history-card-metric-label{font-size:9px;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace}
 .history-card-metric-value{font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace}
 .history-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:40vh;text-align:center}
+.history-card-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.history-card-strat{font-size:13px;font-weight:600;color:var(--tx);flex:1;min-width:0}
+.history-card-verdict{font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.06em;flex-shrink:0}
+.history-card-verdict.ok{background:rgba(16,185,129,.15);color:#10B981}
+.history-card-verdict.bad{background:rgba(239,68,68,.15);color:#EF4444}
+.history-card-conds{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px}
+.history-card-cond{font-size:10px;padding:2px 8px;border-radius:4px;background:var(--bg2);border:0.5px solid var(--bd);color:var(--txs);font-family:'JetBrains Mono',monospace}
 
 /* ── VALIDATION FEEDBACK ─────────────────────────────────── */
 .val-issue{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border-radius:8px;margin-top:7px;font-size:12px;line-height:1.5}
@@ -6648,7 +6655,7 @@ async function contarBacktestsSalvos(userId) {
   const token = session?.data?.session?.access_token;
   if (!token) return 0;
   const res = await fetch(
-    SUPA_URL + '/rest/v1/backtests?select=id&user_id=eq.' + userId + '&saved=eq.true',
+    SUPA_URL + '/rest/v1/backtests?select=id&user_id=eq.' + userId + '&status=eq.completed',
     { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + token, 'Prefer': 'count=exact', 'Range': '0-0' } }
   );
   const range = res.headers.get('Content-Range');
@@ -6662,7 +6669,7 @@ async function buscarBacktestMaisAntigo(userId) {
   const token = session?.data?.session?.access_token;
   if (!token) return null;
   const res = await fetch(
-    SUPA_URL + '/rest/v1/backtests?select=id,created_at,config&user_id=eq.' + userId + '&saved=eq.true&order=created_at.asc&limit=1',
+    SUPA_URL + '/rest/v1/backtests?select=id,created_at,config&user_id=eq.' + userId + '&status=eq.completed&order=created_at.asc&limit=1',
     { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + token } }
   );
   const data = await res.json();
@@ -7253,81 +7260,154 @@ function showPaySuccess() {
 }
 
 // ─── HISTORY SCREEN ──────────────────────────────────────────
-const MOCK_HISTORY = [
-  {id:1,date:'21/03/2026 14:32',asset:'WIN$N',tf:'5m',conditions:['RSI(14) cruza acima de 30','SMA(200) — Preço está acima'],direction:'long',entryType:'Rompimento',stopPts:200,tpRR:2,result:42380,trades:3847,winRate:42.3,maxDD:-8.2,profitFactor:1.34,payoff:1.62,recoveryFactor:3.42},
-  {id:2,date:'20/03/2026 09:15',asset:'WDO$N',tf:'15m',conditions:['Bollinger(20, 2σ) — Preço toca banda inferior','Volume > Média'],direction:'long',entryType:'Abertura próximo candle',stopPts:150,tpRR:3,result:-18720,trades:2156,winRate:38.1,maxDD:-15.4,profitFactor:0.87,payoff:1.41,recoveryFactor:0.8},
-  {id:3,date:'19/03/2026 16:48',asset:'WIN$N',tf:'5m',conditions:['MACD — cruza acima do sinal','EMA(21) — Preço cruza acima'],direction:'both',entryType:'Rompimento',stopPts:300,tpRR:2,result:67450,trades:5210,winRate:44.7,maxDD:-6.1,profitFactor:1.52,payoff:1.38,recoveryFactor:5.1},
-  {id:4,date:'18/03/2026 11:20',asset:'EURUSD',tf:'60m',conditions:['RSI(14) cruza abaixo de 70'],direction:'short',entryType:'Fechamento do candle',stopPts:500,tpRR:2,result:12890,trades:890,winRate:40.5,maxDD:-11.3,profitFactor:1.18,payoff:1.72,recoveryFactor:1.9},
-  {id:5,date:'17/03/2026 08:45',asset:'WIN$N',tf:'2m',conditions:['Estocástico(14) cruza acima de 20','VWAP — Preço está acima'],direction:'long',entryType:'Rompimento',stopPts:100,tpRR:3,result:-31200,trades:6820,winRate:35.2,maxDD:-18.7,profitFactor:0.78,payoff:1.65,recoveryFactor:0.5},
-  {id:6,date:'16/03/2026 15:10',asset:'WIN$N',tf:'5m',conditions:['SAR — Preço cruza acima do SAR','ADX(14) está acima de 25'],direction:'long',entryType:'Abertura próximo candle',stopPts:250,tpRR:2,result:28900,trades:2940,winRate:43.8,maxDD:-9.5,profitFactor:1.29,payoff:1.48,recoveryFactor:2.8},
-  {id:7,date:'15/03/2026 10:30',asset:'WDO$N',tf:'5m',conditions:['CCI(20) cruza acima de -100','HiLo virou compra'],direction:'long',entryType:'Rompimento',stopPts:180,tpRR:2,result:8450,trades:1780,winRate:41.2,maxDD:-12.1,profitFactor:1.08,payoff:1.52,recoveryFactor:1.2},
-];
+const MOCK_HISTORY = []; // substituído por dados reais do banco — ver loadHistoryData()
 
 function renderHistory() {
-  const el=document.createElement('div');el.className='history-screen';
-  el.innerHTML=`
-    <button class="history-back" onclick="renderApp()">
-      ${IC.back} Voltar ao backtester
-    </button>
+  const el = document.createElement('div');
+  el.className = 'history-screen';
+  el.id = 'history-screen-root';
+  el.innerHTML = `
+    <button class="history-back" onclick="renderApp()">${IC.back} Voltar ao backtester</button>
     <div class="history-title">Meus Backtests</div>
-    <div class="history-sub">${MOCK_HISTORY.length} testes realizados</div>
+    <div class="history-sub" id="history-count" style="margin-bottom:16px">Carregando...</div>
+    <div id="history-list-container" style="display:flex;align-items:center;justify-content:center;min-height:120px">
+      <div style="color:var(--txs);font-size:13px">Buscando seus backtests...</div>
+    </div>
   `;
-
-  if(MOCK_HISTORY.length===0){
-    const empty=div('history-empty');
-    empty.innerHTML=`
-      <div style="width:56px;height:56px;border-radius:14px;background:var(--acd2);border:1px solid rgba(0,212,170,.2);display:flex;align-items:center;justify-content:center;margin-bottom:20px">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      </div>
-      <div style="font-size:16px;font-weight:600;color:var(--tx);margin-bottom:6px">Nenhum backtest realizado</div>
-      <div style="font-size:13px;color:var(--txs);max-width:320px;line-height:1.5">Monte sua primeira estratégia no wizard e rode um backtest para ver os resultados aqui.</div>
-    `;
-    el.appendChild(empty);
-    return el;
-  }
-
-  const list=div('history-list');
-
-  MOCK_HISTORY.forEach(bt=>{
-    const ok=bt.result>0;
-    const card=div('history-card');
-    card.addEventListener('click',()=>viewHistoryItem(bt.id));
-
-    // Top row: strategy + date + verdict
-    const top=div('history-card-top');
-    const strat=div('history-card-strat');
-    strat.textContent=`${bt.asset} · ${bt.tf} · ${bt.direction==='long'?'Compra':bt.direction==='short'?'Venda':'Compra e Venda'}`;
-    const date=div('history-card-date');date.textContent=bt.date;
-    const verdict=div('history-card-verdict '+(ok?'ok':'bad'));
-    verdict.textContent=ok?'LUCRATIVA':'DEFICITÁRIA';
-    top.append(strat,verdict,date);
-    card.appendChild(top);
-
-    // Conditions tags
-    const conds=div('history-card-conds');
-    bt.conditions.forEach(c=>{const tag=div('history-card-cond');tag.textContent=c;conds.appendChild(tag);});
-    card.appendChild(conds);
-
-    // Metrics row
-    const metrics=div('history-card-metrics');
-    const addMetric=(label,val,color)=>{
-      const m=div('history-card-metric');
-      const l=div('history-card-metric-label');l.textContent=label;
-      const v=div('history-card-metric-val');v.textContent=val;if(color)v.style.color=color;
-      m.append(l,v);metrics.appendChild(m);
-    };
-    addMetric('Resultado',(ok?'+':'')+'R$ '+bt.result.toLocaleString('pt-BR'),ok?'#10B981':'#EF4444');
-    addMetric('Trades',bt.trades.toLocaleString('pt-BR'));
-    addMetric('Win Rate',bt.winRate.toFixed(1)+'%','#F59E0B');
-    addMetric('Max DD',bt.maxDD.toFixed(1)+'%','#EF4444');
-    addMetric('Profit Factor',bt.profitFactor.toFixed(2),bt.profitFactor>1?'#00D4AA':'#EF4444');
-    card.appendChild(metrics);
-
-    list.appendChild(card);
-  });
-
-  el.appendChild(list);
+  loadHistoryData();
   return el;
+}
+
+async function loadHistoryData() {
+  try {
+    const { data: sessionData } = await db.auth.getSession();
+    const token = sessionData?.session?.access_token;
+    if (!token) return;
+
+    const res = await fetch(
+      SUPA_URL + '/rest/v1/backtests?select=id,created_at,config,result&user_id=eq.' + currentUser.id +
+      '&status=eq.completed&order=created_at.desc&limit=60',
+      { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + token } }
+    );
+    if (!res.ok) return;
+    const backtests = await res.json();
+
+    const countEl    = document.getElementById('history-count');
+    const container  = document.getElementById('history-list-container');
+    if (!container) return; // usuário navegou para outra tela
+
+    if (!Array.isArray(backtests) || backtests.length === 0) {
+      if (countEl) countEl.textContent = '0 testes realizados';
+      container.innerHTML = `
+        <div class="history-empty">
+          <div style="width:56px;height:56px;border-radius:14px;background:var(--acd2);border:1px solid rgba(0,212,170,.2);display:flex;align-items:center;justify-content:center;margin-bottom:20px">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div style="font-size:16px;font-weight:600;color:var(--tx);margin-bottom:6px">Nenhum backtest realizado</div>
+          <div style="font-size:13px;color:var(--txs);max-width:320px;line-height:1.5">Monte sua primeira estratégia no wizard e rode um backtest para ver os resultados aqui.</div>
+        </div>`;
+      return;
+    }
+
+    if (countEl) countEl.textContent = backtests.length + ' ' + (backtests.length === 1 ? 'teste realizado' : 'testes realizados');
+    container.style.cssText = 'display:block';
+
+    const list = div('history-list');
+    backtests.forEach(bt => {
+      const metrics = (bt.result && bt.result.metrics) ? bt.result.metrics : {};
+      const cfg     = bt.config || {};
+      const profit  = metrics.total_net_profit || 0;
+      const ok      = profit >= 0;
+
+      const dateStr = new Date(bt.created_at).toLocaleString('pt-BR', {
+        day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'
+      });
+
+      const conditions = (cfg.conditions || []).map(c => {
+        const p = c.params || {};
+        let label = c.name || c.id || '?';
+        if (p.per && p.per2) label += `(${p.per}/${p.per2})`;
+        else if (p.per)      label += `(${p.per})`;
+        if (p.cond)          label += ' — ' + p.cond;
+        return label;
+      });
+
+      const dir = cfg.direction === 'long' ? 'Compra' : cfg.direction === 'short' ? 'Venda' : 'Compra e Venda';
+
+      const card = div('history-card');
+      card.addEventListener('click', () => viewHistoryItemFromDB(bt));
+
+      const top = div('history-card-top');
+      const strat = div('history-card-strat');
+      strat.textContent = `${cfg.asset || '—'} · ${cfg.tf || '—'} · ${dir}`;
+      const dateEl = div('history-card-date');
+      dateEl.textContent = dateStr;
+      const verdict = div('history-card-verdict ' + (ok ? 'ok' : 'bad'));
+      verdict.textContent = ok ? 'LUCRATIVA' : 'DEFICITÁRIA';
+      top.append(strat, verdict, dateEl);
+      card.appendChild(top);
+
+      const condsEl = div('history-card-conds');
+      conditions.forEach(c => { const tag = div('history-card-cond'); tag.textContent = c; condsEl.appendChild(tag); });
+      card.appendChild(condsEl);
+
+      const metricsEl = div('history-card-metrics');
+      const addM = (label, val, color) => {
+        const m = div('history-card-metric');
+        const l = div('history-card-metric-label'); l.textContent = label;
+        const v = div('history-card-metric-value'); v.textContent = val; if (color) v.style.color = color;
+        m.append(l, v); metricsEl.appendChild(m);
+      };
+      addM('Resultado', (ok?'+':'') + 'R$ ' + Math.abs(profit).toLocaleString('pt-BR', {maximumFractionDigits:0}), ok ? '#10B981' : '#EF4444');
+      addM('Trades', (metrics.total_trades || 0).toLocaleString('pt-BR'));
+      addM('Win Rate', (metrics.win_rate || 0).toFixed(1) + '%', '#F59E0B');
+      addM('Max DD', '-' + (metrics.max_drawdown_pct || 0).toFixed(1) + '%', '#EF4444');
+      addM('Profit Factor', (metrics.profit_factor || 0).toFixed(2), (metrics.profit_factor || 0) > 1 ? '#00D4AA' : '#EF4444');
+      card.appendChild(metricsEl);
+
+      list.appendChild(card);
+    });
+    container.replaceChildren(list);
+  } catch (e) {
+    console.error('[loadHistoryData]', e);
+    const container = document.getElementById('history-list-container');
+    if (container) container.innerHTML = '<div style="color:var(--txs);text-align:center;padding:40px 20px">Erro ao carregar histórico. Tente novamente.</div>';
+  }
+}
+
+async function viewHistoryItemFromDB(bt) {
+  if (!bt || !bt.result) return;
+  const metrics = bt.result.metrics || {};
+  CURRENT_BACKEND_METRICS = metrics;
+  CURRENT_BACKTEST_ID = bt.id;
+  const deposit = metrics.initial_deposit || 10000;
+  EQ = convertBackendResult(bt.result, deposit);
+  if (EQ.length === 0) EQ = [{ v: 0, dd: 0, pnl: 0, t: 'N/A' }];
+  EQ_ANALYSIS = computeAnalysis(EQ, deposit);
+  if (bt.config) Object.assign(state.cfg, bt.config);
+  const cfg = bt.config || {};
+  const dateStr = new Date(bt.created_at).toLocaleString('pt-BR', {
+    day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'
+  });
+  const conditions = (cfg.conditions || []).map(c => {
+    const p = c.params || {};
+    let label = c.name || c.id || '?';
+    if (p.per && p.per2) label += `(${p.per}/${p.per2})`;
+    else if (p.per)      label += `(${p.per})`;
+    if (p.cond)          label += ' — ' + p.cond;
+    return label;
+  });
+  viewingHistoryItem = {
+    id: bt.id,
+    asset: cfg.asset || '—',
+    tf: cfg.tf || '—',
+    direction: cfg.direction || 'both',
+    date: dateStr,
+    conditions,
+  };
+  state.screen = 'results';
+  const main = document.getElementById('main');
+  main.replaceChildren(renderResults());
 }
 
 // ─── GUIDED TOUR ──────────────────────────────────────────────
