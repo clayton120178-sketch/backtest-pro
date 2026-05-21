@@ -7205,7 +7205,17 @@ async function renderCardBrick() {
   if (mpMounted) return;
   mpMounted = true;
   const price = PLANOS[selectedPlan].precos[selectedCycle].total;
+
+  const brickTimeout = setTimeout(() => {
+    if (!document.getElementById('cardPaymentBrick_container')) return;
+    mpMounted = false;
+    const c = document.getElementById('cardPaymentBrick_container');
+    if (c) c.innerHTML = '';
+    showPayError('O formulário demorou para carregar. Isso pode ser um bloqueio de rede ou extensão de navegador. Tente recarregar a página.');
+  }, 15000);
+
   try {
+    container.innerHTML = '';
     mpInstance = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
     const bricksBuilder = mpInstance.bricks();
     window.cardPaymentBrickController = await bricksBuilder.create('cardPayment', 'cardPaymentBrick_container', {
@@ -7231,7 +7241,7 @@ async function renderCardBrick() {
         },
       },
       callbacks: {
-        onReady: () => {},
+        onReady: () => { clearTimeout(brickTimeout); },
         onSubmit: async (formData) => {
           try {
             const { data: { session } } = await db.auth.getSession();
@@ -7264,16 +7274,22 @@ async function renderCardBrick() {
           } catch(e) { showPayError('Erro ao processar pagamento. Tente novamente.'); }
         },
         onError: (err) => {
+          clearTimeout(brickTimeout);
           console.error('[MP Brick] onError:', err);
           mpMounted = false;
+          const c = document.getElementById('cardPaymentBrick_container');
+          if (c) c.innerHTML = '';
           showPayError('Erro ao inicializar o formulário de pagamento. Tente recarregar a página.');
         },
       },
     });
+    clearTimeout(brickTimeout);
   } catch(e) {
+    clearTimeout(brickTimeout);
     console.error('[MP Brick] init error:', e);
     mpMounted = false;
-    if (container) container.innerHTML = '';
+    const c = document.getElementById('cardPaymentBrick_container');
+    if (c) c.innerHTML = '';
     showPayError('Erro ao carregar o formulário. Tente recarregar a página.');
   }
 }
