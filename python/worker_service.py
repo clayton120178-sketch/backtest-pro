@@ -70,7 +70,14 @@ logger = logging.getLogger("worker_service")
 
 TASK_NAME = "BackTestProWorker"
 _WORKER_SCRIPT = os.path.join(_SCRIPT_DIR, "worker.py")
-_PYTHON_EXE = sys.executable
+
+# pythonw.exe roda sem janela de console — mesmo diretorio que python.exe
+_PYTHON_EXE = os.path.join(
+    os.path.dirname(sys.executable),
+    "pythonw.exe",
+)
+if not os.path.exists(_PYTHON_EXE):
+    _PYTHON_EXE = sys.executable  # fallback para python.exe se nao encontrar
 
 
 def _run(args, check=True) -> subprocess.CompletedProcess:
