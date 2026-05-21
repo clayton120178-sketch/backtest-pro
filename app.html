@@ -641,6 +641,196 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 </div>
 
 <script>
+// ─── CONFIG ──────────────────────────────────────────────────────────
+const SUPA_URL = 'https://lmrpxtshdiwufbfkaymg.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtcnB4dHNoZGl3dWZiZmtheW1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4OTM1MjQsImV4cCI6MjA4OTQ2OTUyNH0.c8giT7wbSAcHecrHR9IMB1x39Uy_TTA5p2-Q_QyQvXs';
+
+// ─── SUPABASE CLIENT ──────────────────────────────────────────────
+const { createClient } = supabase;
+const db = createClient(SUPA_URL, SUPA_KEY);
+window.db = db;
+
+// ─── ESTADOS GLOBAIS DE AUTH ─────────────────────────────────────
+let currentUser       = null;
+let currentUsuario    = null;
+let currentSub        = null;
+let currentScreen     = null;
+let currentTrialCount = 0;
+
+// ─── IIFE: detecta retorno de OAuth ───────────────────────────
+(function(){
+  const h = window.location.hash;
+  if(h && (h.includes('access_token') || h.includes('error_description'))){
+    const lo = document.getElementById('loading-oauth');
+    if(lo) lo.style.display = 'flex';
+    const al = document.getElementById('auth-login');
+    if(al) al.style.display = 'none';
+  }
+})();
+
+function hideAllAuth(){
+  ['loading-oauth','auth-login','auth-cadastro'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.style.display = 'none';
+  });
+}
+
+function mostrarLogin(){
+  hideAllAuth();
+  const el = document.getElementById('auth-login');
+  if(el) el.style.display = 'flex';
+  setTimeout(()=>document.getElementById('login-email')?.focus(), 100);
+}
+
+function mostrarCadastro(){
+  hideAllAuth();
+  const el = document.getElementById('auth-cadastro');
+  if(el) el.style.display = 'flex';
+  setTimeout(()=>document.getElementById('cad-nome')?.focus(), 100);
+}
+
+function traduzirErro(msg){
+  if(msg.includes('Invalid login'))       return 'E-mail ou senha incorretos.';
+  if(msg.includes('Email not confirmed')) return 'Confirme seu e-mail antes de entrar.';
+  if(msg.includes('already registered')) return 'Este e-mail já está cadastrado.';
+  if(msg.includes('User already registered')) return 'E-mail já cadastrado. Faça login.';
+  if(msg.includes('Password should'))    return 'A senha deve ter pelo menos 6 caracteres.';
+  return msg;
+}
+
+function mostrarErroAuth(elId, msg){
+  const el = document.getElementById(elId);
+  if(!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+}
+function limparErroAuth(elId){
+  const el = document.getElementById(elId);
+  if(el){ el.textContent=''; el.classList.remove('show'); }
+}
+
+async function loginEmail(){
+  limparErroAuth('login-error');
+  const email = document.getElementById('login-email')?.value?.trim();
+  const senha  = document.getElementById('login-senha')?.value;
+  const btn    = document.getElementById('login-submit');
+  if(!email || !senha){ mostrarErroAuth('login-error','Preencha todos os campos.'); return; }
+  if(btn){ btn.disabled=true; btn.textContent='Entrando...'; }
+  const { error } = await db.auth.signInWithPassword({ email, password: senha });
+  if(error){
+    mostrarErroAuth('login-error', traduzirErro(error.message));
+    if(btn){ btn.disabled=false; btn.textContent='Entrar'; }
+    return;
+  }
+}
+
+async function cadastrar(){
+  limparErroAuth('cad-error');
+  const nome  = document.getElementById('cad-nome')?.value?.trim();
+  const email = document.getElementById('cad-email')?.value?.trim();
+  const senha  = document.getElementById('cad-senha')?.value;
+  const btn    = document.getElementById('cad-submit');
+  if(!nome || !email || !senha){ mostrarErroAuth('cad-error','Preencha todos os campos.'); return; }
+  if(senha.length < 6){ mostrarErroAuth('cad-error','A senha deve ter pelo menos 6 caracteres.'); return; }
+  if(btn){ btn.disabled=true; btn.textContent='Criando conta...'; }
+  const { data, error } = await db.auth.signUp({
+    email, password: senha, options: { data: { full_name: nome } }
+  });
+  if(error){
+    mostrarErroAuth('cad-error', traduzirErro(error.message));
+    if(btn){ btn.disabled=false; btn.textContent='Criar conta'; }
+    return;
+  }
+  if(!data.session){
+    hideAllAuth();
+    alert('Verifique seu e-mail para confirmar o cadastro. Depois faça login.');
+    mostrarLogin();
+    return;
+  }
+}
+
+function loginGoogle(){
+  db.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin + '/app.html' }
+  });
+}
+window.loginGoogle = loginGoogle;
+
+async function handleLogout(){
+  await db.auth.signOut();
+}
+
+async function verificarAcesso(){
+  try {
+    let tentativas = 0;
+    let data = null;
+    while(!data && tentativas < 5){
+      const res = await db.from('acesso_status').select('*').eq('id', currentUser.id).maybeSingle();
+      if(res.data){ data = res.data; break; }
+      tentativas++;
+      await new Promise(r => setTimeout(r, 1000));
+    }
+    if(!data){
+      await db.from('users').upsert({
+        id: currentUser.id, email: currentUser.email,
+        name: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email.split('@')[0]
+      }, { onConflict: 'id', ignoreDuplicates: true });
+      await new Promise(r => setTimeout(r, 1000));
+      const res2 = await db.from('acesso_status').select('*').eq('id', currentUser.id).maybeSingle();
+      data = res2.data;
+      if(!data){ mostrarLogin(); return; }
+    }
+    currentUsuario = data;
+    if(data.tipo_acesso === 'starter' || data.tipo_acesso === 'advanced' || data.tipo_acesso === 'elite'){
+      currentSub = { plan: data.tipo_acesso, status: 'active', expires_at: data.acesso_anual_fim || data.trial_fim || null };
+    } else {
+      currentSub = null;
+    }
+    if(!currentSub){
+      currentTrialCount = await contarBacktestsSalvos(currentUser.id);
+    } else {
+      currentTrialCount = 0;
+    }
+    hideAllAuth();
+    document.getElementById('boot-spinner')?.remove();
+    if(data.status === 'ativo' || data.status === 'trial' || data.tipo_acesso === 'admin'){
+      updateAvatarUI();
+      if(currentScreen === 'plans' || currentScreen === 'payment' || currentScreen === 'history') return;
+      if(currentSub || currentTrialCount < FREE_TRIAL.backtests_max){ renderApp(); maybeAutoTour(); }
+      else { showScreen('nosub'); }
+    } else {
+      showScreen('nosub');
+    }
+  } catch(e){
+    console.error('[verificarAcesso]', e);
+    mostrarLogin();
+  }
+}
+
+db.auth.onAuthStateChange(async (event, session) => {
+  if(event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED'){
+    if(session?.user){ currentUser = session.user; hideAllAuth(); await verificarAcesso(); }
+    else { document.getElementById('boot-spinner')?.remove(); mostrarLogin(); }
+  } else if(event === 'INITIAL_SESSION'){
+    if(session?.user){ currentUser = session.user; await verificarAcesso(); }
+    else { document.getElementById('boot-spinner')?.remove(); mostrarLogin(); }
+  } else if(event === 'SIGNED_OUT'){
+    currentUser = null; currentUsuario = null; currentSub = null; currentTrialCount = 0; currentScreen = null;
+    mostrarLogin();
+  }
+});
+
+(function showBootSpinner(){
+  const main = document.getElementById('main');
+  if(!main) return;
+  const spinner = document.createElement('div');
+  spinner.id = 'boot-spinner';
+  spinner.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 56px)';
+  spinner.innerHTML = '<div style="width:28px;height:28px;border:2.5px solid var(--bd);border-top-color:var(--ac);border-radius:50%;animation:spin 0.7s linear infinite"></div>';
+  main.replaceChildren(spinner);
+})();
+
 // ─── STATE ────────────────────────────────────────────────────
 const APP_VERSION = '2.0.0'; // Versão do produto — atualizar a cada release
 
@@ -6691,197 +6881,6 @@ const PLANOS = {
 };
 const FREE_TRIAL = { backtests_max: 5, salvos_max: 5 };
 const CYCLE_DAYS = { mensal: 30, semestral: 180, anual: 365 };
-// ─── CONFIG ──────────────────────────────────────────────────────────
-const SUPA_URL = 'https://lmrpxtshdiwufbfkaymg.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtcnB4dHNoZGl3dWZiZmtheW1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4OTM1MjQsImV4cCI6MjA4OTQ2OTUyNH0.c8giT7wbSAcHecrHR9IMB1x39Uy_TTA5p2-Q_QyQvXs';
-
-// ─── SUPABASE CLIENT ──────────────────────────────────────────────
-const { createClient } = supabase;
-const db = createClient(SUPA_URL, SUPA_KEY);
-window.db = db;
-
-// ─── ESTADOS GLOBAIS DE AUTH ─────────────────────────────────────
-let currentUser       = null;
-let currentUsuario    = null;
-let currentSub        = null;
-let currentScreen     = null;
-let currentTrialCount = 0;
-
-// ─── IIFE: detecta retorno de OAuth ───────────────────────────
-(function(){
-  const h = window.location.hash;
-  if(h && (h.includes('access_token') || h.includes('error_description'))){
-    const lo = document.getElementById('loading-oauth');
-    if(lo) lo.style.display = 'flex';
-    const al = document.getElementById('auth-login');
-    if(al) al.style.display = 'none';
-  }
-})();
-
-function hideAllAuth(){
-  ['loading-oauth','auth-login','auth-cadastro'].forEach(id => {
-    const el = document.getElementById(id);
-    if(el) el.style.display = 'none';
-  });
-}
-
-function mostrarLogin(){
-  hideAllAuth();
-  const el = document.getElementById('auth-login');
-  if(el) el.style.display = 'flex';
-  setTimeout(()=>document.getElementById('login-email')?.focus(), 100);
-}
-
-function mostrarCadastro(){
-  hideAllAuth();
-  const el = document.getElementById('auth-cadastro');
-  if(el) el.style.display = 'flex';
-  setTimeout(()=>document.getElementById('cad-nome')?.focus(), 100);
-}
-
-function traduzirErro(msg){
-  if(msg.includes('Invalid login'))       return 'E-mail ou senha incorretos.';
-  if(msg.includes('Email not confirmed')) return 'Confirme seu e-mail antes de entrar.';
-  if(msg.includes('already registered')) return 'Este e-mail já está cadastrado.';
-  if(msg.includes('User already registered')) return 'E-mail já cadastrado. Faça login.';
-  if(msg.includes('Password should'))    return 'A senha deve ter pelo menos 6 caracteres.';
-  return msg;
-}
-
-function mostrarErroAuth(elId, msg){
-  const el = document.getElementById(elId);
-  if(!el) return;
-  el.textContent = msg;
-  el.classList.add('show');
-}
-function limparErroAuth(elId){
-  const el = document.getElementById(elId);
-  if(el){ el.textContent=''; el.classList.remove('show'); }
-}
-
-async function loginEmail(){
-  limparErroAuth('login-error');
-  const email = document.getElementById('login-email')?.value?.trim();
-  const senha  = document.getElementById('login-senha')?.value;
-  const btn    = document.getElementById('login-submit');
-  if(!email || !senha){ mostrarErroAuth('login-error','Preencha todos os campos.'); return; }
-  if(btn){ btn.disabled=true; btn.textContent='Entrando...'; }
-  const { error } = await db.auth.signInWithPassword({ email, password: senha });
-  if(error){
-    mostrarErroAuth('login-error', traduzirErro(error.message));
-    if(btn){ btn.disabled=false; btn.textContent='Entrar'; }
-    return;
-  }
-}
-
-async function cadastrar(){
-  limparErroAuth('cad-error');
-  const nome  = document.getElementById('cad-nome')?.value?.trim();
-  const email = document.getElementById('cad-email')?.value?.trim();
-  const senha  = document.getElementById('cad-senha')?.value;
-  const btn    = document.getElementById('cad-submit');
-  if(!nome || !email || !senha){ mostrarErroAuth('cad-error','Preencha todos os campos.'); return; }
-  if(senha.length < 6){ mostrarErroAuth('cad-error','A senha deve ter pelo menos 6 caracteres.'); return; }
-  if(btn){ btn.disabled=true; btn.textContent='Criando conta...'; }
-  const { data, error } = await db.auth.signUp({
-    email, password: senha, options: { data: { full_name: nome } }
-  });
-  if(error){
-    mostrarErroAuth('cad-error', traduzirErro(error.message));
-    if(btn){ btn.disabled=false; btn.textContent='Criar conta'; }
-    return;
-  }
-  if(!data.session){
-    hideAllAuth();
-    alert('Verifique seu e-mail para confirmar o cadastro. Depois faça login.');
-    mostrarLogin();
-    return;
-  }
-}
-
-function loginGoogle(){
-  db.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: window.location.origin + '/app.html' }
-  });
-}
-window.loginGoogle = loginGoogle;
-
-async function handleLogout(){
-  await db.auth.signOut();
-}
-
-async function verificarAcesso(){
-  try {
-    let tentativas = 0;
-    let data = null;
-    while(!data && tentativas < 5){
-      const res = await db.from('acesso_status').select('*').eq('id', currentUser.id).maybeSingle();
-      if(res.data){ data = res.data; break; }
-      tentativas++;
-      await new Promise(r => setTimeout(r, 1000));
-    }
-    if(!data){
-      await db.from('users').upsert({
-        id: currentUser.id, email: currentUser.email,
-        name: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email.split('@')[0]
-      }, { onConflict: 'id', ignoreDuplicates: true });
-      await new Promise(r => setTimeout(r, 1000));
-      const res2 = await db.from('acesso_status').select('*').eq('id', currentUser.id).maybeSingle();
-      data = res2.data;
-      if(!data){ mostrarLogin(); return; }
-    }
-    currentUsuario = data;
-    if(data.tipo_acesso === 'starter' || data.tipo_acesso === 'advanced' || data.tipo_acesso === 'elite'){
-      currentSub = { plan: data.tipo_acesso, status: 'active', expires_at: data.acesso_anual_fim || data.trial_fim || null };
-    } else {
-      currentSub = null;
-    }
-    if(!currentSub){
-      currentTrialCount = await contarBacktestsSalvos(currentUser.id);
-    } else {
-      currentTrialCount = 0;
-    }
-    hideAllAuth();
-    document.getElementById('boot-spinner')?.remove();
-    if(data.status === 'ativo' || data.status === 'trial' || data.tipo_acesso === 'admin'){
-      updateAvatarUI();
-      if(currentScreen === 'plans' || currentScreen === 'payment' || currentScreen === 'history') return;
-      if(currentSub || currentTrialCount < FREE_TRIAL.backtests_max){ renderApp(); maybeAutoTour(); }
-      else { showScreen('nosub'); }
-    } else {
-      showScreen('nosub');
-    }
-  } catch(e){
-    console.error('[verificarAcesso]', e);
-    mostrarLogin();
-  }
-}
-
-db.auth.onAuthStateChange(async (event, session) => {
-  if(event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED'){
-    if(session?.user){ currentUser = session.user; hideAllAuth(); await verificarAcesso(); }
-    else { document.getElementById('boot-spinner')?.remove(); mostrarLogin(); }
-  } else if(event === 'INITIAL_SESSION'){
-    if(session?.user){ currentUser = session.user; await verificarAcesso(); }
-    else { document.getElementById('boot-spinner')?.remove(); mostrarLogin(); }
-  } else if(event === 'SIGNED_OUT'){
-    currentUser = null; currentUsuario = null; currentSub = null; currentTrialCount = 0; currentScreen = null;
-    mostrarLogin();
-  }
-});
-
-(function showBootSpinner(){
-  const main = document.getElementById('main');
-  if(!main) return;
-  const spinner = document.createElement('div');
-  spinner.id = 'boot-spinner';
-  spinner.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 56px)';
-  spinner.innerHTML = '<div style="width:28px;height:28px;border:2.5px solid var(--bd);border-top-color:var(--ac);border-radius:50%;animation:spin 0.7s linear infinite"></div>';
-  main.replaceChildren(spinner);
-})();
-
-
 // ─── STATE ────────────────────────────────────────────────────
 let selectedPlan  = 'starter';
 let selectedCycle = 'mensal';
