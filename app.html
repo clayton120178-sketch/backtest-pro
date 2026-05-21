@@ -7216,6 +7216,7 @@ async function renderCardBrick() {
 
   try {
     container.innerHTML = '';
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     mpInstance = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
     const bricksBuilder = mpInstance.bricks();
     window.cardPaymentBrickController = await bricksBuilder.create('cardPayment', 'cardPaymentBrick_container', {
@@ -7226,8 +7227,11 @@ async function renderCardBrick() {
       customization: {
         visual: {
           style: {
-            theme: 'dark',
-            customVariables: {
+            theme: isLight ? 'default' : 'dark',
+            customVariables: isLight ? {
+              formBackgroundColor: '#FDFCF9',
+              baseColor: '#B86800',
+            } : {
               formBackgroundColor: '#12121A',
               baseColor: '#F0A020',
             }
