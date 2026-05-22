@@ -2589,7 +2589,7 @@ function buildCondPreview(indId, condText, params={}) {
   const sc = up ? '#10B981' : '#EF4444';
 
   // Indicator types that get LWC treatment
-  const LWC_IDS = ['rsi','stoch','cci','williams','macd','atr','sma','ema','bb','vwap','adx','sar','hilo','hilon','range','gap','prevday','fib'];
+  const LWC_IDS = ['rsi','stoch','cci','williams','macd','atr','sma','ema','bb','vwap','adx','sar','hilo','hilon','range','gap','prevday','fib','fvg','bos','choch','sweep','candle'];
 
   if (!LWC_IDS.includes(indId)) {
     return _buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct);
@@ -3560,6 +3560,434 @@ const chartOpts = {
       }
 
       chart.timeScale().fitContent();
+    });
+    return container;
+  }
+
+
+  // -- FVG - Fair Value Gap
+  if (indId === 'fvg') {
+    container.style.height = '160px';
+    _lwcRender(container, (chartW) => {
+      if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId,condText,params,isDark,up,cross,sc,ct)); return; }
+      const chart = LightweightCharts.createChart(container, {
+        width:chartW,height:160,layout:{background:{color:bg},textColor:text},
+        grid:{vertLines:{color:grid},horzLines:{color:grid}},
+        rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.08,bottom:0.08}},
+        timeScale:{borderColor:'transparent',visible:false},crosshair:{mode:1},
+        handleScroll:false,handleScale:false,
+        watermark:{visible:true,fontSize:11,horzAlign:'left',vertAlign:'top',color:text,text:'FVG - Fair Value Gap'}
+      });
+      const cs = chart.addCandlestickSeries({
+        upColor:'#26a69a',downColor:'#ef5350',borderUpColor:'#26a69a',borderDownColor:'#ef5350',
+        wickUpColor:isDark?'rgba(38,166,154,0.5)':'rgba(38,166,154,0.7)',
+        wickDownColor:isDark?'rgba(239,83,80,0.5)':'rgba(239,83,80,0.7)',
+      });
+      const isMit=(params.entryMode==='mitigation')||ct.includes('retornar');
+      const t0s=Math.floor(new Date('2024-01-02').getTime()/1000),BS=300;
+      let fd,fvgTop,fvgBot;
+      if(up){
+        fvgBot=102;fvgTop=108;
+        fd=[
+          {time:t0s,open:101,high:103,low:98,close:99},{time:t0s+BS,open:100,high:102,low:97,close:98},
+          {time:t0s+2*BS,open:99,high:101,low:96,close:100},{time:t0s+3*BS,open:100,high:fvgBot,low:98,close:fvgBot},
+          {time:t0s+4*BS,open:fvgBot,high:118,low:fvgBot-1,close:116},
+          {time:t0s+5*BS,open:115,high:119,low:fvgTop,close:113},
+          {time:t0s+6*BS,open:113,high:116,low:110,close:114},{time:t0s+7*BS,open:114,high:117,low:111,close:115},
+        ];
+        if(isMit)fd.push({time:t0s+8*BS,open:115,high:116,low:112,close:112},{time:t0s+9*BS,open:112,high:114,low:fvgTop+1,close:fvgTop+2});
+      }else{
+        fvgTop=97;fvgBot=92;
+        fd=[
+          {time:t0s,open:99,high:102,low:97,close:101},{time:t0s+BS,open:101,high:104,low:99,close:102},
+          {time:t0s+2*BS,open:102,high:105,low:100,close:101},{time:t0s+3*BS,open:101,high:fvgTop,low:97,close:fvgTop},
+          {time:t0s+4*BS,open:fvgTop,high:fvgTop+1,low:82,close:84},
+          {time:t0s+5*BS,open:85,high:fvgBot,low:81,close:88},
+          {time:t0s+6*BS,open:88,high:91,low:85,close:87},{time:t0s+7*BS,open:87,high:90,low:84,close:86},
+        ];
+        if(isMit)fd.push({time:t0s+8*BS,open:86,high:90,low:85,close:89},{time:t0s+9*BS,open:89,high:fvgBot-1,low:87,close:fvgBot-2});
+      }
+      cs.setData(fd);
+      const ft=fd.map(b=>b.time),zc=up?'rgba(38,166,154,0.7)':'rgba(239,83,80,0.7)';
+      chart.addLineSeries({color:zc,lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(ft.map(t=>({time:t,value:fvgTop})));
+      chart.addLineSeries({color:zc,lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(ft.map(t=>({time:t,value:fvgBot})));
+      const eb=isMit?fd[fd.length-1]:fd[5];
+      cs.setMarkers([{time:eb.time,position:up?'belowBar':'aboveBar',color:up?'#26a69a':'#ef5350',shape:up?'arrowUp':'arrowDown',text:isMit?'Retorno':'Entrada'}]);
+      chart.timeScale().fitContent();
+    });
+    return container;
+  }
+
+  // -- BoS - Break of Structure
+  if (indId === 'bos') {
+    container.style.height = '160px';
+    _lwcRender(container, (chartW) => {
+      if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId,condText,params,isDark,up,cross,sc,ct)); return; }
+      const chart = LightweightCharts.createChart(container, {
+        width:chartW,height:160,layout:{background:{color:bg},textColor:text},
+        grid:{vertLines:{color:grid},horzLines:{color:grid}},
+        rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.1,bottom:0.1}},
+        timeScale:{borderColor:'transparent',visible:false},crosshair:{mode:1},
+        handleScroll:false,handleScale:false,
+        watermark:{visible:true,fontSize:11,horzAlign:'left',vertAlign:'top',color:text,text:'BoS - Break of Structure'}
+      });
+      const cs = chart.addCandlestickSeries({
+        upColor:'#26a69a',downColor:'#ef5350',borderUpColor:'#26a69a',borderDownColor:'#ef5350',
+        wickUpColor:isDark?'rgba(38,166,154,0.5)':'rgba(38,166,154,0.7)',
+        wickDownColor:isDark?'rgba(239,83,80,0.5)':'rgba(239,83,80,0.7)',
+      });
+      const t0s=Math.floor(new Date('2024-01-02').getTime()/1000),BS=300;
+      let bd,bsl;
+      if(up){
+        bsl=107;
+        bd=[
+          {time:t0s,open:112,high:114,low:109,close:110},{time:t0s+BS,open:110,high:112,low:106,close:107},
+          {time:t0s+2*BS,open:107,high:bsl,low:103,close:104},{time:t0s+3*BS,open:104,high:106,low:100,close:101},
+          {time:t0s+4*BS,open:101,high:103,low:97,close:98},{time:t0s+5*BS,open:98,high:102,low:96,close:100},
+          {time:t0s+6*BS,open:100,high:105,low:98,close:104},{time:t0s+7*BS,open:104,high:110,low:102,close:109},
+          {time:t0s+8*BS,open:109,high:112,low:107,close:110},
+        ];
+      }else{
+        bsl=96;
+        bd=[
+          {time:t0s,open:90,high:93,low:87,close:91},{time:t0s+BS,open:91,high:95,low:89,close:93},
+          {time:t0s+2*BS,open:93,high:97,low:90,close:bsl},{time:t0s+3*BS,open:96,high:100,low:94,close:99},
+          {time:t0s+4*BS,open:99,high:103,low:97,close:101},{time:t0s+5*BS,open:101,high:103,low:97,close:99},
+          {time:t0s+6*BS,open:99,high:101,low:95,close:97},{time:t0s+7*BS,open:97,high:98,low:92,close:93},
+          {time:t0s+8*BS,open:93,high:95,low:90,close:91},
+        ];
+      }
+      cs.setData(bd);
+      const bt=bd.map(b=>b.time);
+      chart.addLineSeries({color:'#F0A020',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(bt.map(t=>({time:t,value:bsl})));
+      cs.setMarkers([{time:bd[7].time,position:up?'belowBar':'aboveBar',color:'#F0A020',shape:'circle',text:'BoS'}]);
+      chart.timeScale().fitContent();
+    });
+    return container;
+  }
+
+  // -- CHoCH - Change of Character
+  if (indId === 'choch') {
+    container.style.height = '160px';
+    _lwcRender(container, (chartW) => {
+      if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId,condText,params,isDark,up,cross,sc,ct)); return; }
+      const chart = LightweightCharts.createChart(container, {
+        width:chartW,height:160,layout:{background:{color:bg},textColor:text},
+        grid:{vertLines:{color:grid},horzLines:{color:grid}},
+        rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.1,bottom:0.1}},
+        timeScale:{borderColor:'transparent',visible:false},crosshair:{mode:1},
+        handleScroll:false,handleScale:false,
+        watermark:{visible:true,fontSize:11,horzAlign:'left',vertAlign:'top',color:text,text:'CHoCH - Change of Character'}
+      });
+      const cs = chart.addCandlestickSeries({
+        upColor:'#26a69a',downColor:'#ef5350',borderUpColor:'#26a69a',borderDownColor:'#ef5350',
+        wickUpColor:isDark?'rgba(38,166,154,0.5)':'rgba(38,166,154,0.7)',
+        wickDownColor:isDark?'rgba(239,83,80,0.5)':'rgba(239,83,80,0.7)',
+      });
+      const t0s=Math.floor(new Date('2024-01-02').getTime()/1000),BS=300;
+      let cd2,chlvl,brk;
+      if(up){
+        chlvl=109;
+        cd2=[
+          {time:t0s,open:114,high:116,low:110,close:111},{time:t0s+BS,open:111,high:113,low:107,close:108},
+          {time:t0s+2*BS,open:108,high:chlvl,low:105,close:107},{time:t0s+3*BS,open:107,high:108,low:103,close:104},
+          {time:t0s+4*BS,open:104,high:107,low:101,close:106},{time:t0s+5*BS,open:106,high:110,low:104,close:109},
+          {time:t0s+6*BS,open:109,high:113,low:107,close:112},{time:t0s+7*BS,open:112,high:115,low:110,close:113},
+        ];
+        brk=5;
+      }else{
+        chlvl=98;
+        cd2=[
+          {time:t0s,open:90,high:93,low:88,close:92},{time:t0s+BS,open:92,high:96,low:90,close:95},
+          {time:t0s+2*BS,open:95,high:chlvl,low:93,close:97},{time:t0s+3*BS,open:97,high:100,low:95,close:99},
+          {time:t0s+4*BS,open:99,high:101,low:96,close:97},{time:t0s+5*BS,open:97,high:99,low:94,close:95},
+          {time:t0s+6*BS,open:95,high:97,low:91,close:93},{time:t0s+7*BS,open:93,high:95,low:90,close:91},
+        ];
+        brk=6;
+      }
+      cs.setData(cd2);
+      const ct2=cd2.map(b=>b.time);
+      chart.addLineSeries({color:'#EF4444',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(ct2.map(t=>({time:t,value:chlvl})));
+      cs.setMarkers([{time:cd2[brk].time,position:up?'belowBar':'aboveBar',color:'#F0A020',shape:'circle',text:'CHoCH'}]);
+      chart.timeScale().fitContent();
+    });
+    return container;
+  }
+
+  // -- SWEEP / GRAB - Liquidity Sweep
+  if (indId === 'sweep' || indId === 'grab') {
+    container.style.height = '160px';
+    _lwcRender(container, (chartW) => {
+      if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId,condText,params,isDark,up,cross,sc,ct)); return; }
+      const chart = LightweightCharts.createChart(container, {
+        width:chartW,height:160,layout:{background:{color:bg},textColor:text},
+        grid:{vertLines:{color:grid},horzLines:{color:grid}},
+        rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.1,bottom:0.1}},
+        timeScale:{borderColor:'transparent',visible:false},crosshair:{mode:1},
+        handleScroll:false,handleScale:false,
+        watermark:{visible:true,fontSize:11,horzAlign:'left',vertAlign:'top',color:text,text:indId==='grab'?'Grab de Liquidez':'Sweep de Liquidez'}
+      });
+      const cs = chart.addCandlestickSeries({
+        upColor:'#26a69a',downColor:'#ef5350',borderUpColor:'#26a69a',borderDownColor:'#ef5350',
+        wickUpColor:isDark?'rgba(38,166,154,0.5)':'rgba(38,166,154,0.7)',
+        wickDownColor:isDark?'rgba(239,83,80,0.5)':'rgba(239,83,80,0.7)',
+      });
+      const t0s=Math.floor(new Date('2024-01-02').getTime()/1000),BS=300;
+      let sd,slvl;
+      if(up){
+        slvl=96;
+        sd=[
+          {time:t0s,open:103,high:106,low:100,close:101},{time:t0s+BS,open:101,high:104,low:97,close:99},
+          {time:t0s+2*BS,open:99,high:102,low:slvl,close:98},{time:t0s+3*BS,open:98,high:101,low:slvl,close:99},
+          {time:t0s+4*BS,open:99,high:102,low:slvl,close:100},{time:t0s+5*BS,open:100,high:103,low:slvl,close:101},
+          {time:t0s+6*BS,open:100,high:102,low:slvl-4,close:101},{time:t0s+7*BS,open:102,high:109,low:101,close:108},
+          {time:t0s+8*BS,open:108,high:112,low:106,close:110},
+        ];
+      }else{
+        slvl=106;
+        sd=[
+          {time:t0s,open:99,high:103,low:97,close:101},{time:t0s+BS,open:101,high:slvl,low:99,close:103},
+          {time:t0s+2*BS,open:103,high:slvl,low:100,close:104},{time:t0s+3*BS,open:104,high:slvl,low:101,close:102},
+          {time:t0s+4*BS,open:102,high:slvl,low:99,close:103},{time:t0s+5*BS,open:103,high:slvl+4,low:101,close:102},
+          {time:t0s+6*BS,open:102,high:103,low:95,close:96},{time:t0s+7*BS,open:96,high:98,low:92,close:94},
+          {time:t0s+8*BS,open:94,high:96,low:90,close:92},
+        ];
+      }
+      cs.setData(sd);
+      const st=sd.map(b=>b.time);
+      chart.addLineSeries({color:'#F0A020',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(st.map(t=>({time:t,value:slvl})));
+      const swpi=up?6:5,revi=up?7:6;
+      cs.setMarkers([
+        {time:sd[swpi].time,position:up?'belowBar':'aboveBar',color:'#ef5350',shape:up?'arrowDown':'arrowUp',text:'Sweep'},
+        {time:sd[revi].time,position:up?'belowBar':'aboveBar',color:'#26a69a',shape:up?'arrowUp':'arrowDown',text:'Reversao'}
+      ]);
+      chart.timeScale().fitContent();
+    });
+    return container;
+  }
+
+  // -- CANDLE PATTERNS
+  if (indId === 'candle') {
+    container.style.height = '160px';
+    _lwcRender(container, (chartW) => {
+      if (!window.LightweightCharts) { container.appendChild(_buildCondPreviewSVG(indId,condText,params,isDark,up,cross,sc,ct)); return; }
+      const chart = LightweightCharts.createChart(container, {
+        width:chartW,height:160,layout:{background:{color:bg},textColor:text},
+        grid:{vertLines:{color:grid},horzLines:{color:grid}},
+        rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.12,bottom:0.12}},
+        timeScale:{borderColor:'transparent',visible:false},crosshair:{mode:1},
+        handleScroll:false,handleScale:false,
+      });
+      const cs = chart.addCandlestickSeries({
+        upColor:'#26a69a',downColor:'#ef5350',borderUpColor:'#26a69a',borderDownColor:'#ef5350',
+        wickUpColor:isDark?'rgba(38,166,154,0.5)':'rgba(38,166,154,0.7)',
+        wickDownColor:isDark?'rgba(239,83,80,0.5)':'rgba(239,83,80,0.7)',
+      });
+      const t0=Math.floor(new Date('2024-01-02').getTime()/1000),B=300;
+      const bk=(i,o,h,l,c)=>({time:t0+i*B,open:o,high:h,low:l,close:c});
+      let pd,mi,mc,lbl,mkPos;
+      const ctL=ct.toLowerCase();
+
+      // ---- Hammer / Martelo
+      if(ctL.includes('martelo')||ctL.includes('hammer')&&!ctL.includes('invert')&&!ctL.includes('inv')){
+        pd=[bk(0,104,106,102,105),bk(1,105,107,103,106),bk(2,106,108,104,107),
+            bk(3,107,108,104,107.5),bk(4,107.5,109,105,108),
+            bk(5,101,102,96,101)];
+        mi=5;mc='#26a69a';lbl='Martelo';mkPos='belowBar';
+
+      // ---- Inverted Hammer / Martelo Invertido
+      }else if(ctL.includes('invertido')||ctL.includes('inverted')||ctL.includes('inv_hammer')){
+        pd=[bk(0,108,110,106,107),bk(1,107,109,105,106),bk(2,106,108,104,105),
+            bk(3,105,107,103,104.5),bk(4,104.5,106,102,104),
+            bk(5,103,108,102.5,104)];
+        mi=5;mc='#26a69a';lbl='Martelo Inv.';mkPos='belowBar';
+
+      // ---- Bullish Engulfing / Engolfo Alta
+      }else if((ctL.includes('engolfo')||ctL.includes('engulf'))&&(ctL.includes('alta')||ctL.includes('bull')||ctL.includes('compra'))){
+        pd=[bk(0,104,106,102,105),bk(1,105,107,103,106),bk(2,106,108,104,107),
+            bk(3,105,107,104,105.5),
+            bk(4,107,108,104,105),
+            bk(5,104,110,103.5,109)];
+        mi=5;mc='#26a69a';lbl='Engolfo Alta';mkPos='belowBar';
+
+      // ---- Bearish Engulfing / Engolfo Baixa
+      }else if((ctL.includes('engolfo')||ctL.includes('engulf'))&&(ctL.includes('baixa')||ctL.includes('bear')||ctL.includes('venda'))){
+        pd=[bk(0,97,99,95,98),bk(1,98,100,96,99),bk(2,99,101,97,100),
+            bk(3,100,102,99,101),
+            bk(4,100,102,99,101.5),
+            bk(5,102,102.5,96,97)];
+        mi=5;mc='#ef5350';lbl='Engolfo Baixa';mkPos='aboveBar';
+
+      // ---- Morning Star / Estrela da Manha
+      }else if((ctL.includes('manha')||ctL.includes('morning'))&&!ctL.includes('doji')){
+        pd=[bk(0,106,108,104,107),bk(1,107,109,105,108),
+            bk(2,108,110,106,109),
+            bk(3,109,110,106,107),
+            bk(4,105,107,103,104),
+            bk(5,103.5,105,102.5,104.5),
+            bk(6,104,108,103.5,107)];
+        mi=6;mc='#26a69a';lbl='Estrela Manha';mkPos='belowBar';
+
+      // ---- Evening Star / Estrela da Noite
+      }else if((ctL.includes('noite')||ctL.includes('evening'))&&!ctL.includes('doji')){
+        pd=[bk(0,96,98,94,97),bk(1,97,99,95,98),
+            bk(2,98,100,96,99),
+            bk(3,99,102,98,101),
+            bk(4,101.5,103,100.5,102),
+            bk(5,102,103,99,100),
+            bk(6,100,101,96,97)];
+        mi=6;mc='#ef5350';lbl='Estrela Noite';mkPos='aboveBar';
+
+      // ---- Doji Morning Star
+      }else if(ctL.includes('doji')&&(ctL.includes('manha')||ctL.includes('morning'))){
+        pd=[bk(0,108,110,106,109),bk(1,109,111,107,110),
+            bk(2,110,112,108,111),
+            bk(3,107,108,103,105),
+            bk(4,104,105,103.5,104.5),
+            bk(5,104.5,105,104,104.7),
+            bk(6,104,108,103.5,107)];
+        mi=6;mc='#26a69a';lbl='Doji Manha';mkPos='belowBar';
+
+      // ---- Doji Evening Star
+      }else if(ctL.includes('doji')&&(ctL.includes('noite')||ctL.includes('evening'))){
+        pd=[bk(0,96,98,94,97),bk(1,97,99,95,98),
+            bk(2,98,100,96,99),
+            bk(3,101,104,100,103),
+            bk(4,103.5,104.5,103,103.7),
+            bk(5,103.5,104,100,101),
+            bk(6,101,102,97,98)];
+        mi=6;mc='#ef5350';lbl='Doji Noite';mkPos='aboveBar';
+
+      // ---- Bullish Harami
+      }else if((ctL.includes('harami'))&&(ctL.includes('alta')||ctL.includes('bull'))){
+        pd=[bk(0,104,106,102,105),bk(1,105,107,103,106),bk(2,106,108,104,107),
+            bk(3,108,110,106,107.5),
+            bk(4,109,111,107,108),
+            bk(5,105,110,104,106.5)];
+        mi=5;mc='#26a69a';lbl='Harami Alta';mkPos='belowBar';
+
+      // ---- Bearish Harami
+      }else if((ctL.includes('harami'))&&(ctL.includes('baixa')||ctL.includes('bear'))){
+        pd=[bk(0,96,98,94,97),bk(1,97,99,95,98),bk(2,98,100,96,99),
+            bk(3,99,101,97,100.5),
+            bk(4,97,101,96,100),
+            bk(5,100,101,97.5,98)];
+        mi=5;mc='#ef5350';lbl='Harami Baixa';mkPos='aboveBar';
+
+      // ---- Marubozu Alta
+      }else if(ctL.includes('marubozu')&&(ctL.includes('alta')||ctL.includes('bull'))){
+        pd=[bk(0,103,105,101,104),bk(1,104,106,102,105),bk(2,104,106,102,105.5),
+            bk(3,105.5,107,103.5,106),bk(4,106,108,104,107),
+            bk(5,105,113,105,113)];
+        mi=5;mc='#26a69a';lbl='Marubozu Alta';mkPos='belowBar';
+
+      // ---- Marubozu Baixa
+      }else if(ctL.includes('marubozu')&&(ctL.includes('baixa')||ctL.includes('bear'))){
+        pd=[bk(0,97,99,95,98),bk(1,98,100,96,99),bk(2,99,101,97,100),
+            bk(3,100,102,98,101),bk(4,101,103,99,102),
+            bk(5,103,103,95,95)];
+        mi=5;mc='#ef5350';lbl='Marubozu Baixa';mkPos='aboveBar';
+
+      // ---- Spinning Top
+      }else if(ctL.includes('spinning')||ctL.includes('piao')){
+        pd=[bk(0,102,104,100,103),bk(1,103,105,101,104),bk(2,104,106,102,105),
+            bk(3,105,107,103,106),bk(4,106,108,104,107),
+            bk(5,104,110,99,105)];
+        mi=5;mc='#F0A020';lbl='Spinning Top';mkPos='aboveBar';
+
+      // ---- Pivot Alta
+      }else if(ctL.includes('pivo')&&(ctL.includes('alta')||ctL.includes('bull'))){
+        pd=[bk(0,108,110,106,109),bk(1,109,111,107,110),bk(2,107,109,103,104),
+            bk(3,104,106,100,101),bk(4,101,103,97,98),
+            bk(5,98,99,93,98.5)];
+        mi=5;mc='#26a69a';lbl='Pivo Alta';mkPos='belowBar';
+
+      // ---- Pivot Baixa
+      }else if(ctL.includes('pivo')&&(ctL.includes('baixa')||ctL.includes('bear'))){
+        pd=[bk(0,94,96,92,95),bk(1,95,97,93,96),bk(2,97,101,95,100),
+            bk(3,100,104,98,103),bk(4,103,107,101,106),
+            bk(5,104,110,103.5,104.5)];
+        mi=5;mc='#ef5350';lbl='Pivo Baixa';mkPos='aboveBar';
+
+      // ---- Tres Soldados (Three White Soldiers)
+      }else if(ctL.includes('soldado')||ctL.includes('soldier')){
+        pd=[bk(0,100,102,98,101),bk(1,101,103,99,102),bk(2,101,103,99,101.5),
+            bk(3,101.5,103,100,102.5),
+            bk(4,102,106,101,105.5),
+            bk(5,105.5,109.5,104.5,109),
+            bk(6,109,113,108,112.5)];
+        mi=6;mc='#26a69a';lbl='3 Soldados';mkPos='belowBar';
+
+      // ---- Tres Corvos (Three Black Crows)
+      }else if(ctL.includes('corvo')||ctL.includes('crow')){
+        pd=[bk(0,100,102,98,101),bk(1,101,103,99,102),bk(2,101.5,103,100,102.5),
+            bk(3,102.5,103,101,101.5),
+            bk(4,101.5,102,97.5,98),
+            bk(5,98,99,94,94.5),
+            bk(6,94.5,95.5,91,91.5)];
+        mi=6;mc='#ef5350';lbl='3 Corvos';mkPos='aboveBar';
+
+      // ---- Nuvem Negra (Dark Cloud Cover)
+      }else if(ctL.includes('nuvem')||ctL.includes('dark_cloud')||ctL.includes('cloud')){
+        pd=[bk(0,97,99,95,98),bk(1,98,100,96,99),bk(2,99,101,97,100),
+            bk(3,100,104,99,103),
+            bk(4,104,106,99.5,100.5)];
+        mi=4;mc='#ef5350';lbl='Nuvem Negra';mkPos='aboveBar';
+
+      // ---- Perfuracao (Piercing Line)
+      }else if(ctL.includes('perfur')||ctL.includes('piercing')){
+        pd=[bk(0,104,106,102,105),bk(1,105,107,103,106),bk(2,106,108,104,107),
+            bk(3,107,108,103,103.5),
+            bk(4,102.5,106,102,105.5)];
+        mi=4;mc='#26a69a';lbl='Perfuracao';mkPos='belowBar';
+
+      // ---- Topo Duplo (Double Top)
+      }else if(ctL.includes('topo_duplo')||ctL.includes('double_top')||ctL.includes('topo duplo')){
+        pd=[bk(0,98,100,96,99),bk(1,99,103,97,102),bk(2,102,106,100,105),
+            bk(3,105,108,103,106),
+            bk(4,106,107,103,104),bk(5,104,106,100,102),
+            bk(6,102,107,100,106),bk(7,106,108,104,105.5),
+            bk(8,105.5,107,102,103),bk(9,103,104,99,100)];
+        mi=9;mc='#ef5350';lbl='Topo Duplo';mkPos='aboveBar';
+
+      // ---- Fundo Duplo (Double Bottom)
+      }else if(ctL.includes('fundo_duplo')||ctL.includes('double_bottom')||ctL.includes('fundo duplo')){
+        pd=[bk(0,104,106,102,103),bk(1,103,105,99,100),bk(2,100,102,96,97),
+            bk(3,97,99,94,95),
+            bk(4,95,98,93,97),bk(5,97,101,95,100),
+            bk(6,100,102,95,96),bk(7,96,99,93,94.5),
+            bk(8,94.5,98,93.5,97),bk(9,97,102,96,101)];
+        mi=9;mc='#26a69a';lbl='Fundo Duplo';mkPos='belowBar';
+
+      // ---- Trap Alta (Bull Trap)
+      }else if(ctL.includes('trap')&&(ctL.includes('alta')||ctL.includes('bull'))){
+        pd=[bk(0,100,102,98,101),bk(1,101,103,99,102),bk(2,102,104,100,103),
+            bk(3,103,108,102,107),
+            bk(4,107,109,102,103),
+            bk(5,103,104,98,99),bk(6,99,101,96,97)];
+        mi=4;mc='#ef5350';lbl='Trap Alta';mkPos='aboveBar';
+
+      // ---- Trap Baixa (Bear Trap)
+      }else if(ctL.includes('trap')&&(ctL.includes('baixa')||ctL.includes('bear'))){
+        pd=[bk(0,102,104,100,101),bk(1,101,103,99,100),bk(2,100,102,98,99),
+            bk(3,99,100,94,95),
+            bk(4,95,101,94,100),
+            bk(5,100,103,98,102),bk(6,102,105,100,104)];
+        mi=4;mc='#26a69a';lbl='Trap Baixa';mkPos='belowBar';
+
+      // ---- Generic Doji (fallback for any doji variant)
+      }else{
+        pd=[bk(0,102,104,100,103),bk(1,103,105,101,104),bk(2,104,106,102,105),
+            bk(3,105,107,103,106),bk(4,106,108,104,107),
+            bk(5,105,110,100,105.1)];
+        mi=5;mc='#F0A020';lbl=ct||'Doji';mkPos='aboveBar';
+      }
+
+      if(pd){
+        cs.setData(pd);
+        if(mi!=null)cs.setMarkers([{time:pd[mi].time,position:mkPos||'belowBar',color:mc||'#F0A020',shape:'circle',text:lbl||ct}]);
+        chart.timeScale().fitContent();
+      }
     });
     return container;
   }
