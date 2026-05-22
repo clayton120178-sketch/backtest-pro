@@ -2701,16 +2701,16 @@ const chartOpts = {
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
         rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
         timeScale: { borderColor: 'transparent', visible: false },
-        crosshair: { mode: 0 },
+        crosshair: { mode: 1 },
         handleScroll: false, handleScale: false,
       };
 
       // Top: candles
       const topChart = LightweightCharts.createChart(topDiv, { ...chartOpts, height: 120 });
       const cs = topChart.addCandlestickSeries({
-        upColor: '#10B981', downColor: '#EF4444',
-        borderUpColor: '#10B981', borderDownColor: '#EF4444',
-        wickUpColor: '#10B981', wickDownColor: '#EF4444',
+        upColor: '#26a69a', downColor: '#ef5350',
+        borderUpColor: '#26a69a', borderDownColor: '#ef5350',
+        wickUpColor: '#26a69a', wickDownColor: '#ef5350',
       });
       cs.setData(ohlc);
       const sigIdx = N - 3;  // fallback, cada indicador pode sobrescrever via cs.setMarkers
@@ -2725,7 +2725,7 @@ const chartOpts = {
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
         rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.1, bottom: 0.1 } },
         timeScale: { borderColor: 'transparent', visible: false },
-        crosshair: { mode: 0 },
+        crosshair: { mode: 1 },
         handleScroll: false, handleScale: false,
       });
 
@@ -2738,18 +2738,19 @@ const chartOpts = {
         const rsi = _calcRSI(closes, per);
         indData = rsi.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
 
-        // Zonas de sobrevenda (0-30) e sobrecompra (70-100)
-        const zone30 = botChart.addLineSeries({ color: 'rgba(16,185,129,0.4)', lineWidth: 0.5, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
-        zone30.setData(times.map(t => ({ time: t, value: 30 })));
-        const zone70 = botChart.addLineSeries({ color: 'rgba(239,68,68,0.4)', lineWidth: 0.5, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
-        zone70.setData(times.map(t => ({ time: t, value: 70 })));
-
-        // Threshold line (amarela) — move com val do usuário
-        const threshSeries = botChart.addLineSeries({ color: '#F59E0B', lineWidth: 1.5, lineStyle: 0, priceLineVisible: false, lastValueVisible: false });
+        // Escala fixa 0-100 via autoscaleInfoProvider
+        const _rsiScale = () => ({ priceRange: { minValue: 0, maxValue: 100 }, margins: { above: 0, below: 0 } });
+        // Fill zona sobrecompra: gradiente vermelho de cima para baixo (100→transparente)
+        botChart.addAreaSeries({ topColor: 'rgba(239,83,80,0.18)', bottomColor: 'rgba(239,83,80,0)', lineColor: 'transparent', lineWidth: 0, priceLineVisible: false, lastValueVisible: false, autoscaleInfoProvider: _rsiScale }).setData(times.map(t => ({ time: t, value: 100 })));
+        // Fill zona sobrevenda: gradiente verde (transparente em 30 → teal na base)
+        botChart.addAreaSeries({ topColor: 'rgba(38,166,154,0)', bottomColor: 'rgba(38,166,154,0.18)', lineColor: 'rgba(38,166,154,0.5)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, autoscaleInfoProvider: _rsiScale }).setData(times.map(t => ({ time: t, value: 30 })));
+        // Linha de sobrecompra 70 (vermelho tracejado)
+        botChart.addLineSeries({ color: 'rgba(239,83,80,0.55)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, autoscaleInfoProvider: _rsiScale }).setData(times.map(t => ({ time: t, value: 70 })));
+        // Threshold do usuário (âmbar)
+        const threshSeries = botChart.addLineSeries({ color: '#F0A020', lineWidth: 1.5, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
         threshSeries.setData(times.map(t => ({ time: t, value: val })));
-
-        // Linha do RSI
-        const lineSeries = botChart.addLineSeries({ color: '#6366F1', lineWidth: 1.5, priceLineVisible: false });
+        // Linha do RSI — autoscaleInfoProvider fixa escala 0-100
+        const lineSeries = botChart.addLineSeries({ color: '#7878EE', lineWidth: 1.5, priceLineVisible: false, autoscaleInfoProvider: _rsiScale });
         lineSeries.setData(indData);
 
         _applyOscSignalMarker(cs, lineSeries, indData, times, val, cross, up);
@@ -2762,11 +2763,15 @@ const chartOpts = {
         let di = 0;
         const kData = stochK.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
         const dDataRaw = stochK.map((v, i) => { if (v === null) return null; const dv = stochD[di++]; return dv !== null ? { time: times[i], value: dv } : null; }).filter(Boolean);
-        const kSeries = botChart.addLineSeries({ color: '#6366F1', lineWidth: 1.5, priceLineVisible: false });
+        // Escala fixa 0-100 + linhas de nível 20 e 80
+        const _stochScale = () => ({ priceRange: { minValue: 0, maxValue: 100 }, margins: { above: 0, below: 0 } });
+        botChart.addLineSeries({ color: 'rgba(38,166,154,0.5)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, autoscaleInfoProvider: _stochScale }).setData(times.map(t => ({ time: t, value: 20 })));
+        botChart.addLineSeries({ color: 'rgba(239,83,80,0.5)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, autoscaleInfoProvider: _stochScale }).setData(times.map(t => ({ time: t, value: 80 })));
+        const kSeries = botChart.addLineSeries({ color: '#7878EE', lineWidth: 1.5, priceLineVisible: false, autoscaleInfoProvider: _stochScale });
         kSeries.setData(kData);
         const dSeries = botChart.addLineSeries({ color: '#00D4AA', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
         dSeries.setData(dDataRaw);
-        const threshSeries = botChart.addLineSeries({ color: '#F59E0B', lineWidth: 1, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        const threshSeries = botChart.addLineSeries({ color: '#F0A020', lineWidth: 1, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
         threshSeries.setData(times.map(t => ({ time: t, value: val })));
         _applyOscSignalMarker(cs, kSeries, kData, times, val, cross, up);
         botChart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `Stoch(%K${k},%D${d})` } });
@@ -2774,10 +2779,13 @@ const chartOpts = {
       else if (indId === 'cci') {
         const cci = _calcCCI(highs, lows, closes, per);
         indData = cci.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
-        const lineSeries = botChart.addLineSeries({ color: '#6366F1', lineWidth: 1.5, priceLineVisible: false });
+        const lineSeries = botChart.addLineSeries({ color: '#7878EE', lineWidth: 1.5, priceLineVisible: false });
         lineSeries.setData(indData);
         const refVal = params.val != null ? params.val : (up ? 100 : -100);
-        const threshSeries = botChart.addLineSeries({ color: '#F59E0B', lineWidth: 1, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        // Linhas +100 (vermelho) e -100 (verde) — limites tradicionais do CCI
+        botChart.addLineSeries({ color: 'rgba(239,83,80,0.6)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false }).setData(times.map(t => ({ time: t, value: 100 })));
+        botChart.addLineSeries({ color: 'rgba(38,166,154,0.6)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false }).setData(times.map(t => ({ time: t, value: -100 })));
+        const threshSeries = botChart.addLineSeries({ color: '#F0A020', lineWidth: 1, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
         threshSeries.setData(times.map(t => ({ time: t, value: refVal })));
         const zeroSeries = botChart.addLineSeries({ color: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
         zeroSeries.setData(times.map(t => ({ time: t, value: 0 })));
@@ -2787,10 +2795,14 @@ const chartOpts = {
       else if (indId === 'williams') {
         const wR = _calcStoch(highs, lows, closes, per, 3).map(v => v !== null ? v - 100 : null);
         indData = wR.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
-        const lineSeries = botChart.addLineSeries({ color: '#6366F1', lineWidth: 1.5, priceLineVisible: false });
+        // Escala fixa -100 a 0 + linhas de nível -20 e -80
+        const _wrScale = () => ({ priceRange: { minValue: -100, maxValue: 0 }, margins: { above: 0, below: 0 } });
+        botChart.addLineSeries({ color: 'rgba(239,83,80,0.5)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, autoscaleInfoProvider: _wrScale }).setData(times.map(t => ({ time: t, value: -20 })));
+        botChart.addLineSeries({ color: 'rgba(38,166,154,0.5)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, autoscaleInfoProvider: _wrScale }).setData(times.map(t => ({ time: t, value: -80 })));
+        const lineSeries = botChart.addLineSeries({ color: '#7878EE', lineWidth: 1.5, priceLineVisible: false, autoscaleInfoProvider: _wrScale });
         lineSeries.setData(indData);
         const refVal = params.val != null ? params.val : (up ? -20 : -80);
-        const threshSeries = botChart.addLineSeries({ color: '#F59E0B', lineWidth: 1, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+        const threshSeries = botChart.addLineSeries({ color: '#F0A020', lineWidth: 1, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
         threshSeries.setData(times.map(t => ({ time: t, value: refVal })));
         _applyOscSignalMarker(cs, lineSeries, indData, times, refVal, cross, up);
         botChart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `W%R(${per})` } });
@@ -2798,8 +2810,14 @@ const chartOpts = {
       else if (indId === 'atr') {
         const atr = _calcATR(highs, lows, closes, per);
         indData = atr.map((v, i) => v !== null ? { time: times[i], value: v } : null).filter(Boolean);
-        const lineSeries = botChart.addLineSeries({ color: '#F59E0B', lineWidth: 1.5, priceLineVisible: false });
+        const lineSeries = botChart.addLineSeries({ color: '#F0A020', lineWidth: 1.5, priceLineVisible: false });
         lineSeries.setData(indData);
+        // Linha de média do ATR como referência de volatilidade
+        const atrVals = indData.map(d => d.value);
+        const atrSmaPer = Math.max(3, Math.floor(atrVals.length / 4));
+        const atrSma = _calcSMA(atrVals, atrSmaPer);
+        const atrSmaData = atrSma.map((v, i) => v !== null ? { time: indData[i].time, value: v } : null).filter(Boolean);
+        botChart.addLineSeries({ color: 'rgba(120,120,238,0.7)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false }).setData(atrSmaData);
         botChart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `ATR(${per})` } });
       }
 
@@ -2821,7 +2839,7 @@ const chartOpts = {
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
         rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
         timeScale: { borderColor: 'transparent', visible: false },
-        crosshair: { mode: 0 },
+        crosshair: { mode: 1 },
         handleScroll: false, handleScale: false,
         height: 160,
         watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: 'MACD(12,26,9)' }
@@ -2904,15 +2922,15 @@ const chartOpts = {
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
         rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
         timeScale: { borderColor: 'transparent', visible: false },
-        crosshair: { mode: 0 },
+        crosshair: { mode: 1 },
         handleScroll: false, handleScale: false,
         height: 160,
       });
       const cs = chart.addCandlestickSeries({
-        upColor: '#10B981', downColor: '#EF4444',
-        borderUpColor: '#10B981', borderDownColor: '#EF4444',
-        wickUpColor: isDark ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.7)',
-        wickDownColor: isDark ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.7)',
+        upColor: '#26a69a', downColor: '#ef5350',
+        borderUpColor: '#26a69a', borderDownColor: '#ef5350',
+        wickUpColor: isDark ? 'rgba(38,166,154,0.5)' : 'rgba(38,166,154,0.7)',
+        wickDownColor: isDark ? 'rgba(239,83,80,0.5)' : 'rgba(239,83,80,0.7)',
       });
       // Crossover usa dataset alternativo com tendência V (garante cruzamento visível)
       const _closes = isCross ? _crossCloses : closes;
@@ -3021,7 +3039,7 @@ const chartOpts = {
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
         rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
         timeScale: { borderColor: 'transparent', visible: false },
-        crosshair: { mode: 0 },
+        crosshair: { mode: 1 },
         handleScroll: false, handleScale: false,
         height: 160,
         watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `BB(${params.per||20}, ${params.dev||2}σ)` }
@@ -3029,10 +3047,10 @@ const chartOpts = {
       const per = params.per || 20, dev = params.dev || 2;
       const bb = _calcBB(closes, per, dev);
       const cs = chart.addCandlestickSeries({
-        upColor: '#10B981', downColor: '#EF4444',
-        borderUpColor: '#10B981', borderDownColor: '#EF4444',
-        wickUpColor: isDark ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.7)',
-        wickDownColor: isDark ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.7)',
+        upColor: '#26a69a', downColor: '#ef5350',
+        borderUpColor: '#26a69a', borderDownColor: '#ef5350',
+        wickUpColor: isDark ? 'rgba(38,166,154,0.5)' : 'rgba(38,166,154,0.7)',
+        wickDownColor: isDark ? 'rgba(239,83,80,0.5)' : 'rgba(239,83,80,0.7)',
       });
       cs.setData(ohlc);
       // Estender bandas para os candles iniciais com primeiro valor válido —
@@ -3046,9 +3064,9 @@ const chartOpts = {
       const upData  = _ext('upper');
       const midData = _ext('mid');
       const loData  = _ext('lower');
-      chart.addLineSeries({ color: 'rgba(99,102,241,0.8)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false }).setData(upData);
-      chart.addLineSeries({ color: 'rgba(99,102,241,0.4)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false }).setData(midData);
-      chart.addLineSeries({ color: 'rgba(99,102,241,0.8)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false }).setData(loData);
+      chart.addAreaSeries({ topColor: 'rgba(120,120,238,0.06)', bottomColor: 'rgba(120,120,238,0)', lineColor: 'rgba(120,120,238,0.8)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false }).setData(upData);
+      chart.addLineSeries({ color: 'rgba(120,120,238,0.4)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false }).setData(midData);
+      chart.addLineSeries({ color: 'rgba(120,120,238,0.8)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false }).setData(loData);
       // Signal posicionamento conforme condição
       const isSup = ct.includes('superior');
       const isCross = ct.includes('cruza');
@@ -3098,16 +3116,16 @@ const chartOpts = {
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
         rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
         timeScale: { borderColor: 'transparent', visible: false },
-        crosshair: { mode: 0 },
+        crosshair: { mode: 1 },
         handleScroll: false, handleScale: false,
         height: 160,
         watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: 'VWAP' }
       });
       const cs = chart.addCandlestickSeries({
-        upColor: '#10B981', downColor: '#EF4444',
-        borderUpColor: '#10B981', borderDownColor: '#EF4444',
-        wickUpColor: isDark ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.7)',
-        wickDownColor: isDark ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.7)',
+        upColor: '#26a69a', downColor: '#ef5350',
+        borderUpColor: '#26a69a', borderDownColor: '#ef5350',
+        wickUpColor: isDark ? 'rgba(38,166,154,0.5)' : 'rgba(38,166,154,0.7)',
+        wickDownColor: isDark ? 'rgba(239,83,80,0.5)' : 'rgba(239,83,80,0.7)',
       });
       cs.setData(ohlc);
       // Approximate VWAP as cumulative typical price (simplified, consistent)
@@ -3176,14 +3194,14 @@ const chartOpts = {
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
         rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
         timeScale: { borderColor: 'transparent', visible: false },
-        crosshair: { mode: 0 },
+        crosshair: { mode: 1 },
         handleScroll: false, handleScale: false,
       };
       const topChart = LightweightCharts.createChart(topDiv, { ...chartOpts, height: 120 });
       const cs = topChart.addCandlestickSeries({
-        upColor: '#10B981', downColor: '#EF4444',
-        borderUpColor: '#10B981', borderDownColor: '#EF4444',
-        wickUpColor: '#10B981', wickDownColor: '#EF4444',
+        upColor: '#26a69a', downColor: '#ef5350',
+        borderUpColor: '#26a69a', borderDownColor: '#ef5350',
+        wickUpColor: '#26a69a', wickDownColor: '#ef5350',
       });
       cs.setData(ohlc);
       topChart.timeScale().fitContent();
@@ -3196,11 +3214,32 @@ const chartOpts = {
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
         rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.1, bottom: 0.1 } },
         timeScale: { borderColor: 'transparent', visible: false },
-        crosshair: { mode: 0 },
+        crosshair: { mode: 1 },
         handleScroll: false, handleScale: false,
       });
       const per = Math.min(params.per || 14, Math.floor(N/2) - 1);
       const adx = _calcADX(highs, lows, closes, per);
+
+      // +DI e -DI — computação inline Wilder (_calcADX só retorna ADX line)
+      const _adxTR = [], _adxPDM = [], _adxNDM = [];
+      for (let i = 0; i < highs.length; i++) {
+        if (i === 0) { _adxTR.push(highs[i]-lows[i]); _adxPDM.push(0); _adxNDM.push(0); continue; }
+        const _up = highs[i]-highs[i-1], _dn = lows[i-1]-lows[i];
+        _adxPDM.push(_up>_dn&&_up>0?_up:0);
+        _adxNDM.push(_dn>_up&&_dn>0?_dn:0);
+        _adxTR.push(Math.max(highs[i]-lows[i],Math.abs(highs[i]-closes[i-1]),Math.abs(lows[i]-closes[i-1])));
+      }
+      const _wilder = (arr, p) => {
+        const o = new Array(arr.length).fill(null);
+        if (arr.length < p) return o;
+        let s = arr.slice(0, p).reduce((a, b) => a + b, 0); o[p-1] = s;
+        for (let i = p; i < arr.length; i++) { s = s - s/p + arr[i]; o[i] = s; }
+        return o;
+      };
+      const _trs = _wilder(_adxTR, per), _pds = _wilder(_adxPDM, per), _nds = _wilder(_adxNDM, per);
+      const pdiData = _trs.map((t, i) => t&&t>0 ? { time: times[i], value: (_pds[i]/t)*100 } : null).filter(Boolean);
+      const ndiData = _trs.map((t, i) => t&&t>0 ? { time: times[i], value: (_nds[i]/t)*100 } : null).filter(Boolean);
+
       // Estender linha com primeiro valor válido — período maior não diminui visual
       const firstAdx = adx.findIndex(v => v !== null);
       const indData = adx.map((v, i) => {
@@ -3208,10 +3247,13 @@ const chartOpts = {
         if (firstAdx >= 0 && i < firstAdx) return { time: times[i], value: adx[firstAdx] };
         return null;
       }).filter(Boolean);
-      const lineSeries = botChart.addLineSeries({ color: '#6366F1', lineWidth: 1.5, priceLineVisible: false });
+      // +DI verde, -DI vermelho, ADX violeta
+      botChart.addLineSeries({ color: 'rgba(0,187,128,0.7)', lineWidth: 1.2, priceLineVisible: false, lastValueVisible: false }).setData(pdiData);
+      botChart.addLineSeries({ color: 'rgba(238,58,58,0.7)', lineWidth: 1.2, priceLineVisible: false, lastValueVisible: false }).setData(ndiData);
+      const lineSeries = botChart.addLineSeries({ color: '#7878EE', lineWidth: 1.5, priceLineVisible: false });
       lineSeries.setData(indData);
       const val = params.val != null ? params.val : 25;
-      const threshSeries = botChart.addLineSeries({ color: '#F59E0B', lineWidth: 1, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
+      const threshSeries = botChart.addLineSeries({ color: '#F0A020', lineWidth: 1, lineStyle: 1, priceLineVisible: false, lastValueVisible: false });
       threshSeries.setData(times.map(t => ({ time: t, value: val })));
       _applyOscSignalMarker(cs, lineSeries, indData, times, val, cross, up);
       botChart.applyOptions({ watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `ADX(${per})` } });
@@ -3232,16 +3274,16 @@ const chartOpts = {
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
         rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
         timeScale: { borderColor: 'transparent', visible: false },
-        crosshair: { mode: 0 },
+        crosshair: { mode: 1 },
         handleScroll: false, handleScale: false,
         height: 160,
         watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: 'SAR Parabólico' }
       });
       const cs = chart.addCandlestickSeries({
-        upColor: '#10B981', downColor: '#EF4444',
-        borderUpColor: '#10B981', borderDownColor: '#EF4444',
-        wickUpColor: isDark ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.7)',
-        wickDownColor: isDark ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.7)',
+        upColor: '#26a69a', downColor: '#ef5350',
+        borderUpColor: '#26a69a', borderDownColor: '#ef5350',
+        wickUpColor: isDark ? 'rgba(38,166,154,0.5)' : 'rgba(38,166,154,0.7)',
+        wickDownColor: isDark ? 'rgba(239,83,80,0.5)' : 'rgba(239,83,80,0.7)',
       });
       // SAR funciona melhor em dataset com tendência clara — usa _crossOhlc (V trend)
       cs.setData(_crossOhlc);
@@ -3301,16 +3343,16 @@ const chartOpts = {
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
         rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
         timeScale: { borderColor: 'transparent', visible: false },
-        crosshair: { mode: 0 },
+        crosshair: { mode: 1 },
         handleScroll: false, handleScale: false,
         height: 160,
         watermark: { visible: true, fontSize: 11, horzAlign: 'left', vertAlign: 'top', color: text, text: `HiLo(${params.per||6})` }
       });
       const cs = chart.addCandlestickSeries({
-        upColor: '#10B981', downColor: '#EF4444',
-        borderUpColor: '#10B981', borderDownColor: '#EF4444',
-        wickUpColor: isDark ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.7)',
-        wickDownColor: isDark ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.7)',
+        upColor: '#26a69a', downColor: '#ef5350',
+        borderUpColor: '#26a69a', borderDownColor: '#ef5350',
+        wickUpColor: isDark ? 'rgba(38,166,154,0.5)' : 'rgba(38,166,154,0.7)',
+        wickDownColor: isDark ? 'rgba(239,83,80,0.5)' : 'rgba(239,83,80,0.7)',
       });
       cs.setData(_crossOhlc);  // dataset com tendência V (garante flips visíveis)
       const per = Math.min(params.per || 6, Math.floor(N/3));
@@ -3375,15 +3417,15 @@ const chartOpts = {
         grid: { vertLines: { color: grid }, horzLines: { color: grid } },
         rightPriceScale: { borderColor: 'transparent', scaleMargins: { top: 0.08, bottom: 0.08 } },
         timeScale: { borderColor: 'transparent', visible: false },
-        crosshair: { mode: 0 },
+        crosshair: { mode: 1 },
         handleScroll: false, handleScale: false,
         height: 160,
       });
       const cs = chart.addCandlestickSeries({
-        upColor: '#10B981', downColor: '#EF4444',
-        borderUpColor: '#10B981', borderDownColor: '#EF4444',
-        wickUpColor: isDark ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.7)',
-        wickDownColor: isDark ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.7)',
+        upColor: '#26a69a', downColor: '#ef5350',
+        borderUpColor: '#26a69a', borderDownColor: '#ef5350',
+        wickUpColor: isDark ? 'rgba(38,166,154,0.5)' : 'rgba(38,166,154,0.7)',
+        wickDownColor: isDark ? 'rgba(239,83,80,0.5)' : 'rgba(239,83,80,0.7)',
       });
       cs.setData(ohlc);
 
