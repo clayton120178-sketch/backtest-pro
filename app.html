@@ -1884,446 +1884,178 @@ function getAssetPriceRange(ticker, market) {
   return {base:1.0, range:0.05};
 }
 
-function buildPreview(step,cfg) {
+function buildPreview(step, cfg) {
+  const {base:assetBase,range:assetRange}=getAssetPriceRange(cfg.asset,cfg.market);
   const conds=cfg.conditions||[];
-  // Classify conditions
   const overlayConds=conds.filter(c=>['sma','ema','bb','vwap','sar','hilo','prevday','hilon','fib','fvg','bos','choch','sweep','grab'].includes(c.id));
   const oscConds=conds.filter(c=>['rsi','stoch','cci','williams','macd','adx','atr'].includes(c.id));
-  const volConds=[];
-  const otherConds=conds.filter(c=>['range','gap','candle'].includes(c.id));
-
-  const panelCount=Math.min(oscConds.length+volConds.length,2);
-  const panelH=32;
+  const panelCount=Math.min(oscConds.length,2);
   const chartH=panelCount>0?148:185;
-  const labelPad=(step===0)?85:0;
-  const totalH=chartH+(panelCount>0?8+panelCount*panelH+(panelCount-1)*4:0)+8+labelPad;
-  const W=300;
-  const svgEl=hsvg('svg',{width:'100%',viewBox:`0 0 ${W} ${totalH}`});
 
-  // Helpers
-  const ln=(x1,y1,x2,y2,c,w,d)=>{const a={x1,y1,x2,y2,stroke:c,'stroke-width':w||0.5};if(d)a['stroke-dasharray']=d;svgEl.appendChild(hsvg('line',a));};
-  const pl=(p,c,w,d)=>{const a={points:p,fill:'none',stroke:c,'stroke-width':w||1};if(d)a['stroke-dasharray']=d;svgEl.appendChild(hsvg('polyline',a));};
-  const rc=(x,y,w,h,c,o,r)=>svgEl.appendChild(hsvg('rect',{x,y,width:w,height:h,fill:c,'fill-opacity':o!=null?o:1,rx:r||0}));
-  const tx=(x,y,t,c,s,a)=>{const e=hsvg('text',{x,y,fill:c,'font-size':s||7,'font-family':'JetBrains Mono','font-weight':500,'text-anchor':a||'start'});e.textContent=t;svgEl.appendChild(e);};
-  const pa=(d,c,o)=>svgEl.appendChild(hsvg('path',{d,fill:c,'fill-opacity':o||0.12}));
-  const cir=(x,y,c,r)=>svgEl.appendChild(hsvg('circle',{cx:x,cy:y,r:r||2.5,fill:c,'fill-opacity':0.3,stroke:c,'stroke-width':0.8}));
+  const wrap=div('');wrap.style.cssText='width:100%;display:flex;flex-direction:column;gap:4px';
+  const mainWrap=div('');mainWrap.style.cssText='width:100%;height:'+chartH+'px';
 
-  // Theme colors for SVG
-  const TH=svgTheme();
-
-  const badge=(x,y,t,c,s,a)=>{const fs=s||7;const tw=t.length*(fs*0.58);const ax=a==='end'?x-tw-3:a==='middle'?x-tw/2-1.5:x-1.5;rc(ax,y-fs+1,tw+3,fs+2,TH.badgeBg,0.92,2);tx(x,y,t,c,fs,a);};
-
-  // ── Sistema de coordenadas único — escala real por ativo ──
-  const {base:assetBase,range:assetRange}=getAssetPriceRange(cfg.asset,cfg.market);
-  const PT=8,PB=4,PL=4,PR=38;
-  const _deltas=[0,-1.1,1.5,2.2,0.8,3.2,4.5,2.8,5.1,6.2,4.8,7.1,8.3,6.5,9.0,9.9,8.2,10.5,9.1,11.2];
-  const _priceScale=assetRange/12;
-  const _rawPrices=_deltas.map(d=>assetBase-assetRange*0.4+d*_priceScale);
-  const _minP=Math.min(..._rawPrices)-assetRange*0.08;
-  const _maxP=Math.max(..._rawPrices)+assetRange*0.08;
-  const _rangeP=_maxP-_minP||1;
-  const py=p=>PT+(chartH-PT-PB)*(1-(p-_minP)/_rangeP);
-  const _spacing=(W-PL-PR)/_rawPrices.length;
-  const _cw=Math.max(4,Math.floor(_spacing*0.55));
-  const candles=_rawPrices.map((close,i)=>{
-    const open=i>0?_rawPrices[i-1]:close*(1-_priceScale*0.005);
-    const wickU=assetRange*0.015+(i*37%100)*assetRange*0.0003;
-    const wickD=assetRange*0.010+(i*53%100)*assetRange*0.0002;
-    const high=Math.max(open,close)+wickU;
-    const low=Math.min(open,close)-wickD;
-    return{x:PL+i*_spacing,cx:PL+i*_spacing+_cw/2,o:py(open),c:py(close),h:py(high),l:py(low),w:_cw,isBull:close>=open,priceOpen:open,priceClose:close};
+  // Synthetic OHLC (same deltas as original SVG version)
+  const _ds=[0,-1.1,1.5,2.2,0.8,3.2,4.5,2.8,5.1,6.2,4.8,7.1,8.3,6.5,9.0,9.9,8.2,10.5,9.1,11.2];
+  const _ps=assetRange/12;
+  const _rp=_ds.map(d=>assetBase-assetRange*0.4+d*_ps);
+  const T0=Math.floor(new Date('2020-01-01').getTime()/1000),DAY=86400;
+  const candleData=_rp.map((close,i)=>{
+    const open=i>0?_rp[i-1]:close;
+    const wu=assetRange*0.015+(i*37%100)*assetRange*0.0003;
+    const wd=assetRange*0.010+(i*53%100)*assetRange*0.0002;
+    return{time:T0+i*DAY,open,high:Math.max(open,close)+wu,low:Math.min(open,close)-wd,close};
   });
-  // Grid horizontal
-  for(let i=0;i<4;i++){const y=PT+i*((chartH-PT-PB)/3);if(y<chartH)ln(PL,y,W-PR,y,TH.grid,0.4);}
-  // Y-axis labels — formatação adaptada ao ativo
-  const _formatPrice=p=>{
-    if(assetBase>=10000)return Math.round(p/1000)+'k';
-    if(assetBase>=100)return Math.round(p).toString();
-    if(assetBase>=1)return p.toFixed(2);
-    return p.toFixed(4);
-  };
-  [0.1,0.4,0.7,1.0].forEach(f=>{
-    const p=_minP+_rangeP*f;const y=py(p);
-    if(y<PT||y>chartH-PB)return;
-    tx(W-PR+3,y+3,_formatPrice(p),TH.txm,6,'start');
-  });
+  const midP=_rp[10];
 
-  // ── Overlay indicators (on price chart) ──
-  const colors=['#F59E0B','#6366F1','#EC4899','#06B6D4','#8B5CF6'];
-  let colorIdx=0;
-  const nextCol=()=>colors[colorIdx++%colors.length];
-
-  overlayConds.forEach(cond=>{
-    const col=nextCol();
-    const ct=(cond.params?.cond||'').toLowerCase();
-    const smcIds=['fvg','bos','choch','sweep','grab'];
-    const upBySMC=smcIds.includes(cond.id)?(cond.params?.dir||'Compra')==='Compra':false;
-    const up=smcIds.includes(cond.id)?upBySMC:(ct.includes('acima')||ct.includes('sup')||ct.includes('alta')||ct.includes('compra')||ct.includes('maior'));
-
-    if(['sma','ema'].includes(cond.id)){
-      const isCross=isMACrossover(cond.params?.cond||'');
-      if(isCross){
-        svgEl._maCrossover={cond,col};
-      } else {
-        const per=cond.params?.per||20;
-        // Higher period = flatter line (less oscillation)
-        const amplitude=Math.max(2, 14-per*0.04);
-        const freq=Math.max(0.08, 0.25-per*0.001);
-        const maY=candles.map((c,i)=>{const base=chartH/2+15;return base+Math.sin((i-5)*freq)*amplitude;});
-        pl(candles.map((c,i)=>`${c.cx},${maY[i]}`).join(' '),col,1);
-        badge(candles[0].x,maY[0]-6,cond.id.toUpperCase()+(cond.params?.per?'('+cond.params.per+')':''),col,6);
-        if(ct.includes('cruza')){cir(candles[13].cx,maY[13],'#00D4AA',3);}
-      }
-    }
-    else if(cond.id==='bb'){
-      const dev=cond.params?.dev||2;
-      const bw=5+dev*3; // dev 1→8px, dev 2→11px, dev 3→14px, dev 4→17px
-      const mid=candles.map(c=>(c.o+c.c)/2);
-      let bp=`M${candles[0].cx},${mid[0]-bw}`;
-      for(let i=1;i<candles.length;i++)bp+=` L${candles[i].cx},${mid[i]-bw}`;
-      for(let i=candles.length-1;i>=0;i--)bp+=` L${candles[i].cx},${mid[i]+bw}`;
-      bp+=' Z';pa(bp,col,0.05);
-      pl(candles.map((c,i)=>`${c.cx},${mid[i]-bw}`).join(' '),col,0.6,'2,2');
-      pl(candles.map((c,i)=>`${c.cx},${mid[i]+bw}`).join(' '),col,0.6,'2,2');
-      pl(candles.map((c,i)=>`${c.cx},${mid[i]}`).join(' '),col,0.5);
-      badge(candles[0].x,mid[0]-bw-4,'BB'+(cond.params?.per?'('+cond.params.per+','+dev+'σ)':''),col,6);
-    }
-    else if(cond.id==='vwap'){
-      const vwY=candles.map((c,i)=>{const base=chartH/2+8;return base+Math.sin((i-3)*0.15)*8;});
-      pl(candles.map((c,i)=>`${c.cx},${vwY[i]}`).join(' '),col,1);
-      badge(candles[0].x,vwY[0]-5,'VWAP',col,6);
-    }
-    else if(cond.id==='sar'){
-      candles.forEach((cd,i)=>{const above=i<10;const dy=above?cd.l+5:cd.h-5;svgEl.appendChild(hsvg('circle',{cx:cd.cx,cy:dy,r:1.2,fill:above?'#EF4444':'#10B981'}));});
-      badge(candles[0].x,candles[0].l+10,'SAR',col,6);
-    }
-    else if(cond.id==='hilo'){
-      for(let i=0;i<candles.length;i++){const sell=i<10;const y=sell?candles[i].l+4:candles[i].h-4;ln(candles[i].x,y,candles[i].x+candles[i].w,y,sell?'#EF4444':'#10B981',1);}
-      badge(candles[0].x,candles[0].l+10,'HiLo',col,6);
-    }
-    else if(cond.id==='prevday'){
-      const maxY=chartH*0.2,minY=chartH*0.8;
-      ln(4,maxY,W-4,maxY,'#10B981',0.5,'3,3');ln(4,minY,W-4,minY,'#EF4444',0.5,'3,3');
-      badge(W-20,maxY-3,'MÁX','#10B981',6);badge(W-20,minY+7,'MÍN','#EF4444',6);
-    }
-    else if(cond.id==='hilon'){
-      const levelY=up?Math.min(...candles.slice(0,14).map(c=>c.h)):Math.max(...candles.slice(0,14).map(c=>c.l));
-      ln(candles[0].x,levelY,candles[14].x+candles[14].w,levelY,col,0.8,'3,3');
-      cir(candles[14].cx,levelY,'#00D4AA',3);
-      badge(candles[0].x,levelY+(up?-5:8),'N per.',col,6);
-    }
-    else if(cond.id==='fib'){
-      // Nível selecionado
-      const fibLvls=[{p:'23.6',f:0.236},{p:'38.2',f:0.382},{p:'50',f:0.5},{p:'61.8',f:0.618},{p:'78.6',f:0.786},{p:'100',f:1.0}];
-      const fibParams=cond.params||{};
-      const selLvl=fibLvls.find(l=>ct.includes(l.p))||{p:'61.8',f:0.618};
-      const isVal=ct.includes('valida')||ct.includes('cruza');
-
-      // Define perna de impulso usando os candles do gráfico
-      // Fundo = mínimo dos candles 0-5, Topo = mínimo dos candles 10-16
-      const fundoIdx=4, topoIdx=14;
-      const fundoY=candles[fundoIdx].l-2;
-      const topoY=candles[topoIdx].h+2;
-      const pRng=fundoY-topoY; // positivo (fundoY > topoY)
-
-      // Nível de retração sobre a perna
-      const trigY=topoY+pRng*selLvl.f;
-
-      // Linha de tendência ZigZag (fundo → topo)
-      ln(candles[fundoIdx].cx, fundoY,
-         candles[topoIdx].cx, topoY,
-         '#F59E0B',0.5,'4,3');
-
-      // Pivot de fundo
-      cir(candles[fundoIdx].cx, fundoY,'#10B981',3);
-
-      // Pivot de topo
-      cir(candles[topoIdx].cx, topoY,'#F59E0B',3);
-
-      // Níveis Fibonacci (tracejados, suaves)
-      fibLvls.forEach(lv=>{
-        const ly=topoY+pRng*lv.f;
-        const isSel=lv.p===selLvl.p;
-        ln(candles[topoIdx].x,ly,W-4,ly,
-           isSel?'#F59E0B':TH.grid,
-           isSel?0.85:0.25,
-           isSel?'':'2,4');
-        if(isSel) badge(W-4,ly-2,lv.p+'%','#F59E0B',6,'end');
-      });
-
-      // Candle trigger (após topo, na retração)
-      const trigIdx=topoIdx+2;
-      if(trigIdx<candles.length){
-        const tc=candles[trigIdx];
-        cir(tc.cx, trigY, '#00D4AA',3);
-        // Marca visual se é Validação (linha de pavio até o nível)
-        if(isVal){
-          ln(tc.cx, tc.h, tc.cx, trigY,'#00D4AA',0.7,'2,2');
-          badge(tc.cx, trigY-8,'SINAL','#00D4AA',6,'middle');
-        } else {
-          badge(tc.cx, trigY-8,'SINAL','#00D4AA',6,'middle');
-        }
-      }
-    }
-    // ── SMC CONDITIONS ──
-    else if(cond.id==='fvg'){
-      const isMit=cond.params?.entryMode==='mitigation'||(cond.params?.cond||'').includes('retornar');
-      // Gap zone between candle 7 and 9
-      const zTop=candles[7].l, zBot=candles[9].h;
-      if(zBot<zTop){
-        rc(candles[7].x,zBot,candles[9].x+candles[9].w-candles[7].x,zTop-zBot,'#6366F1',0.12,2);
-        ln(candles[7].x,zTop,W-6,zTop,'#6366F1',0.6,'2,2');
-        ln(candles[7].x,zBot,W-6,zBot,'#6366F1',0.6,'2,2');
-        badge(candles[7].x+2,(zTop+zBot)/2+3,'FVG','#6366F1',6);
-      }
-      if(isMit){
-        // Pullback arrow pointing down to zone
-        const px=candles[15].cx;
-        const py=Math.min(...candles.slice(10,16).map(cd=>cd.l))-2;
-        ln(px,py,px,zTop+2,'#00D4AA',1,'3,2');
-        badge(px+4,py-2,'recuo','#00D4AA',6);
-      } else {
-        // Entry arrow after gap
-        const ex=candles[10].cx;
-        cir(ex,candles[10].c,'#00D4AA',3);
-        badge(ex,candles[10].c-8,'ENTRADA','#00D4AA',6,'middle');
-      }
-      badge(6,12,'FVG','#6366F1',7);
-    }
-    else if(cond.id==='bos'||cond.id==='choch'){
-      const isBos=cond.id==='bos';
-      const pivotY=up?Math.min(...candles.slice(3,8).map(cd=>cd.h)):Math.max(...candles.slice(3,8).map(cd=>cd.l));
-      ln(4,pivotY,W-4,pivotY,isBos?'#F59E0B':'#EF4444',0.7,'3,3');
-      cir(candles[12].cx,pivotY,'#00D4AA',3);
-      badge(candles[12].cx,pivotY+(up?-8:8),isBos?'BoS':'CHoCH',isBos?'#F59E0B':'#EF4444',7,'middle');
-      badge(6,12,isBos?'BoS':'CHoCH',isBos?'#F59E0B':'#EF4444',7);
-    }
-    else if(cond.id==='sweep'||cond.id==='grab'){
-      const lvlY=up?Math.min(...candles.slice(0,10).map(cd=>cd.l)):Math.max(...candles.slice(0,10).map(cd=>cd.h));
-      ln(4,lvlY,W-4,lvlY,'#F59E0B',0.7,'4,3');
-      const sweepCd=candles[10];
-      ln(sweepCd.cx,up?sweepCd.h:sweepCd.l,sweepCd.cx,lvlY+(up?4:-4),'#EF4444',1.5);
-      cir(sweepCd.cx,lvlY,'#EF4444',3);
-      cir(candles[13].cx,up?candles[13].l:candles[13].h,'#00D4AA',3);
-      badge(6,12,cond.id==='grab'?'Grab':'Sweep','#F59E0B',7);
-    }
-  });
-
-  // Candles (drawn after overlays)
-  const hasMACross=!!svgEl._maCrossover;
-  candles.forEach(cd=>{
-    const col=cd.isBull?'#10B981':'#EF4444';const wickCol=TH.wickColor;
-    const bodyTop=Math.min(cd.o,cd.c);const bodyH=Math.max(1,Math.abs(cd.o-cd.c));
-    const wickOp=hasMACross?0.15:1;const bodyOp=hasMACross?0.20:1;
-    svgEl.appendChild(hsvg('line',{x1:cd.cx,y1:cd.h,x2:cd.cx,y2:cd.l,stroke:wickCol,'stroke-width':0.8,'stroke-opacity':wickOp}));
-    svgEl.appendChild(hsvg('rect',{x:cd.x,y:bodyTop,width:cd.w,height:bodyH,fill:col,rx:1,'fill-opacity':bodyOp}));
-  });
-
-  // ── MA Crossover (drawn ON TOP of faded candles) ──
-  if(hasMACross){
-    const mc=svgEl._maCrossover;const cnd=mc.cond;const mcCol=mc.col;
-    const shortName=cnd.id.toUpperCase()+'('+(cnd.params?.per||9)+')';
-    const longName=cnd.id.toUpperCase()+'('+(cnd.params?.per2||200)+')';
-    const shortY=candles.map((_,i)=>{const mid=chartH/2;return mid+Math.cos((i-8)*0.35)*((chartH/2)-15);});
-    const longY=candles.map((_,i)=>{const mid=chartH/2+5;return mid+Math.sin((i-5)*0.12)*10;});
-    pl(candles.map((c,i)=>`${c.cx},${longY[i].toFixed(1)}`).join(' '),mcCol,1.5,'4,3');
-    pl(candles.map((c,i)=>`${c.cx},${shortY[i].toFixed(1)}`).join(' '),'#00D4AA',1.8);
-    let crossIdx=8;
-    for(let i=1;i<candles.length;i++){if((shortY[i-1]-longY[i-1])*(shortY[i]-longY[i])<=0){crossIdx=i;break;}}
-    const cx=candles[crossIdx].cx,cy=(shortY[crossIdx]+longY[crossIdx])/2;
-    svgEl.appendChild(hsvg('circle',{cx,cy,r:4,fill:'#00D4AA','fill-opacity':0.15,stroke:'#00D4AA','stroke-width':1}));
-    badge(8,14,shortName,'#00D4AA',7);
-    badge(8,24,longName,mcCol,7);
-    badge(cx,cy-10,'SINAL','#00D4AA',7,'middle');
-    delete svgEl._maCrossover;
-  }
-
-  // ── Step 0: time window ──
-  if(step===0){
-    const toMin=s=>{const p=(s||'00:00').split(':');return(parseInt(p[0],10)||0)*60+(parseInt(p[1],10)||0);};
-    const isLocal=cfg.market==='local';
-    const dayStart=toMin(isLocal?'08:00':'00:00'), dayEnd=toMin(isLocal?'18:30':'23:59'), dayRange=dayEnd-dayStart||1;
-    const timeX=s=>{const m=toMin(s);return 6+((Math.max(dayStart,Math.min(dayEnd,m))-dayStart)/dayRange)*(W-12);};
-    const x1=timeX(cfg.tStart), x2=timeX(cfg.tLastEntry), x3=timeX(cfg.tEnd);
-    // Zone fills — perceptível
-    rc(x1,0,Math.max(1,x2-x1),chartH,'#00C896',0.08,0);
-    rc(x2,0,Math.max(1,x3-x2),chartH,'#F59E0B',0.07,0);
-    rc(x3,0,Math.max(1,W-4-x3),chartH,'#EF4444',0.05,0);
-    // Vertical lines
-    ln(x1,0,x1,chartH,'#00C896',1.5);
-    svgEl.appendChild(hsvg('line',{x1:x2,y1:0,x2:x2,y2:chartH,stroke:'#F59E0B','stroke-width':1.2,'stroke-dasharray':'3,2'}));
-    ln(x3,0,x3,chartH,'#EF4444',1.5);
-    // X-axis time labels
-    const _tlbls=isLocal
-      ?[{m:540,l:'09:00'},{m:720,l:'12:00'},{m:900,l:'15:00'},{m:1050,l:'17:30'}]
-      :[{m:0,l:'00:00'},{m:360,l:'06:00'},{m:720,l:'12:00'},{m:1080,l:'18:00'},{m:1439,l:'23:59'}];
-    _tlbls.forEach(({m,l})=>{
-      const x=6+((Math.max(dayStart,Math.min(dayEnd,m))-dayStart)/dayRange)*(W-12);
-      const t=hsvg('text',{x,y:chartH+13,fill:TH.txm,'font-size':6.5,'font-family':'JetBrains Mono','font-weight':400,'text-anchor':'middle'});
-      t.textContent=l;svgEl.appendChild(t);
+  _lwcRender(mainWrap,(W)=>{
+    if(!window.LightweightCharts)return;
+    const isDark=document.documentElement.dataset.theme!=='light';
+    const tx=isDark?'#9999BB':'#555577';
+    const gd=isDark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)';
+    const chart=LightweightCharts.createChart(mainWrap,{
+      width:W,height:chartH,
+      layout:{background:{color:'transparent'},textColor:tx},
+      grid:{vertLines:{color:gd},horzLines:{color:gd}},
+      rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.10,bottom:0.10}},
+      timeScale:{borderColor:'transparent',visible:false},
+      crosshair:{mode:1},handleScroll:false,handleScale:false,
     });
-    const lbY=chartH+18;
-    rc(0,lbY,W,65,TH.panelBg,1,0);
-    ln(4,lbY,W-4,lbY,TH.grid,0.4);
-    tx(8,lbY+16,cfg.tStart,'#00C896',13);tx(60,lbY+16,'Início da leitura',TH.txs,10);
-    tx(8,lbY+34,cfg.tLastEntry,'#F59E0B',13);tx(60,lbY+34,'Última abertura',TH.txs,10);
-    tx(8,lbY+52,cfg.tEnd,'#EF4444',13);tx(60,lbY+52,'Encerramento',TH.txs,10);
-  }
+    const cs=chart.addCandlestickSeries({
+      upColor:'#26a69a',downColor:'#ef5350',
+      borderUpColor:'#26a69a',borderDownColor:'#ef5350',
+      wickUpColor:isDark?'rgba(38,166,154,0.5)':'rgba(38,166,154,0.7)',
+      wickDownColor:isDark?'rgba(239,83,80,0.5)':'rgba(239,83,80,0.7)',
+    });
+    cs.setData(candleData);
 
-  // ── Steps 1+: entry marker ──
-  const hasCrossoverSignal=conds.some(c=>['sma','ema'].includes(c.id)&&isMACrossover(c.params?.cond||''));
-  if(step>=1&&conds.length>0&&!hasCrossoverSignal){
-    const si=14;
-    rc(candles[si].x-1,candles[si].h-3,candles[si].w+2,candles[si].l-candles[si].h+6,'#00D4AA',0.05,2);
-    ln(candles[si].cx,candles[si].h-6,candles[si].cx,candles[si].h-14,'#00D4AA',0.6);
-    badge(candles[si].cx,candles[si].h-18,'SINAL','#00D4AA',6,'middle');
-  }
+    // Overlay indicators
+    const palCols=['#F59E0B','#6366F1','#EC4899','#06B6D4','#8B5CF6'];
+    let colIdx=0;
+    const allMkrs=[];
 
-  // ── Step 2 (Gatilho): direção + tipo de entrada ──
-  if(step>=2&&conds.length>0&&!hasCrossoverSignal){
-    const si=14;
-    const isLong=cfg.direction!=='short';
-    const dirCol=cfg.direction==='both'?'#6366F1':isLong?'#10B981':'#EF4444';
-    const dirTxt=cfg.direction==='both'?'AMBOS':isLong?'▲ COMPRA':'▼ VENDA';
-    badge(8,chartH-5,dirTxt,dirCol,7);
-    if(cfg.entryType==='next_open'&&candles[si+1]){
-      const ni=si+1;
-      cir(candles[ni].cx,candles[ni].o,'#F59E0B',3);
-      badge(candles[ni].cx,candles[ni].o-8,'ABERTURA','#F59E0B',6,'middle');
-    }
-  }
-
-  // ── Steps 3+: stop/target ──
-  if(step>=3){
-    const si=15;
-    const entryY=candles[si].o;
-
-    // px per real pt — derivado do mesmo sistema de coordenadas dos candles
-    const pxPerPt=(chartH-PT-PB)/assetRange;
-
-    // Stop distance in pixels
-    const stopDistPts=(()=>{
-      if(cfg.stopType==='fixed') return cfg.stopPts;
-      if(cfg.stopType==='hl_candle') return assetRange*0.08+cfg.stopOffset;
-      if(cfg.stopType==='n_candles') return assetRange*0.12+cfg.stopOffset;
-      if(cfg.stopType==='atr') return assetRange*0.10*cfg.stopAtrMult;
-      return assetRange*0.10;
-    })();
-    const stopDistPx=Math.min(stopDistPts*pxPerPt, chartH-entryY-4);
-    const stopY=Math.min(entryY+Math.max(stopDistPx,6), chartH-4);
-
-    // Target distance in pixels
-    const targetDistPts=(()=>{
-      if(cfg.tpType==='fixed') return cfg.tpPts;
-      if(cfg.tpType==='rr') return stopDistPts*cfg.tpRR;
-      if(cfg.tpType==='atr') return assetRange*0.10*cfg.tpAtrMult;
-      if(cfg.tpType==='fib_ext') return stopDistPts*(parseFloat(cfg.tpFibLevel)/100);
-      return stopDistPts*2; // fallback for 'none'
-    })();
-    const targetDistPx=Math.min(targetDistPts*pxPerPt, entryY-6);
-    const targetY=Math.max(entryY-Math.max(targetDistPx,8), 6);
-
-    // Draw lines spanning from signal candle to right edge
-    const x0=candles[si].x;
-    ln(x0,stopY,  W-4,stopY,  '#EF4444',0.9,'3,2');
-    ln(x0,targetY,W-4,targetY,'#10B981', 0.9,'3,2');
-    ln(x0,entryY, W-4,entryY, '#00D4AA', 0.7,'3,2');
-
-    // Shaded risk/reward zone
-    if(targetY<entryY) rc(x0,targetY,W-4-x0,entryY-targetY,'#10B981',0.04,0);
-    rc(x0,entryY,W-4-x0,stopY-entryY,'#EF4444',0.04,0);
-
-    // Labels
-    badge(W-22,stopY-3,  'STOP','#EF4444',6);
-    badge(W-22,targetY-3,'ALVO','#10B981',6);
-    badge(W-22,entryY-3, 'ENTR','#00D4AA',6);
-
-    // RR ratio label
-    if(cfg.tpType!=='none'){
-      const rr=(targetDistPts/stopDistPts).toFixed(1);
-      const rrY=(entryY+targetY)/2;
-      badge(x0+2,rrY,'R:'+rr,'#00D4AA',6);
-    }
-
-    // Parcial (step 4+)
-    if(step>=4&&cfg.partial){
-      const partDistPx=Math.min(cfg.partAt*pxPerPt,entryY-4);
-      const partY=Math.max(entryY-Math.max(partDistPx,4),6);
-      if(partY>targetY+2){
-        ln(x0,partY,W-4,partY,'#F59E0B',0.8,'2,2');
-        rc(x0,partY,W-4-x0,entryY-partY,'#F59E0B',0.04,0);
-        badge(W-22,partY-3,(cfg.partPct||50)+'%','#F59E0B',6);
+    overlayConds.forEach(cond=>{
+      const col=palCols[colIdx++%palCols.length];
+      if(['sma','ema'].includes(cond.id)){
+        if(isMACrossover(cond.params?.cond||'')){
+          const shortD=candleData.map((c,i)=>({time:c.time,value:midP+Math.cos((i-8)*0.35)*assetRange*0.08}));
+          const longD=candleData.map((c,i)=>({time:c.time,value:midP+Math.sin((i-5)*0.12)*assetRange*0.04}));
+          chart.addLineSeries({color:'#00D4AA',lineWidth:1.5,priceLineVisible:false,lastValueVisible:false}).setData(shortD);
+          chart.addLineSeries({color:col,lineWidth:1.5,lineStyle:2,priceLineVisible:false,lastValueVisible:false}).setData(longD);
+        }else{
+          const per=cond.params?.per||20;
+          const amp=Math.max(0.02,0.12-per*0.002)*assetRange;
+          const freq=Math.max(0.06,0.22-per*0.001);
+          chart.addLineSeries({color:col,lineWidth:1.5,priceLineVisible:false,lastValueVisible:false})
+            .setData(candleData.map((c,i)=>({time:c.time,value:midP+Math.sin((i-5)*freq)*amp})));
+        }
+      }else if(cond.id==='bb'){
+        const bw=(5+(cond.params?.dev||2)*3)*_ps*0.35;
+        const midD=candleData.map((c,i)=>({time:c.time,value:midP+Math.sin((i-5)*0.15)*assetRange*0.03}));
+        chart.addAreaSeries({topColor:col+'18',bottomColor:col+'06',lineColor:col,lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false}).setData(midD.map(d=>({time:d.time,value:d.value+bw})));
+        chart.addLineSeries({color:col,lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false}).setData(midD.map(d=>({time:d.time,value:d.value-bw})));
+        chart.addLineSeries({color:col,lineWidth:0.8,priceLineVisible:false,lastValueVisible:false}).setData(midD);
+      }else if(cond.id==='vwap'){
+        chart.addLineSeries({color:col,lineWidth:1.5,priceLineVisible:false,lastValueVisible:false})
+          .setData(candleData.map((c,i)=>({time:c.time,value:midP+Math.sin((i-3)*0.15)*assetRange*0.05})));
+      }else if(cond.id==='sar'){
+        candleData.forEach((c,i)=>allMkrs.push({time:c.time,position:i<10?'aboveBar':'belowBar',color:i<10?'#EF4444':'#26a69a',shape:'circle',size:0.4,text:''}));
+      }else if(cond.id==='prevday'){
+        const hi=Math.max(..._rp)+assetRange*0.03,lo=Math.min(..._rp)-assetRange*0.03;
+        cs.createPriceLine({price:hi,color:'#26a69a',lineWidth:1,lineStyle:2,axisLabelVisible:false,title:'MAX'});
+        cs.createPriceLine({price:lo,color:'#ef5350',lineWidth:1,lineStyle:2,axisLabelVisible:false,title:'MIN'});
+      }else if(['fvg','bos','choch','sweep','grab'].includes(cond.id)){
+        const smcCol=cond.id==='bos'?'#F0A020':cond.id==='choch'?'#EF4444':'#6366F1';
+        cs.createPriceLine({price:_rp[3],color:smcCol,lineWidth:1,lineStyle:2,axisLabelVisible:false,title:cond.id.toUpperCase()});
+      }else if(cond.id==='hilon'){
+        const ct2=(cond.params?.cond||'').toLowerCase();
+        const lvlP=ct2.includes('acima')||ct2.includes('alta')?Math.max(..._rp.slice(0,14)):Math.min(..._rp.slice(0,14));
+        cs.createPriceLine({price:lvlP,color:col,lineWidth:1,lineStyle:2,axisLabelVisible:false,title:'HiLoN'});
+      }else if(cond.id==='fib'){
+        const fibP=_rp[4]+(_rp[14]-_rp[4])*0.618;
+        cs.createPriceLine({price:fibP,color:'#F59E0B',lineWidth:1.2,lineStyle:2,axisLabelVisible:false,title:'61.8%'});
       }
+    });
+
+    // Step-specific markers + price lines
+    const sig14=candleData[14],ent15=candleData[15];
+    const hasCross=conds.some(c=>['sma','ema'].includes(c.id)&&isMACrossover(c.params?.cond||''));
+    if(step>=1&&conds.length>0&&!hasCross)
+      allMkrs.push({time:sig14.time,position:'aboveBar',color:'#00D4AA',shape:'arrowDown',text:'SINAL'});
+    if(step>=2&&conds.length>0&&!hasCross){
+      const isLong=cfg.direction!=='short';
+      const dCol=cfg.direction==='both'?'#6366F1':isLong?'#26a69a':'#ef5350';
+      allMkrs.push({time:ent15.time,position:isLong?'belowBar':'aboveBar',color:dCol,shape:isLong?'arrowUp':'arrowDown',text:cfg.direction==='both'?'AMBOS':isLong?'COMPRA':'VENDA'});
     }
+    if(allMkrs.length)cs.setMarkers(allMkrs.sort((a,b)=>a.time-b.time));
+
+    if(step>=3){
+      const isLong=cfg.direction!=='short';
+      const entP=ent15.open;
+      const stopPts=cfg.stopType==='fixed'?(cfg.stopPts||200):assetRange*0.12;
+      const tpPts=cfg.tpType==='rr'?stopPts*(cfg.tpRR||2):cfg.tpType==='fixed'?(cfg.tpPts||400):stopPts*2;
+      const stopP=isLong?entP-stopPts:entP+stopPts;
+      const tpP=isLong?entP+tpPts:entP-tpPts;
+      cs.createPriceLine({price:entP,color:'#00D4AA',lineWidth:1,lineStyle:2,axisLabelVisible:true,title:'ENTR'});
+      cs.createPriceLine({price:stopP,color:'#EF4444',lineWidth:1,lineStyle:2,axisLabelVisible:true,title:'STOP'});
+      if(cfg.tpType!=='none')cs.createPriceLine({price:tpP,color:'#26a69a',lineWidth:1,lineStyle:2,axisLabelVisible:true,title:'ALVO'});
+    }
+
+    if(step===0)
+      chart.applyOptions({watermark:{visible:true,fontSize:10,horzAlign:'center',vertAlign:'center',color:tx,text:'Janela: '+cfg.tStart+' → '+cfg.tEnd}});
+
+    chart.timeScale().fitContent();
+  });
+  wrap.appendChild(mainWrap);
+
+  // Step 0: time labels below chart
+  if(step===0){
+    const tl=div('');tl.style.cssText='display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:10px;font-family:"JetBrains Mono",monospace;margin-top:2px';
+    const tlCell=(t,c,lbl)=>{const d=div('');d.style.cssText='display:flex;flex-direction:column;align-items:center;gap:1px';d.innerHTML='<span style="font-size:12px;font-weight:700;color:'+c+'">'+t+'</span><span style="font-size:8px;color:var(--txs)">'+lbl+'</span>';return d;};
+    tl.append(tlCell(cfg.tStart,'#00C896','Início'),tlCell(cfg.tLastEntry,'#F59E0B','Últ. abertura'),tlCell(cfg.tEnd,'#EF4444','Encerr.'));
+    wrap.appendChild(tl);
   }
 
-  // ── Step 4: trailing ──
-  if(step>=4&&cfg.trailing){
-    const si=15;const entryY=candles[si].o;
-    const pts=[0,1,2,3,4].map(i=>`${candles[si].x+i*14},${entryY-i*3}`).join(' ');
-    pl(pts,'#F59E0B',0.8,'2,2');
-    badge(candles[si].x+50,entryY-16,'TRAIL','#F59E0B',6);
-  }
-
-  // ── Oscillator panels (below chart) ──
-  let panelY=chartH+6;
-  const drawOscPanel=(cond,yOff)=>{
-    const col=cond.id==='macd'?'#00D4AA':'#6366F1';
-    const ct=(cond.params?.cond||'').toLowerCase();
-    const up=ct.includes('acima')||ct.includes('subindo');
-    rc(4,yOff,W-8,panelH,TH.panelBg,1,3);
-    svgEl.appendChild(hsvg('rect',{x:4,y:yOff,width:W-8,height:panelH,rx:3,fill:'none',stroke:TH.grid,'stroke-width':0.4}));
-    const label=({rsi:'RSI',stoch:'STOCH',cci:'CCI',williams:'W%R',macd:'MACD',adx:'ADX',atr:'ATR'})[cond.id]||cond.id.toUpperCase();
-    tx(8,yOff+9,label+(cond.params?.per?'('+cond.params.per+')':''),TH.txm,6);
-    if(cond.id==='macd'){
-      const hist=[-4,-6,-8,-6,-4,-1,2,5,7,6,4,2,-1,-3,-5,-4,-2,1,3,5];
-      const mid=yOff+panelH/2;ln(4,mid,W-4,mid,'#2A2A3C',0.3);
-      const bw=(W-16)/hist.length;
-      hist.forEach((v,i)=>{const x=8+i*bw,hgt=Math.abs(v)*1.2,vy=v<0?mid:mid-hgt;rc(x,vy,bw-1,hgt,v>=0?'#10B981':'#EF4444',0.5,0.5);});
-    } else {
-      // threshold line positioned proportionally to val (e.g. RSI 30 = bottom third, RSI 70 = top third)
-      const val=cond.params?.val!=null?cond.params.val:null;
-      let threshFraction=up?0.25:0.75; // default
-      if(val!=null){
-        // RSI/Stoch/Williams: 0-100 range; CCI: -200 to +200
-        const isWide=['cci','williams'].includes(cond.id);
-        const range=isWide?400:100;
-        const min=isWide?-200:0;
-        threshFraction=1-((val-min)/range); // invert: higher val = higher on panel = lower y
-        threshFraction=Math.max(0.1,Math.min(0.9,threshFraction));
+  // Oscillator panels
+  oscConds.slice(0,2).forEach(cond=>{
+    const pWrap=div('');pWrap.style.cssText='width:100%;height:38px;border-radius:4px;overflow:hidden;background:var(--bg1)';
+    _lwcRender(pWrap,(W)=>{
+      if(!window.LightweightCharts)return;
+      const isDark2=document.documentElement.dataset.theme!=='light';
+      const pChart=LightweightCharts.createChart(pWrap,{
+        width:W,height:38,
+        layout:{background:{color:isDark2?'rgba(26,26,46,0.7)':'rgba(248,248,255,0.9)'},textColor:isDark2?'#9999BB':'#555577'},
+        grid:{vertLines:{visible:false},horzLines:{visible:false}},
+        rightPriceScale:{visible:false},timeScale:{visible:false},
+        crosshair:{mode:0},handleScroll:false,handleScale:false,
+      });
+      const ct=(cond.params?.cond||'').toLowerCase();
+      const up=ct.includes('acima')||ct.includes('subindo');
+      if(cond.id==='macd'){
+        const hist=[-4,-6,-8,-6,-4,-1,2,5,7,6,4,2,-1,-3,-5,-4,-2,1,3,5];
+        pChart.addHistogramSeries({priceLineVisible:false,lastValueVisible:false})
+          .setData(hist.map((v,i)=>({time:T0+i*DAY,value:v,color:v>=0?'rgba(38,166,154,0.7)':'rgba(239,83,80,0.7)'})));
+      }else{
+        const thV=cond.params?.val!=null?cond.params.val:(up?30:70);
+        pChart.addLineSeries({color:'#6366F1',lineWidth:1.2,priceLineVisible:false,lastValueVisible:false})
+          .setData(Array.from({length:20},(_,i)=>({time:T0+i*DAY,value:(up?1-(i/19)*0.85:(i/19)*0.85)*100})));
+        pChart.addLineSeries({color:'#F0A020',lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false})
+          .setData([{time:T0,value:thV},{time:T0+19*DAY,value:thV}]);
       }
-      const threshY=yOff+threshFraction*panelH;
-      ln(4,threshY,W-4,threshY,'#F59E0B',0.5,'2,2');
-      if(val!=null){const vt=hsvg('text',{x:W-6,y:threshY-2,fill:'#F59E0B','font-size':'6','font-family':'JetBrains Mono','text-anchor':'end'});vt.textContent=val;svgEl.appendChild(vt);}
-      // wave that crosses the threshold
-      const wave=[];const crossAt=13;
-      for(let i=0;i<20;i++){
-        const progress=i/19;
-        const base=up
-          ? panelH-4-progress*(panelH-8)   // rising wave (crosses from below)
-          : 4+progress*(panelH-8);          // falling wave (crosses from above)
-        wave.push(Math.max(2,Math.min(panelH-2,base)));
-      }
-      const bww=(W-16)/wave.length;
-      pl(wave.map((y,i)=>`${8+i*bww},${yOff+y}`).join(' '),col,0.8);
-      cir(8+crossAt*bww,yOff+wave[crossAt],'#00D4AA',2);
-    }
-  };
-
-  const allPanelConds=[...oscConds,...volConds].slice(0,2);
-  allPanelConds.forEach((cond,i)=>{
-    drawOscPanel(cond,panelY);
-    panelY+=panelH+4;
+      pChart.timeScale().fitContent();
+    });
+    wrap.appendChild(pWrap);
   });
 
-  // ── Empty state (no conditions yet) ──
-  if(conds.length===0 && step>=1){
-    rc(W/2-60,chartH/2-12,120,28,TH.panelBg,0.6,6);
-    tx(W/2,chartH/2,'Adicione condições',TH.txs,9,'middle');
-    tx(W/2,chartH/2+12,'para ver o preview',TH.txm,7,'middle');
+  // Empty state
+  if(conds.length===0&&step>=1){
+    mainWrap.style.position='relative';
+    const empty=div('');empty.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none';
+    empty.innerHTML='<div style="font-size:11px;color:var(--txs)">Adicione condições</div><div style="font-size:9px;color:var(--txm);margin-top:4px">para ver o preview</div>';
+    mainWrap.appendChild(empty);
   }
 
-  return svgEl;
+  return wrap;
 }
 
 // ─── MODAL STATE ──────────────────────────────────────────────
@@ -7073,8 +6805,10 @@ function updateSentence() {
 function updatePreview() {
   const container = document.getElementById('preview-svg-container');
   if(container) {
+    _lwcFlush();
     container.innerHTML = '';
     container.appendChild(buildPreview(state.step, state.cfg));
+    _lwcFlush();
   }
   updateSentence();
 }
@@ -7182,6 +6916,7 @@ function renderApp() {
   two.appendChild(right);
 
   main.replaceChildren(two);
+  _lwcFlush();
   state.animate=false;
 }
 
