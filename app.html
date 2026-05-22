@@ -1258,7 +1258,7 @@ function openStrategiesModal() {
 
   const grid=div('');grid.style.cssText='display:flex;flex-direction:column;gap:8px';
 
-  FAMOUS_STRATEGIES.forEach(strat=>{
+  FAMOUS_STRATEGIES.forEach((strat,stratIdx)=>{
     const dirColor=strat.direction==='long'?'#10B981':strat.direction==='short'?'#EF4444':'#6366F1';
     const dirLabel=strat.direction==='long'?'▲ Compra':strat.direction==='short'?'▼ Venda':'▲▼ Compra e Venda';
     const card=div('card pick');
@@ -1278,7 +1278,38 @@ function openStrategiesModal() {
       tags.appendChild(tag);
     });
 
-    card.append(top,ds,tags);
+    // mini equity preview chart
+    const mc=div('');mc.style.cssText='width:100%;height:110px;margin-top:10px;border-radius:6px;overflow:hidden';
+    const _isDarkS=document.documentElement.dataset.theme!=='light';
+    const _isLong=strat.direction==='long',_isShort=strat.direction==='short';
+    const _lc=_isLong?'#26a69a':_isShort?'#ef5350':'#7878EE';
+    const _tc=_isLong?'rgba(38,166,154,0.20)':_isShort?'rgba(239,83,80,0.20)':'rgba(120,120,238,0.20)';
+    const _bc=_isLong?'rgba(38,166,154,0.01)':_isShort?'rgba(239,83,80,0.01)':'rgba(120,120,238,0.01)';
+    const _si=stratIdx;
+    _lwcRender(mc,(W)=>{
+      if(!window.LightweightCharts)return;
+      const _tx=_isDarkS?'#9999BB':'#555577';
+      const _chart=LightweightCharts.createChart(mc,{
+        width:W,height:110,
+        layout:{background:{color:'transparent'},textColor:_tx},
+        grid:{vertLines:{visible:false},horzLines:{visible:false}},
+        rightPriceScale:{visible:false},timeScale:{visible:false},
+        crosshair:{mode:0},handleScroll:false,handleScale:false,
+      });
+      const _T0=Math.floor(new Date('2020-01-01').getTime()/1000),_DAY=86400;
+      let _v=0;const _n=48;
+      const _trend=_isShort?-45:45;
+      const _eqd=Array.from({length:_n},(_,i)=>{
+        const _r=Math.sin((_si+1)*17.3*(i+1)+i*3.7)*380+_trend;
+        _v+=_r;return{time:_T0+i*_DAY,value:_v};
+      });
+      _chart.addAreaSeries({
+        topColor:_tc,bottomColor:_bc,lineColor:_lc,lineWidth:1.5,
+        priceLineVisible:false,lastValueVisible:false,
+      }).setData(_eqd);
+      _chart.timeScale().fitContent();
+    });
+    card.append(top,ds,tags,mc);
     card.addEventListener('click',()=>{
       applyStrategy(strat);
       overlay.remove();
@@ -1290,6 +1321,7 @@ function openStrategiesModal() {
   modal.appendChild(body);
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
+  _lwcFlush();
 }
 
 function getCondsFor(id) {
