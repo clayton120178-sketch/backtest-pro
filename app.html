@@ -1791,25 +1791,52 @@ function buildTUWChart() {
       crosshair:{mode:1},handleScroll:false,handleScale:false,
     });
     const T0=Math.floor(new Date('2020-01-01').getTime()/1000),DAY=86400;
-    // BaselineSeries: linha + gradiente proporcional à profundidade UW
-    // Elimina o bloco sólido — fill varia com a profundidade do equity
-    // Abaixo de 0: linha azul + fill vermelho gradiente (transparente perto de 0)
-    // Acima de 0: linha verde + fill verde gradiente (new high)
-    const baseline=chart.addBaselineSeries({
-      baseValue:{type:'price',price:0},
-      topLineColor:'#26a69a',
-      topFillColor1:'rgba(38,166,154,0.12)',
-      topFillColor2:'rgba(38,166,154,0.02)',
-      bottomLineColor:'#1E90FF',
-      bottomFillColor1:'rgba(239,83,80,0.12)',
-      bottomFillColor2:'rgba(239,83,80,0.02)',
-      lineWidth:2,priceLineVisible:false,lastValueVisible:false,
+    // ── Running peak (pico máximo até cada ponto)
+    let _pk=EQ[0].v;
+    const _peaks=EQ.map(d=>{if(d.v>_pk)_pk=d.v;return _pk;});
+
+    // ── Linha tracejada do running peak (referência visual)
+    const _peakLine=chart.addLineSeries({
+      color:isDark?'rgba(180,180,210,0.40)':'rgba(80,80,140,0.40)',
+      lineWidth:1,lineStyle:2,
+      priceLineVisible:false,lastValueVisible:false,
     });
-    baseline.setData(EQ.map((d,i)=>({time:T0+i*DAY,value:d.v})));
-    // Marcadores de new high — pontos verdes
-    const mkrs=[];let peak=EQ[0].v;
-    EQ.forEach((d,i)=>{if(i>0&&d.v>peak){peak=d.v;mkrs.push({time:T0+i*DAY,position:'aboveBar',color:'#26a69a',shape:'circle',size:2,text:''});}});
-    if(mkrs.length)baseline.setMarkers(mkrs);
+    _peakLine.setData(_peaks.map((p,i)=>({time:T0+i*DAY,value:p})));
+
+    // ── Equity colorida por status UW
+    // Vermelho = underwater (equity < running peak)
+    // Verde    = novo máximo histórico (equity >= running peak)
+    // Segmentos consecutivos com 1 ponto de sobreposição para continuidade
+    const _segs=[];
+    let _segUW=(EQ[0].v<_peaks[0]);
+    let _sIdx=0;
+    for(let _i=1;_i<=EQ.length;_i++){
+      const _uw=(_i<EQ.length)&&(EQ[_i].v<_peaks[_i]);
+      if(_i===EQ.length||_uw!==_segUW){
+        _segs.push({uw:_segUW,s:_sIdx,e:_i-1});
+        _sIdx=_i;_segUW=_uw;
+      }
+    }
+    _segs.forEach(sg=>{
+      const _from=Math.max(0,sg.s-1);
+      const _to=Math.min(EQ.length-1,sg.e+1);
+      const _s=chart.addLineSeries({
+        color:sg.uw?'#ef5350':'#26a69a',
+        lineWidth:2,priceLineVisible:false,lastValueVisible:false,
+      });
+      _s.setData(EQ.slice(_from,_to+1).map((d,di)=>({time:T0+(_from+di)*DAY,value:d.v})));
+    });
+
+    // ── Marcadores verdes nos momentos de renovação de máxima
+    const mkrs=[];_pk=EQ[0].v;
+    EQ.forEach((d,i)=>{
+      if(i>0&&d.v>_pk){_pk=d.v;mkrs.push({time:T0+i*DAY,position:'aboveBar',color:'#26a69a',shape:'circle',size:2,text:''});}
+    });
+    if(mkrs.length){
+      const _ms=chart.addLineSeries({color:'transparent',priceLineVisible:false,lastValueVisible:false});
+      _ms.setData(EQ.map((d,i)=>({time:T0+i*DAY,value:d.v})));
+      _ms.setMarkers(mkrs);
+    }
     chart.timeScale().fitContent();
   });
   return wrap;
