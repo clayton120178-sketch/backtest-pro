@@ -1792,53 +1792,48 @@ function buildTUWChart() {
     });
     const T0=Math.floor(new Date('2020-01-01').getTime()/1000),DAY=86400;
 
-    // ── Running peak (máximo histórico até cada ponto)
+    // Drawdown relativo ao running peak: dd[i] = equity[i] - peak[i]
+    // Sempre <= 0. Zero = no pico histórico (new high). Negativo = underwater.
     let _pk=EQ[0].v;
-    const _peaks=EQ.map(d=>{if(d.v>_pk)_pk=d.v;return _pk;});
-
-    // ── UW fill: CandlestickSeries sem wicks
-    // open=high=peak, close=low=equity → corpo preenche exatamente
-    // o gap entre o pico e o equity (zona underwater)
-    const _uwFill=chart.addCandlestickSeries({
-      upColor:'transparent',
-      downColor:isDark?'rgba(239,83,80,0.22)':'rgba(239,83,80,0.28)',
-      borderUpColor:'transparent',
-      borderDownColor:'transparent',
-      wickUpColor:'transparent',
-      wickDownColor:'transparent',
+    const _ddData=EQ.map((d,i)=>{
+      if(d.v>_pk)_pk=d.v;
+      return {time:T0+i*DAY,value:d.v-_pk};
     });
-    _uwFill.setData(EQ.map((d,i)=>({
-      time:T0+i*DAY,
-      open:_peaks[i],
-      high:_peaks[i],
-      low:d.v,
-      close:d.v,
-    })));
 
-    // ── Linha tracejada do running peak (referência visual)
-    const _peakLine=chart.addLineSeries({
-      color:isDark?'rgba(210,210,240,0.55)':'rgba(80,80,160,0.55)',
-      lineWidth:1,lineStyle:2,
+    // AreaSeries: fill proporcional à profundidade UW
+    // Valores negativos → LWC preenche de 0 (baseline) até a curva
+    // topColor = cor na linha (ponto mais baixo do fill)
+    // bottomColor = cor em 0 (topo do fill, referência de pico)
+    const _area=chart.addAreaSeries({
+      topColor:'rgba(239,83,80,0.28)',
+      bottomColor:'rgba(239,83,80,0.04)',
+      lineColor:'#ef5350',
+      lineWidth:2,
+      priceLineVisible:false,
+      lastValueVisible:false,
+    });
+    _area.setData(_ddData);
+
+    // Linha de referência em 0 (= "no pico")
+    const _zeroLine=chart.addLineSeries({
+      color:isDark?'rgba(100,220,130,0.45)':'rgba(0,140,60,0.45)',
+      lineWidth:1,lineStyle:0,
       priceLineVisible:false,lastValueVisible:false,
     });
-    _peakLine.setData(_peaks.map((p,i)=>({time:T0+i*DAY,value:p})));
+    _zeroLine.setData([
+      {time:_ddData[0].time,value:0},
+      {time:_ddData[_ddData.length-1].time,value:0},
+    ]);
 
-    // ── Linha do equity por cima (azul, legível)
-    const _line=chart.addLineSeries({
-      color:'#1E90FF',lineWidth:2,
-      priceLineVisible:false,lastValueVisible:false,
-    });
-    _line.setData(EQ.map((d,i)=>({time:T0+i*DAY,value:d.v})));
-
-    // ── Marcadores verdes nos momentos de new high
-    const _mkrs=[];_pk=EQ[0].v;
+    // Marcadores verdes nos new highs (onde dd toca 0)
+    const _mkrs=[];let _pk2=EQ[0].v;
     EQ.forEach((d,i)=>{
-      if(i>0&&d.v>_pk){
-        _pk=d.v;
+      if(i>0&&d.v>_pk2){
+        _pk2=d.v;
         _mkrs.push({time:T0+i*DAY,position:'aboveBar',color:'#26a69a',shape:'circle',size:2,text:''});
       }
     });
-    if(_mkrs.length)_line.setMarkers(_mkrs);
+    if(_mkrs.length)_area.setMarkers(_mkrs);
 
     chart.timeScale().fitContent();
   });
