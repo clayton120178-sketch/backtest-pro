@@ -1791,14 +1791,20 @@ function buildTUWChart() {
       crosshair:{mode:1},handleScroll:false,handleScale:false,
     });
     const T0=Math.floor(new Date('2020-01-01').getTime()/1000),DAY=86400;
-    const tuwHist=chart.addHistogramSeries({color:'rgba(239,83,80,0.10)',priceLineVisible:false,lastValueVisible:false});
-    const tuwData=[];
-    (A.uwPeriods||[]).forEach(p=>{for(let i=p.s;i<=p.e&&i<EQ.length;i++)tuwData.push({time:T0+i*DAY,value:EQ[i].v});});
-    if(tuwData.length)tuwHist.setData(tuwData.sort((a,b)=>a.time-b.time));
+    // UW fill: AreaSeries — value=EQ durante períodos UW, 0 fora (fill zerado)
+    const uwSet=new Set();
+    (A.uwPeriods||[]).forEach(p=>{for(let i=p.s;i<=p.e&&i<EQ.length;i++)uwSet.add(i);});
+    const uwArea=chart.addAreaSeries({
+      topColor:'rgba(239,83,80,0.25)',bottomColor:'rgba(239,83,80,0.04)',
+      lineColor:'transparent',lineWidth:0,priceLineVisible:false,lastValueVisible:false,
+    });
+    uwArea.setData(EQ.map((d,i)=>({time:T0+i*DAY,value:uwSet.has(i)?d.v:0})));
+    // Linha do equity (desenhada sobre o fill)
     const line=chart.addLineSeries({color:'#1E90FF',lineWidth:2,priceLineVisible:false});
     line.setData(EQ.map((d,i)=>({time:T0+i*DAY,value:d.v})));
+    // Marcadores de new high — pontos verdes no equity
     const mkrs=[];let peak=EQ[0].v;
-    EQ.forEach((d,i)=>{if(d.v>=peak){peak=d.v;mkrs.push({time:T0+i*DAY,position:'aboveBar',color:'#26a69a',shape:'circle',size:0.5,text:''});}});
+    EQ.forEach((d,i)=>{if(i>0&&d.v>peak){peak=d.v;mkrs.push({time:T0+i*DAY,position:'aboveBar',color:'#26a69a',shape:'circle',size:2,text:''});}});
     if(mkrs.length)line.setMarkers(mkrs);
     chart.timeScale().fitContent();
   });
