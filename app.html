@@ -2346,7 +2346,7 @@ function buildCondPreview(indId, condText, params={}) {
   const sc = up ? '#10B981' : '#EF4444';
 
   // Indicator types that get LWC treatment
-  const LWC_IDS = ['rsi','stoch','cci','williams','macd','atr','sma','ema','bb','vwap','adx','sar','hilo','hilon','range','gap','prevday','fib','fvg','bos','choch','sweep','candle'];
+  const LWC_IDS = ['rsi','stoch','cci','williams','macd','atr','sma','ema','bb','vwap','adx','sar','hilo','hilon','range','gap','prevday','fib','fvg','bos','choch','sweep','grab','candle'];
 
   if (!LWC_IDS.includes(indId)) {
     return _buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct);
@@ -4955,6 +4955,19 @@ function renderModal() {
       const conds=getCondsFor(ind.id);
       const smcId=ind.id;
 
+      // ── LWC pattern preview — top of ALL SMC config modals ──────────
+      // condText combines condition + direction so buildCondPreview
+      // can detect 'up' from 'Compra' / direction from 'Venda'.
+      {
+        const _pw=div('cond-preview');_pw.id='cond-preview-wrap';
+        const _ct=(ms.params.cond||conds[0]||'')+' '+(ms.params.dir||'');
+        _pw.appendChild(buildCondPreview(smcId,_ct,ms.params));
+        frag.appendChild(_pw);
+        const _lg=div('cond-preview-legend');
+        _lg.innerHTML='<span style="opacity:0.6">ⓘ</span> Visualização ilustrativa. Os preços exibidos na grade não correspondem ao ativo selecionado.';
+        frag.appendChild(_lg);
+      }
+
       // Helper: pills selector (updates locally, no re-render)
       const pills=(label,tip,options,current,onChange)=>{
         const block=div('');
@@ -5119,6 +5132,8 @@ function renderModal() {
           card.dataset.fvgCond=opt.cond;
           card.addEventListener('click',()=>{
             syncFVGMode(opt.cond);
+            {const _pw2=document.getElementById('cond-preview-wrap');
+             if(_pw2){_pw2.innerHTML='';const _ct2=ms.params.cond+' '+(ms.params.dir||'');_pw2.appendChild(buildCondPreview(smcId,_ct2,ms.params));_lwcFlush();}}
             condCards.querySelectorAll('[data-fvg-cond]').forEach(c2=>{
               const sel=c2.dataset.fvgCond===ms.params.cond;
               c2.style.borderColor=sel?'var(--ac)':'var(--bd)';
