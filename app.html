@@ -1775,7 +1775,6 @@ function buildEquityChart() {
 }
 
 function buildTUWChart() {
-  const A=EQ_ANALYSIS;
   const wrap=div('');wrap.style.cssText='width:100%;height:200px';
   _lwcRender(wrap,(W)=>{
     if(!window.LightweightCharts){wrap.innerHTML='<p style="color:var(--txm);font-size:11px;padding:8px">TUW chart indisponivel</p>';return;}
@@ -1792,54 +1791,63 @@ function buildTUWChart() {
     });
     const T0=Math.floor(new Date('2020-01-01').getTime()/1000),DAY=86400;
 
-    // Calcula range do equity para fixar a escala do gráfico
+    // ── _find_underwater_periods (idêntico ao metrics.py)
+    // peak começa em EQ[0].v
+    // UW começa quando equity < peak
+    // UW termina quando equity >= peak (novo peak)
+    const _uwP=[];
+    let _peak=EQ[0].v,_uwS=null;
+    EQ.forEach((d,i)=>{
+      if(d.v>=_peak){
+        if(_uwS!==null){_uwP.push({s:_uwS,e:i-1});_uwS=null;}
+        _peak=d.v;
+      } else {
+        if(_uwS===null)_uwS=i;
+      }
+    });
+    if(_uwS!==null)_uwP.push({s:_uwS,e:EQ.length-1});
+
+    // ── Range do equity (para autoscale do histogram)
     let _eqMin=EQ[0].v,_eqMax=EQ[0].v;
     EQ.forEach(d=>{if(d.v<_eqMin)_eqMin=d.v;if(d.v>_eqMax)_eqMax=d.v;});
-    const _eqPad=(_eqMax-_eqMin)*0.10;
-    const _sentinel=_eqMin-(_eqMax-_eqMin)*8; // valor muito abaixo → clippado no fundo do chart
+    const _rng=_eqMax-_eqMin;
+    const _pad=_rng*0.10;
+    // Sentinela: valor muito abaixo do range → barras cobrem toda a altura do chart
+    const _sent=_eqMin-_rng*8;
 
-    // ── 1. BACKGROUND UW: HistogramSeries com autoscaleInfoProvider
-    // Barras no valor sentinela cobrem toda a altura visível do chart.
-    // autoscaleInfoProvider retorna o range do equity → escala não é afetada.
-    const _uwBg=chart.addHistogramSeries({
-      color:isDark?'rgba(239,83,80,0.13)':'rgba(239,83,80,0.16)',
+    // ── 1. Background UW (HistogramSeries — barras sentinela com autoscale fixo)
+    const _bg=chart.addHistogramSeries({
+      color:isDark?'rgba(239,83,80,0.14)':'rgba(239,83,80,0.18)',
       priceLineVisible:false,lastValueVisible:false,
-      autoscaleInfoProvider:()=>({priceRange:{minValue:_eqMin-_eqPad,maxValue:_eqMax+_eqPad}}),
+      autoscaleInfoProvider:()=>({priceRange:{minValue:_eqMin-_pad,maxValue:_eqMax+_pad}}),
     });
-    const _uwBgData=[];
-    (A.uwPeriods||[]).forEach(p=>{
-      for(let i=p.s;i<=p.e&&i<EQ.length;i++){
-        _uwBgData.push({time:T0+i*DAY,value:_sentinel});
-      }
-    });
-    if(_uwBgData.length)_uwBg.setData(_uwBgData.sort((a,b)=>a.time-b.time));
+    const _bgD=[];
+    _uwP.forEach(p=>{for(let i=p.s;i<=p.e;i++)_bgD.push({time:T0+i*DAY,value:_sent});});
+    if(_bgD.length)_bg.setData(_bgD);
 
-    // ── 2. RUNNING PEAK: linha tracejada (referência do pico histórico)
-    let _pk=EQ[0].v;
-    const _peaks=EQ.map(d=>{if(d.v>_pk)_pk=d.v;return _pk;});
-    const _peakLine=chart.addLineSeries({
-      color:isDark?'rgba(200,200,230,0.50)':'rgba(80,80,160,0.50)',
-      lineWidth:1,lineStyle:2,
-      priceLineVisible:false,lastValueVisible:false,
+    // ── 2. Running peak (linha tracejada — referência do topo histórico)
+    let _pk2=EQ[0].v;
+    const _peaks=EQ.map(d=>{if(d.v>_pk2)_pk2=d.v;return _pk2;});
+    const _pL=chart.addLineSeries({
+      color:isDark?'rgba(200,210,255,0.55)':'rgba(60,60,180,0.55)',
+      lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false,
     });
-    _peakLine.setData(_peaks.map((p,i)=>({time:T0+i*DAY,value:p})));
+    _pL.setData(_peaks.map((p,i)=>({time:T0+i*DAY,value:p})));
 
-    // ── 3. EQUITY LINE: curva principal em azul
-    const _line=chart.addLineSeries({
-      color:'#1E90FF',lineWidth:2,
-      priceLineVisible:false,lastValueVisible:false,
+    // ── 3. Equity line (azul)
+    const _ln=chart.addLineSeries({
+      color:'#1E90FF',lineWidth:2,priceLineVisible:false,lastValueVisible:false,
     });
-    _line.setData(EQ.map((d,i)=>({time:T0+i*DAY,value:d.v})));
+    _ln.setData(EQ.map((d,i)=>({time:T0+i*DAY,value:d.v})));
 
-    // ── 4. NEW HIGHS: marcadores verdes onde equity supera o pico anterior
-    const _mkrs=[];_pk=EQ[0].v;
-    EQ.forEach((d,i)=>{
-      if(i>0&&d.v>_pk){
-        _pk=d.v;
-        _mkrs.push({time:T0+i*DAY,position:'aboveBar',color:'#26a69a',shape:'circle',size:2,text:''});
-      }
+    // ── 4. New high markers — exatamente no ponto onde UW termina (equity >= peak)
+    // Corresponde ao índice p.e+1 de cada período UW encerrado
+    const _mkrs=[];
+    _uwP.forEach(p=>{
+      const ni=p.e+1;
+      if(ni<EQ.length)_mkrs.push({time:T0+ni*DAY,position:'aboveBar',color:'#26a69a',shape:'circle',size:2,text:''});
     });
-    if(_mkrs.length)_line.setMarkers(_mkrs);
+    if(_mkrs.length)_ln.setMarkers(_mkrs);
 
     chart.timeScale().fitContent();
   });
