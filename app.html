@@ -3456,7 +3456,7 @@ const chartOpts = {
         position:up?'belowBar':'aboveBar',
         color:up?'#26a69a':'#ef5350',
         shape:up?'arrowUp':'arrowDown',
-        text:isMit?'Retorno':'Entrada',
+        text:'',
       }]);
       chart.timeScale().fitContent();
     });
@@ -3667,7 +3667,7 @@ const chartOpts = {
       {const _aP=cd2.flatMap(c=>[c.high,c.low]);const _mn=Math.min(..._aP),_mx=Math.max(..._aP),_pd=(_mx-_mn)*0.09;cs.applyOptions({autoscaleInfoProvider:()=>({priceRange:{minValue:_mn-_pd,maxValue:_mx+_pd}})})}
       cs.setMarkers([
         {time:cd2[lhIdx].time, position:up?'aboveBar':'belowBar',
-         color:'#EF4444', shape:'circle', text:up?'LH':'HL'},
+         color:'#EF4444', shape:'circle', text:up?'Topo':'Suporte'},
         {time:cd2[bosIdx].time, position:up?'belowBar':'aboveBar',
          color:up?'#26a69a':'#ef5350', shape:up?'arrowUp':'arrowDown', text:'CHoCH'},
       ]);
@@ -3768,7 +3768,7 @@ const chartOpts = {
       {const _aP=sd.flatMap(c=>[c.high,c.low]);const _mn=Math.min(..._aP),_mx=Math.max(..._aP),_pd=(_mx-_mn)*0.09;cs.applyOptions({autoscaleInfoProvider:()=>({priceRange:{minValue:_mn-_pd,maxValue:_mx+_pd}})})}
       cs.setMarkers([
         {time:sd[swpi].time,
-         position:up?'belowBar':'aboveBar',
+         position:up?'aboveBar':'belowBar',
          color:'#ef5350', shape:up?'arrowDown':'arrowUp', text:'Sweep'},
         {time:sd[revi].time,
          position:up?'belowBar':'aboveBar',
@@ -5762,7 +5762,7 @@ function renderModal() {
                   {time:_cd[2].time,position:'belowBar',color:'#F0A020',shape:'circle',text:'1'},
                   {time:_cd[4].time,position:'belowBar',color:'#F0A020',shape:'circle',text:'2'},
                   {time:_cd[6].time,position:'belowBar',color:'#F0A020',shape:'circle',text:'3'},
-                  {time:_cd[7].time,position:'belowBar',color:'#ef5350',shape:'arrowDown',text:'Sweep'},
+                  {time:_cd[7].time,position:'aboveBar',color:'#ef5350',shape:'arrowDown',text:'Sweep'},
                   {time:_cd[8].time,position:'belowBar',color:'#26a69a',shape:'arrowUp',text:'Reversão'},
                 ];
               }else{
@@ -5788,7 +5788,7 @@ function renderModal() {
                   {time:_cd[2].time,position:'aboveBar',color:'#F0A020',shape:'circle',text:'1'},
                   {time:_cd[4].time,position:'aboveBar',color:'#F0A020',shape:'circle',text:'2'},
                   {time:_cd[6].time,position:'aboveBar',color:'#F0A020',shape:'circle',text:'3'},
-                  {time:_cd[7].time,position:'aboveBar',color:'#ef5350',shape:'arrowUp',text:'Sweep'},
+                  {time:_cd[7].time,position:'belowBar',color:'#ef5350',shape:'arrowUp',text:'Sweep'},
                   {time:_cd[8].time,position:'aboveBar',color:'#26a69a',shape:'arrowDown',text:'Reversão'},
                 ];
               }
