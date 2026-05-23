@@ -1917,7 +1917,7 @@ function buildPreview(step, cfg) {
       width:W,height:chartH,
       layout:{background:{color:'transparent'},textColor:tx},
       grid:{vertLines:{color:gd},horzLines:{color:gd}},
-      rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.10,bottom:0.10}},
+      rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.08,bottom:0.18}},
       timeScale:{borderColor:'transparent',visible:false},
       crosshair:{mode:1},handleScroll:false,handleScale:false,
     });
@@ -2346,7 +2346,7 @@ function buildCondPreview(indId, condText, params={}) {
   const sc = up ? '#10B981' : '#EF4444';
 
   // Indicator types that get LWC treatment
-  const LWC_IDS = ['rsi','stoch','cci','williams','macd','atr','sma','ema','bb','vwap','adx','sar','hilo','hilon','range','gap','prevday','fib','fvg','bos','choch','sweep','candle'];
+  const LWC_IDS = ['rsi','stoch','cci','williams','macd','atr','sma','ema','bb','vwap','adx','sar','hilo','hilon','range','gap','prevday','fib','fvg','bos','choch','sweep','grab','candle'];
 
   if (!LWC_IDS.includes(indId)) {
     return _buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct);
@@ -3339,7 +3339,7 @@ const chartOpts = {
       const chart = LightweightCharts.createChart(container, {
         width:chartW,height:180,layout:{background:{color:bg},textColor:text},
         grid:{vertLines:{color:grid},horzLines:{color:grid}},
-        rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.10,bottom:0.08}},
+        rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.08,bottom:0.18}},
         timeScale:{borderColor:'transparent',visible:false},crosshair:{mode:0},
         handleScroll:false,handleScale:false,
         watermark:{visible:true,fontSize:11,horzAlign:'left',vertAlign:'top',color:text,text:'FVG — Fair Value Gap'}
@@ -3447,6 +3447,7 @@ const chartOpts = {
         priceLineVisible:false,lastValueVisible:false,
       });
       cs.setData(fd);
+      {const _aP=fd.flatMap(c=>[c.high,c.low]);const _mn=Math.min(..._aP),_mx=Math.max(..._aP),_pd=(_mx-_mn)*0.09;cs.applyOptions({autoscaleInfoProvider:()=>({priceRange:{minValue:_mn-_pd,maxValue:_mx+_pd}})})}
 
       // Entry marker
       const entryIdx = isMit ? fd.length-1 : cIdx;
@@ -3470,7 +3471,7 @@ const chartOpts = {
       const chart = LightweightCharts.createChart(container, {
         width:chartW,height:180,layout:{background:{color:bg},textColor:text},
         grid:{vertLines:{color:grid},horzLines:{color:grid}},
-        rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.10,bottom:0.10}},
+        rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.08,bottom:0.18}},
         timeScale:{borderColor:'transparent',visible:false},crosshair:{mode:0},
         handleScroll:false,handleScale:false,
         watermark:{visible:true,fontSize:11,horzAlign:'left',vertAlign:'top',color:text,text:'BoS — Break of Structure'}
@@ -3557,6 +3558,7 @@ const chartOpts = {
         priceLineVisible:false,lastValueVisible:false,
       });
       cs.setData(bd);
+      {const _aP=bd.flatMap(c=>[c.high,c.low]);const _mn=Math.min(..._aP),_mx=Math.max(..._aP),_pd=(_mx-_mn)*0.09;cs.applyOptions({autoscaleInfoProvider:()=>({priceRange:{minValue:_mn-_pd,maxValue:_mx+_pd}})})}
       cs.setMarkers([
         {time:bd[swingIdx].time, position:up?'aboveBar':'belowBar',
          color:'#F0A020', shape:'circle', text:up?'Topo':'Fundo'},
@@ -3576,7 +3578,7 @@ const chartOpts = {
       const chart = LightweightCharts.createChart(container, {
         width:chartW,height:180,layout:{background:{color:bg},textColor:text},
         grid:{vertLines:{color:grid},horzLines:{color:grid}},
-        rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.10,bottom:0.10}},
+        rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.08,bottom:0.18}},
         timeScale:{borderColor:'transparent',visible:false},crosshair:{mode:0},
         handleScroll:false,handleScale:false,
         watermark:{visible:true,fontSize:11,horzAlign:'left',vertAlign:'top',color:text,text:'CHoCH — Change of Character'}
@@ -3662,6 +3664,7 @@ const chartOpts = {
         priceLineVisible:false,lastValueVisible:false,
       });
       cs.setData(cd2);
+      {const _aP=cd2.flatMap(c=>[c.high,c.low]);const _mn=Math.min(..._aP),_mx=Math.max(..._aP),_pd=(_mx-_mn)*0.09;cs.applyOptions({autoscaleInfoProvider:()=>({priceRange:{minValue:_mn-_pd,maxValue:_mx+_pd}})})}
       cs.setMarkers([
         {time:cd2[lhIdx].time, position:up?'aboveBar':'belowBar',
          color:'#EF4444', shape:'circle', text:up?'LH':'HL'},
@@ -3681,7 +3684,7 @@ const chartOpts = {
       const chart = LightweightCharts.createChart(container, {
         width:chartW,height:180,layout:{background:{color:bg},textColor:text},
         grid:{vertLines:{color:grid},horzLines:{color:grid}},
-        rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.12,bottom:0.12}},
+        rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.08,bottom:0.18}},
         timeScale:{borderColor:'transparent',visible:false},crosshair:{mode:0},
         handleScroll:false,handleScale:false,
         watermark:{visible:true,fontSize:11,horzAlign:'left',vertAlign:'top',color:text,text:'Sweep de Liquidez'}
@@ -3762,6 +3765,7 @@ const chartOpts = {
         priceLineVisible:false,lastValueVisible:false,
       });
       cs.setData(sd);
+      {const _aP=sd.flatMap(c=>[c.high,c.low]);const _mn=Math.min(..._aP),_mx=Math.max(..._aP),_pd=(_mx-_mn)*0.09;cs.applyOptions({autoscaleInfoProvider:()=>({priceRange:{minValue:_mn-_pd,maxValue:_mx+_pd}})})}
       cs.setMarkers([
         {time:sd[swpi].time,
          position:up?'belowBar':'aboveBar',
@@ -3787,7 +3791,7 @@ const chartOpts = {
       const chart = LightweightCharts.createChart(container, {
         width:chartW,height:180,layout:{background:{color:bg},textColor:text},
         grid:{vertLines:{color:grid},horzLines:{color:grid}},
-        rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.12,bottom:0.12}},
+        rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.08,bottom:0.18}},
         timeScale:{borderColor:'transparent',visible:false},crosshair:{mode:0},
         handleScroll:false,handleScale:false,
         watermark:{visible:true,fontSize:11,horzAlign:'left',vertAlign:'top',color:text,text:'Grab de Liquidez'}
@@ -3873,6 +3877,7 @@ const chartOpts = {
         priceLineVisible:false,lastValueVisible:false,
       });
       cs.setData(gd);
+      {const _aP=gd.flatMap(c=>[c.high,c.low]);const _mn=Math.min(..._aP),_mx=Math.max(..._aP),_pd=(_mx-_mn)*0.09;cs.applyOptions({autoscaleInfoProvider:()=>({priceRange:{minValue:_mn-_pd,maxValue:_mx+_pd}})})}
       cs.setMarkers([
         // First touch — shows the level is significant
         {time:gd[0].time,
@@ -3900,7 +3905,7 @@ const chartOpts = {
       const chart = LightweightCharts.createChart(container, {
         width:chartW,height:160,layout:{background:{color:bg},textColor:text},
         grid:{vertLines:{color:grid},horzLines:{color:grid}},
-        rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.12,bottom:0.12}},
+        rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.08,bottom:0.18}},
         timeScale:{borderColor:'transparent',visible:false},crosshair:{mode:1},
         handleScroll:false,handleScale:false,
       });
@@ -4955,6 +4960,19 @@ function renderModal() {
       const conds=getCondsFor(ind.id);
       const smcId=ind.id;
 
+      // ── LWC pattern preview — top of ALL SMC config modals ──────────
+      // condText combines condition + direction so buildCondPreview
+      // can detect 'up' from 'Compra' / direction from 'Venda'.
+      {
+        const _pw=div('cond-preview');_pw.id='cond-preview-wrap';
+        const _ct=(ms.params.cond||conds[0]||'')+' '+(ms.params.dir||'');
+        _pw.appendChild(buildCondPreview(smcId,_ct,ms.params));
+        frag.appendChild(_pw);
+        const _lg=div('cond-preview-legend');
+        _lg.innerHTML='<span style="opacity:0.6">ⓘ</span> Visualização ilustrativa. Os preços exibidos na grade não correspondem ao ativo selecionado.';
+        frag.appendChild(_lg);
+      }
+
       // Helper: pills selector (updates locally, no re-render)
       const pills=(label,tip,options,current,onChange)=>{
         const block=div('');
@@ -5021,84 +5039,12 @@ function renderModal() {
         const condCards=div('');condCards.style.cssText='display:flex;flex-direction:column;gap:8px';
 
         const COND_OPTIONS=[
-          {
-            cond: FVG_CONDS[0],
-            title: 'Logo após o gap ser formado',
-            desc: 'Quando a mínima do candle [3] fica acima da máxima do candle [1], o gap é confirmado. A entrada ocorre no candle seguinte — apostando na continuação do movimento.',
-            mode: 'aggressive',
-            svgFn: (ln,rc,tx,cd,ci,th)=>{
-              // Contexto — candles anteriores
-              cd(8,68,10,50,74,0.3); ln(13,46,13,78,th.bd,1);
-              cd(22,62,10,44,68,0.3); ln(27,40,27,72,th.bd,1);
-              // [1] Candle 1 — neutro, máxima em y=48
-              rc(36,48,14,18,'#8888A0',0.65,1); ln(43,42,43,70,th.txs,1);
-              tx(36,82,'[1]',th.txs,9,'start');
-              // GAP — entre máxima do [1] (y=48) e mínima do [3] (y=28)
-              // zona em roxo, visível entre os candles
-              rc(32,28,54,20,'#6366F1',0.15,2);
-              ln(32,28,86,28,'#6366F1',1,'3,2');
-              ln(32,48,86,48,'#6366F1',1,'3,2');
-              tx(34,41,'GAP','#6366F1',9);
-              // [2] Candle 2 — impulso forte de alta (cruza o gap)
-              rc(52,12,14,52,'#10B981',0.9,1); ln(59,6,59,68,'#10B981',1.5);
-              tx(52,82,'[2]',th.txs,9,'start');
-              // [3] Candle 3 — pequeno, mínima acima da máxima do [1] (y=28)
-              rc(72,20,14,14,'#10B981',0.65,1); ln(79,14,79,38,'#10B981',1);
-              tx(72,82,'[3]',th.txs,9,'start');
-              // Entrada no candle seguinte ao [3]
-              rc(92,14,14,18,'#10B981',0.85,1); ln(99,8,99,36,'#10B981',1.5);
-              ln(99,6,99,0,'#00D4AA',0); // espaço
-              ln(106,20,99,8,'#00D4AA',2); ln(93,20,99,8,'#00D4AA',2);
-              ln(99,8,99,0,'#00D4AA',2);
-              tx(110,18,'ENTRADA','#00D4AA',10);
-              // Descrição
-              tx(210,22,'FVG altista:',th.txs,10);
-              tx(210,36,'mín. do [3] > máx. do [1]',th.txs,10);
-              tx(210,54,'O gap fica entre os dois.',th.txs,10);
-              tx(210,68,'Entrada: candle após [3]',th.txs,10);
-            }
-          },
-          {
-            cond: FVG_CONDS[1],
-            title: 'Quando o preço retornar ao gap',
-            desc: 'Após o gap ser confirmado, o mercado sobe além do candle [3]. Quando o preço recua até a zona do gap (entre máx. do [1] e mín. do [3]), a entrada ocorre ali.',
-            mode: 'mitigation',
-            svgFn: (ln,rc,tx,cd,ci,th)=>{
-              // [1] Candle 1 — neutro, máxima em y=48
-              rc(8,48,14,18,'#8888A0',0.65,1); ln(15,42,15,70,th.txs,1);
-              tx(8,82,'[1]',th.txs,9,'start');
-              // [2] Candle 2 — impulso forte de alta
-              rc(28,12,14,52,'#10B981',0.9,1); ln(35,6,35,68,'#10B981',1.5);
-              tx(28,82,'[2]',th.txs,9,'start');
-              // [3] Candle 3 — mínima acima da máxima do [1]
-              rc(48,18,14,14,'#10B981',0.65,1); ln(55,12,55,36,'#10B981',1);
-              tx(48,82,'[3]',th.txs,9,'start');
-              // GAP zone (entre máx. [1] y=48 e mín. [3] y=32) — estende à direita
-              rc(4,32,170,16,'#6366F1',0.08,2);
-              ln(4,32,174,32,'#6366F1',0.9,'3,2');
-              ln(4,48,174,48,'#6366F1',0.9,'3,2');
-              tx(6,43,'GAP','#6366F1',8);
-              // Continuação após [3] — 2 candles de alta
-              rc(68,10,12,16,'#10B981',0.7,1); ln(74,4,74,30,'#10B981',1);
-              rc(86,4,12,14,'#10B981',0.6,1); ln(92,0,92,22,'#10B981',1);
-              // Topo — candle doji
-              rc(102,2,10,8,'#8888A0',0.5,1); ln(107,0,107,14,'#8888A0',1);
-              // Recuo — 3 candles vermelhos descendo em direção ao gap
-              rc(118,10,12,18,'#EF4444',0.65,1); ln(124,6,124,32,'#EF4444',1);
-              rc(136,24,12,16,'#EF4444',0.7,1); ln(142,18,142,44,'#EF4444',1);
-              rc(154,36,12,14,'#EF4444',0.6,1); ln(160,30,160,54,'#EF4444',1);
-              // Entrada quando o preço toca o topo do gap (y=32)
-              ci(168,32,'#00D4AA',4);
-              ln(168,28,168,14,'#00D4AA',1.5);
-              ln(164,19,168,14,'#00D4AA',1.5); ln(172,19,168,14,'#00D4AA',1.5);
-              tx(176,18,'ENTRADA','#00D4AA',10);
-              // Labels
-              tx(216,52,'1. Gap: mín.[3] > máx.[1]',th.txs,10);
-              tx(216,66,'2. Mercado sobe além',th.txs,10);
-              tx(216,78,'3. Recua até o gap',th.txs,10);
-              tx(216,90,'4. Entrada no topo do gap',th.txs,10);
-            }
-          }
+          {cond:FVG_CONDS[0],title:'Logo após o gap ser formado',
+           desc:'Quando a mínima do candle [3] fica acima da máxima do candle [1], o gap é confirmado. A entrada ocorre no candle seguinte — apostando na continuação do movimento.',
+           mode:'aggressive'},
+          {cond:FVG_CONDS[1],title:'Quando o preço retornar ao gap',
+           desc:'Após o gap ser confirmado, o mercado sobe além do candle [3]. Quando o preço recua até a zona do gap (entre máx. do [1] e mín. do [3]), a entrada ocorre ali.',
+           mode:'mitigation'}
         ];
 
         COND_OPTIONS.forEach(opt=>{
@@ -5112,13 +5058,103 @@ function renderModal() {
           const nm=div('');nm.style.cssText='font-size:13px;font-weight:600;color:var(--tx);margin-bottom:3px';nm.textContent=opt.title;
           const ds=div('');ds.style.cssText='font-size:12px;color:var(--txs);line-height:1.45';ds.textContent=opt.desc;
           info.append(nm,ds);top.appendChild(info);card.appendChild(top);
-          // SVG illustration
-          const svgEl=miniSVG(420,opt.mode==='mitigation'?110:90,opt.svgFn);
-          svgEl.style.pointerEvents='none';
-          card.appendChild(svgEl);
+          // LWC chart illustration (rebuilt from scratch)
+          const _cvh=opt.mode==='mitigation'?160:130;
+          const _cv=div('');_cv.style.cssText='height:'+_cvh+'px;pointer-events:none;overflow:hidden;border-top:1px solid var(--bd)';
+          _lwcRender(_cv,(cW)=>{
+            if(!window.LightweightCharts)return;
+            const _dk=document.documentElement.getAttribute('data-theme')!=='light';
+            const _bg2=_dk?'#0E0E16':'#F0F0EB',_gr2=_dk?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.05)',_tx2=_dk?'#8888A0':'#909090';
+            const cChart=LightweightCharts.createChart(_cv,{
+              width:cW,height:_cvh,
+              layout:{background:{color:_bg2},textColor:_tx2},
+              grid:{vertLines:{color:_gr2},horzLines:{color:_gr2}},
+              rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.06,bottom:0.20}},
+              timeScale:{borderColor:'transparent',visible:false},
+              crosshair:{mode:0},handleScroll:false,handleScale:false,
+            });
+            const _t0=Math.floor(new Date('2024-01-02').getTime()/1000),_BS=86400;
+            // fvgBot=100 (A.high), fvgTop=110 (C.low) — 10-pt gap, clearly visible
+            const _fBot=100,_fTop=110;
+            let _cd,_aI,_bI,_cI,_eI;
+            if(opt.mode==='aggressive'){
+              // 9 candles: 3 context + [A] + [B=impulse] + [C] + entry + 2 continuation
+              _aI=3;_bI=4;_cI=5;_eI=6;
+              _cd=[
+                {time:_t0+0*_BS,open:91,high:95,low:90,close:94},
+                {time:_t0+1*_BS,open:94,high:96,low:91,close:92},
+                {time:_t0+2*_BS,open:92,high:95,low:90,close:93},
+                // [A]: bearish, high = fvgBot=100  (ceiling of range)
+                {time:_t0+3*_BS,open:95,high:_fBot,low:92,close:93},
+                // [B]: HUGE bullish impulse — closes way above gap
+                {time:_t0+4*_BS,open:93,high:124,low:92,close:120},
+                // [C]: low = fvgTop=110, gap is confirmed
+                {time:_t0+5*_BS,open:120,high:125,low:_fTop,close:122},
+                // ENTRY — next candle after gap confirmation
+                {time:_t0+6*_BS,open:122,high:127,low:121,close:125},
+                // Continuation
+                {time:_t0+7*_BS,open:125,high:129,low:124,close:127},
+                {time:_t0+8*_BS,open:127,high:131,low:126,close:129},
+              ];
+            }else{
+              // 14 candles: 3 context + [A]+[B]+[C] + 4 extension + 3 return-to-gap + entry + cont
+              _aI=3;_bI=4;_cI=5;_eI=11;
+              _cd=[
+                {time:_t0+0*_BS,open:91,high:95,low:90,close:94},
+                {time:_t0+1*_BS,open:94,high:96,low:91,close:92},
+                {time:_t0+2*_BS,open:92,high:95,low:90,close:93},
+                // [A]
+                {time:_t0+3*_BS,open:95,high:_fBot,low:92,close:93},
+                // [B] impulse
+                {time:_t0+4*_BS,open:93,high:124,low:92,close:120},
+                // [C] gap confirmed
+                {time:_t0+5*_BS,open:120,high:125,low:_fTop,close:122},
+                // Extension above gap
+                {time:_t0+6*_BS,open:122,high:127,low:121,close:125},
+                {time:_t0+7*_BS,open:125,high:130,low:124,close:128},
+                {time:_t0+8*_BS,open:128,high:131,low:126,close:127},
+                {time:_t0+9*_BS,open:127,high:129,low:124,close:125},
+                // Return — price falls back toward gap
+                {time:_t0+10*_BS,open:125,high:126,low:119,close:120},
+                // ENTRY at gap zone (close near fvgTop)
+                {time:_t0+11*_BS,open:120,high:123,low:_fTop,close:115},
+                // Bounce from gap
+                {time:_t0+12*_BS,open:115,high:122,low:114,close:120},
+                {time:_t0+13*_BS,open:120,high:126,low:119,close:124},
+              ];
+            }
+            // Zone fill: drawn from [C] onwards
+            const _zt=_cd.slice(_cI).map(b=>b.time);
+            const _zc='rgba(38,166,154,0.85)',_zf='rgba(38,166,154,0.12)';
+            cChart.addAreaSeries({topColor:_zf,bottomColor:_zf,lineColor:_zc,lineWidth:1.5,priceLineVisible:false,lastValueVisible:false}).setData(_zt.map(t=>({time:t,value:_fTop})));
+            cChart.addLineSeries({color:_zc,lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(_zt.map(t=>({time:t,value:_fBot})));
+            // Candles
+            const cCs=cChart.addCandlestickSeries({
+              upColor:'#26a69a',downColor:'#ef5350',
+              borderUpColor:'#26a69a',borderDownColor:'#ef5350',
+              wickUpColor:_dk?'rgba(38,166,154,0.65)':'rgba(38,166,154,0.85)',
+              wickDownColor:_dk?'rgba(239,83,80,0.65)':'rgba(239,83,80,0.85)',
+              priceLineVisible:false,lastValueVisible:false,
+            });
+            cCs.setData(_cd);
+            // Markers: A, C, Entrada
+            cCs.setMarkers([
+              {time:_cd[_aI].time,position:'aboveBar',color:'#F0A020',shape:'circle',text:'A'},
+              {time:_cd[_cI].time,position:'aboveBar',color:'#F0A020',shape:'circle',text:'C'},
+              {time:_cd[_eI].time,position:'belowBar',color:'#26a69a',shape:'arrowUp',text:'Entrada'},
+            ]);
+            // Force tight scale
+            const _ap=_cd.flatMap(c=>[c.high,c.low]);
+            const _mn=Math.min(..._ap),_mx=Math.max(..._ap),_pd=(_mx-_mn)*0.07;
+            cCs.applyOptions({autoscaleInfoProvider:()=>({priceRange:{minValue:_mn-_pd,maxValue:_mx+_pd}})});
+            cChart.timeScale().fitContent();
+          });
+          card.appendChild(_cv);
           card.dataset.fvgCond=opt.cond;
           card.addEventListener('click',()=>{
             syncFVGMode(opt.cond);
+            {const _pw2=document.getElementById('cond-preview-wrap');
+             if(_pw2){_pw2.innerHTML='';const _ct2=ms.params.cond+' '+(ms.params.dir||'');_pw2.appendChild(buildCondPreview(smcId,_ct2,ms.params));_lwcFlush();}}
             condCards.querySelectorAll('[data-fvg-cond]').forEach(c2=>{
               const sel=c2.dataset.fvgCond===ms.params.cond;
               c2.style.borderColor=sel?'var(--ac)':'var(--bd)';
@@ -5144,7 +5180,107 @@ function renderModal() {
       }
       // ── BoS config ──
       if(smcId==='bos'){
-        frag.appendChild(pills('Direção','Compra = detecta BoS de alta (rompimento de topo). Venda = detecta BoS de baixa (rompimento de fundo).',['Compra','Venda'],ms.params.dir,v=>{ms.params.dir=v;}));
+        // Direction selection — illustrated cards (like FVG)
+        {
+          const _dirLbl=div('');_dirLbl.appendChild(slabel('Direção','Compra detecta rompimento de topo (estrutura de alta). Venda detecta rompimento de fundo (estrutura de baixa).'));frag.appendChild(_dirLbl);
+          const _dc=div('');_dc.style.cssText='display:flex;flex-direction:column;gap:8px';
+          [
+            {dir:'Compra',title:'Compra — BoS de Alta',desc:'Rompimento de topo: swing HIGH estabelecido → pullback com Higher Low → fechamento acima do topo.'},
+            {dir:'Venda',title:'Venda — BoS de Baixa',desc:'Rompimento de fundo: swing LOW estabelecido → rally com Lower High → fechamento abaixo do fundo.'},
+          ].forEach(opt=>{
+            const card=div('');
+            const isSel=ms.params.dir===opt.dir;
+            card.style.cssText='border:1px solid '+(isSel?'var(--ac)':'var(--bd)')+';border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .15s;background:'+(isSel?'rgba(0,212,170,0.04)':'transparent');
+            const top=div('');top.style.cssText='display:flex;align-items:flex-start;gap:10px;padding:12px 14px 10px';
+            top.appendChild(cring(isSel));
+            const info=div('');
+            const nm=div('');nm.style.cssText='font-size:13px;font-weight:600;color:var(--tx);margin-bottom:3px';nm.textContent=opt.title;
+            const ds=div('');ds.style.cssText='font-size:12px;color:var(--txs);line-height:1.45';ds.textContent=opt.desc;
+            info.append(nm,ds);top.appendChild(info);card.appendChild(top);
+            // LWC chart
+            const _ch=130;const _cc=div('');_cc.style.cssText='height:'+_ch+'px;pointer-events:none;overflow:hidden;border-top:1px solid var(--bd)';
+            _lwcRender(_cc,(cW)=>{
+              if(!window.LightweightCharts)return;
+              const _dk=document.documentElement.getAttribute('data-theme')!=='light';
+              const _bg=_dk?'#0E0E16':'#F0F0EB',_gr=_dk?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.05)',_xt=_dk?'#8888A0':'#909090';
+              const ch=LightweightCharts.createChart(_cc,{width:cW,height:_ch,layout:{background:{color:_bg},textColor:_xt},grid:{vertLines:{color:_gr},horzLines:{color:_gr}},rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.08,bottom:0.22}},timeScale:{borderColor:'transparent',visible:false},crosshair:{mode:0},handleScroll:false,handleScale:false});
+              const _t0=Math.floor(new Date('2024-01-02').getTime()/1000),_BS=86400;
+              const _up=opt.dir==='Compra';
+              let _cd;let _markers=[];
+              const cs=ch.addCandlestickSeries({upColor:'#26a69a',downColor:'#ef5350',borderUpColor:'#26a69a',borderDownColor:'#ef5350',wickUpColor:_dk?'rgba(38,166,154,0.65)':'rgba(38,166,154,0.85)',wickDownColor:_dk?'rgba(239,83,80,0.65)':'rgba(239,83,80,0.85)',priceLineVisible:false,lastValueVisible:false});
+              if(_up){
+                const _bsl=108;
+                _cd=[
+                  {time:_t0+0*_BS,open:102,high:105,low:101,close:104},
+                  {time:_t0+1*_BS,open:104,high:106,low:102,close:103},
+                  {time:_t0+2*_BS,open:103,high:105,low:101,close:104},
+                  // Swing HIGH = _bsl
+                  {time:_t0+3*_BS,open:104,high:_bsl,low:103,close:104},
+                  // Pullback — Higher Low
+                  {time:_t0+4*_BS,open:104,high:105,low:102,close:103},
+                  {time:_t0+5*_BS,open:103,high:104,low:101,close:102},
+                  {time:_t0+6*_BS,open:102,high:104,low:101,close:103},
+                  // Advance
+                  {time:_t0+7*_BS,open:103,high:106,low:102,close:105},
+                  {time:_t0+8*_BS,open:105,high:107,low:104,close:106},
+                  // BoS: close ABOVE _bsl
+                  {time:_t0+9*_BS,open:106,high:_bsl+4,low:105,close:_bsl+3},
+                  {time:_t0+10*_BS,open:_bsl+3,high:_bsl+6,low:_bsl+2,close:_bsl+5},
+                ];
+                ch.addLineSeries({color:'#F0A020',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(_cd.slice(3,10).map(b=>({time:b.time,value:_bsl})));
+                _markers=[
+                  {time:_cd[3].time,position:'aboveBar',color:'#F0A020',shape:'circle',text:'Topo'},
+                  {time:_cd[9].time,position:'belowBar',color:'#26a69a',shape:'arrowUp',text:'BoS'},
+                ];
+              }else{
+                const _bsl=100;
+                _cd=[
+                  {time:_t0+0*_BS,open:106,high:109,low:105,close:108},
+                  {time:_t0+1*_BS,open:108,high:109,low:105,close:106},
+                  {time:_t0+2*_BS,open:106,high:108,low:104,close:107},
+                  // Swing LOW = _bsl
+                  {time:_t0+3*_BS,open:107,high:108,low:_bsl,close:107},
+                  // Rally — Lower High
+                  {time:_t0+4*_BS,open:107,high:109,low:106,close:108},
+                  {time:_t0+5*_BS,open:108,high:110,low:107,close:109},
+                  {time:_t0+6*_BS,open:109,high:110,low:107,close:108},
+                  // Decline
+                  {time:_t0+7*_BS,open:108,high:109,low:105,close:106},
+                  {time:_t0+8*_BS,open:106,high:107,low:103,close:104},
+                  // BoS: close BELOW _bsl
+                  {time:_t0+9*_BS,open:104,high:105,low:_bsl-4,close:_bsl-3},
+                  {time:_t0+10*_BS,open:_bsl-3,high:_bsl-2,low:_bsl-6,close:_bsl-5},
+                ];
+                ch.addLineSeries({color:'#F0A020',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(_cd.slice(3,10).map(b=>({time:b.time,value:_bsl})));
+                _markers=[
+                  {time:_cd[3].time,position:'belowBar',color:'#F0A020',shape:'circle',text:'Fundo'},
+                  {time:_cd[9].time,position:'aboveBar',color:'#ef5350',shape:'arrowDown',text:'BoS'},
+                ];
+              }
+              cs.setData(_cd);
+              cs.setMarkers(_markers);
+              const _ap=_cd.flatMap(c=>[c.high,c.low]);
+              const _mn=Math.min(..._ap),_mx=Math.max(..._ap),_pd=(_mx-_mn)*0.09;
+              cs.applyOptions({autoscaleInfoProvider:()=>({priceRange:{minValue:_mn-_pd,maxValue:_mx+_pd}})});
+              ch.timeScale().fitContent();
+            });
+            card.appendChild(_cc);
+            card.dataset.smcDir=opt.dir;
+            card.addEventListener('click',()=>{
+              ms.params.dir=opt.dir;
+              _dc.querySelectorAll('[data-smc-dir]').forEach(c2=>{
+                const sel=c2.dataset.smcDir===ms.params.dir;
+                c2.style.borderColor=sel?'var(--ac)':'var(--bd)';
+                c2.style.background=sel?'rgba(0,212,170,0.04)':'transparent';
+                const ring=c2.querySelector('.cring');
+                if(ring){ring.className='cring'+(sel?' on':'');ring.innerHTML=sel?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0A0A0F" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>':'';}});
+              const _pw=document.getElementById('cond-preview-wrap');
+              if(_pw){_pw.innerHTML='';const _ct=ms.params.cond+' '+ms.params.dir;_pw.appendChild(buildCondPreview(smcId,_ct,ms.params));_lwcFlush();}
+            });
+            _dc.appendChild(card);
+          });
+          frag.appendChild(_dc);
+        }
 
         // Limites de pernas do BoS
         if(!ms.params.leg1Min) ms.params.leg1Min=2;
@@ -5160,41 +5296,59 @@ function renderModal() {
         const corrMaxRow=div('');corrMaxRow.appendChild(slabel('Correção — máximo de candles','Quantidade máxima de candles na correção. O EA rejeita automaticamente correções com mais candles que a 1ª perna, independente deste valor.'));
         corrMaxRow.appendChild(stepper(ms.params.corrMax,1,30,'candles',v=>{ms.params.corrMax=v;if(window.refreshModalValidation)refreshModalValidation();}));
         frag.appendChild(corrMaxRow);
-        // Visualização gráfica do padrão BoS — 3 fases
-        frag.appendChild(miniSVG(500,130,(ln,rc,tx,cd,ci,th)=>{
-          // Contexto — candles anteriores neutros
-          cd(8,80,12,60,86,0.3); cd(22,74,10,56,80,0.3);
-
-          // FASE 1 — 1ª perna de alta (3 candles bullish consecutivos)
-          rc(36,54,12,22,'#10B981',0.85,1); ln(42,48,42,80,'#10B981',1.5);
-          rc(52,36,12,24,'#10B981',0.9,1);  ln(58,30,58,64,'#10B981',1.5);
-          rc(68,22,12,20,'#10B981',0.85,1); ln(74,16,74,46,'#10B981',1.5);
-          // High1 — nível a ser rompido
-          ln(36,22,500,22,'#F59E0B',0.8,'4,3');
-          tx(80,18,'High1',th.txs,9);
-          // Low1 — ponto de invalidação
-          ln(36,76,180,76,'#EF4444',0.5,'3,2');
-          tx(80,82,'Low1 (stop)',th.txs,8);
-          tx(36,120,'FASE 1',th.txm,9,'start');
-
-          // FASE 2 — Correção (2 candles bearish, não rompe Low1)
-          rc(86,38,12,28,'#EF4444',0.7,1); ln(92,32,92,70,'#EF4444',1.2);
-          rc(102,52,12,22,'#EF4444',0.65,1); ln(108,46,108,78,'#EF4444',1.2);
-          tx(86,120,'FASE 2',th.txm,9,'start');
-
-          // FASE 3 — 2ª perna rompe High1
-          rc(118,34,12,28,'#10B981',0.85,1); ln(124,28,124,66,'#10B981',1.5);
-          rc(134,10,12,30,'#10B981',0.9,1);  ln(140,4,140,44,'#10B981',1.5);
-          // Seta de confirmação no rompimento
-          ci(140,10,'#00D4AA',4);
-          ln(148,14,162,14,'#00D4AA',1.5);
-          tx(164,18,'BoS!','#00D4AA',11);
-          tx(118,120,'FASE 3',th.txm,9,'start');
-
-          // Linha divisória entre fases
-          ln(82,10,82,118,th.bd,0.6,'2,3');
-          ln(114,10,114,118,th.bd,0.6,'2,3');
-        }));
+        // Visualização gráfica do padrão BoS — LWC
+        {const _bh=160;const _bc=div('');_bc.style.cssText='height:'+_bh+'px;overflow:hidden;margin-bottom:8px';
+        _lwcRender(_bc,(cW)=>{
+          if(!window.LightweightCharts)return;
+          const _dk=document.documentElement.getAttribute('data-theme')!=='light';
+          const _bg=_dk?'#0E0E16':'#F0F0EB',_gr=_dk?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.05)',_xt=_dk?'#8888A0':'#909090';
+          const _ch=LightweightCharts.createChart(_bc,{width:cW,height:_bh,
+            layout:{background:{color:_bg},textColor:_xt},
+            grid:{vertLines:{color:_gr},horzLines:{color:_gr}},
+            rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.1,bottom:0.22}},
+            timeScale:{borderColor:'transparent',visible:false},crosshair:{mode:0},
+            handleScroll:false,handleScale:false,
+            watermark:{visible:true,fontSize:10,horzAlign:'left',vertAlign:'top',color:_xt,text:'Sequência BoS de Alta'}
+          });
+          const _t0s=Math.floor(new Date('2024-01-02').getTime()/1000),_BS=86400;
+          const _lvl=108;
+          const _bd=[
+            {time:_t0s+0*_BS,open:100,high:102,low:99, close:101},
+            {time:_t0s+1*_BS,open:101,high:103,low:100,close:102},
+            {time:_t0s+2*_BS,open:102,high:104,low:101,close:103},
+            {time:_t0s+3*_BS,open:103,high:106,low:102,close:105},
+            {time:_t0s+4*_BS,open:105,high:_lvl,low:104,close:106},
+            {time:_t0s+5*_BS,open:106,high:107,low:104,close:105},
+            {time:_t0s+6*_BS,open:105,high:106,low:103,close:104},
+            {time:_t0s+7*_BS,open:104,high:105,low:103,close:104},
+            {time:_t0s+8*_BS,open:104,high:106,low:103,close:105},
+            {time:_t0s+9*_BS,open:105,high:108,low:104,close:107},
+            {time:_t0s+10*_BS,open:107,high:_lvl+3,low:106,close:_lvl+2},
+            {time:_t0s+11*_BS,open:_lvl+2,high:_lvl+5,low:_lvl+1,close:_lvl+4},
+            {time:_t0s+12*_BS,open:_lvl+4,high:_lvl+7,low:_lvl+3,close:_lvl+6},
+          ];
+          _ch.addLineSeries({color:'#F59E0B',lineWidth:1.5,lineStyle:2,
+            priceLineVisible:false,lastValueVisible:false
+          }).setData(_bd.slice(4,11).map(b=>({time:b.time,value:_lvl})));
+          const _cs=_ch.addCandlestickSeries({
+            upColor:'#26a69a',downColor:'#ef5350',
+            borderUpColor:'#26a69a',borderDownColor:'#ef5350',
+            wickUpColor:_dk?'rgba(38,166,154,0.6)':'rgba(38,166,154,0.8)',
+            wickDownColor:_dk?'rgba(239,83,80,0.6)':'rgba(239,83,80,0.8)',
+            priceLineVisible:false,lastValueVisible:false
+          });
+          _cs.setData(_bd);
+          const _ap=_bd.flatMap(c=>[c.high,c.low]);
+          const _mn=Math.min(..._ap),_mx=Math.max(..._ap),_pd=(_mx-_mn)*0.08;
+          _cs.applyOptions({autoscaleInfoProvider:()=>({priceRange:{minValue:_mn-_pd,maxValue:_mx+_pd}})});
+          _cs.setMarkers([
+            {time:_bd[4].time, position:'aboveBar',color:'#F59E0B',shape:'circle',  text:'Topo'},
+            {time:_bd[7].time, position:'belowBar',color:'#26a69a',shape:'circle',  text:'HL'},
+            {time:_bd[10].time,position:'belowBar',color:'#00D4AA',shape:'arrowUp', text:'BoS'},
+          ]);
+          _ch.timeScale().fitContent();
+        });
+        frag.appendChild(_bc);}
 
         // Aviso sobre regra interna do EA
         const bosNote=div('');bosNote.style.cssText='display:flex;align-items:flex-start;gap:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5';
@@ -5219,51 +5373,159 @@ function renderModal() {
 
       // ── CHoCH config ──
       if(smcId==='choch'){
-        frag.appendChild(pills('Direção','Compra = detecta reversão de baixa para alta. Venda = detecta reversão de alta para baixa.',['Compra','Venda'],ms.params.dir,v=>{ms.params.dir=v;}));
+        // Direction selection — illustrated cards (like FVG)
+        {
+          const _dirLbl=div('');_dirLbl.appendChild(slabel('Direção','Compra detecta reversão de baixa para alta (CHoCH bullish). Venda detecta reversão de alta para baixa (CHoCH bearish).'));frag.appendChild(_dirLbl);
+          const _dc=div('');_dc.style.cssText='display:flex;flex-direction:column;gap:8px';
+          [
+            {dir:'Compra',title:'Compra — CHoCH de Alta',desc:'Downtrend (LH→LL→LH→LL) seguido de fechamento acima da última máxima relevante — sinaliza reversão.'},
+            {dir:'Venda',title:'Venda — CHoCH de Baixa',desc:'Uptrend (HL→HH→HL→HH) seguido de fechamento abaixo do último fundo relevante — sinaliza reversão.'},
+          ].forEach(opt=>{
+            const card=div('');
+            const isSel=ms.params.dir===opt.dir;
+            card.style.cssText='border:1px solid '+(isSel?'var(--ac)':'var(--bd)')+';border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .15s;background:'+(isSel?'rgba(0,212,170,0.04)':'transparent');
+            const top=div('');top.style.cssText='display:flex;align-items:flex-start;gap:10px;padding:12px 14px 10px';
+            top.appendChild(cring(isSel));
+            const info=div('');
+            const nm=div('');nm.style.cssText='font-size:13px;font-weight:600;color:var(--tx);margin-bottom:3px';nm.textContent=opt.title;
+            const ds=div('');ds.style.cssText='font-size:12px;color:var(--txs);line-height:1.45';ds.textContent=opt.desc;
+            info.append(nm,ds);top.appendChild(info);card.appendChild(top);
+            // LWC chart
+            const _ch=130;const _cc=div('');_cc.style.cssText='height:'+_ch+'px;pointer-events:none;overflow:hidden;border-top:1px solid var(--bd)';
+            _lwcRender(_cc,(cW)=>{
+              if(!window.LightweightCharts)return;
+              const _dk=document.documentElement.getAttribute('data-theme')!=='light';
+              const _bg=_dk?'#0E0E16':'#F0F0EB',_gr=_dk?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.05)',_xt=_dk?'#8888A0':'#909090';
+              const ch=LightweightCharts.createChart(_cc,{width:cW,height:_ch,layout:{background:{color:_bg},textColor:_xt},grid:{vertLines:{color:_gr},horzLines:{color:_gr}},rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.08,bottom:0.22}},timeScale:{borderColor:'transparent',visible:false},crosshair:{mode:0},handleScroll:false,handleScale:false});
+              const _t0=Math.floor(new Date('2024-01-02').getTime()/1000),_BS=86400;
+              const _up=opt.dir==='Compra';
+              let _cd;let _markers=[];
+              const cs=ch.addCandlestickSeries({upColor:'#26a69a',downColor:'#ef5350',borderUpColor:'#26a69a',borderDownColor:'#ef5350',wickUpColor:_dk?'rgba(38,166,154,0.65)':'rgba(38,166,154,0.85)',wickDownColor:_dk?'rgba(239,83,80,0.65)':'rgba(239,83,80,0.85)',priceLineVisible:false,lastValueVisible:false});
+              if(_up){
+                // Downtrend (LH→LL→LH→LL) then break ABOVE last LH = CHoCH
+                const _cl=109;
+                _cd=[
+                  {time:_t0+0*_BS,open:112,high:_cl+3,low:110,close:110},   // LH1
+                  {time:_t0+1*_BS,open:110,high:111,low:106,close:107},
+                  {time:_t0+2*_BS,open:107,high:108,low:104,close:105},      // LL1
+                  {time:_t0+3*_BS,open:105,high:108,low:104,close:107},
+                  {time:_t0+4*_BS,open:107,high:_cl,low:106,close:107},      // LH2 = CHoCH level
+                  {time:_t0+5*_BS,open:107,high:108,low:103,close:104},
+                  {time:_t0+6*_BS,open:104,high:105,low:101,close:102},      // LL2
+                  {time:_t0+7*_BS,open:102,high:105,low:101,close:104},
+                  {time:_t0+8*_BS,open:104,high:107,low:103,close:106},
+                  {time:_t0+9*_BS,open:106,high:109,low:105,close:108},
+                  // CHoCH: closes ABOVE _cl=109
+                  {time:_t0+10*_BS,open:108,high:_cl+2,low:107,close:_cl+1},
+                  {time:_t0+11*_BS,open:_cl+1,high:_cl+4,low:_cl,close:_cl+3},
+                ];
+                ch.addLineSeries({color:'#EF4444',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(_cd.slice(4,11).map(b=>({time:b.time,value:_cl})));
+                _markers=[
+                  {time:_cd[4].time,position:'aboveBar',color:'#EF4444',shape:'circle',text:'LH'},
+                  {time:_cd[10].time,position:'belowBar',color:'#26a69a',shape:'arrowUp',text:'CHoCH'},
+                ];
+              }else{
+                // Uptrend (HL→HH→HL→HH) then break BELOW last HL = CHoCH
+                const _cl=103;
+                _cd=[
+                  {time:_t0+0*_BS,open:101,high:102,low:_cl-3,close:102},   // HL1
+                  {time:_t0+1*_BS,open:102,high:106,low:101,close:105},
+                  {time:_t0+2*_BS,open:105,high:108,low:104,close:107},      // HH1
+                  {time:_t0+3*_BS,open:107,high:108,low:104,close:105},
+                  {time:_t0+4*_BS,open:105,high:106,low:_cl,close:105},      // HL2 = CHoCH level
+                  {time:_t0+5*_BS,open:105,high:108,low:104,close:107},
+                  {time:_t0+6*_BS,open:107,high:111,low:106,close:110},      // HH2
+                  {time:_t0+7*_BS,open:110,high:111,low:107,close:108},
+                  {time:_t0+8*_BS,open:108,high:109,low:105,close:106},
+                  {time:_t0+9*_BS,open:106,high:107,low:103,close:104},
+                  // CHoCH: closes BELOW _cl=103
+                  {time:_t0+10*_BS,open:104,high:105,low:_cl-2,close:_cl-1},
+                  {time:_t0+11*_BS,open:_cl-1,high:_cl,low:_cl-4,close:_cl-3},
+                ];
+                ch.addLineSeries({color:'#EF4444',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(_cd.slice(4,11).map(b=>({time:b.time,value:_cl})));
+                _markers=[
+                  {time:_cd[4].time,position:'belowBar',color:'#EF4444',shape:'circle',text:'HL'},
+                  {time:_cd[10].time,position:'aboveBar',color:'#ef5350',shape:'arrowDown',text:'CHoCH'},
+                ];
+              }
+              cs.setData(_cd);
+              cs.setMarkers(_markers);
+              const _ap=_cd.flatMap(c=>[c.high,c.low]);
+              const _mn=Math.min(..._ap),_mx=Math.max(..._ap),_pd=(_mx-_mn)*0.09;
+              cs.applyOptions({autoscaleInfoProvider:()=>({priceRange:{minValue:_mn-_pd,maxValue:_mx+_pd}})});
+              ch.timeScale().fitContent();
+            });
+            card.appendChild(_cc);
+            card.dataset.smcDir=opt.dir;
+            card.addEventListener('click',()=>{
+              ms.params.dir=opt.dir;
+              _dc.querySelectorAll('[data-smc-dir]').forEach(c2=>{
+                const sel=c2.dataset.smcDir===ms.params.dir;
+                c2.style.borderColor=sel?'var(--ac)':'var(--bd)';
+                c2.style.background=sel?'rgba(0,212,170,0.04)':'transparent';
+                const ring=c2.querySelector('.cring');
+                if(ring){ring.className='cring'+(sel?' on':'');ring.innerHTML=sel?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0A0A0F" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>':'';}});
+              const _pw=document.getElementById('cond-preview-wrap');
+              if(_pw){_pw.innerHTML='';const _ct=ms.params.cond+' '+ms.params.dir;_pw.appendChild(buildCondPreview(smcId,_ct,ms.params));_lwcFlush();}
+            });
+            _dc.appendChild(card);
+          });
+          frag.appendChild(_dc);
+        }
 
-        // Visualização das 3 etapas do CHoCH
-        // Divisórias: x=125 e x=240 — calculadas para evitar sobreposição de texto
-        frag.appendChild(miniSVG(500,160,(ln,rc,tx,cd,ci,th)=>{
-          // ── ETAPA 1 — Tendência prévia de BAIXA (x: 0–125) ──
-          rc(8,22,14,32,'#EF4444',0.85,1);  ln(15,17,15,58,'#EF4444',1.5);
-          rc(26,36,14,28,'#EF4444',0.8,1);  ln(33,31,33,68,'#EF4444',1.5);
-          rc(44,50,14,26,'#EF4444',0.75,1); ln(51,45,51,80,'#EF4444',1.5);
-          rc(62,62,14,24,'#EF4444',0.7,1);  ln(69,57,69,90,'#EF4444',1.5);
-          rc(80,74,14,22,'#EF4444',0.65,1); ln(87,69,87,100,'#EF4444',1.5);
-          tx(8,142,'ETAPA 1',th.txm,9,'start');
-          tx(8,155,'Tendência de baixa',th.txs,9,'start');
-
-          // Divisória 1 (x=125)
-          ln(125,6,125,132,th.bd,0.7,'3,3');
-
-          // ── ETAPA 2 — Impulso de alta (x: 125–240) ──
-          // High1 — nível a ser rompido na etapa 3
-          ln(125,46,500,46,'#F59E0B',0.75,'5,4');
-          tx(380,40,'High1','#F59E0B',9);
-          // 3 candles bullish subindo
-          rc(131,58,14,36,'#10B981',0.9,1); ln(138,18,138,98,'#10B981',1.5);
-          rc(149,36,14,32,'#10B981',0.9,1); ln(156,10,156,72,'#10B981',1.5);
-          rc(167,18,14,28,'#10B981',0.85,1);ln(174,6,174,50,'#10B981',1.5);
-          tx(131,142,'ETAPA 2',th.txm,9,'start');
-          tx(131,155,'Impulso de alta',th.txs,9,'start');
-
-          // Divisória 2 (x=240)
-          ln(240,6,240,132,th.bd,0.7,'3,3');
-
-          // ── ETAPA 3 — Correção + rompimento (x: 240–500) ──
-          // Correção: 2 candles bearish
-          rc(246,26,14,24,'#EF4444',0.65,1); ln(253,20,253,54,'#EF4444',1.2);
-          rc(264,36,14,20,'#EF4444',0.6,1);  ln(271,30,271,60,'#EF4444',1.2);
-          // 2ª perna: rompe High1
-          rc(282,18,14,30,'#10B981',0.9,1);  ln(289,4,289,52,'#10B981',1.5);
-          rc(300,4,14,26,'#10B981',0.9,1);   ln(307,0,307,34,'#10B981',1.5);
-          // Confirmação CHoCH
-          ci(307,0,'#00D4AA',5);
-          ln(316,4,336,4,'#00D4AA',1.5);
-          tx(340,8,'CHoCH!','#00D4AA',12);
-          tx(246,142,'ETAPA 3',th.txm,9,'start');
-          tx(246,155,'Correção + ruptura',th.txs,9,'start');
-        }));
+        // Visualização das 3 etapas do CHoCH — LWC
+        {const _bh2=170;const _bc2=div('');_bc2.style.cssText='height:'+_bh2+'px;overflow:hidden;margin-bottom:8px';
+        _lwcRender(_bc2,(cW)=>{
+          if(!window.LightweightCharts)return;
+          const _dk=document.documentElement.getAttribute('data-theme')!=='light';
+          const _bg=_dk?'#0E0E16':'#F0F0EB',_gr=_dk?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.05)',_xt=_dk?'#8888A0':'#909090';
+          const _ch2=LightweightCharts.createChart(_bc2,{width:cW,height:_bh2,
+            layout:{background:{color:_bg},textColor:_xt},
+            grid:{vertLines:{color:_gr},horzLines:{color:_gr}},
+            rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.1,bottom:0.22}},
+            timeScale:{borderColor:'transparent',visible:false},crosshair:{mode:0},
+            handleScroll:false,handleScale:false,
+            watermark:{visible:true,fontSize:10,horzAlign:'left',vertAlign:'top',color:_xt,text:'Sequência CHoCH de Alta'}
+          });
+          const _t0s=Math.floor(new Date('2024-01-02').getTime()/1000),_BS=86400;
+          const _lh=109;
+          const _bd2=[
+            {time:_t0s+0*_BS, open:115,high:116,   low:113,  close:114},
+            {time:_t0s+1*_BS, open:114,high:115,   low:111,  close:112},
+            {time:_t0s+2*_BS, open:112,high:113,   low:109,  close:110},
+            {time:_t0s+3*_BS, open:110,high:_lh+3, low:109,  close:111},
+            {time:_t0s+4*_BS, open:111,high:112,   low:108,  close:109},
+            {time:_t0s+5*_BS, open:109,high:_lh,   low:108,  close:109},
+            {time:_t0s+6*_BS, open:109,high:110,   low:105,  close:106},
+            {time:_t0s+7*_BS, open:106,high:107,   low:103,  close:104},
+            {time:_t0s+8*_BS, open:104,high:107,   low:103,  close:106},
+            {time:_t0s+9*_BS, open:106,high:110,   low:105,  close:109},
+            {time:_t0s+10*_BS,open:109,high:_lh+3, low:108,  close:_lh+2},
+            {time:_t0s+11*_BS,open:_lh+2,high:_lh+5,low:_lh+1,close:_lh+4},
+          ];
+          _ch2.addLineSeries({color:'#EF4444',lineWidth:1.5,lineStyle:2,
+            priceLineVisible:false,lastValueVisible:false
+          }).setData(_bd2.slice(5,11).map(b=>({time:b.time,value:_lh})));
+          const _cs2=_ch2.addCandlestickSeries({
+            upColor:'#26a69a',downColor:'#ef5350',
+            borderUpColor:'#26a69a',borderDownColor:'#ef5350',
+            wickUpColor:_dk?'rgba(38,166,154,0.6)':'rgba(38,166,154,0.8)',
+            wickDownColor:_dk?'rgba(239,83,80,0.6)':'rgba(239,83,80,0.8)',
+            priceLineVisible:false,lastValueVisible:false
+          });
+          _cs2.setData(_bd2);
+          const _ap2=_bd2.flatMap(c=>[c.high,c.low]);
+          const _mn2=Math.min(..._ap2),_mx2=Math.max(..._ap2),_pd2=(_mx2-_mn2)*0.08;
+          _cs2.applyOptions({autoscaleInfoProvider:()=>({priceRange:{minValue:_mn2-_pd2,maxValue:_mx2+_pd2}})});
+          _cs2.setMarkers([
+            {time:_bd2[0].time, position:'aboveBar',color:'#EF4444',shape:'circle',  text:'LH'},
+            {time:_bd2[5].time, position:'aboveBar',color:'#EF4444',shape:'circle',  text:'LH'},
+            {time:_bd2[7].time, position:'belowBar',color:'#EF4444',shape:'circle',  text:'LL'},
+            {time:_bd2[10].time,position:'belowBar',color:'#00D4AA',shape:'arrowUp', text:'CHoCH'},
+          ]);
+          _ch2.timeScale().fitContent();
+        });
+        frag.appendChild(_bc2);}
 
         // Limites de tendência prévia (CHoCH)
         if(!ms.params.trendMin) ms.params.trendMin=5;
@@ -5298,64 +5560,322 @@ function renderModal() {
 
       // ── Grab config ──
       if(smcId==='grab'){
-        frag.appendChild(pills('Direção','Compra = rejeição em fundo (pavio longo para baixo, fechamento na metade superior). Venda = rejeição em topo (pavio longo para cima, fechamento na metade inferior).',['Compra','Venda'],ms.params.dir,v=>{ms.params.dir=v;}));
+        // Direction selection — illustrated cards (like FVG)
+        {
+          const _dirLbl=div('');_dirLbl.appendChild(slabel('Direção','Compra: pavio longo para baixo, fechamento na metade superior do candle. Venda: pavio longo para cima, fechamento na metade inferior.'));frag.appendChild(_dirLbl);
+          const _dc=div('');_dc.style.cssText='display:flex;flex-direction:column;gap:8px';
+          [
+            {dir:'Compra',title:'Compra — Grab em Suporte',desc:'Pavio ≥ 50% do range captura stops abaixo do nível. Corpo fecha na metade superior — sinal de rejeição agressiva.'},
+            {dir:'Venda',title:'Venda — Grab em Resistência',desc:'Pavio ≥ 50% do range captura stops acima do nível. Corpo fecha na metade inferior — sinal de rejeição agressiva.'},
+          ].forEach(opt=>{
+            const card=div('');
+            const isSel=ms.params.dir===opt.dir;
+            card.style.cssText='border:1px solid '+(isSel?'var(--ac)':'var(--bd)')+';border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .15s;background:'+(isSel?'rgba(0,212,170,0.04)':'transparent');
+            const top=div('');top.style.cssText='display:flex;align-items:flex-start;gap:10px;padding:12px 14px 10px';
+            top.appendChild(cring(isSel));
+            const info=div('');
+            const nm=div('');nm.style.cssText='font-size:13px;font-weight:600;color:var(--tx);margin-bottom:3px';nm.textContent=opt.title;
+            const ds=div('');ds.style.cssText='font-size:12px;color:var(--txs);line-height:1.45';ds.textContent=opt.desc;
+            info.append(nm,ds);top.appendChild(info);card.appendChild(top);
+            // LWC chart
+            const _ch=130;const _cc=div('');_cc.style.cssText='height:'+_ch+'px;pointer-events:none;overflow:hidden;border-top:1px solid var(--bd)';
+            _lwcRender(_cc,(cW)=>{
+              if(!window.LightweightCharts)return;
+              const _dk=document.documentElement.getAttribute('data-theme')!=='light';
+              const _bg=_dk?'#0E0E16':'#F0F0EB',_gr=_dk?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.05)',_xt=_dk?'#8888A0':'#909090';
+              const ch=LightweightCharts.createChart(_cc,{width:cW,height:_ch,layout:{background:{color:_bg},textColor:_xt},grid:{vertLines:{color:_gr},horzLines:{color:_gr}},rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.08,bottom:0.22}},timeScale:{borderColor:'transparent',visible:false},crosshair:{mode:0},handleScroll:false,handleScale:false});
+              const _t0=Math.floor(new Date('2024-01-02').getTime()/1000),_BS=86400;
+              const _up=opt.dir==='Compra';
+              let _cd;let _markers=[];
+              const cs=ch.addCandlestickSeries({upColor:'#26a69a',downColor:'#ef5350',borderUpColor:'#26a69a',borderDownColor:'#ef5350',wickUpColor:_dk?'rgba(38,166,154,0.65)':'rgba(38,166,154,0.85)',wickDownColor:_dk?'rgba(239,83,80,0.65)':'rgba(239,83,80,0.85)',priceLineVisible:false,lastValueVisible:false});
+              if(_up){
+                // Bullish: key level at low, extreme hammer, explosive reversal up
+                const _gl=100;
+                _cd=[
+                  {time:_t0+0*_BS,open:104,high:107,low:103,close:106},
+                  {time:_t0+1*_BS,open:106,high:108,low:104,close:105},
+                  {time:_t0+2*_BS,open:105,high:106,low:102,close:103},
+                  {time:_t0+3*_BS,open:103,high:105,low:_gl,close:103},    // first touch — level
+                  {time:_t0+4*_BS,open:103,high:105,low:101,close:102},
+                  {time:_t0+5*_BS,open:102,high:104,low:_gl,close:102},    // second touch
+                  // GRAB: extreme hammer — wick 12pts below level
+                  {time:_t0+6*_BS,open:102,high:103,low:_gl-12,close:103},
+                  // Explosive reversal
+                  {time:_t0+7*_BS,open:103,high:110,low:102,close:108},
+                  {time:_t0+8*_BS,open:108,high:114,low:107,close:112},
+                  {time:_t0+9*_BS,open:112,high:117,low:111,close:115},
+                ];
+                ch.addLineSeries({color:'#F0A020',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(_cd.slice(0,7).map(b=>({time:b.time,value:_gl})));
+                _markers=[
+                  {time:_cd[3].time,position:'belowBar',color:'#F0A020',shape:'circle',text:'Nível'},
+                  {time:_cd[6].time,position:'belowBar',color:'#ef5350',shape:'arrowDown',text:'Grab'},
+                  {time:_cd[7].time,position:'belowBar',color:'#26a69a',shape:'arrowUp',text:'Reversão'},
+                ];
+              }else{
+                // Bearish: key level at high, extreme shooting star, explosive reversal down
+                const _gl=106;
+                _cd=[
+                  {time:_t0+0*_BS,open:102,high:104,low:101,close:103},
+                  {time:_t0+1*_BS,open:103,high:105,low:102,close:104},
+                  {time:_t0+2*_BS,open:104,high:107,low:103,close:106},
+                  {time:_t0+3*_BS,open:106,high:_gl,low:104,close:104},    // first touch — level
+                  {time:_t0+4*_BS,open:104,high:106,low:103,close:105},
+                  {time:_t0+5*_BS,open:105,high:_gl,low:103,close:104},    // second touch
+                  // GRAB: extreme shooting star — wick 12pts above level
+                  {time:_t0+6*_BS,open:104,high:_gl+12,low:103,close:104},
+                  // Explosive reversal
+                  {time:_t0+7*_BS,open:104,high:105,low:98,close:100},
+                  {time:_t0+8*_BS,open:100,high:101,low:95,close:97},
+                  {time:_t0+9*_BS,open:97,high:98,low:93,close:95},
+                ];
+                ch.addLineSeries({color:'#F0A020',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(_cd.slice(0,7).map(b=>({time:b.time,value:_gl})));
+                _markers=[
+                  {time:_cd[3].time,position:'aboveBar',color:'#F0A020',shape:'circle',text:'Nível'},
+                  {time:_cd[6].time,position:'aboveBar',color:'#ef5350',shape:'arrowUp',text:'Grab'},
+                  {time:_cd[7].time,position:'aboveBar',color:'#26a69a',shape:'arrowDown',text:'Reversão'},
+                ];
+              }
+              cs.setData(_cd);
+              cs.setMarkers(_markers);
+              const _ap=_cd.flatMap(c=>[c.high,c.low]);
+              const _mn=Math.min(..._ap),_mx=Math.max(..._ap),_pd=(_mx-_mn)*0.09;
+              cs.applyOptions({autoscaleInfoProvider:()=>({priceRange:{minValue:_mn-_pd,maxValue:_mx+_pd}})});
+              ch.timeScale().fitContent();
+            });
+            card.appendChild(_cc);
+            card.dataset.smcDir=opt.dir;
+            card.addEventListener('click',()=>{
+              ms.params.dir=opt.dir;
+              _dc.querySelectorAll('[data-smc-dir]').forEach(c2=>{
+                const sel=c2.dataset.smcDir===ms.params.dir;
+                c2.style.borderColor=sel?'var(--ac)':'var(--bd)';
+                c2.style.background=sel?'rgba(0,212,170,0.04)':'transparent';
+                const ring=c2.querySelector('.cring');
+                if(ring){ring.className='cring'+(sel?' on':'');ring.innerHTML=sel?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0A0A0F" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>':'';}});
+              const _pw=document.getElementById('cond-preview-wrap');
+              if(_pw){_pw.innerHTML='';const _ct=ms.params.cond+' '+ms.params.dir;_pw.appendChild(buildCondPreview(smcId,_ct,ms.params));_lwcFlush();}
+            });
+            _dc.appendChild(card);
+          });
+          frag.appendChild(_dc);
+        }
         // Info sobre qualificação interna
         const grabNote=div('');grabNote.style.cssText='display:flex;align-items:flex-start;gap:8px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5';
         grabNote.innerHTML='<span style="color:#6366F1;font-size:14px;flex-shrink:0">ℹ</span><span>A qualificação do Grab é automática: o pavio deve representar ≥ 50% do range do candle e o fechamento deve ser na metade oposta. Isso filtra rejeições fraquejadas.</span>';
         frag.appendChild(grabNote);
-        // Grab visual
-        frag.appendChild(miniSVG(500,140,(ln,rc,tx,cd,ci,th)=>{
-          // Level line
-          ln(8,90,492,90,'#F59E0B',1.5,'5,4');
-          tx(14,108,'nível de liquidez','#F59E0B',11);
-          // Approach candles
-          cd(16,60,54,46,72,0.4);cd(46,72,62,56,82,0.4);cd(76,82,66,64,90,0.4);
-          // Grab candle: large wick below, close above
-          rc(118,64,18,22,'#EF4444',0.85,2);ln(127,50,127,118,'#EF4444',2);
-          tx(148,120,'wick ≥ 50% range','#EF4444',11);
-          tx(148,108,'close na metade sup.','#EF4444',11);
-          // Arrow up = buy signal
-          ln(180,82,180,58,'#10B981',2);ln(175,64,180,58,'#10B981',2);ln(185,64,180,58,'#10B981',2);
-          // Recovery candles
-          cd(200,58,36,28,66,0.7);cd(230,36,24,18,44,0.7);cd(260,22,16,10,30,0.7);
-          tx(340,36,'BoS falhado:',th.txs,12);
-          tx(340,54,'viola o nível mas',th.txs,12);
-          tx(340,72,'fecha dentro → venda',th.txs,12);
-          tx(200,130,'GRAB LOW → COMPRA',th.tx,12,'middle');
-        }));
+        // Grab visual — LWC chart (rebuilt from scratch)
+        {
+          const _gvEl=div('');_gvEl.style.cssText='height:140px;overflow:hidden;border-radius:8px;margin-top:4px';
+          _lwcRender(_gvEl,(gW)=>{
+            if(!window.LightweightCharts)return;
+            const _dk=document.documentElement.getAttribute('data-theme')!=='light';
+            const _bg3=_dk?'#0E0E16':'#F0F0EB',_gr3=_dk?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.05)',_tx3=_dk?'#8888A0':'#909090';
+            const gChart=LightweightCharts.createChart(_gvEl,{
+              width:gW,height:140,
+              layout:{background:{color:_bg3},textColor:_tx3},
+              grid:{vertLines:{color:_gr3},horzLines:{color:_gr3}},
+              rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.08,bottom:0.22}},
+              timeScale:{borderColor:'transparent',visible:false},
+              crosshair:{mode:0},handleScroll:false,handleScale:false,
+              watermark:{visible:true,fontSize:10,horzAlign:'left',vertAlign:'top',color:_tx3,text:'Qualificação: pavio ≥ 50% do range · fechamento na metade oposta'}
+            });
+            const _gt0=Math.floor(new Date('2024-01-02').getTime()/1000),_gBS=86400;
+            const _gLvl=100;
+            // Bullish grab: level at 100, approach → extreme hammer → reversal
+            const _gd=[
+              {time:_gt0+0*_gBS,open:104,high:106,low:102,close:103},
+              {time:_gt0+1*_gBS,open:103,high:105,low:101,close:102},
+              {time:_gt0+2*_gBS,open:102,high:104,low:100,close:101},
+              {time:_gt0+3*_gBS,open:101,high:103,low:_gLvl,close:101},
+              // GRAB: extreme hammer — wick 12pts below level, tiny body at level
+              {time:_gt0+4*_gBS,open:101,high:102,low:_gLvl-12,close:102},
+              // Explosive reversal
+              {time:_gt0+5*_gBS,open:102,high:110,low:101,close:108},
+              {time:_gt0+6*_gBS,open:108,high:114,low:107,close:112},
+              {time:_gt0+7*_gBS,open:112,high:117,low:111,close:115},
+            ];
+            gChart.addLineSeries({color:'#F59E0B',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(_gd.slice(0,5).map(b=>({time:b.time,value:_gLvl})));
+            const gCs=gChart.addCandlestickSeries({upColor:'#26a69a',downColor:'#ef5350',borderUpColor:'#26a69a',borderDownColor:'#ef5350',wickUpColor:'rgba(38,166,154,0.7)',wickDownColor:'rgba(239,83,80,0.7)',priceLineVisible:false,lastValueVisible:false});
+            gCs.setData(_gd);
+            gCs.setMarkers([
+              {time:_gd[3].time,position:'belowBar',color:'#F59E0B',shape:'circle',text:'Nível'},
+              {time:_gd[4].time,position:'belowBar',color:'#ef5350',shape:'arrowDown',text:'Grab'},
+              {time:_gd[5].time,position:'belowBar',color:'#26a69a',shape:'arrowUp',text:'Reversão'},
+            ]);
+            const _gap=_gd.flatMap(c=>[c.high,c.low]);
+            const _gmn=Math.min(..._gap),_gmx=Math.max(..._gap),_gpd=(_gmx-_gmn)*0.09;
+            gCs.applyOptions({autoscaleInfoProvider:()=>({priceRange:{minValue:_gmn-_gpd,maxValue:_gmx+_gpd}})});
+            gChart.timeScale().fitContent();
+          });
+          frag.appendChild(_gvEl);
+        }
       }
 
       // ── Sweep config ──
       if(smcId==='sweep'){
-        frag.appendChild(pills('Direção','Compra = sweep de mínimas (falso rompimento para baixo, reversão para cima). Venda = sweep de máximas (falso rompimento para cima, reversão para baixo).',['Compra','Venda'],ms.params.dir,v=>{ms.params.dir=v;}));
+        // Direction selection — illustrated cards (like FVG)
+        {
+          const _dirLbl=div('');_dirLbl.appendChild(slabel('Direção','Compra: sweep de mínimas (stop hunt para baixo, reversão para cima). Venda: sweep de máximas (stop hunt para cima, reversão para baixo).'));frag.appendChild(_dirLbl);
+          const _dc=div('');_dc.style.cssText='display:flex;flex-direction:column;gap:8px';
+          [
+            {dir:'Compra',title:'Compra — Sweep de Mínimas',desc:'3+ mínimas iguais formam pool de liquidez. Pin bar com pavio longo para baixo captura os stops e reverte para cima.'},
+            {dir:'Venda',title:'Venda — Sweep de Máximas',desc:'3+ máximas iguais formam pool de liquidez. Pin bar com pavio longo para cima captura os stops e reverte para baixo.'},
+          ].forEach(opt=>{
+            const card=div('');
+            const isSel=ms.params.dir===opt.dir;
+            card.style.cssText='border:1px solid '+(isSel?'var(--ac)':'var(--bd)')+';border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .15s;background:'+(isSel?'rgba(0,212,170,0.04)':'transparent');
+            const top=div('');top.style.cssText='display:flex;align-items:flex-start;gap:10px;padding:12px 14px 10px';
+            top.appendChild(cring(isSel));
+            const info=div('');
+            const nm=div('');nm.style.cssText='font-size:13px;font-weight:600;color:var(--tx);margin-bottom:3px';nm.textContent=opt.title;
+            const ds=div('');ds.style.cssText='font-size:12px;color:var(--txs);line-height:1.45';ds.textContent=opt.desc;
+            info.append(nm,ds);top.appendChild(info);card.appendChild(top);
+            // LWC chart
+            const _ch=130;const _cc=div('');_cc.style.cssText='height:'+_ch+'px;pointer-events:none;overflow:hidden;border-top:1px solid var(--bd)';
+            _lwcRender(_cc,(cW)=>{
+              if(!window.LightweightCharts)return;
+              const _dk=document.documentElement.getAttribute('data-theme')!=='light';
+              const _bg=_dk?'#0E0E16':'#F0F0EB',_gr=_dk?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.05)',_xt=_dk?'#8888A0':'#909090';
+              const ch=LightweightCharts.createChart(_cc,{width:cW,height:_ch,layout:{background:{color:_bg},textColor:_xt},grid:{vertLines:{color:_gr},horzLines:{color:_gr}},rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.08,bottom:0.22}},timeScale:{borderColor:'transparent',visible:false},crosshair:{mode:0},handleScroll:false,handleScale:false});
+              const _t0=Math.floor(new Date('2024-01-02').getTime()/1000),_BS=86400;
+              const _up=opt.dir==='Compra';
+              let _cd;let _markers=[];
+              const cs=ch.addCandlestickSeries({upColor:'#26a69a',downColor:'#ef5350',borderUpColor:'#26a69a',borderDownColor:'#ef5350',wickUpColor:_dk?'rgba(38,166,154,0.65)':'rgba(38,166,154,0.85)',wickDownColor:_dk?'rgba(239,83,80,0.65)':'rgba(239,83,80,0.85)',priceLineVisible:false,lastValueVisible:false});
+              if(_up){
+                // Bullish: 3 equal lows (liquidity pool), extreme pin bar sweeps below, reversal up
+                const _sl=100;
+                _cd=[
+                  {time:_t0+0*_BS,open:106,high:108,low:104,close:105},
+                  {time:_t0+1*_BS,open:105,high:107,low:103,close:104},
+                  {time:_t0+2*_BS,open:104,high:106,low:_sl,close:104},    // equal low 1
+                  {time:_t0+3*_BS,open:104,high:107,low:103,close:105},
+                  {time:_t0+4*_BS,open:105,high:106,low:_sl,close:104},    // equal low 2
+                  {time:_t0+5*_BS,open:104,high:106,low:102,close:104},
+                  {time:_t0+6*_BS,open:104,high:105,low:_sl,close:103},    // equal low 3
+                  // SWEEP: extreme pin bar — wick 11pts below level, body closes back above
+                  {time:_t0+7*_BS,open:103,high:104,low:_sl-11,close:104},
+                  // Explosive reversal
+                  {time:_t0+8*_BS,open:104,high:110,low:103,close:108},
+                  {time:_t0+9*_BS,open:108,high:114,low:107,close:112},
+                  {time:_t0+10*_BS,open:112,high:117,low:111,close:115},
+                ];
+                ch.addLineSeries({color:'#F0A020',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(_cd.slice(0,8).map(b=>({time:b.time,value:_sl})));
+                _markers=[
+                  {time:_cd[2].time,position:'belowBar',color:'#F0A020',shape:'circle',text:'1'},
+                  {time:_cd[4].time,position:'belowBar',color:'#F0A020',shape:'circle',text:'2'},
+                  {time:_cd[6].time,position:'belowBar',color:'#F0A020',shape:'circle',text:'3'},
+                  {time:_cd[7].time,position:'belowBar',color:'#ef5350',shape:'arrowDown',text:'Sweep'},
+                  {time:_cd[8].time,position:'belowBar',color:'#26a69a',shape:'arrowUp',text:'Reversão'},
+                ];
+              }else{
+                // Bearish: 3 equal highs (liquidity pool), extreme shooting star sweeps above, reversal down
+                const _sl=106;
+                _cd=[
+                  {time:_t0+0*_BS,open:100,high:102,low:99,close:101},
+                  {time:_t0+1*_BS,open:101,high:103,low:100,close:102},
+                  {time:_t0+2*_BS,open:102,high:_sl,low:100,close:102},    // equal high 1
+                  {time:_t0+3*_BS,open:102,high:104,low:100,close:101},
+                  {time:_t0+4*_BS,open:101,high:_sl,low:100,close:102},    // equal high 2
+                  {time:_t0+5*_BS,open:102,high:104,low:100,close:102},
+                  {time:_t0+6*_BS,open:102,high:_sl,low:101,close:103},    // equal high 3
+                  // SWEEP: extreme shooting star — wick 11pts above level, body closes back below
+                  {time:_t0+7*_BS,open:103,high:_sl+11,low:102,close:102},
+                  // Explosive reversal
+                  {time:_t0+8*_BS,open:102,high:103,low:97,close:98},
+                  {time:_t0+9*_BS,open:98,high:99,low:94,close:95},
+                  {time:_t0+10*_BS,open:95,high:96,low:91,close:92},
+                ];
+                ch.addLineSeries({color:'#F0A020',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(_cd.slice(0,8).map(b=>({time:b.time,value:_sl})));
+                _markers=[
+                  {time:_cd[2].time,position:'aboveBar',color:'#F0A020',shape:'circle',text:'1'},
+                  {time:_cd[4].time,position:'aboveBar',color:'#F0A020',shape:'circle',text:'2'},
+                  {time:_cd[6].time,position:'aboveBar',color:'#F0A020',shape:'circle',text:'3'},
+                  {time:_cd[7].time,position:'aboveBar',color:'#ef5350',shape:'arrowUp',text:'Sweep'},
+                  {time:_cd[8].time,position:'aboveBar',color:'#26a69a',shape:'arrowDown',text:'Reversão'},
+                ];
+              }
+              cs.setData(_cd);
+              cs.setMarkers(_markers);
+              const _ap=_cd.flatMap(c=>[c.high,c.low]);
+              const _mn=Math.min(..._ap),_mx=Math.max(..._ap),_pd=(_mx-_mn)*0.09;
+              cs.applyOptions({autoscaleInfoProvider:()=>({priceRange:{minValue:_mn-_pd,maxValue:_mx+_pd}})});
+              ch.timeScale().fitContent();
+            });
+            card.appendChild(_cc);
+            card.dataset.smcDir=opt.dir;
+            card.addEventListener('click',()=>{
+              ms.params.dir=opt.dir;
+              _dc.querySelectorAll('[data-smc-dir]').forEach(c2=>{
+                const sel=c2.dataset.smcDir===ms.params.dir;
+                c2.style.borderColor=sel?'var(--ac)':'var(--bd)';
+                c2.style.background=sel?'rgba(0,212,170,0.04)':'transparent';
+                const ring=c2.querySelector('.cring');
+                if(ring){ring.className='cring'+(sel?' on':'');ring.innerHTML=sel?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0A0A0F" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>':'';}});
+              const _pw=document.getElementById('cond-preview-wrap');
+              if(_pw){_pw.innerHTML='';const _ct=ms.params.cond+' '+ms.params.dir;_pw.appendChild(buildCondPreview(smcId,_ct,ms.params));_lwcFlush();}
+            });
+            _dc.appendChild(card);
+          });
+          frag.appendChild(_dc);
+        }
         // Aviso sobre parâmetros internos do EA
         const sweepNote=div('');sweepNote.style.cssText='display:flex;align-items:flex-start;gap:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--txs);line-height:1.5';
         sweepNote.innerHTML='<span style="color:#F59E0B;font-size:13px;flex-shrink:0">⚠</span><span>Os parâmetros de detecção do Sweep (janela de busca, ultrapassagem mínima e confirmação) são definidos internamente pelo EA e não são configuráveis nesta versão.</span>';
         frag.appendChild(sweepNote);
-        // Sweep visual
-        frag.appendChild(miniSVG(500,150,(ln,rc,tx,cd,ci,th)=>{
-          // Price action approaching level
-          cd(16,54,66,46,72,0.4);cd(46,66,58,50,76,0.4);cd(76,58,50,42,68,0.4);cd(106,50,42,34,60,0.4);
-          // Liquidity level
-          ln(8,82,492,82,'#F59E0B',1.5,'5,4');
-          tx(14,100,'nível de liquidez','#F59E0B',11);
-          // Sweep candle: wick goes below, body stays above
-          rc(150,62,18,16,'#EF4444',0.85,2);ln(159,52,159,115,'#EF4444',2);
-          // Sweep zone highlight
-          rc(146,82,26,33,'#EF4444',0.08,3);
-          tx(180,108,'sweep!','#EF4444',13);
-          // Arrow showing reversal
-          ln(210,100,210,68,'#10B981',2);ln(205,74,210,68,'#10B981',2);ln(215,74,210,68,'#10B981',2);
-          // Reversal candles
-          cd(230,64,42,34,72,0.7);cd(260,42,30,24,48,0.7);cd(290,30,18,14,36,0.7);
-          tx(240,140,'confirmação →','#10B981',11);
-          // Summary steps
-          tx(310,28,'1. Preço se aproxima',th.txs,11);
-          tx(310,44,'2. Varre além (sweep)',th.txs,11);
-          tx(310,60,'3. Reverte e confirma',th.txs,11);
-          tx(310,80,'Falso rompimento',th.txm,10);
-          tx(310,94,'institucional',th.txm,10);
-        }));
+        // Sweep visual — LWC chart (rebuilt from scratch)
+        {
+          const _svEl=div('');_svEl.style.cssText='height:140px;overflow:hidden;border-radius:8px;margin-top:4px';
+          _lwcRender(_svEl,(sW)=>{
+            if(!window.LightweightCharts)return;
+            const _dk=document.documentElement.getAttribute('data-theme')!=='light';
+            const _bg4=_dk?'#0E0E16':'#F0F0EB',_gr4=_dk?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.05)',_tx4=_dk?'#8888A0':'#909090';
+            const sChart=LightweightCharts.createChart(_svEl,{
+              width:sW,height:140,
+              layout:{background:{color:_bg4},textColor:_tx4},
+              grid:{vertLines:{color:_gr4},horzLines:{color:_gr4}},
+              rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.08,bottom:0.22}},
+              timeScale:{borderColor:'transparent',visible:false},
+              crosshair:{mode:0},handleScroll:false,handleScale:false,
+              watermark:{visible:true,fontSize:10,horzAlign:'left',vertAlign:'top',color:_tx4,text:'Falso rompimento: varre o nível, fecha de volta · 3+ toques iguais = pool de liquidez'}
+            });
+            const _st0=Math.floor(new Date('2024-01-02').getTime()/1000),_sBS=86400;
+            const _sLvl=100;
+            // Bullish sweep: 3 equal lows at level + sweep pin bar + reversal
+            const _sd=[
+              {time:_st0+0*_sBS,open:106,high:108,low:104,close:105},
+              {time:_st0+1*_sBS,open:105,high:107,low:103,close:104},
+              // Equal low 1
+              {time:_st0+2*_sBS,open:104,high:106,low:_sLvl,close:104},
+              {time:_st0+3*_sBS,open:104,high:107,low:103,close:106},
+              // Equal low 2
+              {time:_st0+4*_sBS,open:106,high:107,low:_sLvl,close:105},
+              {time:_st0+5*_sBS,open:105,high:107,low:103,close:105},
+              // Equal low 3
+              {time:_st0+6*_sBS,open:105,high:106,low:_sLvl,close:104},
+              // SWEEP: extreme pin bar — wick 11pts below level, body closes back above
+              {time:_st0+7*_sBS,open:104,high:105,low:_sLvl-11,close:105},
+              // Explosive reversal
+              {time:_st0+8*_sBS,open:105,high:112,low:104,close:110},
+              {time:_st0+9*_sBS,open:110,high:115,low:109,close:113},
+              {time:_st0+10*_sBS,open:113,high:118,low:112,close:116},
+            ];
+            sChart.addLineSeries({color:'#F59E0B',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(_sd.slice(0,8).map(b=>({time:b.time,value:_sLvl})));
+            const sCs=sChart.addCandlestickSeries({upColor:'#26a69a',downColor:'#ef5350',borderUpColor:'#26a69a',borderDownColor:'#ef5350',wickUpColor:'rgba(38,166,154,0.7)',wickDownColor:'rgba(239,83,80,0.7)',priceLineVisible:false,lastValueVisible:false});
+            sCs.setData(_sd);
+            sCs.setMarkers([
+              {time:_sd[2].time,position:'belowBar',color:'#F59E0B',shape:'circle',text:'1'},
+              {time:_sd[4].time,position:'belowBar',color:'#F59E0B',shape:'circle',text:'2'},
+              {time:_sd[6].time,position:'belowBar',color:'#F59E0B',shape:'circle',text:'3'},
+              {time:_sd[7].time,position:'belowBar',color:'#ef5350',shape:'arrowDown',text:'Sweep'},
+              {time:_sd[8].time,position:'belowBar',color:'#26a69a',shape:'arrowUp',text:'Reversão'},
+            ]);
+            const _sap=_sd.flatMap(c=>[c.high,c.low]);
+            const _smn=Math.min(..._sap),_smx=Math.max(..._sap),_spd=(_smx-_smn)*0.09;
+            sCs.applyOptions({autoscaleInfoProvider:()=>({priceRange:{minValue:_smn-_spd,maxValue:_smx+_spd}})});
+            sChart.timeScale().fitContent();
+          });
+          frag.appendChild(_svEl);
+        }
       }
 
       // ── Conditions radio list (common to all SMC except FVG which has its own unified selector) ──
