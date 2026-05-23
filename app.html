@@ -1926,6 +1926,7 @@ function buildPreview(step, cfg) {
       borderUpColor:'#26a69a',borderDownColor:'#ef5350',
       wickUpColor:isDark?'rgba(38,166,154,0.5)':'rgba(38,166,154,0.7)',
       wickDownColor:isDark?'rgba(239,83,80,0.5)':'rgba(239,83,80,0.7)',
+    priceLineVisible:false,lastValueVisible:false,
     });
     cs.setData(candleData);
 
@@ -2467,6 +2468,7 @@ const chartOpts = {
         upColor: '#26a69a', downColor: '#ef5350',
         borderUpColor: '#26a69a', borderDownColor: '#ef5350',
         wickUpColor: '#26a69a', wickDownColor: '#ef5350',
+      priceLineVisible:false,lastValueVisible:false,
       });
       cs.setData(ohlc);
       const sigIdx = N - 3;  // fallback, cada indicador pode sobrescrever via cs.setMarkers
@@ -2687,6 +2689,7 @@ const chartOpts = {
         borderUpColor: '#26a69a', borderDownColor: '#ef5350',
         wickUpColor: isDark ? 'rgba(38,166,154,0.5)' : 'rgba(38,166,154,0.7)',
         wickDownColor: isDark ? 'rgba(239,83,80,0.5)' : 'rgba(239,83,80,0.7)',
+      priceLineVisible:false,lastValueVisible:false,
       });
       // Crossover usa dataset alternativo com tendência V (garante cruzamento visível)
       const _closes = isCross ? _crossCloses : closes;
@@ -2807,6 +2810,7 @@ const chartOpts = {
         borderUpColor: '#26a69a', borderDownColor: '#ef5350',
         wickUpColor: isDark ? 'rgba(38,166,154,0.5)' : 'rgba(38,166,154,0.7)',
         wickDownColor: isDark ? 'rgba(239,83,80,0.5)' : 'rgba(239,83,80,0.7)',
+      priceLineVisible:false,lastValueVisible:false,
       });
       cs.setData(ohlc);
       // Estender bandas para os candles iniciais com primeiro valor válido —
@@ -2882,6 +2886,7 @@ const chartOpts = {
         borderUpColor: '#26a69a', borderDownColor: '#ef5350',
         wickUpColor: isDark ? 'rgba(38,166,154,0.5)' : 'rgba(38,166,154,0.7)',
         wickDownColor: isDark ? 'rgba(239,83,80,0.5)' : 'rgba(239,83,80,0.7)',
+      priceLineVisible:false,lastValueVisible:false,
       });
       cs.setData(ohlc);
       // Approximate VWAP as cumulative typical price (simplified, consistent)
@@ -2958,6 +2963,7 @@ const chartOpts = {
         upColor: '#26a69a', downColor: '#ef5350',
         borderUpColor: '#26a69a', borderDownColor: '#ef5350',
         wickUpColor: '#26a69a', wickDownColor: '#ef5350',
+      priceLineVisible:false,lastValueVisible:false,
       });
       cs.setData(ohlc);
       topChart.timeScale().fitContent();
@@ -3040,6 +3046,7 @@ const chartOpts = {
         borderUpColor: '#26a69a', borderDownColor: '#ef5350',
         wickUpColor: isDark ? 'rgba(38,166,154,0.5)' : 'rgba(38,166,154,0.7)',
         wickDownColor: isDark ? 'rgba(239,83,80,0.5)' : 'rgba(239,83,80,0.7)',
+      priceLineVisible:false,lastValueVisible:false,
       });
       // SAR funciona melhor em dataset com tendência clara — usa _crossOhlc (V trend)
       cs.setData(_crossOhlc);
@@ -3109,6 +3116,7 @@ const chartOpts = {
         borderUpColor: '#26a69a', borderDownColor: '#ef5350',
         wickUpColor: isDark ? 'rgba(38,166,154,0.5)' : 'rgba(38,166,154,0.7)',
         wickDownColor: isDark ? 'rgba(239,83,80,0.5)' : 'rgba(239,83,80,0.7)',
+      priceLineVisible:false,lastValueVisible:false,
       });
       cs.setData(_crossOhlc);  // dataset com tendência V (garante flips visíveis)
       const per = Math.min(params.per || 6, Math.floor(N/3));
@@ -3182,6 +3190,7 @@ const chartOpts = {
         borderUpColor: '#26a69a', borderDownColor: '#ef5350',
         wickUpColor: isDark ? 'rgba(38,166,154,0.5)' : 'rgba(38,166,154,0.7)',
         wickDownColor: isDark ? 'rgba(239,83,80,0.5)' : 'rgba(239,83,80,0.7)',
+      priceLineVisible:false,lastValueVisible:false,
       });
       cs.setData(ohlc);
 
@@ -3338,6 +3347,7 @@ const chartOpts = {
         upColor:'#26a69a',downColor:'#ef5350',borderUpColor:'#26a69a',borderDownColor:'#ef5350',
         wickUpColor:isDark?'rgba(38,166,154,0.5)':'rgba(38,166,154,0.7)',
         wickDownColor:isDark?'rgba(239,83,80,0.5)':'rgba(239,83,80,0.7)',
+      priceLineVisible:false,lastValueVisible:false,
       });
       const isMit=(params.entryMode==='mitigation')||ct.includes('retornar');
       const t0s=Math.floor(new Date('2024-01-02').getTime()/1000),BS=300;
@@ -3363,10 +3373,15 @@ const chartOpts = {
         ];
         if(isMit)fd.push({time:t0s+8*BS,open:86,high:90,low:85,close:89},{time:t0s+9*BS,open:89,high:fvgBot-1,low:87,close:fvgBot-2});
       }
+      // Zone fill drawn BEFORE candles → candles render on top
+      const zt=fd.slice(3).map(b=>b.time);
+      const zc=up?'rgba(38,166,154,0.85)':'rgba(239,83,80,0.85)';
+      const zf=up?'rgba(38,166,154,0.13)':'rgba(239,83,80,0.13)';
+      // Upper boundary with shaded fill (AreaSeries fills down — covers gap zone)
+      chart.addAreaSeries({topColor:zf,bottomColor:zf,lineColor:zc,lineWidth:1.5,lineStyle:0,priceLineVisible:false,lastValueVisible:false}).setData(zt.map(t=>({time:t,value:fvgTop})));
+      // Lower boundary line
+      chart.addLineSeries({color:zc,lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(zt.map(t=>({time:t,value:fvgBot})));
       cs.setData(fd);
-      const ft=fd.map(b=>b.time),zc=up?'rgba(38,166,154,0.7)':'rgba(239,83,80,0.7)';
-      chart.addLineSeries({color:zc,lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(ft.map(t=>({time:t,value:fvgTop})));
-      chart.addLineSeries({color:zc,lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(ft.map(t=>({time:t,value:fvgBot})));
       const eb=isMit?fd[fd.length-1]:fd[5];
       cs.setMarkers([{time:eb.time,position:up?'belowBar':'aboveBar',color:up?'#26a69a':'#ef5350',shape:up?'arrowUp':'arrowDown',text:isMit?'Retorno':'Entrada'}]);
       chart.timeScale().fitContent();
@@ -3391,6 +3406,7 @@ const chartOpts = {
         upColor:'#26a69a',downColor:'#ef5350',borderUpColor:'#26a69a',borderDownColor:'#ef5350',
         wickUpColor:isDark?'rgba(38,166,154,0.5)':'rgba(38,166,154,0.7)',
         wickDownColor:isDark?'rgba(239,83,80,0.5)':'rgba(239,83,80,0.7)',
+      priceLineVisible:false,lastValueVisible:false,
       });
       const t0s=Math.floor(new Date('2024-01-02').getTime()/1000),BS=300;
       let bd,bsl;
@@ -3414,9 +3430,13 @@ const chartOpts = {
         ];
       }
       cs.setData(bd);
-      const bt=bd.map(b=>b.time);
-      chart.addLineSeries({color:'#F0A020',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(bt.map(t=>({time:t,value:bsl})));
-      cs.setMarkers([{time:bd[7].time,position:up?'belowBar':'aboveBar',color:'#F0A020',shape:'circle',text:'BoS'}]);
+      // Level line from structure pivot to break candle only
+      const bt=bd.slice(2,9).map(b=>b.time);
+      chart.addLineSeries({color:'#F0A020',lineWidth:2,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(bt.map(t=>({time:t,value:bsl})));
+      cs.setMarkers([
+        {time:bd[2].time,position:up?'aboveBar':'belowBar',color:'#F0A020',shape:'circle',text:up?'HH':'LL'},
+        {time:bd[7].time,position:up?'belowBar':'aboveBar',color:up?'#26a69a':'#ef5350',shape:up?'arrowUp':'arrowDown',text:'BoS'}
+      ]);
       chart.timeScale().fitContent();
     });
     return container;
@@ -3439,6 +3459,7 @@ const chartOpts = {
         upColor:'#26a69a',downColor:'#ef5350',borderUpColor:'#26a69a',borderDownColor:'#ef5350',
         wickUpColor:isDark?'rgba(38,166,154,0.5)':'rgba(38,166,154,0.7)',
         wickDownColor:isDark?'rgba(239,83,80,0.5)':'rgba(239,83,80,0.7)',
+      priceLineVisible:false,lastValueVisible:false,
       });
       const t0s=Math.floor(new Date('2024-01-02').getTime()/1000),BS=300;
       let cd2,chlvl,brk;
@@ -3462,9 +3483,13 @@ const chartOpts = {
         brk=6;
       }
       cs.setData(cd2);
-      const ct2=cd2.map(b=>b.time);
-      chart.addLineSeries({color:'#EF4444',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(ct2.map(t=>({time:t,value:chlvl})));
-      cs.setMarkers([{time:cd2[brk].time,position:up?'belowBar':'aboveBar',color:'#F0A020',shape:'circle',text:'CHoCH'}]);
+      // Level line from structure pivot to reversal break only
+      const ct2=cd2.slice(2,brk+1).map(b=>b.time);
+      chart.addLineSeries({color:'#EF4444',lineWidth:2,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(ct2.map(t=>({time:t,value:chlvl})));
+      cs.setMarkers([
+        {time:cd2[2].time,position:up?'aboveBar':'belowBar',color:'#EF4444',shape:'circle',text:up?'HH':'LL'},
+        {time:cd2[brk].time,position:up?'belowBar':'aboveBar',color:up?'#26a69a':'#ef5350',shape:up?'arrowUp':'arrowDown',text:'CHoCH'}
+      ]);
       chart.timeScale().fitContent();
     });
     return container;
@@ -3487,6 +3512,7 @@ const chartOpts = {
         upColor:'#26a69a',downColor:'#ef5350',borderUpColor:'#26a69a',borderDownColor:'#ef5350',
         wickUpColor:isDark?'rgba(38,166,154,0.5)':'rgba(38,166,154,0.7)',
         wickDownColor:isDark?'rgba(239,83,80,0.5)':'rgba(239,83,80,0.7)',
+      priceLineVisible:false,lastValueVisible:false,
       });
       const t0s=Math.floor(new Date('2024-01-02').getTime()/1000),BS=300;
       let sd,slvl;
@@ -3510,12 +3536,13 @@ const chartOpts = {
         ];
       }
       cs.setData(sd);
-      const st=sd.map(b=>b.time);
-      chart.addLineSeries({color:'#F0A020',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(st.map(t=>({time:t,value:slvl})));
+      // Level line only across the consolidation / multiple-touch range
       const swpi=up?6:5,revi=up?7:6;
+      const st=sd.slice(0,swpi+1).map(b=>b.time);
+      chart.addLineSeries({color:'#F0A020',lineWidth:2,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(st.map(t=>({time:t,value:slvl})));
       cs.setMarkers([
         {time:sd[swpi].time,position:up?'belowBar':'aboveBar',color:'#ef5350',shape:up?'arrowDown':'arrowUp',text:'Sweep'},
-        {time:sd[revi].time,position:up?'belowBar':'aboveBar',color:'#26a69a',shape:up?'arrowUp':'arrowDown',text:'Reversao'}
+        {time:sd[revi].time,position:up?'belowBar':'aboveBar',color:'#26a69a',shape:up?'arrowUp':'arrowDown',text:'Reversão'}
       ]);
       chart.timeScale().fitContent();
     });
@@ -3538,6 +3565,7 @@ const chartOpts = {
         upColor:'#26a69a',downColor:'#ef5350',borderUpColor:'#26a69a',borderDownColor:'#ef5350',
         wickUpColor:isDark?'rgba(38,166,154,0.5)':'rgba(38,166,154,0.7)',
         wickDownColor:isDark?'rgba(239,83,80,0.5)':'rgba(239,83,80,0.7)',
+      priceLineVisible:false,lastValueVisible:false,
       });
       const t0=Math.floor(new Date('2024-01-02').getTime()/1000),B=300;
       const bk=(i,o,h,l,c)=>({time:t0+i*B,open:o,high:h,low:l,close:c});
