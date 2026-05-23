@@ -3372,10 +3372,10 @@ const chartOpts = {
           // [14=C] First post-impulse candle: low=fvgTop=109 (confirms gap above A.high)
           {time:t0s+14*BS,open:117,high:121,low:fvgTop,close:119},
           // Post: continuation
-          {time:t0s+15*BS,open:119,high:122,low:117,close:120},
-          {time:t0s+16*BS,open:120,high:122,low:117,close:118},
-          {time:t0s+17*BS,open:118,high:121,low:116,close:119},
-          {time:t0s+18*BS,open:119,high:121,low:116,close:120},
+          {time:t0s+15*BS,open:119,high:120,low:113,close:114},
+          {time:t0s+16*BS,open:114,high:115,low:109,close:111},
+          {time:t0s+17*BS,open:111,high:118,low:110,close:116},
+          {time:t0s+18*BS,open:116,high:122,low:115,close:120},
         ];
         if(isMit){
           fd[15]={time:t0s+15*BS,open:119,high:121,low:117,close:118};
@@ -3408,10 +3408,10 @@ const chartOpts = {
           // [14=C] First post-impulse candle: high=fvgBot=94 (confirms gap below A.low)
           {time:t0s+14*BS,open:85,high:fvgBot,low:82,close:83},
           // Post: continuation down
-          {time:t0s+15*BS,open:83,high:86,low:81,close:82},
-          {time:t0s+16*BS,open:82,high:85,low:80,close:81},
-          {time:t0s+17*BS,open:81,high:84,low:79,close:82},
-          {time:t0s+18*BS,open:82,high:84,low:79,close:80},
+          {time:t0s+15*BS,open:83,high:89,low:82,close:88},
+          {time:t0s+16*BS,open:88,high:94,low:87,close:90},
+          {time:t0s+17*BS,open:90,high:91,low:84,close:85},
+          {time:t0s+18*BS,open:85,high:86,low:79,close:80},
         ];
         if(isMit){
           fd[15]={time:t0s+15*BS,open:83,high:86,low:81,close:84};
@@ -3885,7 +3885,7 @@ const chartOpts = {
          color:'#F0A020', shape:'circle', text:up?'Suporte':'Resistência'},
         // The grab candle
         {time:gd[grabIdx].time,
-         position:up?'belowBar':'aboveBar',
+         position:up?'aboveBar':'belowBar',
          color:'#ef5350', shape:up?'arrowDown':'arrowUp', text:'Grab'},
         // Reversal
         {time:gd[revIdx].time,
@@ -5040,10 +5040,10 @@ function renderModal() {
 
         const COND_OPTIONS=[
           {cond:FVG_CONDS[0],title:'Logo após o gap ser formado',
-           desc:'Quando a mínima do candle [3] fica acima da máxima do candle [1], o gap é confirmado. A entrada ocorre no candle seguinte — apostando na continuação do movimento.',
+           desc:'Quando a mínima do candle pós-impulso fica acima da máxima do candle pré-impulso, o gap é confirmado. A entrada ocorre imediatamente no candle seguinte.',
            mode:'aggressive'},
           {cond:FVG_CONDS[1],title:'Quando o preço retornar ao gap',
-           desc:'Após o gap ser confirmado, o mercado sobe além do candle [3]. Quando o preço recua até a zona do gap (entre máx. do [1] e mín. do [3]), a entrada ocorre ali.',
+           desc:'Após o gap se formar, o preço sobe além da zona. Quando ele recua e toca a zona do gap, a entrada ocorre — com preço melhor e risco controlado.',
            mode:'mitigation'}
         ];
 
@@ -5139,8 +5139,6 @@ function renderModal() {
             cCs.setData(_cd);
             // Markers: A, C, Entrada
             cCs.setMarkers([
-              {time:_cd[_aI].time,position:'aboveBar',color:'#F0A020',shape:'circle',text:'A'},
-              {time:_cd[_cI].time,position:'aboveBar',color:'#F0A020',shape:'circle',text:'C'},
               {time:_cd[_eI].time,position:'belowBar',color:'#26a69a',shape:'arrowUp',text:'Entrada'},
             ]);
             // Force tight scale
@@ -5343,7 +5341,7 @@ function renderModal() {
           _cs.applyOptions({autoscaleInfoProvider:()=>({priceRange:{minValue:_mn-_pd,maxValue:_mx+_pd}})});
           _cs.setMarkers([
             {time:_bd[4].time, position:'aboveBar',color:'#F59E0B',shape:'circle',  text:'Topo'},
-            {time:_bd[7].time, position:'belowBar',color:'#26a69a',shape:'circle',  text:'HL'},
+            {time:_bd[7].time, position:'belowBar',color:'#26a69a',shape:'circle',  text:'Suporte'},
             {time:_bd[10].time,position:'belowBar',color:'#00D4AA',shape:'arrowUp', text:'BoS'},
           ]);
           _ch.timeScale().fitContent();
@@ -5421,8 +5419,8 @@ function renderModal() {
                 ];
                 ch.addLineSeries({color:'#EF4444',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(_cd.slice(4,11).map(b=>({time:b.time,value:_cl})));
                 _markers=[
-                  {time:_cd[4].time,position:'aboveBar',color:'#EF4444',shape:'circle',text:'LH'},
-                  {time:_cd[10].time,position:'belowBar',color:'#26a69a',shape:'arrowUp',text:'CHoCH'},
+                  {time:_cd[4].time,position:'aboveBar',color:'#EF4444',shape:'circle',text:'Topo'},
+                  {time:_cd[10].time,position:'belowBar',color:'#26a69a',shape:'arrowUp',text:'Reversão'},
                 ];
               }else{
                 // Uptrend (HL→HH→HL→HH) then break BELOW last HL = CHoCH
@@ -5444,8 +5442,8 @@ function renderModal() {
                 ];
                 ch.addLineSeries({color:'#EF4444',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(_cd.slice(4,11).map(b=>({time:b.time,value:_cl})));
                 _markers=[
-                  {time:_cd[4].time,position:'belowBar',color:'#EF4444',shape:'circle',text:'HL'},
-                  {time:_cd[10].time,position:'aboveBar',color:'#ef5350',shape:'arrowDown',text:'CHoCH'},
+                  {time:_cd[4].time,position:'belowBar',color:'#EF4444',shape:'circle',text:'Suporte'},
+                  {time:_cd[10].time,position:'aboveBar',color:'#ef5350',shape:'arrowDown',text:'Reversão'},
                 ];
               }
               cs.setData(_cd);
@@ -5518,10 +5516,10 @@ function renderModal() {
           const _mn2=Math.min(..._ap2),_mx2=Math.max(..._ap2),_pd2=(_mx2-_mn2)*0.08;
           _cs2.applyOptions({autoscaleInfoProvider:()=>({priceRange:{minValue:_mn2-_pd2,maxValue:_mx2+_pd2}})});
           _cs2.setMarkers([
-            {time:_bd2[0].time, position:'aboveBar',color:'#EF4444',shape:'circle',  text:'LH'},
-            {time:_bd2[5].time, position:'aboveBar',color:'#EF4444',shape:'circle',  text:'LH'},
-            {time:_bd2[7].time, position:'belowBar',color:'#EF4444',shape:'circle',  text:'LL'},
-            {time:_bd2[10].time,position:'belowBar',color:'#00D4AA',shape:'arrowUp', text:'CHoCH'},
+            {time:_bd2[0].time, position:'aboveBar',color:'#EF4444',shape:'circle',  text:'Topo'},
+            {time:_bd2[5].time, position:'aboveBar',color:'#EF4444',shape:'circle',  text:'Topo'},
+            {time:_bd2[7].time, position:'belowBar',color:'#EF4444',shape:'circle',  text:'Fundo'},
+            {time:_bd2[10].time,position:'belowBar',color:'#00D4AA',shape:'arrowUp', text:'Reversão'},
           ]);
           _ch2.timeScale().fitContent();
         });
@@ -5608,7 +5606,7 @@ function renderModal() {
                 ch.addLineSeries({color:'#F0A020',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(_cd.slice(0,7).map(b=>({time:b.time,value:_gl})));
                 _markers=[
                   {time:_cd[3].time,position:'belowBar',color:'#F0A020',shape:'circle',text:'Nível'},
-                  {time:_cd[6].time,position:'belowBar',color:'#ef5350',shape:'arrowDown',text:'Grab'},
+                  {time:_cd[6].time,position:'aboveBar',color:'#ef5350',shape:'arrowDown',text:'Grab'},
                   {time:_cd[7].time,position:'belowBar',color:'#26a69a',shape:'arrowUp',text:'Reversão'},
                 ];
               }else{
@@ -5631,7 +5629,7 @@ function renderModal() {
                 ch.addLineSeries({color:'#F0A020',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(_cd.slice(0,7).map(b=>({time:b.time,value:_gl})));
                 _markers=[
                   {time:_cd[3].time,position:'aboveBar',color:'#F0A020',shape:'circle',text:'Nível'},
-                  {time:_cd[6].time,position:'aboveBar',color:'#ef5350',shape:'arrowUp',text:'Grab'},
+                  {time:_cd[6].time,position:'belowBar',color:'#ef5350',shape:'arrowUp',text:'Grab'},
                   {time:_cd[7].time,position:'aboveBar',color:'#26a69a',shape:'arrowDown',text:'Reversão'},
                 ];
               }
