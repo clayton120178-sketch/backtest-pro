@@ -1807,23 +1807,35 @@ function buildTUWChart() {
     });
     if(_uwS!==null)_uwP.push({s:_uwS,e:EQ.length-1});
 
-    // ── Range do equity (para autoscale do histogram)
+    // ── Range do equity (para autoscale dos histogramas)
     let _eqMin=EQ[0].v,_eqMax=EQ[0].v;
     EQ.forEach(d=>{if(d.v<_eqMin)_eqMin=d.v;if(d.v>_eqMax)_eqMax=d.v;});
-    const _rng=_eqMax-_eqMin;
+    const _rng=(_eqMax-_eqMin)||1;
     const _pad=_rng*0.10;
-    // Sentinela: valor muito abaixo do range → barras cobrem toda a altura do chart
-    const _sent=_eqMin-_rng*8;
+    // Dois sentinelas: um positivo (cobre de 0 para cima) e um negativo (cobre de 0 para baixo)
+    // Juntos cobrem TODA a altura do chart, independentemente do range do equity
+    const _sentUp=_eqMax+_rng*8;
+    const _sentDn=_eqMin-_rng*8;
+    const _aip=()=>({priceRange:{minValue:_eqMin-_pad,maxValue:_eqMax+_pad}});
+    const _uwColor=isDark?'rgba(239,83,80,0.15)':'rgba(239,83,80,0.20)';
 
-    // ── 1. Background UW (HistogramSeries — barras sentinela com autoscale fixo)
-    const _bg=chart.addHistogramSeries({
-      color:isDark?'rgba(239,83,80,0.14)':'rgba(239,83,80,0.18)',
-      priceLineVisible:false,lastValueVisible:false,
-      autoscaleInfoProvider:()=>({priceRange:{minValue:_eqMin-_pad,maxValue:_eqMax+_pad}}),
-    });
+    // Monta array de pontos UW uma vez
     const _bgD=[];
-    _uwP.forEach(p=>{for(let i=p.s;i<=p.e;i++)_bgD.push({time:T0+i*DAY,value:_sent});});
-    if(_bgD.length)_bg.setData(_bgD);
+    _uwP.forEach(p=>{for(let i=p.s;i<=p.e;i++)_bgD.push(T0+i*DAY);});
+
+    // ── 1a. Background UW — faixa ACIMA de 0 (sentinela positivo)
+    const _bgUp=chart.addHistogramSeries({
+      color:_uwColor,priceLineVisible:false,lastValueVisible:false,
+      autoscaleInfoProvider:_aip,
+    });
+    if(_bgD.length)_bgUp.setData(_bgD.map(t=>({time:t,value:_sentUp})));
+
+    // ── 1b. Background UW — faixa ABAIXO de 0 (sentinela negativo)
+    const _bgDn=chart.addHistogramSeries({
+      color:_uwColor,priceLineVisible:false,lastValueVisible:false,
+      autoscaleInfoProvider:_aip,
+    });
+    if(_bgD.length)_bgDn.setData(_bgD.map(t=>({time:t,value:_sentDn})));
 
     // ── 2. Running peak (linha tracejada — referência do topo histórico)
     let _pk2=EQ[0].v;
