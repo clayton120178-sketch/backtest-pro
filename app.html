@@ -1771,6 +1771,8 @@ function buildEquityChart() {
       mkrs.push({time:T0+A.mStreakS*DAY,position:'aboveBar',color:'#F59E0B',shape:'arrowDown',text:'Seq '+A.maxStreak});
     if(mkrs.length)area.setMarkers(mkrs.sort((a,b)=>a.time-b.time));
     chart.timeScale().fitContent();
+    // Guarda referência para o TUW chart ler a escala Y real após renderização
+    window._equityLWCSeries=area;
   });
   return wrap;
 }
@@ -1782,14 +1784,14 @@ function buildTUWChart() {
   canvas.style.cssText='width:100%;height:100%;display:block';
   wrap.appendChild(canvas);
 
-  // Aguarda o wrap estar no DOM para ter dimensões reais
-  requestAnimationFrame(()=>{
+  // Duplo rAF: o 1º dispara antes do LWC pintar; o 2º dispara depois
+  // Assim garantimos que coordinateToPrice() do equity chart retorna valores válidos
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
     if(!window.Chart){wrap.innerHTML='<p style="color:var(--txm);font-size:11px;padding:8px">TUW chart indisponivel</p>';return;}
     const isDark=document.documentElement.dataset.theme!=='light';
     const tx=isDark?'#9999BB':'#555577';
     const gd=isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)';
     const uwColor=isDark?'rgba(239,83,80,0.13)':'rgba(239,83,80,0.16)';
-    const peakColor=isDark?'rgba(200,210,255,0.55)':'rgba(60,60,180,0.55)';
 
     // UW detection: peak começa em 0 (nível do depósito)
     const _uwP=[];
@@ -1800,16 +1802,25 @@ function buildTUWChart() {
     });
     if(_uwS!==null)_uwP.push({s:_uwS,e:EQ.length-1});
 
-    // Limites Y via reduce (evita stack overflow com spread em arrays grandes)
-    const eqVals=EQ.map(d=>d.v);
-    let yMin=0,yMax=0;
-    for(const v of eqVals){if(v<yMin)yMin=v;if(v>yMax)yMax=v;}
-    const range=yMax-yMin||Math.abs(yMin)||1;
-    const yPad=range*0.05;
-    const yLo=yMin-yPad;
-    const yHi=yMax+yPad;
+    // Lê escala Y real do LWC equity chart via coordinateToPrice
+    // Garante que o eixo Y do TUW seja idêntico ao do gráfico acima
+    let yLo,yHi;
+    const eqSeries=window._equityLWCSeries;
+    if(eqSeries){
+      const top=eqSeries.coordinateToPrice(2);   // px 2: topo da área do chart
+      const bot=eqSeries.coordinateToPrice(188);  // px 188: base antes do time scale
+      if(top!=null&&bot!=null){yHi=Math.max(top,bot);yLo=Math.min(top,bot);}
+    }
+    // Fallback: calcula a partir dos dados EQ
+    if(yLo==null||yHi==null){
+      let mn=0,mx=0;
+      for(const d of EQ){if(d.v<mn)mn=d.v;if(d.v>mx)mx=d.v;}
+      const pad=(mx-mn)*0.05||Math.abs(mn)*0.05||1;
+      yLo=mn-pad;yHi=mx+pad;
+    }
 
-    // Labels de índice (0..N-1) — Chart.js usa índice linear no eixo X
+    // Valores de equity e labels de índice
+    const eqVals=EQ.map(d=>d.v);
     const labels=EQ.map((_,i)=>i);
 
     // Plugin beforeDraw: desenha faixas UW antes de qualquer série
@@ -1864,7 +1875,7 @@ function buildTUWChart() {
       },
       plugins:[uwPlugin]
     });
-  });
+  }));
   return wrap;
 }
 
