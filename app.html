@@ -1775,8 +1775,7 @@ function buildEquityChart() {
 }
 
 function buildTUWChart() {
-  // position:relative necessário para o canvas absoluto ficar dentro do wrap
-  const wrap=div('');wrap.style.cssText='width:100%;height:200px;position:relative';
+  const wrap=div('');wrap.style.cssText='width:100%;height:200px';
   _lwcRender(wrap,(W)=>{
     if(!window.LightweightCharts){wrap.innerHTML='<p style="color:var(--txm);font-size:11px;padding:8px">TUW chart indisponivel</p>';return;}
     const isDark=document.documentElement.dataset.theme!=='light';
@@ -1805,6 +1804,20 @@ function buildTUWChart() {
     let _pk2=0;
     const _peaks=EQ.map(d=>{if(d.v>_pk2)_pk2=d.v;return _pk2;});
 
+    // ── Série 0: UW background via HistogramSeries em escala overlay isolada
+    // priceScaleId 'uw' é independente do eixo Y da equity — não distorce a escala.
+    // scaleMargins {top:0,bottom:0} + value=1 = barra ocupa 100% da altura do chart.
+    // Adicionada primeiro → renderizada atrás das demais séries.
+    const uwColor=isDark?'rgba(239,83,80,0.13)':'rgba(239,83,80,0.16)';
+    const _uwH=chart.addHistogramSeries({
+      priceScaleId:'uw',color:uwColor,base:0,
+      lastValueVisible:false,priceLineVisible:false,
+    });
+    chart.priceScale('uw').applyOptions({visible:false,scaleMargins:{top:0,bottom:0}});
+    const _uwData=[];
+    _uwP.forEach(p=>{for(let i=p.s;i<=p.e;i++)_uwData.push({time:T0+i*DAY,value:1});});
+    _uwH.setData(_uwData);
+
     // ── Série 1: linha tracejada do running peak
     const _pL=chart.addLineSeries({
       color:isDark?'rgba(200,210,255,0.55)':'rgba(60,60,180,0.55)',
@@ -1827,24 +1840,6 @@ function buildTUWChart() {
     if(_mkrs.length)_ln.setMarkers(_mkrs);
 
     chart.timeScale().fitContent();
-
-    // ── Background UW via divs absolutos (sem canvas, sem dependência de z-index de canvas)
-    // Um <div> por período UW: position:absolute dentro de wrap (position:relative).
-    // pointer-events:none → mouse passa para o LWC normalmente.
-    const uwColor=isDark?'rgba(239,83,80,0.13)':'rgba(239,83,80,0.16)';
-    setTimeout(()=>{
-      if(!wrap.isConnected)return;
-      _uwP.forEach(p=>{
-        const x1=chart.timeScale().timeToCoordinate(T0+p.s*DAY);
-        const x2=chart.timeScale().timeToCoordinate(T0+(p.e+1<EQ.length?p.e+1:p.e)*DAY);
-        if(x1==null||x2==null)return;
-        const xl=Math.min(x1,x2),xw=Math.abs(x2-x1);
-        if(xw<=0)return;
-        const band=document.createElement('div');
-        band.style.cssText='position:absolute;top:0;left:'+xl+'px;width:'+xw+'px;height:100%;background:'+uwColor+';pointer-events:none;z-index:10';
-        wrap.appendChild(band);
-      });
-    },100);
   });
   return wrap;
 }
