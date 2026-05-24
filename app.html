@@ -1232,6 +1232,289 @@ function applyStrategy(strategy) {
   renderApp();
 }
 
+// ─── FAMOUS STRATEGIES — technical preview chart ──────────────────────────────
+// Renders a precision LWC chart for each famous strategy, matching the same
+// visual language used in the wizard's condition previews.
+function buildFamousStratPreview(strat) {
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  const bg    = isDark ? '#12121A' : '#F5F5F0';
+  const gridC = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)';
+  const textC = isDark ? '#8888A0' : '#999999';
+  const isLong  = strat.direction === 'long';
+  const isShort = strat.direction === 'short';
+  const tC     = isLong ? '#10B981' : isShort ? '#EF4444' : '#6366F1';
+  const tShape = isLong ? 'arrowUp' : isShort ? 'arrowDown' : 'circle';
+  const tPos   = isLong ? 'belowBar' : 'aboveBar';
+  const tText  = isLong ? 'Compra'  : isShort ? 'Venda'   : 'Sinal';
+
+  // ── Deterministic 80-bar price series (3-phase: up/down/up, same seed as buildCondPreview) ──
+  const N=80, _p1=Math.floor(N/3), _p2=Math.floor(2*N/3);
+  let _s=77;
+  const _r=()=>{ _s=(_s*1664525+1013904223)&0xffffffff; return(_s>>>0)/0xffffffff; };
+  const closes=[100];
+  for(let i=1;i<N;i++){
+    const tr=i<_p1?1.5:i<_p2?-1.6:1.4;
+    closes.push(+(closes[i-1]+tr+(_r()-0.5)*3+Math.sin(i*0.8)*1.5).toFixed(2));
+  }
+  let _s2=12345;
+  const _r2=()=>{ _s2=(_s2*1664525+1013904223)&0xffffffff; return(_s2>>>0)/0xffffffff; };
+  const t0=Math.floor(new Date('2024-01-02').getTime()/1000);
+  const ohlc=closes.map((c,i)=>{
+    const o=i>0?closes[i-1]:c;
+    const sh=Math.max(Math.abs(c-o)*0.4,1.5)+_r2()*3;
+    return{time:t0+i*300,open:+o.toFixed(2),high:+(Math.max(o,c)+sh).toFixed(2),low:+(Math.min(o,c)-sh).toFixed(2),close:+c.toFixed(2)};
+  });
+  const highs=ohlc.map(b=>b.high),lows=ohlc.map(b=>b.low),times=ohlc.map(b=>b.time);
+
+  // V-shape dataset for MA crossover charts (guarantees a visible crossover near centre)
+  const xC=[];
+  for(let i=0;i<N;i++){
+    let v=i<22?100+i*1.2:i<44?100+22*1.2-(i-22)*1.6:100+22*1.2-22*1.6+(i-44)*1.4;
+    v+=(((i*17+7)%13)-6)*0.4;
+    xC.push(+v.toFixed(2));
+  }
+  const xOhlc=xC.map((c,i)=>{
+    const o=i>0?xC[i-1]:c;
+    const sh=Math.max(Math.abs(c-o)*0.4,1.5)+(i*13%7)*0.4;
+    return{time:t0+i*300,open:+o.toFixed(2),high:+(Math.max(o,c)+sh).toFixed(2),low:+(Math.min(o,c)-sh).toFixed(2),close:+c.toFixed(2)};
+  });
+  const xTimes=xOhlc.map(b=>b.time);
+
+  // ── Chart option / series factories ──
+  const baseOpts=(w,h,wm)=>{
+    const o={width:w,height:h,layout:{background:{color:bg},textColor:textC},grid:{vertLines:{color:gridC},horzLines:{color:gridC}},rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.08,bottom:0.08}},timeScale:{borderColor:'transparent',visible:false},crosshair:{mode:0},handleScroll:false,handleScale:false};
+    if(wm)o.watermark={visible:true,fontSize:11,horzAlign:'left',vertAlign:'top',color:textC,text:wm};
+    return o;
+  };
+  const csOpts={upColor:'#26a69a',downColor:'#ef5350',borderUpColor:'#26a69a',borderDownColor:'#ef5350',wickUpColor:isDark?'rgba(38,166,154,0.5)':'rgba(38,166,154,0.7)',wickDownColor:isDark?'rgba(239,83,80,0.5)':'rgba(239,83,80,0.7)',priceLineVisible:false,lastValueVisible:false};
+
+  // ── Container helpers ──
+  const mkSingle=(h)=>{ const d=document.createElement('div'); d.style.cssText=`width:100%;height:${h}px;margin-top:10px;border-radius:6px;overflow:hidden`; return d; };
+  const mkSplit=(hT,hB)=>{
+    const w=document.createElement('div');
+    w.style.cssText=`width:100%;height:${hT+1+hB}px;margin-top:10px;border-radius:6px;overflow:hidden;display:flex;flex-direction:column`;
+    const top=document.createElement('div'); top.style.cssText=`flex:0 0 ${hT}px;overflow:hidden`;
+    const sep=document.createElement('div'); sep.style.cssText=`height:1px;background:${gridC};flex-shrink:0`;
+    const bot=document.createElement('div'); bot.style.cssText=`flex:0 0 ${hB}px;overflow:hidden`;
+    w.append(top,sep,bot);
+    return{w,top,bot};
+  };
+
+  // MA line with leading extension so short periods don't produce visually short lines
+  const maLine=(cls,tms,per,fn)=>{
+    const v=fn(cls,per); const fv=v.findIndex(x=>x!==null);
+    return v.map((x,i)=>x!==null?{time:tms[i],value:x}:(fv>=0&&i<fv?{time:tms[i],value:v[fv]}:null)).filter(Boolean);
+  };
+
+  const hasCond=id=>strat.conditions.some(c=>c.id===id);
+  const getCond=id=>strat.conditions.find(c=>c.id===id);
+
+  // ── 1. MA Crossover — EMA(9)×EMA(21) ──────────────────────────────────────
+  if(hasCond('ema')&&(getCond('ema').params.cond||'').includes('Cruzamento')){
+    const mc=getCond('ema'), p1=mc.params.per||9, p2raw=mc.params.per2||21, p2=Math.min(p2raw,N-2);
+    const wrap=mkSingle(160);
+    _lwcRender(wrap,(W)=>{
+      if(!window.LightweightCharts)return;
+      const chart=LightweightCharts.createChart(wrap,baseOpts(W,160,`EMA(${p1}) × EMA(${p2raw})`));
+      const cs=chart.addCandlestickSeries(csOpts); cs.setData(xOhlc);
+      const fD=maLine(xC,xTimes,p1,_calcEMA), sD=maLine(xC,xTimes,p2,_calcEMA);
+      const fS=chart.addLineSeries({color:'#00D4AA',lineWidth:1.5,priceLineVisible:false,lastValueVisible:false});
+      fS.setData(fD);
+      chart.addLineSeries({color:'#F59E0B',lineWidth:1.5,lineStyle:2,priceLineVisible:false,lastValueVisible:false}).setData(sD);
+      const fast=_calcEMA(xC,p1), slow=_calcEMA(xC,p2);
+      const fi=fast.findIndex(v=>v!==null), si=slow.findIndex(v=>v!==null);
+      for(let i=Math.max(fi,si)+1;i<fast.length;i++){
+        if(!fast[i]||!slow[i]||!fast[i-1]||!slow[i-1])continue;
+        const pv=fast[i-1]-slow[i-1], cv=fast[i]-slow[i];
+        if(pv*cv<0){ fS.setMarkers([{time:xTimes[i],position:cv>0?'belowBar':'aboveBar',color:cv>0?'#10B981':'#EF4444',shape:cv>0?'arrowUp':'arrowDown',text:cv>0?'Compra':'Venda'}]); break; }
+      }
+      chart.timeScale().fitContent();
+    });
+    return wrap;
+  }
+
+  // ── 2. Setup 9.1 — single EMA, price breakout ─────────────────────────────
+  if(hasCond('ema')&&!hasCond('sma')&&!hasCond('rsi')&&!hasCond('macd')&&!hasCond('bb')&&!hasCond('stoch')){
+    const mc=getCond('ema'), per=mc.params.per||9;
+    const wrap=mkSingle(160);
+    _lwcRender(wrap,(W)=>{
+      if(!window.LightweightCharts)return;
+      const chart=LightweightCharts.createChart(wrap,baseOpts(W,160,`EMA(${per})`));
+      const cs=chart.addCandlestickSeries(csOpts); cs.setData(ohlc);
+      const eS=chart.addLineSeries({color:'#00D4AA',lineWidth:1.8,priceLineVisible:false,lastValueVisible:false});
+      eS.setData(maLine(closes,times,per,_calcEMA));
+      const ema=_calcEMA(closes,per); let si=-1;
+      for(let i=1;i<ohlc.length;i++){
+        if(ema[i]==null||ema[i-1]==null)continue;
+        const pv=ohlc[i-1].close-ema[i-1], cv=ohlc[i].close-ema[i];
+        if(!isShort&&pv<=0&&cv>0){si=i;break;}
+        if(isShort&&pv>=0&&cv<0){si=i;break;}
+      }
+      if(si>0)cs.setMarkers([{time:times[si],position:tPos,color:tC,shape:tShape,text:tText}]);
+      chart.timeScale().fitContent();
+    });
+    return wrap;
+  }
+
+  // ── 3. RSI strategies (with optional MA trend filter) ─────────────────────
+  if(hasCond('rsi')){
+    const rc=getCond('rsi'), mc=getCond('sma')||getCond('ema');
+    const per=rc.params.per||14, val=rc.params.val!=null?rc.params.val:(isLong?30:70);
+    const oscUp=(rc.params.cond||'').includes('acima');
+    const {w,top,bot}=mkSplit(110,88);
+    _lwcRender(w,(W)=>{
+      if(!window.LightweightCharts)return;
+      const wmT=mc?`${mc.id.toUpperCase()}(${mc.params.per})`:'';
+      const tChart=LightweightCharts.createChart(top,baseOpts(W,110,wmT));
+      const cs=tChart.addCandlestickSeries(csOpts); cs.setData(ohlc);
+      if(mc){
+        const fn=mc.id==='ema'?_calcEMA:_calcSMA;
+        // Visual period adaptation: SMA(200) on 80 bars → use ~60% of N for equivalent trend-line feel
+        const vp=Math.min(mc.params.per,Math.floor(N*0.6));
+        tChart.addLineSeries({color:'#F59E0B',lineWidth:1.5,priceLineVisible:false,lastValueVisible:false}).setData(maLine(closes,times,vp,fn));
+      }
+      tChart.timeScale().fitContent();
+      const bW=top.offsetWidth||W;
+      const rsiSc=()=>({priceRange:{minValue:0,maxValue:100},margins:{above:0,below:0}});
+      const bChart=LightweightCharts.createChart(bot,{width:bW,height:88,layout:{background:{color:bg},textColor:textC},grid:{vertLines:{color:gridC},horzLines:{color:gridC}},rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.1,bottom:0.1}},timeScale:{borderColor:'transparent',visible:false},crosshair:{mode:0},handleScroll:false,handleScale:false,watermark:{visible:true,fontSize:11,horzAlign:'left',vertAlign:'top',color:textC,text:`RSI(${per})`}});
+      // Zone fills (same as buildCondPreview RSI)
+      bChart.addAreaSeries({topColor:'rgba(239,83,80,0.18)',bottomColor:'rgba(239,83,80,0)',lineColor:'transparent',lineWidth:0,priceLineVisible:false,lastValueVisible:false,autoscaleInfoProvider:rsiSc}).setData(times.map(t=>({time:t,value:100})));
+      bChart.addAreaSeries({topColor:'rgba(38,166,154,0)',bottomColor:'rgba(38,166,154,0.18)',lineColor:'rgba(38,166,154,0.5)',lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false,autoscaleInfoProvider:rsiSc}).setData(times.map(t=>({time:t,value:30})));
+      bChart.addLineSeries({color:'rgba(239,83,80,0.55)',lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false,autoscaleInfoProvider:rsiSc}).setData(times.map(t=>({time:t,value:70})));
+      bChart.addLineSeries({color:'#F0A020',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(times.map(t=>({time:t,value:val})));
+      const rsi=_calcRSI(closes,per);
+      const rsiD=rsi.map((v,i)=>v!==null?{time:times[i],value:v}:null).filter(Boolean);
+      const rsiS=bChart.addLineSeries({color:'#7878EE',lineWidth:1.5,priceLineVisible:false,autoscaleInfoProvider:rsiSc});
+      rsiS.setData(rsiD);
+      // Signal marker: candle arrow uses strategy direction; oscillator uses threshold crossing direction
+      const idx=_findOscSignal(rsiD,val,true,oscUp);
+      if(idx>=0){
+        const sigT=rsiD[idx].time, cIdx=times.indexOf(sigT);
+        if(cIdx>=0)cs.setMarkers([{time:times[cIdx],position:tPos,color:tC,shape:tShape,text:tText}]);
+        rsiS.setMarkers([{time:sigT,position:oscUp?'belowBar':'aboveBar',color:tC,shape:'circle',size:1}]);
+      }
+      bChart.timeScale().fitContent();
+    });
+    return w;
+  }
+
+  // ── 4. MACD + EMA trend filter ────────────────────────────────────────────
+  if(hasCond('macd')){
+    const maFilter=getCond('sma')||getCond('ema');
+    const {w,top,bot}=mkSplit(110,88);
+    _lwcRender(w,(W)=>{
+      if(!window.LightweightCharts)return;
+      const wmT=maFilter?`${maFilter.id.toUpperCase()}(${maFilter.params.per})`:'';
+      const tChart=LightweightCharts.createChart(top,baseOpts(W,110,wmT));
+      const cs=tChart.addCandlestickSeries(csOpts); cs.setData(ohlc);
+      if(maFilter){
+        const fn=maFilter.id==='ema'?_calcEMA:_calcSMA;
+        const vp=Math.min(maFilter.params.per,Math.floor(N*0.6));
+        tChart.addLineSeries({color:'#F59E0B',lineWidth:1.5,priceLineVisible:false,lastValueVisible:false}).setData(maLine(closes,times,vp,fn));
+      }
+      tChart.timeScale().fitContent();
+      const bW=top.offsetWidth||W;
+      const bChart=LightweightCharts.createChart(bot,{width:bW,height:88,layout:{background:{color:bg},textColor:textC},grid:{vertLines:{color:gridC},horzLines:{color:gridC}},rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.08,bottom:0.08}},timeScale:{borderColor:'transparent',visible:false},crosshair:{mode:0},handleScroll:false,handleScale:false,watermark:{visible:true,fontSize:11,horzAlign:'left',vertAlign:'top',color:textC,text:'MACD(12,26,9)'}});
+      const md=getCond('macd');
+      const{macd,signal:sigLine,hist}=_calcMACD(closes,md?.params?.fast||12,md?.params?.slow||26,md?.params?.signal||9);
+      bChart.addHistogramSeries({priceLineVisible:false,lastValueVisible:false}).setData(hist.map((v,i)=>v!==null?{time:times[i],value:v,color:v>=0?'rgba(16,185,129,0.7)':'rgba(239,68,68,0.7)'}:null).filter(Boolean));
+      const macdArr=macd.map((v,i)=>v!==null?{time:times[i],value:v}:null).filter(Boolean);
+      const sigArr=sigLine.map((v,i)=>v!==null?{time:times[i],value:v}:null).filter(Boolean);
+      const macdS=bChart.addLineSeries({color:'#00D4AA',lineWidth:1.5,priceLineVisible:false,lastValueVisible:false});
+      macdS.setData(macdArr);
+      bChart.addLineSeries({color:'#EF4444',lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false}).setData(sigArr);
+      for(let i=1;i<macdArr.length;i++){
+        const pv=macdArr[i-1].value-(sigArr[i-1]?.value||0), cv=macdArr[i].value-(sigArr[i]?.value||0);
+        if(!isShort&&pv<0&&cv>=0){
+          macdS.setMarkers([{time:macdArr[i].time,position:'belowBar',color:'#10B981',shape:'arrowUp',text:'Compra'}]);
+          const ci=times.indexOf(macdArr[i].time); if(ci>=0)cs.setMarkers([{time:times[ci],position:'belowBar',color:'#10B981',shape:'arrowUp',text:'Compra'}]);
+          break;
+        }
+        if(isShort&&pv>0&&cv<=0){
+          macdS.setMarkers([{time:macdArr[i].time,position:'aboveBar',color:'#EF4444',shape:'arrowDown',text:'Venda'}]);
+          const ci=times.indexOf(macdArr[i].time); if(ci>=0)cs.setMarkers([{time:times[ci],position:'aboveBar',color:'#EF4444',shape:'arrowDown',text:'Venda'}]);
+          break;
+        }
+      }
+      bChart.timeScale().fitContent();
+    });
+    return w;
+  }
+
+  // ── 5. Bollinger Bands ────────────────────────────────────────────────────
+  if(hasCond('bb')){
+    const bc=getCond('bb'), bbPer=bc.params.per||20, bbDev=bc.params.dev||2;
+    const isSup=(bc.params.cond||'').toLowerCase().includes('superior');
+    const wrap=mkSingle(160);
+    _lwcRender(wrap,(W)=>{
+      if(!window.LightweightCharts)return;
+      const chart=LightweightCharts.createChart(wrap,baseOpts(W,160,`BB(${bbPer}, ${bbDev}σ)`));
+      const cs=chart.addCandlestickSeries(csOpts); cs.setData(ohlc);
+      const bb=_calcBB(closes,bbPer,bbDev);
+      const fb=bb.findIndex(v=>v!==null);
+      const ext=k=>bb.map((v,i)=>v?{time:times[i],value:v[k]}:(fb>=0&&i<fb?{time:times[i],value:bb[fb][k]}:null)).filter(Boolean);
+      chart.addAreaSeries({topColor:'rgba(120,120,238,0.06)',bottomColor:'rgba(120,120,238,0)',lineColor:'rgba(120,120,238,0.8)',lineWidth:1,priceLineVisible:false,lastValueVisible:false}).setData(ext('upper'));
+      chart.addLineSeries({color:'rgba(120,120,238,0.4)',lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false}).setData(ext('mid'));
+      chart.addLineSeries({color:'rgba(120,120,238,0.8)',lineWidth:1,priceLineVisible:false,lastValueVisible:false}).setData(ext('lower'));
+      let si=-1;
+      for(let i=1;i<ohlc.length;i++){
+        if(!bb[i]||!bb[i-1])continue;
+        if(!isSup&&ohlc[i].low<=bb[i].lower*1.002){si=i;break;}
+        if(isSup&&ohlc[i].high>=bb[i].upper*0.998){si=i;break;}
+      }
+      if(si>0)cs.setMarkers([{time:times[si],position:tPos,color:tC,shape:tShape,text:'Toque'}]);
+      chart.timeScale().fitContent();
+    });
+    return wrap;
+  }
+
+  // ── 6. Estocástico ───────────────────────────────────────────────────────
+  if(hasCond('stoch')){
+    const sc=getCond('stoch'), stK=sc.params.per||14, stD=3, stVal=sc.params.val!=null?sc.params.val:(isLong?20:80);
+    const oscUp=(sc.params.cond||'').includes('acima');
+    const {w,top,bot}=mkSplit(110,88);
+    _lwcRender(w,(W)=>{
+      if(!window.LightweightCharts)return;
+      const tChart=LightweightCharts.createChart(top,baseOpts(W,110,''));
+      const cs=tChart.addCandlestickSeries(csOpts); cs.setData(ohlc);
+      tChart.timeScale().fitContent();
+      const bW=top.offsetWidth||W;
+      const stSc=()=>({priceRange:{minValue:0,maxValue:100},margins:{above:0,below:0}});
+      const bChart=LightweightCharts.createChart(bot,{width:bW,height:88,layout:{background:{color:bg},textColor:textC},grid:{vertLines:{color:gridC},horzLines:{color:gridC}},rightPriceScale:{borderColor:'transparent',scaleMargins:{top:0.1,bottom:0.1}},timeScale:{borderColor:'transparent',visible:false},crosshair:{mode:0},handleScroll:false,handleScale:false,watermark:{visible:true,fontSize:11,horzAlign:'left',vertAlign:'top',color:textC,text:`Stoch(%K${stK},%D${stD})`}});
+      bChart.addLineSeries({color:'rgba(38,166,154,0.5)',lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false,autoscaleInfoProvider:stSc}).setData(times.map(t=>({time:t,value:20})));
+      bChart.addLineSeries({color:'rgba(239,83,80,0.5)',lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false,autoscaleInfoProvider:stSc}).setData(times.map(t=>({time:t,value:80})));
+      bChart.addLineSeries({color:'#F0A020',lineWidth:1.5,lineStyle:1,priceLineVisible:false,lastValueVisible:false}).setData(times.map(t=>({time:t,value:stVal})));
+      const kArr=_calcStoch(highs,lows,closes,stK,stD);
+      const dArr=_calcSMA(kArr.filter(v=>v!==null),stD);
+      let di=0;
+      const kD=kArr.map((v,i)=>v!==null?{time:times[i],value:v}:null).filter(Boolean);
+      const dD=kArr.map((v,i)=>{ if(v===null)return null; const dv=dArr[di++]; return dv!==null?{time:times[i],value:dv}:null; }).filter(Boolean);
+      const kS=bChart.addLineSeries({color:'#7878EE',lineWidth:1.5,priceLineVisible:false,autoscaleInfoProvider:stSc});
+      kS.setData(kD);
+      bChart.addLineSeries({color:'#00D4AA',lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false}).setData(dD);
+      const idx=_findOscSignal(kD,stVal,true,oscUp);
+      if(idx>=0){
+        const sigT=kD[idx].time, cIdx=times.indexOf(sigT);
+        if(cIdx>=0)cs.setMarkers([{time:times[cIdx],position:tPos,color:tC,shape:tShape,text:tText}]);
+        kS.setMarkers([{time:sigT,position:oscUp?'belowBar':'aboveBar',color:tC,shape:'circle',size:1}]);
+      }
+      bChart.timeScale().fitContent();
+    });
+    return w;
+  }
+
+  // Fallback: simple area trend chart
+  const fallbackWrap=mkSingle(110);
+  _lwcRender(fallbackWrap,(W)=>{
+    if(!window.LightweightCharts)return;
+    const lc=isLong?'#26a69a':isShort?'#ef5350':'#7878EE';
+    const chart=LightweightCharts.createChart(fallbackWrap,{width:W,height:110,layout:{background:{color:'transparent'},textColor:textC},grid:{vertLines:{visible:false},horzLines:{visible:false}},rightPriceScale:{visible:false},timeScale:{visible:false},crosshair:{mode:0},handleScroll:false,handleScale:false});
+    chart.addAreaSeries({topColor:lc+'33',bottomColor:lc+'05',lineColor:lc,lineWidth:1.5,priceLineVisible:false,lastValueVisible:false}).setData(ohlc.map((b,i)=>({time:b.time,value:closes[i]})));
+    chart.timeScale().fitContent();
+  });
+  return fallbackWrap;
+}
+
 function openStrategiesModal() {
   let existing=document.getElementById('strategies-modal');
   if(existing) existing.remove();
@@ -1279,37 +1562,8 @@ function openStrategiesModal() {
       tags.appendChild(tag);
     });
 
-    // mini equity preview chart
-    const mc=div('');mc.style.cssText='width:100%;height:110px;margin-top:10px;border-radius:6px;overflow:hidden';
-    const _isDarkS=document.documentElement.dataset.theme!=='light';
-    const _isLong=strat.direction==='long',_isShort=strat.direction==='short';
-    const _lc=_isLong?'#26a69a':_isShort?'#ef5350':'#7878EE';
-    const _tc=_isLong?'rgba(38,166,154,0.20)':_isShort?'rgba(239,83,80,0.20)':'rgba(120,120,238,0.20)';
-    const _bc=_isLong?'rgba(38,166,154,0.01)':_isShort?'rgba(239,83,80,0.01)':'rgba(120,120,238,0.01)';
-    const _si=stratIdx;
-    _lwcRender(mc,(W)=>{
-      if(!window.LightweightCharts)return;
-      const _tx=_isDarkS?'#9999BB':'#555577';
-      const _chart=LightweightCharts.createChart(mc,{
-        width:W,height:110,
-        layout:{background:{color:'transparent'},textColor:_tx},
-        grid:{vertLines:{visible:false},horzLines:{visible:false}},
-        rightPriceScale:{visible:false},timeScale:{visible:false},
-        crosshair:{mode:0},handleScroll:false,handleScale:false,
-      });
-      const _T0=Math.floor(new Date('2020-01-01').getTime()/1000),_DAY=86400;
-      let _v=0;const _n=48;
-      const _trend=_isShort?-45:45;
-      const _eqd=Array.from({length:_n},(_,i)=>{
-        const _r=Math.sin((_si+1)*17.3*(i+1)+i*3.7)*380+_trend;
-        _v+=_r;return{time:_T0+i*_DAY,value:_v};
-      });
-      _chart.addAreaSeries({
-        topColor:_tc,bottomColor:_bc,lineColor:_lc,lineWidth:1.5,
-        priceLineVisible:false,lastValueVisible:false,
-      }).setData(_eqd);
-      _chart.timeScale().fitContent();
-    });
+    // technically accurate strategy preview chart
+    const mc=buildFamousStratPreview(strat);
     card.append(top,ds,tags,mc);
     card.addEventListener('click',()=>{
       applyStrategy(strat);
