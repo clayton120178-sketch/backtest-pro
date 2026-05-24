@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -1774,66 +1775,95 @@ function buildEquityChart() {
   return wrap;
 }
 
-function buildTUWChart(){
-  const wrap=div('');wrap.style.cssText='width:100%;height:200px;position:relative;overflow:hidden';
+function buildTUWChart() {
+  const wrap=div('');wrap.style.cssText='width:100%;height:200px';
+  // Chart.js — suporta beforeDraw plugin (equivalente nativo ao add_vrect do Plotly)
+  const canvas=document.createElement('canvas');
+  canvas.style.cssText='width:100%;height:100%;display:block';
+  wrap.appendChild(canvas);
 
-  // Detecta períodos UW antes de _lwcRender
-  const _uwP=[];let _peak=0,_uwS=null;
-  EQ.forEach((d,i)=>{
-    if(d.v>=_peak){if(_uwS!==null){_uwP.push({s:_uwS,e:i-1});_uwS=null;}_peak=d.v;}
-    else{if(_uwS===null)_uwS=i;}
-  });
-  if(_uwS!==null)_uwP.push({s:_uwS,e:EQ.length-1});
-  const N=EQ.length;
-
-  _lwcRender(wrap,(W)=>{
-    if(!window.LightweightCharts){wrap.innerHTML='<p style="color:var(--txm);font-size:11px;padding:8px">TUW chart indisponivel</p>';return;}
+  // Aguarda o wrap estar no DOM para ter dimensões reais
+  requestAnimationFrame(()=>{
+    if(!window.Chart){wrap.innerHTML='<p style="color:var(--txm);font-size:11px;padding:8px">TUW chart indisponivel</p>';return;}
     const isDark=document.documentElement.dataset.theme!=='light';
     const tx=isDark?'#9999BB':'#555577';
-    const gd=isDark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)';
-    const uwBg=isDark?'rgba(239,83,80,0.18)':'rgba(239,83,80,0.20)';
+    const gd=isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)';
+    const uwColor=isDark?'rgba(239,83,80,0.13)':'rgba(239,83,80,0.16)';
+    const peakColor=isDark?'rgba(200,210,255,0.55)':'rgba(60,60,180,0.55)';
 
-    // Chart LWC idêntico ao buildEquityChart — garante escala Y igual
-    const chart=LightweightCharts.createChart(wrap,{
-      width:W,height:200,
-      layout:{background:{color:'transparent'},textColor:tx},
-      grid:{vertLines:{color:gd},horzLines:{color:gd}},
-      rightPriceScale:{borderColor:'transparent'},
-      timeScale:{borderColor:'transparent'},
-      crosshair:{mode:1},handleScroll:false,handleScale:false,
+    // UW detection: peak começa em 0 (nível do depósito)
+    const _uwP=[];
+    let _peak=0,_uwS=null;
+    EQ.forEach((d,i)=>{
+      if(d.v>=_peak){if(_uwS!==null){_uwP.push({s:_uwS,e:i-1});_uwS=null;}_peak=d.v;}
+      else{if(_uwS===null)_uwS=i;}
     });
-    const T0=Math.floor(new Date('2020-01-01').getTime()/1000),DAY=86400;
-    const data=EQ.map((d,i)=>({time:T0+i*DAY,value:d.v}));
-    chart.addLineSeries({color:isDark?'rgba(255,255,255,0.10)':'rgba(0,0,0,0.10)',lineWidth:1,priceLineVisible:false,lastValueVisible:false})
-      .setData([{time:T0,value:0},{time:T0+(N-1)*DAY,value:0}]);
-    const area=chart.addAreaSeries({
-      topColor:'rgba(30,144,255,0.18)',bottomColor:'rgba(30,144,255,0.02)',
-      lineColor:'#1E90FF',lineWidth:2,priceLineVisible:false,lastValueVisible:false,
-    });
-    area.setData(data);
-    chart.timeScale().fitContent();
+    if(_uwS!==null)_uwP.push({s:_uwS,e:EQ.length-1});
 
-    // Bandas UW: divs absolutos sobre o LWC, posicionados por timeToCoordinate
-    // com fallback percentual caso retorne null
-    if(N>1&&_uwP.length){
-      const PSW=65; // largura estimada do price scale (px)
-      const cW=W-PSW;
-      requestAnimationFrame(()=>{
+    // Limites Y via reduce (evita stack overflow com spread em arrays grandes)
+    const eqVals=EQ.map(d=>d.v);
+    let yMin=0,yMax=0;
+    for(const v of eqVals){if(v<yMin)yMin=v;if(v>yMax)yMax=v;}
+    const range=yMax-yMin||Math.abs(yMin)||1;
+    const yPad=range*0.05;
+    const yLo=yMin-yPad;
+    const yHi=yMax+yPad;
+
+    // Labels de índice (0..N-1) — Chart.js usa índice linear no eixo X
+    const labels=EQ.map((_,i)=>i);
+
+    // Plugin beforeDraw: desenha faixas UW antes de qualquer série
+    const uwPlugin={
+      id:'uwBands',
+      beforeDraw(chart){
+        const {ctx,chartArea:{left,top,right,bottom},scales:{x}}=chart;
+        if(!x)return;
+        ctx.save();
+        ctx.fillStyle=uwColor;
         _uwP.forEach(p=>{
-          let x0=chart.timeScale().timeToCoordinate(T0+p.s*DAY);
-          let x1=chart.timeScale().timeToCoordinate(T0+p.e*DAY);
-          // fallback percentual se timeToCoordinate retornar null
-          if(x0===null)x0=p.s/(N-1)*cW;
-          if(x1===null)x1=p.e/(N-1)*cW;
-          const lft=Math.min(x0,x1);
-          const wid=Math.max(1,Math.abs(x1-x0));
-          const band=document.createElement('div');
-          band.style.cssText=`position:absolute;left:${lft}px;top:0;width:${wid}px;`
-            +`height:100%;background:${uwBg};pointer-events:none;z-index:10`;
-          wrap.appendChild(band);
+          const x0=x.getPixelForValue(p.s);
+          const x1=x.getPixelForValue(p.e);
+          ctx.fillRect(Math.min(x0,x1),top,Math.abs(x1-x0),bottom-top);
         });
-      });
-    }
+        ctx.restore();
+      }
+    };
+
+    new Chart(canvas,{
+      type:'line',
+      data:{
+        labels,
+        datasets:[
+          // equity (azul) — única série, sem peak para não inflar eixo Y
+          {data:eqVals,borderColor:'#1E90FF',borderWidth:2,
+           pointRadius:0,tension:0,fill:false},
+        ]
+      },
+      options:{
+        animation:false,
+        responsive:true,
+        maintainAspectRatio:false,
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{display:false},
+          tooltip:{enabled:false},
+        },
+        scales:{
+          x:{display:false,type:'linear',min:0,max:EQ.length-1},
+          y:{
+            display:true,
+            position:'right',
+            min:yLo,
+            max:yHi,
+            ticks:{color:tx,font:{size:10},maxTicksLimit:5,
+              callback:v=>v>=1000||v<=-1000?(v/1000).toFixed(1)+'k':v},
+            grid:{color:gd},
+            border:{color:'transparent'},
+          },
+        }
+      },
+      plugins:[uwPlugin]
+    });
   });
   return wrap;
 }
