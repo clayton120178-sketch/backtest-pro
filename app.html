@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -1776,22 +1777,21 @@ function buildEquityChart() {
 
 function buildTUWChart() {
   const wrap=div('');wrap.style.cssText='width:100%;height:200px';
-  _lwcRender(wrap,(W)=>{
-    if(!window.LightweightCharts){wrap.innerHTML='<p style="color:var(--txm);font-size:11px;padding:8px">TUW chart indisponivel</p>';return;}
+  // Chart.js — suporta beforeDraw plugin (equivalente nativo ao add_vrect do Plotly)
+  const canvas=document.createElement('canvas');
+  canvas.style.cssText='width:100%;height:100%;display:block';
+  wrap.appendChild(canvas);
+
+  // Aguarda o wrap estar no DOM para ter dimensões reais
+  requestAnimationFrame(()=>{
+    if(!window.Chart){wrap.innerHTML='<p style="color:var(--txm);font-size:11px;padding:8px">TUW chart indisponivel</p>';return;}
     const isDark=document.documentElement.dataset.theme!=='light';
     const tx=isDark?'#9999BB':'#555577';
-    const gd=isDark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)';
-    const chart=LightweightCharts.createChart(wrap,{
-      width:W,height:200,
-      layout:{background:{color:'transparent'},textColor:tx},
-      grid:{vertLines:{color:gd},horzLines:{color:gd}},
-      rightPriceScale:{borderColor:'transparent'},
-      timeScale:{borderColor:'transparent'},
-      crosshair:{mode:1},handleScroll:false,handleScale:false,
-    });
-    const T0=Math.floor(new Date('2020-01-01').getTime()/1000),DAY=86400;
+    const gd=isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)';
+    const uwColor=isDark?'rgba(239,83,80,0.13)':'rgba(239,83,80,0.16)';
+    const peakColor=isDark?'rgba(200,210,255,0.55)':'rgba(60,60,180,0.55)';
 
-    // UW detection: peak começa em 0 (nível do depósito, igual ao backend)
+    // UW detection: peak começa em 0 (nível do depósito)
     const _uwP=[];
     let _peak=0,_uwS=null;
     EQ.forEach((d,i)=>{
@@ -1802,44 +1802,71 @@ function buildTUWChart() {
 
     // Running peak começa em 0
     let _pk2=0;
-    const _peaks=EQ.map(d=>{if(d.v>_pk2)_pk2=d.v;return _pk2;});
+    const peaks=EQ.map(d=>{if(d.v>_pk2)_pk2=d.v;return _pk2;});
 
-    // ── Série 0: UW background via HistogramSeries em escala overlay isolada
-    // priceScaleId 'uw' é independente do eixo Y da equity — não distorce a escala.
-    // scaleMargins {top:0,bottom:0} + value=1 = barra ocupa 100% da altura do chart.
-    // Adicionada primeiro → renderizada atrás das demais séries.
-    const uwColor=isDark?'rgba(239,83,80,0.13)':'rgba(239,83,80,0.16)';
-    const _uwH=chart.addHistogramSeries({
-      priceScaleId:'uw',color:uwColor,base:0,
-      lastValueVisible:false,priceLineVisible:false,
+    // Labels de índice (0..N-1) — Chart.js usa índice linear no eixo X
+    const labels=EQ.map((_,i)=>i);
+
+    // Marcadores: círculo verde no índice ni (new high após UW)
+    const mkrData=EQ.map(()=>null);
+    _uwP.forEach(p=>{const ni=p.e+1;if(ni<EQ.length)mkrData[ni]=EQ[ni].v;});
+
+    // Plugin beforeDraw: desenha faixas UW antes de qualquer série
+    const uwPlugin={
+      id:'uwBands',
+      beforeDraw(chart){
+        const {ctx,chartArea:{left,top,right,bottom},scales:{x}}=chart;
+        if(!x)return;
+        ctx.save();
+        ctx.fillStyle=uwColor;
+        _uwP.forEach(p=>{
+          const x0=x.getPixelForValue(p.s);
+          const x1=x.getPixelForValue(p.e);
+          ctx.fillRect(Math.min(x0,x1),top,Math.abs(x1-x0),bottom-top);
+        });
+        ctx.restore();
+      }
+    };
+
+    new Chart(canvas,{
+      type:'line',
+      data:{
+        labels,
+        datasets:[
+          // running peak (tracejado)
+          {data:peaks,borderColor:peakColor,borderWidth:1,borderDash:[4,3],
+           pointRadius:0,tension:0,fill:false,yAxisID:'y'},
+          // equity (azul)
+          {data:EQ.map(d=>d.v),borderColor:'#1E90FF',borderWidth:2,
+           pointRadius:0,tension:0,fill:false,yAxisID:'y'},
+          // marcadores new high (círculos verdes)
+          {data:mkrData,borderColor:'transparent',backgroundColor:'#26a69a',
+           pointRadius:5,pointStyle:'circle',showLine:false,yAxisID:'y'},
+        ]
+      },
+      options:{
+        animation:false,
+        responsive:true,
+        maintainAspectRatio:false,
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{display:false},
+          tooltip:{enabled:false},
+        },
+        scales:{
+          x:{display:false,type:'linear',min:0,max:EQ.length-1},
+          y:{
+            display:true,
+            position:'right',
+            ticks:{color:tx,font:{size:10},maxTicksLimit:5,
+              callback:v=>v>=1000||v<=-1000?(v/1000).toFixed(1)+'k':v},
+            grid:{color:gd},
+            border:{color:'transparent'},
+          }
+        }
+      },
+      plugins:[uwPlugin]
     });
-    chart.priceScale('uw').applyOptions({visible:false,scaleMargins:{top:0,bottom:0}});
-    const _uwData=[];
-    _uwP.forEach(p=>{for(let i=p.s;i<=p.e;i++)_uwData.push({time:T0+i*DAY,value:1});});
-    _uwH.setData(_uwData);
-
-    // ── Série 1: linha tracejada do running peak
-    const _pL=chart.addLineSeries({
-      color:isDark?'rgba(200,210,255,0.55)':'rgba(60,60,180,0.55)',
-      lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false,
-    });
-    _pL.setData(_peaks.map((p,i)=>({time:T0+i*DAY,value:p})));
-
-    // ── Série 2: curva de equity (azul)
-    const _ln=chart.addLineSeries({
-      color:'#1E90FF',lineWidth:2,priceLineVisible:false,lastValueVisible:false,
-    });
-    _ln.setData(EQ.map((d,i)=>({time:T0+i*DAY,value:d.v})));
-
-    // ── Marcadores verdes nos new highs (fim de período UW)
-    const _mkrs=[];
-    _uwP.forEach(p=>{
-      const ni=p.e+1;
-      if(ni<EQ.length)_mkrs.push({time:T0+ni*DAY,position:'aboveBar',color:'#26a69a',shape:'circle',size:2,text:''});
-    });
-    if(_mkrs.length)_ln.setMarkers(_mkrs);
-
-    chart.timeScale().fitContent();
   });
   return wrap;
 }
