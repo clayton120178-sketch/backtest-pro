@@ -1828,29 +1828,21 @@ function buildTUWChart() {
 
     chart.timeScale().fitContent();
 
-    // ── Background UW via Canvas HTML (sem afetar escala de preços)
-    // Canvas fica POR CIMA do chart LWC com pointer-events:none (não bloqueia interação).
-    // Canvas é transparente por padrão — só as faixas UW são pintadas.
-    // LWC aparece normalmente em tudo que não é faixa UW.
-    // Equivalente ao add_vrect(layer="below") do Plotly, sem depender de fundo transparente do LWC.
+    // ── Background UW via divs absolutos (sem canvas, sem dependência de z-index de canvas)
+    // Um <div> por período UW: position:absolute dentro de wrap (position:relative).
+    // pointer-events:none → mouse passa para o LWC normalmente.
     const uwColor=isDark?'rgba(239,83,80,0.13)':'rgba(239,83,80,0.16)';
     setTimeout(()=>{
       if(!wrap.isConnected)return;
-      const cv=document.createElement('canvas');
-      cv.width=W;cv.height=200;
-      // z-index alto → sobre o LWC; pointer-events:none → mouse passa pro LWC
-      cv.style.cssText='position:absolute;top:0;left:0;pointer-events:none;z-index:10';
-      wrap.appendChild(cv);
-      const ctx=cv.getContext('2d');
-      // ctx é transparente por padrão: apenas as faixas UW são desenhadas
-      ctx.fillStyle=uwColor;
       _uwP.forEach(p=>{
         const x1=chart.timeScale().timeToCoordinate(T0+p.s*DAY);
         const x2=chart.timeScale().timeToCoordinate(T0+(p.e+1<EQ.length?p.e+1:p.e)*DAY);
-        if(x1!=null&&x2!=null){
-          const xl=Math.min(x1,x2),xw=Math.abs(x2-x1);
-          if(xw>0)ctx.fillRect(xl,0,xw,200);
-        }
+        if(x1==null||x2==null)return;
+        const xl=Math.min(x1,x2),xw=Math.abs(x2-x1);
+        if(xw<=0)return;
+        const band=document.createElement('div');
+        band.style.cssText='position:absolute;top:0;left:'+xl+'px;width:'+xw+'px;height:100%;background:'+uwColor+';pointer-events:none;z-index:10';
+        wrap.appendChild(band);
       });
     },100);
   });
