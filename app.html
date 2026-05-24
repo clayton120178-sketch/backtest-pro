@@ -1804,6 +1804,12 @@ function buildTUWChart() {
     let _pk2=0;
     const peaks=EQ.map(d=>{if(d.v>_pk2)_pk2=d.v;return _pk2;});
 
+    // Limites Y derivados apenas da equity (sem deixar o peak inflar o eixo)
+    const eqVals=EQ.map(d=>d.v);
+    const yMin=Math.min(...eqVals);
+    const yMax=Math.max(...eqVals,0); // garante que 0 (nível do depósito) aparece
+    const yPad=(yMax-yMin)*0.05||Math.abs(yMin)*0.05||1;
+
     // Labels de índice (0..N-1) — Chart.js usa índice linear no eixo X
     const labels=EQ.map((_,i)=>i);
 
@@ -1833,11 +1839,11 @@ function buildTUWChart() {
       data:{
         labels,
         datasets:[
-          // running peak (tracejado)
+          // running peak (tracejado) — em eixo oculto isolado para não inflar escala Y
           {data:peaks,borderColor:peakColor,borderWidth:1,borderDash:[4,3],
-           pointRadius:0,tension:0,fill:false,yAxisID:'y'},
+           pointRadius:0,tension:0,fill:false,yAxisID:'yPeak'},
           // equity (azul)
-          {data:EQ.map(d=>d.v),borderColor:'#1E90FF',borderWidth:2,
+          {data:eqVals,borderColor:'#1E90FF',borderWidth:2,
            pointRadius:0,tension:0,fill:false,yAxisID:'y'},
           // marcadores new high (círculos verdes)
           {data:mkrData,borderColor:'transparent',backgroundColor:'#26a69a',
@@ -1858,11 +1864,19 @@ function buildTUWChart() {
           y:{
             display:true,
             position:'right',
+            min:yMin-yPad,
+            max:yMax+yPad,
             ticks:{color:tx,font:{size:10},maxTicksLimit:5,
               callback:v=>v>=1000||v<=-1000?(v/1000).toFixed(1)+'k':v},
             grid:{color:gd},
             border:{color:'transparent'},
-          }
+          },
+          // Escala oculta para o peak — mesmos limites da equity para alinhar visualmente
+          yPeak:{
+            display:false,
+            min:yMin-yPad,
+            max:yMax+yPad,
+          },
         }
       },
       plugins:[uwPlugin]
