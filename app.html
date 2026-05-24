@@ -1781,9 +1781,6 @@ function buildTUWChart() {
     const isDark=document.documentElement.dataset.theme!=='light';
     const tx=isDark?'#9999BB':'#555577';
     const gd=isDark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)';
-    // Cor exata do card que envolve o chart (--bg1)
-    // Usada para mascarar o fill vermelho abaixo da linha de equity
-    const bgCard=isDark?'#0F0F14':'#FDFCF9';
     const chart=LightweightCharts.createChart(wrap,{
       width:W,height:200,
       layout:{background:{color:'transparent'},textColor:tx},
@@ -1794,65 +1791,65 @@ function buildTUWChart() {
     });
     const T0=Math.floor(new Date('2020-01-01').getTime()/1000),DAY=86400;
 
-    // ── _find_underwater_periods (idêntico ao metrics.py)
+    // Peak inicial = 0 (nível do depósito), idêntico ao convertBackendResult (peak=0)
     const _uwP=[];
-    let _peak=EQ[0].v,_uwS=null;
+    let _peak=0,_uwS=null;
     EQ.forEach((d,i)=>{
-      if(d.v>=_peak){
-        if(_uwS!==null){_uwP.push({s:_uwS,e:i-1});_uwS=null;}
-        _peak=d.v;
-      } else {
-        if(_uwS===null)_uwS=i;
-      }
+      if(d.v>=_peak){if(_uwS!==null){_uwP.push({s:_uwS,e:i-1});_uwS=null;}_peak=d.v;}
+      else{if(_uwS===null)_uwS=i;}
     });
     if(_uwS!==null)_uwP.push({s:_uwS,e:EQ.length-1});
 
-    // ── Running peak
-    let _pk2=EQ[0].v;
+    // Running peak começa em 0
+    let _pk2=0;
     const _peaks=EQ.map(d=>{if(d.v>_pk2)_pk2=d.v;return _pk2;});
 
-    // ── autoscaleInfoProvider: força escala ao range real do equity
-    let _eqMin=EQ[0].v,_eqMax=EQ[0].v;
+    // Range: inclui 0 (nível inicial) mesmo se equity for todo negativo
+    let _eqMin=0,_eqMax=0;
     EQ.forEach(d=>{if(d.v<_eqMin)_eqMin=d.v;if(d.v>_eqMax)_eqMax=d.v;});
     const _rng=(_eqMax-_eqMin)||1;
-    const _pad=_rng*0.12;
-    const _aip=()=>({priceRange:{minValue:_eqMin-_pad,maxValue:_peaks[_peaks.length-1]+_pad}});
+    const _pad=_rng*0.10;
 
-    // ── SÉRIE 1: AreaSeries do RUNNING PEAK — fill VERMELHO de cima para baixo
-    // Preenche de peak até o fundo do chart com gradiente vermelho.
-    // Sozinha, cobre TODA a área abaixo do peak em vermelho.
-    const _peakA=chart.addAreaSeries({
-      topColor:isDark?'rgba(239,83,80,0.28)':'rgba(239,83,80,0.35)',
-      bottomColor:isDark?'rgba(239,83,80,0.10)':'rgba(239,83,80,0.14)',
-      lineColor:isDark?'rgba(200,210,255,0.55)':'rgba(60,60,180,0.55)',
-      lineWidth:1,lineStyle:2,
+    // Sentinelas: base MUITO abaixo e value MUITO acima do range visível.
+    // Cada barra do histogram vai de _base até _top, cobrindo TODA a altura do chart.
+    // Apenas pontos de períodos UW recebem dados → faixas verticais full-height.
+    // Equivalente exato ao add_vrect(fillcolor="rgba(255,0,0,0.1)", layer="below")
+    // do Plotly usado no portfolio_designer.
+    const _base=_eqMin-_rng*20;
+    const _top =_eqMax+_rng*20;
+    const _aip =()=>({priceRange:{minValue:_eqMin-_pad,maxValue:_eqMax+_pad}});
+
+    // ── 1. Faixas verticais UW (full-height, baixa opacidade)
+    const _uwBg=chart.addHistogramSeries({
+      color:isDark?'rgba(239,83,80,0.13)':'rgba(239,83,80,0.16)',
+      base:_base,
       priceLineVisible:false,lastValueVisible:false,
       autoscaleInfoProvider:_aip,
     });
-    _peakA.setData(_peaks.map((p,i)=>({time:T0+i*DAY,value:p})));
+    const _bgD=[];
+    _uwP.forEach(p=>{for(let i=p.s;i<=p.e;i++)_bgD.push({time:T0+i*DAY,value:_top});});
+    if(_bgD.length)_uwBg.setData(_bgD);
 
-    // ── SÉRIE 2: AreaSeries do EQUITY — fill com cor do card (MÁSCARA)
-    // Preenche de equity até o fundo com a cor de fundo do card (opaco).
-    // Isso ESCONDE o vermelho da série 1 abaixo da linha de equity.
-    // RESULTADO LÍQUIDO: vermelho visível APENAS entre peak e equity = zona UW.
-    // Fora da zona UW (equity >= peak): equity fill cobre peak fill → sem vermelho.
-    const _eqA=chart.addAreaSeries({
-      topColor:bgCard,
-      bottomColor:bgCard,
-      lineColor:'#1E90FF',
-      lineWidth:2,
-      priceLineVisible:false,lastValueVisible:false,
-      autoscaleInfoProvider:_aip,
+    // ── 2. Running peak (linha tracejada)
+    const _pL=chart.addLineSeries({
+      color:isDark?'rgba(200,210,255,0.55)':'rgba(60,60,180,0.55)',
+      lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false,
     });
-    _eqA.setData(EQ.map((d,i)=>({time:T0+i*DAY,value:d.v})));
+    _pL.setData(_peaks.map((p,i)=>({time:T0+i*DAY,value:p})));
 
-    // ── Marcadores de new high (ponto onde equity >= peak após período UW)
+    // ── 3. Curva de equity (azul, em cima de tudo)
+    const _ln=chart.addLineSeries({
+      color:'#1E90FF',lineWidth:2,priceLineVisible:false,lastValueVisible:false,
+    });
+    _ln.setData(EQ.map((d,i)=>({time:T0+i*DAY,value:d.v})));
+
+    // ── 4. Marcadores verdes nos pontos de new high (fim de período UW)
     const _mkrs=[];
     _uwP.forEach(p=>{
       const ni=p.e+1;
       if(ni<EQ.length)_mkrs.push({time:T0+ni*DAY,position:'aboveBar',color:'#26a69a',shape:'circle',size:2,text:''});
     });
-    if(_mkrs.length)_eqA.setMarkers(_mkrs);
+    if(_mkrs.length)_ln.setMarkers(_mkrs);
 
     chart.timeScale().fitContent();
   });
