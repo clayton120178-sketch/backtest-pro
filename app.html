@@ -1804,42 +1804,43 @@ function buildTUWChart() {
     let _pk2=0;
     const _peaks=EQ.map(d=>{if(d.v>_pk2)_pk2=d.v;return _pk2;});
 
-    // Range: inclui 0 (nível inicial) mesmo se equity for todo negativo
+    // Range visível: inclui 0 (peak inicial) mesmo que equity seja todo negativo
     let _eqMin=0,_eqMax=0;
     EQ.forEach(d=>{if(d.v<_eqMin)_eqMin=d.v;if(d.v>_eqMax)_eqMax=d.v;});
     const _rng=(_eqMax-_eqMin)||1;
     const _pad=_rng*0.10;
-
-    // Sentinelas: base MUITO abaixo e value MUITO acima do range visível.
-    // Cada barra do histogram vai de _base até _top, cobrindo TODA a altura do chart.
-    // Apenas pontos de períodos UW recebem dados → faixas verticais full-height.
-    // Equivalente exato ao add_vrect(fillcolor="rgba(255,0,0,0.1)", layer="below")
-    // do Plotly usado no portfolio_designer.
-    const _base=_eqMin-_rng*20;
-    const _top =_eqMax+_rng*20;
-    const _aip =()=>({priceRange:{minValue:_eqMin-_pad,maxValue:_eqMax+_pad}});
+    const _visMin=_eqMin-_pad;
+    const _visMax=_eqMax+_pad;
+    // autoscaleInfoProvider em TODAS as series → trava a escala exatamente no
+    // range do equity. Sem isso o LWC expande a escala para os sentinelas do histogram.
+    const _aip=()=>({priceRange:{minValue:_visMin,maxValue:_visMax}});
+    // Sentinelas: 0.01 fora do range visível → barra clippada ao range = full-height.
+    // Valores pequenos: se autoscaleInfoProvider falhar, a escala não explode.
+    const _base=_visMin-0.01;
+    const _top =_visMax+0.01;
 
     // ── 1. Faixas verticais UW (full-height, baixa opacidade)
     const _uwBg=chart.addHistogramSeries({
       color:isDark?'rgba(239,83,80,0.13)':'rgba(239,83,80,0.16)',
-      base:_base,
-      priceLineVisible:false,lastValueVisible:false,
+      base:_base,priceLineVisible:false,lastValueVisible:false,
       autoscaleInfoProvider:_aip,
     });
     const _bgD=[];
     _uwP.forEach(p=>{for(let i=p.s;i<=p.e;i++)_bgD.push({time:T0+i*DAY,value:_top});});
     if(_bgD.length)_uwBg.setData(_bgD);
 
-    // ── 2. Running peak (linha tracejada)
+    // ── 2. Running peak (linha tracejada) — autoscaleInfoProvider: não expande escala
     const _pL=chart.addLineSeries({
       color:isDark?'rgba(200,210,255,0.55)':'rgba(60,60,180,0.55)',
       lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false,
+      autoscaleInfoProvider:_aip,
     });
     _pL.setData(_peaks.map((p,i)=>({time:T0+i*DAY,value:p})));
 
-    // ── 3. Curva de equity (azul, em cima de tudo)
+    // ── 3. Curva de equity (azul) — autoscaleInfoProvider: não expande escala
     const _ln=chart.addLineSeries({
       color:'#1E90FF',lineWidth:2,priceLineVisible:false,lastValueVisible:false,
+      autoscaleInfoProvider:_aip,
     });
     _ln.setData(EQ.map((d,i)=>({time:T0+i*DAY,value:d.v})));
 
