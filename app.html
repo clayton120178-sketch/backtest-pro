@@ -1775,7 +1775,8 @@ function buildEquityChart() {
 }
 
 function buildTUWChart() {
-  const wrap=div('');wrap.style.cssText='width:100%;height:200px';
+  // position:relative necessário para o canvas absoluto ficar dentro do wrap
+  const wrap=div('');wrap.style.cssText='width:100%;height:200px;position:relative';
   _lwcRender(wrap,(W)=>{
     if(!window.LightweightCharts){wrap.innerHTML='<p style="color:var(--txm);font-size:11px;padding:8px">TUW chart indisponivel</p>';return;}
     const isDark=document.documentElement.dataset.theme!=='light';
@@ -1791,7 +1792,7 @@ function buildTUWChart() {
     });
     const T0=Math.floor(new Date('2020-01-01').getTime()/1000),DAY=86400;
 
-    // Peak inicial = 0 (nível do depósito), idêntico ao convertBackendResult (peak=0)
+    // UW detection: peak começa em 0 (nível do depósito, igual ao backend)
     const _uwP=[];
     let _peak=0,_uwS=null;
     EQ.forEach((d,i)=>{
@@ -1804,47 +1805,20 @@ function buildTUWChart() {
     let _pk2=0;
     const _peaks=EQ.map(d=>{if(d.v>_pk2)_pk2=d.v;return _pk2;});
 
-    // Range visível: inclui 0 (peak inicial) mesmo que equity seja todo negativo
-    let _eqMin=0,_eqMax=0;
-    EQ.forEach(d=>{if(d.v<_eqMin)_eqMin=d.v;if(d.v>_eqMax)_eqMax=d.v;});
-    const _rng=(_eqMax-_eqMin)||1;
-    const _pad=_rng*0.10;
-    const _visMin=_eqMin-_pad;
-    const _visMax=_eqMax+_pad;
-    // autoscaleInfoProvider em TODAS as series → trava a escala exatamente no
-    // range do equity. Sem isso o LWC expande a escala para os sentinelas do histogram.
-    const _aip=()=>({priceRange:{minValue:_visMin,maxValue:_visMax}});
-    // Sentinelas: 0.01 fora do range visível → barra clippada ao range = full-height.
-    // Valores pequenos: se autoscaleInfoProvider falhar, a escala não explode.
-    const _base=_visMin-0.01;
-    const _top =_visMax+0.01;
-
-    // ── 1. Faixas verticais UW (full-height, baixa opacidade)
-    const _uwBg=chart.addHistogramSeries({
-      color:isDark?'rgba(239,83,80,0.13)':'rgba(239,83,80,0.16)',
-      base:_base,priceLineVisible:false,lastValueVisible:false,
-      autoscaleInfoProvider:_aip,
-    });
-    const _bgD=[];
-    _uwP.forEach(p=>{for(let i=p.s;i<=p.e;i++)_bgD.push({time:T0+i*DAY,value:_top});});
-    if(_bgD.length)_uwBg.setData(_bgD);
-
-    // ── 2. Running peak (linha tracejada) — autoscaleInfoProvider: não expande escala
+    // ── Série 1: linha tracejada do running peak
     const _pL=chart.addLineSeries({
       color:isDark?'rgba(200,210,255,0.55)':'rgba(60,60,180,0.55)',
       lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false,
-      autoscaleInfoProvider:_aip,
     });
     _pL.setData(_peaks.map((p,i)=>({time:T0+i*DAY,value:p})));
 
-    // ── 3. Curva de equity (azul) — autoscaleInfoProvider: não expande escala
+    // ── Série 2: curva de equity (azul)
     const _ln=chart.addLineSeries({
       color:'#1E90FF',lineWidth:2,priceLineVisible:false,lastValueVisible:false,
-      autoscaleInfoProvider:_aip,
     });
     _ln.setData(EQ.map((d,i)=>({time:T0+i*DAY,value:d.v})));
 
-    // ── 4. Marcadores verdes nos pontos de new high (fim de período UW)
+    // ── Marcadores verdes nos new highs (fim de período UW)
     const _mkrs=[];
     _uwP.forEach(p=>{
       const ni=p.e+1;
@@ -1853,6 +1827,33 @@ function buildTUWChart() {
     if(_mkrs.length)_ln.setMarkers(_mkrs);
 
     chart.timeScale().fitContent();
+
+    // ── Background UW via Canvas HTML (sem afetar escala de preços)
+    // Equivalente ao add_vrect do Plotly: retângulos full-height baseados em X (tempo).
+    // O canvas fica ATRÁS do chart LWC. O chart tem fundo transparente → canvas aparece.
+    const uwColor=isDark?'rgba(239,83,80,0.13)':'rgba(239,83,80,0.16)';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      if(!wrap.isConnected)return;
+      // Elevar o div do LWC para z-index:1 (fica na frente do canvas)
+      const lwcDiv=wrap.firstChild;
+      if(lwcDiv){lwcDiv.style.position='relative';lwcDiv.style.zIndex='1';}
+      // Criar canvas de background (z-index:0, atrás do LWC)
+      const cv=document.createElement('canvas');
+      cv.width=W;cv.height=200;
+      cv.style.cssText='position:absolute;top:0;left:0;pointer-events:none;z-index:0';
+      wrap.insertBefore(cv,lwcDiv);
+      // Desenhar retângulos vermelhos para cada período UW
+      const ctx=cv.getContext('2d');
+      ctx.fillStyle=uwColor;
+      _uwP.forEach(p=>{
+        const x1=chart.timeScale().timeToCoordinate(T0+p.s*DAY);
+        const x2=chart.timeScale().timeToCoordinate(T0+(p.e+1<EQ.length?p.e+1:p.e)*DAY);
+        if(x1!=null&&x2!=null){
+          const xl=Math.min(x1,x2),xw=Math.abs(x2-x1);
+          if(xw>0)ctx.fillRect(xl,0,xw,200);
+        }
+      });
+    }));
   });
   return wrap;
 }
