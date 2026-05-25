@@ -651,6 +651,10 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
       </div>
       <div class="avatar-menu" id="avatar-menu">
         <div class="avatar-name" id="avatar-name">—</div>
+        <button class="avatar-item" id="avatar-admin-btn" style="display:none" onclick="window.open('/admin.html','_blank');document.getElementById('avatar-menu').classList.remove('open')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span style="color:#00D4AA;font-weight:600">Painel Admin</span>
+        </button>
         <button class="avatar-item" onclick="showScreen('history');document.getElementById('avatar-menu').classList.remove('open')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           Meus backtests
@@ -8411,6 +8415,8 @@ function updateAvatarUI() {
   const verEl = document.getElementById('avatar-version');
   if (verEl) verEl.textContent = 'v' + APP_VERSION;
   if (nameEl) nameEl.innerHTML = `<div style="font-weight:600;color:var(--tx);font-size:13px">${name}</div><div style="font-size:11px;color:var(--txm);margin-top:2px">${email}</div>${currentSub?`<div style="margin-top:5px;font-size:11px;color:#00D4AA;font-weight:700">${currentSub.plan.toUpperCase()} · ativo até ${new Date(currentSub.expires_at).toLocaleDateString('pt-BR')}</div>`:'<div style="margin-top:5px;font-size:11px;color:#EF4444">Sem assinatura ativa</div>'}`;
+  const adminBtn = document.getElementById('avatar-admin-btn');
+  if (adminBtn) adminBtn.style.display = currentUsuario?.role === 'admin' ? 'flex' : 'none';
 }
 // ─── SCREENS ──────────────────────────────────────────────────
 function showScreen(name) {
