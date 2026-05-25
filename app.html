@@ -8081,7 +8081,7 @@ function renderProgressBar() {
 // ─── MAIN RENDER ──────────────────────────────────────────────
 function renderApp(opts={}) {
   if (!currentUser) return;
-  if (!opts.bypassTrialGate && !currentSub && currentTrialCount >= FREE_TRIAL.backtests_max) { showScreen('plans'); return; }
+  if (!opts.bypassTrialGate && !currentSub && currentTrialCount >= FREE_TRIAL.backtests_max && currentUsuario?.role !== 'admin') { showScreen('plans'); return; }
 
   renderProgressBar();
   const main=document.getElementById('main');
