@@ -7830,6 +7830,27 @@ function renderResults() {
   const vSub=div('');vSub.style.cssText='font-size:11px;color:var(--txs);margin-top:5px';const _vp=getBacktestPeriod();vSub.textContent=`${_vp.startShort} – ${_vp.endShort} · ${_vp.totalMonths} meses · ${totalTrades.toLocaleString('pt-BR')} operações`;
   vText.append(vLabel,vVal,vSub);verdict.append(vIco,vText);el.appendChild(verdict);
 
+  // ── Contract size disclaimer ──
+  {
+    const curAsset=viewingHistoryItem?viewingHistoryItem.asset:state.cfg.asset;
+    let contractMsg=null;
+    outer:for(const mkt of['local','internacional']){
+      for(const cat of Object.keys(ASSETS_DATA[mkt])){
+        if(ASSETS_DATA[mkt][cat].find(a=>a.t===curAsset)){
+          if(cat==='futuros'||cat==='indices')contractMsg='1 contrato';
+          else if(cat==='acoes'||cat==='acoes_us'||cat==='etfs')contractMsg='1 lote mínimo';
+          break outer;
+        }
+      }
+    }
+    if(contractMsg){
+      const disc=div('');
+      disc.style.cssText='font-size:10px;color:var(--txs);text-align:center;margin-top:4px;margin-bottom:8px';
+      disc.textContent='* Backtest realizado com '+contractMsg+'.';
+      el.appendChild(disc);
+    }
+  }
+
   // ── Metrics Grid (4 columns) ──
   const mg=div('metrics-grid');mg.style.gridTemplateColumns='repeat(4,1fr)';
   METRICS.forEach(m=>{
@@ -9286,7 +9307,7 @@ async function shareResult(evt){
     const blob=await generateShareCard();
     const file=new File([blob],'backtest-pro-resultado.png',{type:'image/png'});
     if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
-      await navigator.share({files:[file],title:'Resultado do Backtest Pro'});
+      await navigator.share({files:[file],title:'Resultado do Backtest Pro',text:'Testei minha estratégia de trading com dados reais. Testa a sua também, grátis no Backtest PRO 👉 https://backtestpro-app.vercel.app'});
     }else{
       const url=URL.createObjectURL(blob);const a=document.createElement('a');
       a.href=url;a.download='backtest-pro-resultado.png';
