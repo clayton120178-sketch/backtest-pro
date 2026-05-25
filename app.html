@@ -831,7 +831,7 @@ async function verificarAcesso(){
     if(data.status === 'ativo' || data.status === 'trial' || data.tipo_acesso === 'admin'){
       updateAvatarUI();
       if(currentScreen === 'plans' || currentScreen === 'payment' || currentScreen === 'history') return;
-      if(currentSub || currentTrialCount < FREE_TRIAL.backtests_max){ renderApp(); maybeAutoTour(); }
+      if(data.role === 'admin' || currentSub || currentTrialCount < FREE_TRIAL.backtests_max){ renderApp(); maybeAutoTour(); }
       else { showScreen('plans'); }
     } else {
       showScreen('plans');
