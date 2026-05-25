@@ -38,6 +38,15 @@
           "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://lmrpxtshdiwufbfkaymg.supabase.co wss://lmrpxtshdiwufbfkaymg.supabase.co; frame-ancestors 'none';"
         }
       ]
+    },
+    {
+      "source": "/admin.html",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://lmrpxtshdiwufbfkaymg.supabase.co wss://lmrpxtshdiwufbfkaymg.supabase.co; frame-ancestors 'none';"
+        }
+      ]
     }
   ]
 }
