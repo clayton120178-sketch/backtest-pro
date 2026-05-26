@@ -186,6 +186,49 @@ tr:hover td{background:var(--bg2);color:var(--tx)}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .section-visible{animation:fadeIn var(--t3) var(--smooth)}
 .row-new{animation:fadeIn .4s var(--smooth)}
+
+/* ── SUPPORT BADGE ─────────────────────────────────────── */
+.support-badge{background:var(--dg);color:#fff;font-size:10px;font-weight:800;font-family:'JetBrains Mono',monospace;border-radius:10px;padding:1px 6px;margin-left:auto;min-width:18px;text-align:center}
+
+/* ── SUPPORT DRAWER ────────────────────────────────────── */
+.sup-drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none}
+.sup-drawer-overlay.open{display:block}
+.sup-drawer{position:fixed;top:0;right:0;width:420px;height:100vh;background:var(--bg1);border-left:0.5px solid var(--bd);z-index:201;display:flex;flex-direction:column;transform:translateX(100%);transition:transform var(--t3) var(--smooth)}
+.sup-drawer.open{transform:none}
+.sup-drawer-head{height:52px;border-bottom:0.5px solid var(--bd);display:flex;align-items:center;gap:10px;padding:0 16px;flex-shrink:0}
+.sup-drawer-back{background:none;border:0.5px solid var(--bd);color:var(--txs);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px;transition:all var(--t1)}
+.sup-drawer-back:hover{color:var(--tx);border-color:var(--bdh)}
+.sup-drawer-id{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--txm);flex:1}
+.sup-drawer-resolve{background:var(--admd);border:0.5px solid var(--adm);color:var(--adm);padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;transition:all var(--t1)}
+.sup-drawer-resolve:hover{background:var(--adm);color:#000}
+.sup-drawer-meta{padding:14px 16px;border-bottom:0.5px solid var(--bd);display:flex;flex-direction:column;gap:4px;flex-shrink:0}
+.sup-drawer-meta-row{font-size:12px;color:var(--txs)}
+.sup-drawer-meta-row strong{color:var(--tx);font-weight:600}
+.sup-drawer-meta-row a{color:var(--adm);text-decoration:none}
+.sup-drawer-meta-row a:hover{text-decoration:underline}
+.sup-drawer-section{font-size:9px;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.1em;padding:12px 16px 6px;font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.sup-conv{flex:1;overflow-y:auto;padding:10px 16px;display:flex;flex-direction:column;gap:6px}
+.sup-conv-bubble{max-width:88%;padding:8px 12px;font-size:12px;color:var(--tx);line-height:1.5;word-break:break-word;border-radius:10px}
+.sup-conv-bubble.user{align-self:flex-end;background:rgba(0,212,170,0.12);border:1px solid rgba(0,212,170,0.25)}
+.sup-conv-bubble.agent{align-self:flex-start;background:var(--bg3);border:1px solid var(--bd)}
+.sup-drawer-notes{padding:12px 16px;border-top:0.5px solid var(--bd);display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.sup-notes-textarea{background:var(--bg2);border:0.5px solid var(--bd);color:var(--tx);border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;resize:vertical;min-height:80px;outline:none;transition:border-color var(--t1)}
+.sup-notes-textarea:focus{border-color:var(--adm)}
+.sup-notes-textarea::placeholder{color:var(--txm)}
+.sup-notes-btns{display:flex;gap:8px}
+.sup-btn-save{background:var(--bg3);border:0.5px solid var(--bd);color:var(--tx);padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;transition:all var(--t1)}
+.sup-btn-save:hover{border-color:var(--bdh)}
+.sup-btn-done{background:var(--admd);border:0.5px solid var(--adm);color:var(--adm);padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;transition:all var(--t1)}
+.sup-btn-done:hover{background:var(--adm);color:#000}
+
+/* category badge colors */
+.badge-cat-duvida{background:var(--ind);color:var(--in)}
+.badge-cat-tecnico{background:var(--dgd);color:var(--dg)}
+.badge-cat-plano{background:var(--acd);color:var(--ac)}
+.badge-cat-backtest{background:var(--admd);color:var(--adm)}
+.badge-cat-outro{background:rgba(136,136,160,0.12);color:#8888A0}
+.badge-pending{background:var(--acd);color:var(--ac)}
+.badge-resolved{background:var(--prd);color:var(--pr)}
 </style>
 </head>
 <body>
@@ -227,6 +270,11 @@ tr:hover td{background:var(--bg2);color:var(--tx)}
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
         Atividade
       </button>
+      <button class="nav-item" data-section="support" onclick="navTo('support')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Suporte
+        <span id="support-badge" class="support-badge" style="display:none">0</span>
+      </button>
     </nav>
 
     <!-- Content -->
@@ -252,7 +300,29 @@ tr:hover td{background:var(--bg2);color:var(--tx)}
       <section id="s-backtests" style="display:none"></section>
       <section id="s-rankings" style="display:none"></section>
       <section id="s-activity" style="display:none"></section>
+      <section id="s-support" style="display:none"></section>
     </main>
+  </div>
+</div>
+
+<!-- Suporte drawer -->
+<div class="sup-drawer-overlay" id="sup-drawer-overlay" onclick="closeTicketDrawer()"></div>
+<div class="sup-drawer" id="sup-drawer">
+  <div class="sup-drawer-head">
+    <button class="sup-drawer-back" onclick="closeTicketDrawer()">← Voltar</button>
+    <span class="sup-drawer-id" id="sup-drawer-id"></span>
+    <button class="sup-drawer-resolve" id="sup-drawer-resolve-btn" onclick="resolveTicket()">Marcar resolvido</button>
+  </div>
+  <div class="sup-drawer-meta" id="sup-drawer-meta"></div>
+  <div class="sup-drawer-section">Histórico da conversa</div>
+  <div class="sup-conv" id="sup-conv"></div>
+  <div class="sup-drawer-notes">
+    <div class="sup-drawer-section" style="padding:0 0 6px">Resposta do admin</div>
+    <textarea class="sup-notes-textarea" id="sup-notes-textarea" placeholder="Adicionar nota ou resposta..."></textarea>
+    <div class="sup-notes-btns">
+      <button class="sup-btn-save" onclick="saveAdminNotes()">Salvar nota</button>
+      <button class="sup-btn-done" onclick="resolveTicket()">Marcar como resolvido</button>
+    </div>
   </div>
 </div>
 
@@ -280,7 +350,13 @@ const state = {
   rankingsLoaded: { strategy: false, market: false },
   chartInstances: [],
   realtimeChannel: null,
-  debounceTimer: null
+  supportChannel: null,
+  pendingCountChannel: null,
+  debounceTimer: null,
+  openTicket: null,
+  supTickets: [],
+  supFilter: 'all',
+  supSearch: '',
 };
 
 /* ══════════════════════════════════════════════════════════
@@ -517,6 +593,7 @@ function loadSection(name) {
     case 'backtests': return loadBacktests();
     case 'rankings': return loadRankings(state.rankingsTab);
     case 'activity': return loadActivity();
+    case 'support': return loadSupport();
   }
 }
 
@@ -852,6 +929,10 @@ function stopRealtime() {
     db.removeChannel(state.realtimeChannel);
     state.realtimeChannel = null;
   }
+  if (state.supportChannel) {
+    db.removeChannel(state.supportChannel);
+    state.supportChannel = null;
+  }
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -1045,6 +1126,261 @@ async function loadActivity() {
 }
 
 /* ══════════════════════════════════════════════════════════
+   SECTION: SUPORTE
+══════════════════════════════════════════════════════════ */
+function supCatClass(cat) {
+  if (!cat) return 'badge-cat-outro';
+  const c = cat.toLowerCase();
+  if (c.includes('dúvida') || c.includes('produto')) return 'badge-cat-duvida';
+  if (c.includes('técnico') || c.includes('tecnico')) return 'badge-cat-tecnico';
+  if (c.includes('plano') || c.includes('pagamento')) return 'badge-cat-plano';
+  if (c.includes('backtest')) return 'badge-cat-backtest';
+  return 'badge-cat-outro';
+}
+
+function fmtDatetimeBR(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleString('pt-BR', {
+    day: '2-digit', month: '2-digit', year: '2-digit',
+    hour: '2-digit', minute: '2-digit'
+  });
+}
+
+async function loadSupport() {
+  const sec = document.getElementById('s-support');
+  sec.innerHTML = `
+    <div class="section-hdr">
+      <div class="section-title">Suporte</div>
+      <div class="section-sub">Tickets de atendimento ao cliente</div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Pendentes</div><div class="kpi-value" id="kpi-sup-pending">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Resolvidos</div><div class="kpi-value" id="kpi-sup-resolved">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Tempo médio (h)</div><div class="kpi-value" id="kpi-sup-avg">—</div></div>
+    </div>
+    <div class="table-card">
+      <div class="table-card-header" style="flex-wrap:wrap;gap:8px">
+        <span class="table-card-title">Tickets</span>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div style="display:flex;gap:4px">
+            <button class="period-btn active" id="sup-f-all"    onclick="supSetFilter('all')">Todos</button>
+            <button class="period-btn"        id="sup-f-pending" onclick="supSetFilter('pending')">Pendentes</button>
+            <button class="period-btn"        id="sup-f-resolved" onclick="supSetFilter('resolved')">Resolvidos</button>
+          </div>
+          <input class="search-input" id="sup-search" placeholder="Buscar por email ou nome..."
+            oninput="supSetSearch(this.value)" autocomplete="off" style="width:220px">
+        </div>
+      </div>
+      <div id="sup-table-wrap"><div class="loading-rows">Carregando...</div></div>
+    </div>`;
+
+  const { data: tickets } = await db
+    .from('support_tickets')
+    .select('*')
+    .order('status', { ascending: true })
+    .order('created_at', { ascending: false });
+
+  state.supTickets = tickets || [];
+  renderSupKPIs();
+  renderSupTable();
+  startSupportRealtime();
+}
+
+function renderSupKPIs() {
+  const tickets = state.supTickets;
+  const pending  = tickets.filter(t => t.status === 'pending').length;
+  const resolved = tickets.filter(t => t.status === 'resolved').length;
+
+  const resolvedWithTime = tickets.filter(t => t.status === 'resolved' && t.resolved_at && t.created_at);
+  const avgMs = resolvedWithTime.length
+    ? resolvedWithTime.reduce((s, t) => s + (new Date(t.resolved_at) - new Date(t.created_at)), 0) / resolvedWithTime.length
+    : 0;
+  const avgH = avgMs ? (avgMs / 36e5).toFixed(1) : '—';
+
+  const p = document.getElementById('kpi-sup-pending');
+  const r = document.getElementById('kpi-sup-resolved');
+  const a = document.getElementById('kpi-sup-avg');
+  if (p) p.textContent = fmtN(pending);
+  if (r) r.textContent = fmtN(resolved);
+  if (a) a.textContent = avgH;
+}
+
+function supSetFilter(f) {
+  state.supFilter = f;
+  ['all','pending','resolved'].forEach(k => {
+    const el = document.getElementById(`sup-f-${k}`);
+    if (el) el.classList.toggle('active', k === f);
+  });
+  renderSupTable();
+}
+
+function supSetSearch(v) {
+  state.supSearch = v.toLowerCase();
+  renderSupTable();
+}
+
+function supFilteredTickets() {
+  let list = state.supTickets;
+  if (state.supFilter !== 'all') list = list.filter(t => t.status === state.supFilter);
+  if (state.supSearch) {
+    list = list.filter(t =>
+      (t.user_email || '').toLowerCase().includes(state.supSearch) ||
+      (t.user_name  || '').toLowerCase().includes(state.supSearch)
+    );
+  }
+  return list;
+}
+
+function renderSupTable() {
+  const wrap = document.getElementById('sup-table-wrap');
+  if (!wrap) return;
+  const list = supFilteredTickets();
+  if (!list.length) {
+    wrap.innerHTML = '<div class="loading-rows">Nenhum ticket encontrado</div>';
+    return;
+  }
+  const rows = list.map(t => `
+    <tr id="sup-row-${t.id}">
+      <td>
+        <div style="color:var(--tx);font-weight:500;font-size:13px">${t.user_name || '—'}</div>
+        <div style="color:var(--txs);font-size:11px">${t.user_email || '—'}</div>
+      </td>
+      <td><span class="badge ${supCatClass(t.category)}">${t.category || '—'}</span></td>
+      <td><a href="https://wa.me/55${t.user_whatsapp}" target="_blank" style="color:var(--adm);font-size:12px;font-family:'JetBrains Mono',monospace">${t.user_whatsapp}</a></td>
+      <td>${planBadge(t.user_plan || 'trial')}</td>
+      <td class="td-mono" style="font-size:11px;color:var(--txm)">${fmtDatetimeBR(t.created_at)}</td>
+      <td><span class="badge ${t.status === 'pending' ? 'badge-pending' : 'badge-resolved'}">${t.status === 'pending' ? 'PENDENTE' : 'RESOLVIDO'}</span></td>
+      <td><button class="period-btn" onclick="openTicketDrawer('${t.id}')" style="font-size:11px">Ver / Responder</button></td>
+    </tr>`).join('');
+
+  wrap.innerHTML = `<table><thead><tr>
+    <th>Usuário</th><th>Categoria</th><th>WhatsApp</th><th>Plano</th>
+    <th>Aberto em</th><th>Status</th><th>Ações</th>
+  </tr></thead><tbody id="sup-tbody">${rows}</tbody></table>`;
+}
+
+function openTicketDrawer(ticketId) {
+  const ticket = state.supTickets.find(t => t.id === ticketId);
+  if (!ticket) return;
+  state.openTicket = ticket;
+
+  document.getElementById('sup-drawer-id').textContent = `Ticket #${ticket.id.slice(0, 8)}`;
+
+  const resolveBtn = document.getElementById('sup-drawer-resolve-btn');
+  if (resolveBtn) resolveBtn.style.display = ticket.status === 'resolved' ? 'none' : '';
+
+  const meta = document.getElementById('sup-drawer-meta');
+  if (meta) meta.innerHTML = `
+    <div class="sup-drawer-meta-row"><strong>${ticket.user_name || '—'}</strong> (${ticket.user_email || '—'})</div>
+    <div class="sup-drawer-meta-row">Plano: ${ticket.user_plan || '—'} &nbsp;|&nbsp;
+      WhatsApp: <a href="https://wa.me/55${ticket.user_whatsapp}" target="_blank">${ticket.user_whatsapp}</a></div>
+    <div class="sup-drawer-meta-row">Categoria: ${ticket.category || '—'}</div>
+    <div class="sup-drawer-meta-row">Aberto em: ${fmtDatetimeBR(ticket.created_at)}</div>`;
+
+  const conv = document.getElementById('sup-conv');
+  if (conv) {
+    const history = Array.isArray(ticket.conversation) ? ticket.conversation : [];
+    conv.innerHTML = history.map(m => `
+      <div class="sup-conv-bubble ${m.role === 'user' ? 'user' : 'agent'}">${m.content}</div>
+    `).join('') || '<div style="color:var(--txm);font-size:12px;padding:8px 0">Sem histórico</div>';
+    setTimeout(() => { conv.scrollTop = conv.scrollHeight; }, 50);
+  }
+
+  const notes = document.getElementById('sup-notes-textarea');
+  if (notes) notes.value = ticket.admin_notes || '';
+
+  document.getElementById('sup-drawer-overlay').classList.add('open');
+  document.getElementById('sup-drawer').classList.add('open');
+}
+
+function closeTicketDrawer() {
+  document.getElementById('sup-drawer-overlay').classList.remove('open');
+  document.getElementById('sup-drawer').classList.remove('open');
+  state.openTicket = null;
+}
+
+async function saveAdminNotes() {
+  if (!state.openTicket) return;
+  const notes = document.getElementById('sup-notes-textarea')?.value || '';
+  const btn = document.querySelector('.sup-btn-save');
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+
+  await db.from('support_tickets').update({ admin_notes: notes }).eq('id', state.openTicket.id);
+
+  const idx = state.supTickets.findIndex(t => t.id === state.openTicket.id);
+  if (idx !== -1) state.supTickets[idx].admin_notes = notes;
+  state.openTicket.admin_notes = notes;
+
+  if (btn) { btn.disabled = false; btn.textContent = 'Salvar nota'; }
+}
+
+async function resolveTicket() {
+  if (!state.openTicket || state.openTicket.status === 'resolved') return;
+  const btn = document.getElementById('sup-drawer-resolve-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
+  const now = new Date().toISOString();
+  await db.from('support_tickets').update({
+    status: 'resolved',
+    resolved_at: now,
+    resolved_by: state.admin?.id || null,
+  }).eq('id', state.openTicket.id);
+
+  const idx = state.supTickets.findIndex(t => t.id === state.openTicket.id);
+  if (idx !== -1) {
+    state.supTickets[idx].status = 'resolved';
+    state.supTickets[idx].resolved_at = now;
+  }
+  renderSupKPIs();
+  renderSupTable();
+  refreshPendingBadge();
+  closeTicketDrawer();
+}
+
+function startSupportRealtime() {
+  if (state.supportChannel) return;
+  state.supportChannel = db.channel('admin-support-live')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_tickets' }, payload => {
+      if (state.activeSection !== 'support') return;
+      state.supTickets.unshift(payload.new);
+      renderSupKPIs();
+      renderSupTable();
+      const newRow = document.getElementById(`sup-row-${payload.new.id}`);
+      if (newRow) newRow.classList.add('row-new');
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'support_tickets' }, payload => {
+      if (state.activeSection !== 'support') return;
+      const idx = state.supTickets.findIndex(t => t.id === payload.new.id);
+      if (idx !== -1) state.supTickets[idx] = { ...state.supTickets[idx], ...payload.new };
+      renderSupKPIs();
+      renderSupTable();
+    })
+    .subscribe();
+}
+
+/* Sempre ativo — mantém badge atualizada mesmo fora da seção Suporte */
+function watchPendingCount() {
+  if (state.pendingCountChannel) return;
+  state.pendingCountChannel = db.channel('support-count')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, () => {
+      refreshPendingBadge();
+    })
+    .subscribe();
+  refreshPendingBadge();
+}
+
+async function refreshPendingBadge() {
+  const { count } = await db
+    .from('support_tickets')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending');
+  const badge = document.getElementById('support-badge');
+  if (!badge) return;
+  badge.textContent = count || 0;
+  badge.style.display = count > 0 ? 'inline' : 'none';
+}
+
+/* ══════════════════════════════════════════════════════════
    AUTH
 ══════════════════════════════════════════════════════════ */
 async function initAdmin() {
@@ -1068,6 +1404,7 @@ async function initAdmin() {
   setTimeout(() => document.getElementById('loading').style.display = 'none', 300);
   document.getElementById('app').style.display = 'flex';
 
+  watchPendingCount();
   loadOverview();
 }
 
