@@ -39,15 +39,6 @@ serve(async (req) => {
     { global: { headers: { Authorization: authHeader } } }
   );
 
-  const jwt = authHeader.replace("Bearer ", "");
-  const { data: { user }, error: authError } = await supabaseAnon.auth.getUser(jwt);
-  if (authError || !user) {
-    console.error("[escalate] auth falhou:", authError?.message);
-    return new Response(JSON.stringify({ error: "Sessão inválida" }), {
-      status: 401, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-    });
-  }
-
   let body: EscalateRequest;
   try {
     body = await req.json() as EscalateRequest;
@@ -58,17 +49,27 @@ serve(async (req) => {
     });
   }
 
-  console.log("[escalate] user_id payload:", body.user_id, "| session:", user.id);
+  console.log("[escalate] recebido — user_id:", body.user_id, "whatsapp:", body.user_whatsapp, "category:", body.category);
+
+  const { data: { user }, error: authError } = await supabaseAnon.auth.getUser();
+  if (authError || !user) {
+    console.error("[escalate] auth falhou:", authError?.message);
+    return new Response(JSON.stringify({ error: "Sessão inválida" }), {
+      status: 401, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+    });
+  }
+
+  console.log("[escalate] auth ok — session user:", user.id);
 
   if (body.user_id !== user.id) {
-    console.error("[escalate] user_id não corresponde");
+    console.error("[escalate] user_id não corresponde — payload:", body.user_id, "session:", user.id);
     return new Response(JSON.stringify({ error: "user_id não corresponde à sessão" }), {
       status: 403, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   }
 
   if (!body.user_whatsapp || !body.category) {
-    console.error("[escalate] campos ausentes — whatsapp:", body.user_whatsapp, "category:", body.category);
+    console.error("[escalate] campos ausentes");
     return new Response(JSON.stringify({ error: "Dados obrigatórios ausentes" }), {
       status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
@@ -79,6 +80,8 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
+
+  console.log("[escalate] tentando insert...");
 
   const { error: insertError } = await supabaseAdmin
     .from("support_tickets")
@@ -94,11 +97,13 @@ serve(async (req) => {
     });
 
   if (insertError) {
-    console.error("[chat-support-escalate] Erro ao inserir ticket:", insertError);
+    console.error("[escalate] insert falhou:", insertError.message, insertError.code);
     return new Response(JSON.stringify({ error: "Erro ao registrar atendimento" }), {
       status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   }
+
+  console.log("[escalate] insert ok");
 
   return new Response(
     JSON.stringify({ success: true }),
