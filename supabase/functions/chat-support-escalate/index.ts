@@ -39,8 +39,10 @@ serve(async (req) => {
     { global: { headers: { Authorization: authHeader } } }
   );
 
-  const { data: { user }, error: authError } = await supabaseAnon.auth.getUser();
+  const jwt = authHeader.replace("Bearer ", "");
+  const { data: { user }, error: authError } = await supabaseAnon.auth.getUser(jwt);
   if (authError || !user) {
+    console.error("[escalate] auth falhou:", authError?.message);
     return new Response(JSON.stringify({ error: "Sessão inválida" }), {
       status: 401, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
@@ -50,18 +52,23 @@ serve(async (req) => {
   try {
     body = await req.json() as EscalateRequest;
   } catch {
+    console.error("[escalate] payload inválido");
     return new Response(JSON.stringify({ error: "Payload inválido" }), {
       status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   }
 
+  console.log("[escalate] user_id payload:", body.user_id, "| session:", user.id);
+
   if (body.user_id !== user.id) {
+    console.error("[escalate] user_id não corresponde");
     return new Response(JSON.stringify({ error: "user_id não corresponde à sessão" }), {
       status: 403, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   }
 
   if (!body.user_whatsapp || !body.category) {
+    console.error("[escalate] campos ausentes — whatsapp:", body.user_whatsapp, "category:", body.category);
     return new Response(JSON.stringify({ error: "Dados obrigatórios ausentes" }), {
       status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });

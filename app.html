@@ -9639,9 +9639,10 @@ async function shareResult(evt){
     try {
       const { data: { session } } = await db.auth.getSession();
       const token = session?.access_token;
+      if(!token) throw new Error('sem sessão');
       const plan = currentSub?.plan || currentUsuario?.tipo_acesso || 'trial';
 
-      await fetch(`${SUPA_FUNCS}/chat-support-escalate`, {
+      const res = await fetch(`${SUPA_FUNCS}/chat-support-escalate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -9658,8 +9659,18 @@ async function shareResult(evt){
           conversation_history: chatHistory,
         }),
       });
+
+      if(!res.ok){
+        const errData = await res.json().catch(() => ({}));
+        console.error('[chat-support-escalate] erro:', res.status, errData);
+        throw new Error(errData.error || `HTTP ${res.status}`);
+      }
+
     } catch(e){
       console.error('[chat-support-escalate]', e);
+      if(confirmBtn){ confirmBtn.disabled = false; confirmBtn.textContent = 'Confirmar'; }
+      chatAddBubble('agent', 'Não foi possível registrar seu contato. Tente novamente.');
+      return;
     }
 
     document.getElementById('chat-wa-input')?.closest('.chat-wa-row')?.remove();
