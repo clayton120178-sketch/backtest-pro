@@ -567,6 +567,8 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .chat-header-title{font-size:13px;font-weight:600;color:var(--tx)}
 .chat-header-close{background:none;border:none;cursor:pointer;color:var(--txs);padding:4px;border-radius:4px;line-height:0;transition:color var(--t1)}
 .chat-header-close:hover{color:var(--tx)}
+.chat-header-new{background:none;border:0.5px solid var(--bd);cursor:pointer;color:var(--txs);padding:3px 8px;border-radius:5px;font-size:11px;font-family:inherit;transition:all var(--t1);margin-right:6px}
+.chat-header-new:hover{color:var(--adm);border-color:var(--adm)}
 .chat-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;min-height:320px}
 .chat-bubble{max-width:88%;padding:10px 14px;font-size:13px;color:var(--tx);line-height:1.5;word-break:break-word}
 .chat-bubble.user{align-self:flex-end;background:rgba(0,212,170,0.15);border:1px solid rgba(0,212,170,0.3);border-radius:12px 12px 2px 12px}
@@ -9375,6 +9377,9 @@ async function shareResult(evt){
 <div id="chat-window">
   <div class="chat-header">
     <span class="chat-header-title">Suporte Backtest Pro</span>
+    <button class="chat-header-new" id="chat-new-btn" onclick="chatReset()" title="Nova conversa" style="display:none">
+      ↺ Nova conversa
+    </button>
     <button class="chat-header-close" onclick="chatToggle()" title="Fechar">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
@@ -9451,8 +9456,38 @@ async function shareResult(evt){
     chatAddBubble('user', cat);
     chatHistory.push({ role: 'user', content: cat });
     chatSetInput(true);
+    const newBtn = document.getElementById('chat-new-btn');
+    if(newBtn) newBtn.style.display = '';
     chatSendToAPI(cat);
   }
+
+  function chatReset(){
+    chatHistory   = [];
+    chatCategory  = null;
+    chatEscalated = false;
+    chatWaiting   = false;
+
+    const msgs = document.getElementById('chat-msgs');
+    if(msgs) msgs.innerHTML = '';
+
+    const footer = document.getElementById('chat-footer');
+    if(footer){
+      footer.style.display = 'flex';
+      footer.innerHTML = `
+        <textarea class="chat-input" id="chat-input" placeholder="Digite sua mensagem..." rows="1"
+          onkeydown="chatKeydown(event)" oninput="chatInputResize(this)"></textarea>
+        <button class="chat-send" id="chat-send" onclick="chatSend()" title="Enviar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>`;
+    }
+
+    const newBtn = document.getElementById('chat-new-btn');
+    if(newBtn) newBtn.style.display = 'none';
+
+    chatSetInput(false);
+    chatInit();
+  }
+  window.chatReset = chatReset;
 
   function chatAddBubble(role, text){
     const msgs = document.getElementById('chat-msgs');
