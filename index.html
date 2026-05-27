@@ -168,6 +168,23 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88
 .chart-label span{color:var(--pr)}
 
 /* STATEMENT */
+/* DEMO SECTION */
+.demo-section{padding:100px 0}
+.demo-section .section-title{text-align:center;margin-bottom:8px}
+.demo-section .section-label{text-align:center}
+.demo-row{display:flex;align-items:center;gap:64px;margin-top:80px}
+.demo-row-reverse{flex-direction:row-reverse}
+.demo-video{flex:1 1 55%;min-width:0;border-radius:16px;overflow:hidden;border:1px solid var(--bd);background:var(--bg2);box-shadow:0 0 40px rgba(0,0,0,.4)}
+.demo-video video{width:100%;display:block;border-radius:16px}
+.demo-text{flex:1 1 40%;min-width:0}
+.demo-step{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--ac);text-transform:uppercase;letter-spacing:.12em;margin-bottom:12px}
+.demo-title{font-size:clamp(20px,2.5vw,28px);font-weight:800;letter-spacing:-.02em;line-height:1.15;margin-bottom:16px;color:var(--tx)}
+.demo-desc{font-size:16px;color:var(--txs);line-height:1.7}
+@media(max-width:768px){
+  .demo-row,.demo-row-reverse{flex-direction:column;gap:24px;margin-top:56px}
+  .demo-video{width:100%}
+  .demo-text{width:100%}
+}
 .statement{padding:80px 0;background:var(--bg1);border-top:1px solid var(--bd);border-bottom:1px solid var(--bd)}
 .statement-inner{max-width:800px;margin:0 auto}
 .statement-eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--dg);text-transform:uppercase;letter-spacing:.12em;margin-bottom:20px}
@@ -458,6 +475,99 @@ footer{border-top:1px solid var(--bd);padding:36px 0}
       </button>
       <p style="font-size:12px;color:var(--txm);margin-top:10px;font-family:'JetBrains Mono',monospace">5 backtests gratuitos · sem cartão</p>
     </div>
+  </div>
+</section>
+
+<!-- DEMO QUEBRAS -->
+<section class="demo-section">
+  <div class="container">
+    <div class="section-label reveal">Veja como funciona</div>
+    <h2 class="section-title reveal">Configure cada detalhe.<br><span class="accent">Exatamente como você opera.</span></h2>
+
+    <!-- Q1 -->
+    <div class="demo-row reveal">
+      <div class="demo-video">
+        <video autoplay muted loop playsinline loading="lazy">
+          <source src="/videos/Q1.webm" type="video/webm">
+        </video>
+      </div>
+      <div class="demo-text">
+        <div class="demo-step">01</div>
+        <h3 class="demo-title">Ativo e mercado</h3>
+        <p class="demo-desc">Você escolhe o ativo que opera — WIN, WDO, IND, DOL, ou qualquer ação. Define o tempo gráfico: 1, 2, 5, 10, 15, 30 ou 60 minutos. Determina em qual janela do dia quer operar e quantas entradas por sessão. O backtest respeita exatamente as condições que você opera ao vivo.</p>
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="demo-row demo-row-reverse reveal">
+      <div class="demo-video">
+        <video autoplay muted loop playsinline loading="lazy">
+          <source src="/videos/Q2.webm" type="video/webm">
+        </video>
+      </div>
+      <div class="demo-text">
+        <div class="demo-step">02</div>
+        <h3 class="demo-title">Indicador e direção</h3>
+        <p class="demo-desc">Selecione o indicador que quer testar: Bandas de Bollinger, IFR, MACD, médias móveis, entre 28 disponíveis. Configure os parâmetros do jeito que você usa. Defina se quer testar compras, vendas ou os dois lados. O backtest testa exatamente o que você configurar.</p>
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="demo-row reveal">
+      <div class="demo-video">
+        <video autoplay muted loop playsinline loading="lazy">
+          <source src="/videos/Q3.webm" type="video/webm">
+        </video>
+      </div>
+      <div class="demo-text">
+        <div class="demo-step">03</div>
+        <h3 class="demo-title">Gatilho de entrada</h3>
+        <p class="demo-desc">Defina o momento exato da entrada: abertura do próximo candle, rompimento de nível, cruzamento de indicador. O motor simula cada entrada com precisão cirúrgica — sem interpretação, sem subjetividade. O que você configurou é o que será testado.</p>
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="demo-row demo-row-reverse reveal">
+      <div class="demo-video">
+        <video autoplay muted loop playsinline loading="lazy">
+          <source src="/videos/Q4.webm" type="video/webm">
+        </video>
+      </div>
+      <div class="demo-text">
+        <div class="demo-step">04</div>
+        <h3 class="demo-title">Stop e alvo</h3>
+        <p class="demo-desc">Configure stop e alvo do jeito que você quiser: valor fixo, percentual, múltiplo de ATR, ou posição gráfica. O risco de cada operação é calculado como você definir.</p>
+      </div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="demo-row reveal">
+      <div class="demo-video">
+        <video autoplay muted loop playsinline loading="lazy">
+          <source src="/videos/Q5.webm" type="video/webm">
+        </video>
+      </div>
+      <div class="demo-text">
+        <div class="demo-step">05</div>
+        <h3 class="demo-title">Condução da operação</h3>
+        <p class="demo-desc">Defina como a operação será conduzida depois de aberta: condução até o alvo, trailing stop, saída por condição contrária. O backtest simula não só a entrada — simula o gerenciamento completo, exatamente como você conduziria ao vivo.</p>
+      </div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="demo-row demo-row-reverse reveal">
+      <div class="demo-video">
+        <video autoplay muted loop playsinline loading="lazy">
+          <source src="/videos/Q6.webm" type="video/webm">
+        </video>
+      </div>
+      <div class="demo-text">
+        <div class="demo-step">06</div>
+        <h3 class="demo-title">Período e capital</h3>
+        <p class="demo-desc">Escolha o intervalo histórico que quer testar — meses ou anos. O Backtest Pro disponibiliza até 5 anos de dados reais do mercado. Informe o capital inicial. O relatório mostra a evolução real do patrimônio operação por operação, com drawdown máximo e curva de equity. Não é projeção. É o que teria acontecido no mercado real com seu dinheiro.</p>
+      </div>
+    </div>
+
   </div>
 </section>
 
