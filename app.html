@@ -2730,7 +2730,7 @@ function buildCondPreview(indId, condText, params={}) {
   const sc = up ? '#10B981' : '#EF4444';
 
   // Indicator types that get LWC treatment
-  const LWC_IDS = ['rsi','stoch','cci','williams','macd','atr','sma','ema','bb','vwap','adx','sar','hilo','hilon','range','gap','prevday','fib','fvg','bos','choch','sweep','grab','candle'];
+  const LWC_IDS = ['rsi','stoch','cci','williams','macd','atr','sma','ema','bb','vwap','adx','sar','hilo','hilon','range','gap','prevday','fib','fvg','bos','choch','sweep','grab'];
 
   if (!LWC_IDS.includes(indId)) {
     return _buildCondPreviewSVG(indId, condText, params, isDark, up, cross, sc, ct);
