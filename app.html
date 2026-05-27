@@ -8378,6 +8378,12 @@ async function verificarArmazenagemAoSair(onProsseguir) {
     if (onProsseguir) onProsseguir();
     return;
   }
+  // Admin não tem limites de armazenagem — salva e segue
+  if (currentUsuario?.role === 'admin') {
+    await salvarBacktest(CURRENT_BACKTEST_ID);
+    if (onProsseguir) onProsseguir();
+    return;
+  }
   try {
 
   // Limpar listeners da tela de resultados
