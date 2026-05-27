@@ -4796,6 +4796,7 @@ function _buildCondPreviewSVG(indId, condText, params={}, isDark, up, cross, sc,
   // ═══ CANDLE PATTERNS ═══
   if(indId==='candle'){
     const cx=W/2,cy=H/2;
+    const Y='#F59E0B';
     const dc=(x,o,c,h,l,w)=>{const bull=c<o;const col=bull?'#10B981':'#EF4444';ln(x,h,x,l,col,0.6);const top=Math.min(o,c),bh=Math.max(1,Math.abs(o-c));rc(x-w/2,top,w,bh,col,0.8,0.5);};
     if(ct.includes('martelo')&&!ct.includes('invertido')){dc(cx,44,40,36,76,8);tx(cx,92,'Martelo','#10B981',8,'middle');}
     else if(ct.includes('invertido')){dc(cx,70,74,32,78,8);tx(cx,92,'Martelo Inv.','#10B981',8,'middle');}
@@ -6314,20 +6315,23 @@ function renderModal() {
 
       // ── Condition Preview — padrão visual premium para todos os indicadores ──
       const _cdDesc={'martelo (alta)':'Corpo pequeno no topo com sombra inferior longa — rejeição de preços mais baixos. Sinal de possível reversão de baixa para alta.','martelo invertido (alta)':'Corpo pequeno na base com sombra superior longa. Após queda, indica rejeição de preços mais altos — possível reversão.','engolfo de alta':'Candle verde que engole completamente o vermelho anterior. Compradores assumiram o controle — inversão de baixa para alta.','engolfo de baixa':'Candle vermelho que engole o verde anterior. Vendedores dominam — inversão de alta para baixa.','doji':'Abertura e fechamento quase iguais. Indecisão do mercado — possível reversão ou pausa de tendência.','estrela da manhã (alta)':'Três candles: queda, indecisão (corpo pequeno), confirmação de alta. Padrão clássico de reversão de baixa.','estrela da noite (baixa)':'Três candles: subida, indecisão, confirmação de queda. Padrão clássico de reversão de alta.','doji da manhã (alta)':'Variação da Estrela da Manhã com Doji no centro — indecisão ainda mais marcada antes da reversão de alta.','doji da noite (baixa)':'Variação da Estrela da Noite com Doji — mercado indeciso no topo antes da queda.','harami de alta':'Candle vermelho grande seguido de verde pequeno contido no corpo. Sinal de possível reversão de baixa para alta.','harami de baixa':'Candle verde grande seguido de vermelho pequeno dentro do corpo. Sinal de possível reversão de alta para baixa.','marubozu de alta':'Candle verde sem sombras — máxima = fechamento, mínima = abertura. Domínio absoluto dos compradores.','marubozu de baixa':'Candle vermelho sem sombras — máxima = abertura, mínima = fechamento. Domínio total dos vendedores.','spinning top':'Corpo pequeno com sombras longas nos dois lados. Forças equilibradas — indecisão após movimento forte.','pivô de alta':'Fundo com mínima menor que os dois candles adjacentes. Suporte natural — possível ponto de reversão de baixa.','pivô de baixa':'Topo com máxima maior que os candles adjacentes. Resistência natural — possível topo de reversão.','3 soldados brancos (alta)':'Três candles verdes consecutivos com fechamentos crescentes. Tendência de alta forte e confirmada.','3 corvos negros (baixa)':'Três candles vermelhos consecutivos com fechamentos decrescentes. Tendência de queda forte e confirmada.','cobertura de nuvem negra (baixa)':'Após alta, candle vermelho abre acima do fechamento anterior e fecha no meio do corpo verde. Reversão de alta.','linha de perfuração (alta)':'Após queda, candle verde que fecha acima do meio do vermelho anterior. Sinal de reversão de baixa para alta.','topo duplo (baixa)':'Dois topos similares sem superar a resistência — padrão clássico de reversão de alta para baixa.','fundo duplo (alta)':'Dois fundos similares respeitados — suporte duplo confirmado. Padrão clássico de reversão de baixa.','trap de alta':'Rompimento falso de resistência seguido de reversão de alta. Armadilha para vendedores — continuidade de compra.','trap de baixa':'Rompimento falso de suporte seguido de reversão de queda. Armadilha para compradores — continuidade de venda.'};
+      const stickyWrap=div('');
+      stickyWrap.style.cssText='position:sticky;top:0;z-index:2;background:var(--bg1);padding-bottom:6px;margin-bottom:4px';
       const previewWrap=div('cond-preview');
       previewWrap.id='cond-preview-wrap';
       previewWrap.appendChild(buildCondPreview(ind.id, ms.params.cond||conds[0]||'', ms.params));
-      frag.appendChild(previewWrap);
+      stickyWrap.appendChild(previewWrap);
       const legend=div('cond-preview-legend');
       legend.innerHTML='<span style="opacity:0.6">ⓘ</span> Visualização ilustrativa. Os preços exibidos na grade não correspondem ao ativo selecionado.';
-      frag.appendChild(legend);
+      stickyWrap.appendChild(legend);
       if(ind.id==='candle'){
         const _cdDescDiv=div('');
         _cdDescDiv.id='candle-desc-div';
-        _cdDescDiv.style.cssText='background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:8px;padding:10px 12px;font-size:12px;color:rgba(255,255,255,0.70);line-height:1.55;margin-top:-8px';
+        _cdDescDiv.style.cssText='background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:8px;padding:10px 12px;font-size:12px;color:rgba(255,255,255,0.70);line-height:1.55;margin-top:2px';
         _cdDescDiv.textContent=_cdDesc[(ms.params.cond||conds[0]||'').toLowerCase()]||'Padrão de candlestick para identificação de sinais de entrada e reversão.';
-        frag.appendChild(_cdDescDiv);
+        stickyWrap.appendChild(_cdDescDiv);
       }
+      frag.appendChild(stickyWrap);
 
       // Helper: rebuild the modal preview when any param changes
       function refreshCondPreview(){
