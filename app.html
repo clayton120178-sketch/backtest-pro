@@ -2051,6 +2051,7 @@ function buildEquityChart() {
     const isDark=document.documentElement.dataset.theme!=='light';
     const tx=isDark?'#9999BB':'#555577';
     const gd=isDark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)';
+    const fmtK=v=>{if(v===0)return'0';const k=v/1000;if(Math.abs(k)>=1)return(k%1===0?k.toFixed(0):k.toFixed(1))+'k';return String(Math.round(v));};
     const chart=LightweightCharts.createChart(wrap,{
       width:W,height:200,
       layout:{background:{color:'transparent'},textColor:tx},
@@ -2058,14 +2059,17 @@ function buildEquityChart() {
       rightPriceScale:{borderColor:'transparent'},
       timeScale:{borderColor:'transparent'},
       crosshair:{mode:1},handleScroll:false,handleScale:false,
+      localization:{priceFormatter:fmtK},
     });
     const T0=Math.floor(new Date('2020-01-01').getTime()/1000),DAY=86400;
     const data=EQ.map((d,i)=>({time:T0+i*DAY,value:d.v}));
     chart.addLineSeries({color:isDark?'rgba(255,255,255,0.10)':'rgba(0,0,0,0.10)',lineWidth:1,priceLineVisible:false,lastValueVisible:false})
       .setData([{time:T0,value:0},{time:T0+(EQ.length-1)*DAY,value:0}]);
+    const isNeg=EQ[EQ.length-1].v<0;
     const area=chart.addAreaSeries({
-      topColor:'rgba(0,212,170,0.22)',bottomColor:'rgba(0,212,170,0.02)',
-      lineColor:'#00D4AA',lineWidth:2,priceLineVisible:false,
+      topColor:isNeg?'rgba(239,68,68,0.22)':'rgba(0,212,170,0.22)',
+      bottomColor:isNeg?'rgba(239,68,68,0.02)':'rgba(0,212,170,0.02)',
+      lineColor:isNeg?'#EF4444':'#00D4AA',lineWidth:2,priceLineVisible:false,
     });
     area.setData(data);
     const mkrs=[];
@@ -8936,16 +8940,28 @@ function showPaySuccess() {
 // ─── HISTORY SCREEN ──────────────────────────────────────────
 const MOCK_HISTORY = []; // substituído por dados reais do banco — ver loadHistoryData()
 
+function goBackToBacktester() {
+  viewingHistoryItem = null;
+  CURRENT_BACKEND_METRICS = null;
+  state.animate = true;
+  state.screen = 'wizard';
+  state.step = 0;
+  renderApp();
+}
+
 function renderHistory() {
   const el = document.createElement('div');
   el.className = 'history-screen';
   el.id = 'history-screen-root';
   el.innerHTML = `
-    <button class="history-back" onclick="renderApp()">${IC.back} Voltar ao backtester</button>
+    <button class="history-back" onclick="goBackToBacktester()">${IC.back} Voltar ao backtester</button>
     <div class="history-title">Meus Backtests</div>
     <div class="history-sub" id="history-count" style="margin-bottom:16px">Carregando...</div>
     <div id="history-list-container" style="display:flex;align-items:center;justify-content:center;min-height:120px">
       <div style="color:var(--txs);font-size:13px">Buscando seus backtests...</div>
+    </div>
+    <div style="margin-top:24px;padding-bottom:8px">
+      <button class="history-back" onclick="goBackToBacktester()">${IC.back} Voltar ao backtester</button>
     </div>
   `;
   loadHistoryData();
