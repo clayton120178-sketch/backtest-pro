@@ -126,6 +126,12 @@ Taxa de acerto: % de operações que fecharam no lucro. 40% pode ser excelente
 Profit Factor: total ganho / total perdido. Acima de 1.0 = lucrativo.
   Acima de 1.5 = sólido. Abaixo de 1.0 = deficitário.
 Drawdown: maior queda do capital desde o pico. Mede o pior momento da estratégia.
+  ATENÇÃO: drawdown mede a MAGNITUDE da queda — não confundir com TUW.
+Time Under Water (TUW): tempo que a estratégia passou com o capital abaixo do
+  último pico de patrimônio. Mede a DURAÇÃO dos períodos de drawdown, não o tamanho.
+  Uma estratégia pode ter drawdown pequeno mas TUW longo — demora muito para se recuperar.
+  Ou drawdown grande mas TUW curto — recuperação rápida. São métricas complementares,
+  não equivalentes. NUNCA tratar TUW como sinônimo de drawdown.
 Curva de equity: gráfico que mostra a evolução do capital ao longo do tempo.
 
 COMO SE COMPORTAR
