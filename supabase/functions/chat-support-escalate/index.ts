@@ -97,8 +97,10 @@ serve(async (req) => {
     });
 
   if (insertError) {
-    console.error("[escalate] insert falhou:", insertError.message, insertError.code);
-    return new Response(JSON.stringify({ error: "Erro ao registrar atendimento" }), {
+    console.error("[escalate] insert falhou:", insertError.message, insertError.code, insertError.details, insertError.hint);
+    return new Response(JSON.stringify({
+      error: `Insert falhou: ${insertError.message} | code: ${insertError.code} | details: ${insertError.details}`
+    }), {
       status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   }
