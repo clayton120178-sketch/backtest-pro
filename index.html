@@ -65,7 +65,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88
 .nav-links a:hover{color:var(--tx);opacity:1}
 .nav-cta{background:var(--ac);color:var(--bg0)!important;padding:8px 18px;border-radius:8px;font-weight:700!important;font-size:13px!important;transition:all .2s!important}
 .nav-cta:hover{background:#00ecc0;opacity:1!important;transform:translateY(-1px)}
-@media(max-width:700px){.nav-links a:not(.nav-cta){display:none}}
+.nav-login{color:var(--txs)!important;padding:7px 16px;border-radius:8px;font-weight:600!important;font-size:13px!important;border:1px solid var(--bd);transition:all .2s!important}
+.nav-login:hover{border-color:var(--bdh);color:var(--tx)!important;background:var(--bg2);opacity:1!important}
+@media(max-width:700px){.nav-links a:not(.nav-cta):not(.nav-login){display:none}}
 
 /* HERO */
 .hero{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:100px 24px 80px}
@@ -313,6 +315,7 @@ footer{border-top:1px solid var(--bd);padding:36px 0}
       <a href="#como-funciona">Como funciona</a>
       <a href="#pricing">Planos</a>
       <a href="#faq">FAQ</a>
+      <a href="/app.html" class="nav-login">Entrar</a>
       <a href="#" class="nav-cta" onclick="openModal('signup');return false;">Começar grátis</a>
     </div>
   </div>
