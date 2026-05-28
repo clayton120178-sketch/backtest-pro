@@ -909,20 +909,14 @@ async function _generateNonce(){
   return { raw, hash };
 }
 
-let _gisSigningIn = false;
-
 async function handleGoogleCredential(response){
-  _gisSigningIn = true;
   hideAllAuth();
   const lo = document.getElementById('loading-oauth');
   if(lo) lo.style.display = 'flex';
   try {
-    const { data, error } = await db.auth.signInWithIdToken({ provider: 'google', token: response.credential, nonce: _gisNonce });
-    _gisSigningIn = false;
-    if(error){ mostrarErroAuth('login-error', error.message || 'Erro ao entrar com Google.'); mostrarLogin(); return; }
-    if(data?.user){ currentUser = data.user; await verificarAcesso(); }
+    const { error } = await db.auth.signInWithIdToken({ provider: 'google', token: response.credential, nonce: _gisNonce });
+    if(error){ mostrarErroAuth('login-error', error.message || 'Erro ao entrar com Google.'); mostrarLogin(); }
   } catch(e){
-    _gisSigningIn = false;
     console.error('[Google]', e);
     mostrarLogin();
   }
@@ -1000,8 +994,7 @@ async function verificarAcesso(){
 
 db.auth.onAuthStateChange(async (event, session) => {
   if(event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED'){
-    if(_gisSigningIn) return;
-    if(session?.user){ currentUser = session.user; await verificarAcesso(); }
+    if(session?.user){ currentUser = session.user; setTimeout(() => verificarAcesso(), 0); }
   } else if(event === 'INITIAL_SESSION'){
     if(session?.user){ currentUser = session.user; await verificarAcesso(); }
     else { mostrarLogin(); }
