@@ -1,4 +1,7 @@
 {
+  "rewrites": [
+    { "source": "/", "destination": "/app.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
