@@ -2219,12 +2219,22 @@ function buildTUWChart() {
     });
     if(_uwS!==null)_uwP.push({s:_uwS,e:EQ.length-1});
 
-    // Escala Y idêntica ao gráfico de equity: inclui o zero (linha de referência do LWC) + 10% de padding
-    let mn=Math.min(0,...EQ.map(d=>d.v));
-    let mx=Math.max(0,...EQ.map(d=>d.v));
-    const rng=mx-mn||1;
-    const yLo=mn-rng*0.10;
-    const yHi=mx+rng*0.10;
+    // Lê escala real do LWC equity chart — inclui marcadores de pico/drawdown que expandem o range
+    // Chart.height=200px; time scale≈20px; price area = 0..179
+    let yLo,yHi;
+    const eqSeries=window._equityLWCSeries;
+    if(eqSeries){
+      const t=eqSeries.coordinateToPrice(1);
+      const b=eqSeries.coordinateToPrice(179);
+      if(t!=null&&b!=null){yHi=Math.max(t,b);yLo=Math.min(t,b);}
+    }
+    // Fallback idêntico ao LWC: dados + 12% padding
+    if(yLo==null||yHi==null){
+      let mn=Math.min(0,...EQ.map(d=>d.v));
+      let mx=Math.max(0,...EQ.map(d=>d.v));
+      const rng=mx-mn||1;
+      yLo=mn-rng*0.12;yHi=mx+rng*0.12;
+    }
 
     // Valores de equity e labels de índice
     const eqVals=EQ.map(d=>d.v);
@@ -8028,6 +8038,25 @@ function diagMakeSelect(label, options, getRef) {
   return wrap;
 }
 
+function diagMakeCycler(label, options, getRef) {
+  let idx = 0;
+  const wrap = div('diag-step');
+  if (label) { const lbl = div('diag-step-lbl'); lbl.textContent = label; wrap.appendChild(lbl); }
+  const dec = h('button', {class:'diag-step-btn', type:'button'}); dec.textContent = '−';
+  const valEl = div('diag-step-val'); valEl.style.minWidth = '72px'; valEl.textContent = options[0][1];
+  const inc = h('button', {class:'diag-step-btn', type:'button'}); inc.textContent = '+';
+  wrap.append(dec, valEl, inc);
+  const update = (delta) => {
+    idx = (idx + delta + options.length) % options.length;
+    valEl.textContent = options[idx][1];
+    getRef.val = options[idx][0];
+  };
+  dec.onclick = () => update(-1);
+  inc.onclick = () => update(+1);
+  getRef.val = options[0][0];
+  return wrap;
+}
+
 function diagTestBtn(onClick) {
   const btn = h('button', {class:'btn-test', type:'button'});
   btn.innerHTML = 'Testar agora →';
@@ -8153,9 +8182,9 @@ function renderDiagnosticSection() {
         const condOpts = [['Preço está acima','Acima'],['Preço está abaixo','Abaixo']];
         row.append(
           opChip('add', '+', 'Média Móvel'),
-          diagMakeSelect('Tipo', typeOpts, typeRef),
+          diagMakeCycler('Tipo', typeOpts, typeRef),
           diagMakeStepper('Período', 200, 10, 500, 10, '', perRef),
-          diagMakeSelect('Condição', condOpts, condRef),
+          diagMakeCycler('Condição', condOpts, condRef),
           diagTestBtn(() => diagApplyAndTest(() => {
             const id = typeRef.val;
             const name = id.toUpperCase();
@@ -8174,7 +8203,7 @@ function renderDiagnosticSection() {
         row.append(
           opChip('add', '+', 'IFR (RSI)'),
           diagMakeStepper('Período', 14, 2, 50, 1, '', perRef),
-          diagMakeSelect('Condição', condOpts, condRef),
+          diagMakeCycler('Condição', condOpts, condRef),
           stepper,
           diagTestBtn(() => diagApplyAndTest(() => {
             cfg.conditions.push({id:'rsi', name:'IFR (RSI)', params:{per:parseInt(perRef.val), cond:condRef.val, val:valRef.val}});
@@ -8241,7 +8270,7 @@ function renderDiagnosticSection() {
         row.append(
           opChip('remove', '−', 'Encerra às ' + cfg.tEnd),
           chipArr(),
-          diagMakeSelect('Encerrar às', [['17:30','17:30'],['18:00','18:00'],['17:00','17:00']], closeRef),
+          diagMakeCycler('Encerrar às', [['17:30','17:30'],['18:00','18:00'],['17:00','17:00']], closeRef),
           diagTestBtn(() => diagApplyAndTest(() => { cfg.tEnd = closeRef.val; }))
         );
       }
@@ -8318,9 +8347,9 @@ function renderDiagnosticSection() {
           const typeRef = {}, perRef = {}, condRef = {};
           row.append(
             opChip('add', '+', 'Média Móvel'),
-            diagMakeSelect('Tipo', [['ema','EMA'],['sma','SMA']], typeRef),
+            diagMakeCycler('Tipo', [['ema','EMA'],['sma','SMA']], typeRef),
             diagMakeStepper('Período', 200, 10, 500, 10, '', perRef),
-            diagMakeSelect('Condição', [['Preço está acima','Acima'],['Preço está abaixo','Abaixo']], condRef),
+            diagMakeCycler('Condição', [['Preço está acima','Acima'],['Preço está abaixo','Abaixo']], condRef),
             diagTestBtn(() => diagApplyAndTest(() => {
               cfg.conditions.push({id:typeRef.val, name:typeRef.val.toUpperCase(), params:{per:parseInt(perRef.val), cond:condRef.val}});
             }))
@@ -8333,7 +8362,7 @@ function renderDiagnosticSection() {
           row.append(
             opChip('add', '+', 'IFR (RSI)'),
             diagMakeStepper('Período', 14, 2, 50, 1, '', perRef),
-            diagMakeSelect('Condição', [['cruza acima de','Cruza acima'],['cruza abaixo de','Cruza abaixo']], condRef),
+            diagMakeCycler('Condição', [['cruza acima de','Cruza acima'],['cruza abaixo de','Cruza abaixo']], condRef),
             stepper,
             diagTestBtn(() => diagApplyAndTest(() => {
               cfg.conditions.push({id:'rsi', name:'IFR (RSI)', params:{per:parseInt(perRef.val), cond:condRef.val, val:valRef.val}});
