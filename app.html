@@ -791,7 +791,7 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 
 // ─── SUPABASE CLIENT ──────────────────────────────────────────────
 const { createClient } = supabase;
-const db = createClient(SUPA_URL, SUPA_KEY);
+const db = createClient(SUPA_URL, SUPA_KEY, { auth: { flowType: 'pkce' } });
 window.db = db;
 
 // ─── ESTADOS GLOBAIS DE AUTH ─────────────────────────────────────
@@ -804,7 +804,9 @@ let currentTrialCount = 0;
 // ─── IIFE: detecta retorno de OAuth ───────────────────────────
 (function(){
   const h = window.location.hash;
-  if(h && (h.includes('access_token') || h.includes('error_description'))){
+  const q = window.location.search;
+  if((h && (h.includes('access_token') || h.includes('error_description'))) ||
+     (q && (q.includes('code=') || q.includes('error=')))){
     const lo = document.getElementById('loading-oauth');
     if(lo) lo.style.display = 'flex';
     const al = document.getElementById('auth-login');
