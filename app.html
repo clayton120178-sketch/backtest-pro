@@ -283,8 +283,13 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 @media(max-width:700px){.metrics-grid{grid-template-columns:repeat(2,1fr)}}
 .metric-card{background:var(--bg1);border:0.5px solid var(--bd);border-radius:12px;padding:14px 16px;transition:all var(--t2) var(--spring)}
 .metric-card:hover{border-color:var(--bdh);transform:translateY(-2px)}
-.metric-label{font-size:9px;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-family:'JetBrains Mono',monospace}
+.metric-label{font-size:9px;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:4px}
 .metric-val{font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1;letter-spacing:-.03em}
+.metric-tip-wrap{position:relative;display:inline-flex;flex-shrink:0}
+.metric-tip-btn{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;background:var(--bg2);border:1px solid var(--bd);font-size:8px;font-weight:700;color:var(--txs);cursor:pointer;font-family:inherit;line-height:1;transition:all var(--t1)}
+.metric-tip-btn:hover{border-color:var(--adm);color:var(--adm)}
+.metric-tip-pop{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);z-index:300;background:var(--bg1);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;width:210px;font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--txm);line-height:1.55;box-shadow:0 8px 24px rgba(0,0,0,.3);white-space:normal;visibility:hidden;opacity:0;transition:opacity .15s;pointer-events:none}
+.metric-tip-pop.open{visibility:visible;opacity:1;pointer-events:auto}
 .chart-card{background:var(--bg1);border:0.5px solid var(--bd);border-radius:12px;padding:16px 18px;margin-bottom:12px}
 .chart-label{font-size:9px;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace}
 
@@ -2214,22 +2219,12 @@ function buildTUWChart() {
     });
     if(_uwS!==null)_uwP.push({s:_uwS,e:EQ.length-1});
 
-    // Lê escala Y real do LWC equity chart via coordinateToPrice
-    // Garante que o eixo Y do TUW seja idêntico ao do gráfico acima
-    let yLo,yHi;
-    const eqSeries=window._equityLWCSeries;
-    if(eqSeries){
-      const top=eqSeries.coordinateToPrice(2);   // px 2: topo da área do chart
-      const bot=eqSeries.coordinateToPrice(188);  // px 188: base antes do time scale
-      if(top!=null&&bot!=null){yHi=Math.max(top,bot);yLo=Math.min(top,bot);}
-    }
-    // Fallback: calcula a partir dos dados EQ
-    if(yLo==null||yHi==null){
-      let mn=0,mx=0;
-      for(const d of EQ){if(d.v<mn)mn=d.v;if(d.v>mx)mx=d.v;}
-      const pad=(mx-mn)*0.05||Math.abs(mn)*0.05||1;
-      yLo=mn-pad;yHi=mx+pad;
-    }
+    // Escala Y idêntica ao gráfico de equity: inclui o zero (linha de referência do LWC) + 10% de padding
+    let mn=Math.min(0,...EQ.map(d=>d.v));
+    let mx=Math.max(0,...EQ.map(d=>d.v));
+    const rng=mx-mn||1;
+    const yLo=mn-rng*0.10;
+    const yHi=mx+rng*0.10;
 
     // Valores de equity e labels de índice
     const eqVals=EQ.map(d=>d.v);
@@ -7892,6 +7887,21 @@ function renderLoading() {
 }
 
 // ─── RESULTS ─────────────────────────────────────────────────
+function makeTipIcon(text) {
+  const wrap = div('metric-tip-wrap');
+  const btn = document.createElement('button');
+  btn.type='button'; btn.className='metric-tip-btn'; btn.textContent='?';
+  const pop = div('metric-tip-pop'); pop.textContent = text;
+  btn.onclick = (e) => {
+    e.stopPropagation();
+    document.querySelectorAll('.metric-tip-pop.open').forEach(p => { if(p!==pop) p.classList.remove('open'); });
+    pop.classList.toggle('open');
+  };
+  document.addEventListener('click', () => pop.classList.remove('open'), {once:false,capture:false});
+  wrap.append(btn, pop);
+  return wrap;
+}
+
 function getMetrics(){
   const A=EQ_ANALYSIS;
   const BM=CURRENT_BACKEND_METRICS;
@@ -7914,14 +7924,22 @@ function getMetrics(){
   const rentab      = deposit>0 ? (netProfit/deposit)*100 : 0;
   const ok          = netProfit>=0;
   return[
-    {label:'Total de Trades',val:totalTrades.toLocaleString('pt-BR'),color:'var(--tx)'},
-    {label:'Taxa de Acerto',val:winRate.toFixed(1)+'%',color:'#F59E0B',pct:winRate},
-    {label:'Lucro Total',val:(ok?'+':'')+'R$ '+Math.abs(netProfit).toLocaleString('pt-BR',{maximumFractionDigits:2}),color:ok?'#10B981':'#EF4444'},
-    {label:'Max Drawdown',val:'−'+ddPct.toFixed(2)+'%',color:'#EF4444'},
-    {label:'Profit Factor',val:pf.toFixed(2),color:pf>1?'#00D4AA':'#EF4444'},
-    {label:'Payoff',val:payoff.toFixed(2),color:payoff>1?'#10B981':'#F59E0B'},
-    {label:'Recovery Factor',val:rf.toFixed(2),color:rf>2?'#10B981':'#F59E0B'},
-    {label:'Rentabilidade',val:rentab.toFixed(2)+'%',color:ok?'#10B981':'#EF4444'},
+    {label:'Total de Trades',val:totalTrades.toLocaleString('pt-BR'),color:'var(--tx)',
+     tip:'Número total de operações executadas no período testado.'},
+    {label:'Taxa de Acerto',val:winRate.toFixed(1)+'%',color:'#F59E0B',pct:winRate,
+     tip:'Porcentagem de trades que encerraram com lucro. Ex: 60% significa que 6 em cada 10 operações foram vencedoras.'},
+    {label:'Lucro Total',val:(ok?'+':'')+'R$ '+Math.abs(netProfit).toLocaleString('pt-BR',{maximumFractionDigits:2}),color:ok?'#10B981':'#EF4444',
+     tip:'Resultado financeiro líquido no período — lucro bruto menos perdas brutas, sem considerar custos operacionais.'},
+    {label:'Max Drawdown',val:'−'+ddPct.toFixed(2)+'%',color:'#EF4444',
+     tip:'Maior queda percentual do capital em relação ao pico anterior. Mede o pior cenário de perda que o trader teria enfrentado durante o período testado.'},
+    {label:'Profit Factor',val:pf.toFixed(2),color:pf>1?'#00D4AA':'#EF4444',
+     tip:'Razão entre o total de ganhos e o total de perdas. Acima de 1 = estratégia lucrativa. Acima de 1,5 é considerado sólido. Calculado como: lucro bruto ÷ perda bruta.'},
+    {label:'Payoff',val:payoff.toFixed(2),color:payoff>1?'#10B981':'#F59E0B',
+     tip:'Relação entre o ganho médio por operação vencedora e a perda média por perdedora. Ex: 1,5 significa que os wins valem, em média, 50% mais do que os losses.'},
+    {label:'Recovery Factor',val:rf.toFixed(2),color:rf>2?'#10B981':'#F59E0B',
+     tip:'Mede quantas vezes o lucro líquido supera o max drawdown. Ex: RF = 3 significa que a estratégia lucrou 3× o seu pior drawdown. Quanto maior, mais eficiente a recuperação.'},
+    {label:'Rentabilidade',val:rentab.toFixed(2)+'%',color:ok?'#10B981':'#EF4444',
+     tip:'Retorno percentual total sobre o capital inicial configurado no backtest.'},
   ];
 }
 
@@ -8048,7 +8066,6 @@ function renderDiagnosticSection() {
   // ── Helpers de config ──
   const hasMA = cfg.conditions.some(c => ['sma','ema'].includes(c.id));
   const hasOsc = cfg.conditions.some(c => ['rsi','stoch','cci','williams','macd'].includes(c.id));
-  const hasVolume = cfg.conditions.some(c => ['volume','obv','vwap'].includes(c.id));
   const hasMaxTrades = (cfg.maxDailyTrades || 0) > 0;
   const tStartH = parseInt((cfg.tStart || '09:00').split(':')[0]);
   const tLastH  = parseInt((cfg.tLastEntry || '17:00').split(':')[0]);
@@ -8133,12 +8150,11 @@ function renderDiagnosticSection() {
         const row = makeRow(block);
         const typeRef = {}, perRef = {}, condRef = {};
         const typeOpts = [['ema','EMA'],['sma','SMA']];
-        const perOpts = [['200','200'],['100','100'],['50','50']];
         const condOpts = [['Preço está acima','Acima'],['Preço está abaixo','Abaixo']];
         row.append(
           opChip('add', '+', 'Média Móvel'),
           diagMakeSelect('Tipo', typeOpts, typeRef),
-          diagMakeSelect('Período', perOpts, perRef),
+          diagMakeStepper('Período', 200, 10, 500, 10, '', perRef),
           diagMakeSelect('Condição', condOpts, condRef),
           diagTestBtn(() => diagApplyAndTest(() => {
             const id = typeRef.val;
@@ -8153,12 +8169,11 @@ function renderDiagnosticSection() {
         makeSuggNote(block, 'Adicionar um <strong>oscilador</strong> como filtro de confirmação faz a estratégia só sinalizar em zonas de maior probabilidade de reversão ou continuação — o que tende a melhorar a assertividade das entradas.');
         const row = makeRow(block);
         const perRef = {}, condRef = {}, valRef = {};
-        const perOpts = [['14','14'],['21','21'],['9','9']];
         const condOpts = [['cruza acima de','Cruza acima'],['cruza abaixo de','Cruza abaixo']];
         const stepper = diagMakeStepper('Valor', 30, 0, 100, 1, '', valRef);
         row.append(
           opChip('add', '+', 'IFR (RSI)'),
-          diagMakeSelect('Período', perOpts, perRef),
+          diagMakeStepper('Período', 14, 2, 50, 1, '', perRef),
           diagMakeSelect('Condição', condOpts, condRef),
           stepper,
           diagTestBtn(() => diagApplyAndTest(() => {
@@ -8273,7 +8288,7 @@ function renderDiagnosticSection() {
         makeText(block, `A estratégia é lucrativa — mas um drawdown de <strong>${mddStr}</strong> significa que em algum momento do período testado o capital chegou a cair ${mddStr} antes de se recuperar. Isso é difícil de sustentar na prática: a pressão psicológica de operar em sequências longas de perda costuma levar o trader a abandonar a estratégia antes de ela se recuperar. Um stop definido em pontos fixos ignora a volatilidade do ativo — o mesmo valor pode ser adequado em dias calmos e pequeno demais em dias de maior oscilação, gerando perdas desnecessárias.`);
       } else {
         const tuwStr = (tuwPct * 100).toFixed(1) + '%';
-        makeText(block, `A estratégia é lucrativa — mas um drawdown de <strong>${mddStr}</strong> e <strong>${tuwStr}</strong> do tempo operando abaixo do pico tornam essa estratégia difícil de operar com disciplina. O problema está na qualidade das entradas — muitos sinais estão sendo gerados em condições desfavoráveis.`);
+        makeText(block, `A estratégia é lucrativa — mas um drawdown de <strong>${mddStr}</strong> e <strong>${tuwStr}</strong> de período sem renovar novas máximas de resultado (como demonstrado no gráfico abaixo — Time Under Water TUW) tornam essa estratégia difícil de operar com disciplina. O problema está na qualidade das entradas — muitos sinais estão sendo gerados em condições desfavoráveis.`);
       }
       makeSep(block);
       makeSuggHdr(block);
@@ -8287,7 +8302,7 @@ function renderDiagnosticSection() {
           opChip('remove', '−', 'Stop fixo · ' + cfg.stopPts + ' pts'),
           chipArr(),
           opChip('repl', '+', 'Stop por ATR'),
-          diagMakeSelect('Período', [['14','14'],['10','10'],['21','21']], perRef),
+          diagMakeStepper('Período', 14, 5, 50, 1, '', perRef),
           diagMakeStepper('Mult', 1.5, 0.5, 5.0, 0.5, '× ATR', multRef),
           diagTestBtn(() => diagApplyAndTest(() => {
             cfg.stopType = 'atr';
@@ -8304,7 +8319,7 @@ function renderDiagnosticSection() {
           row.append(
             opChip('add', '+', 'Média Móvel'),
             diagMakeSelect('Tipo', [['ema','EMA'],['sma','SMA']], typeRef),
-            diagMakeSelect('Período', [['200','200'],['100','100'],['50','50']], perRef),
+            diagMakeStepper('Período', 200, 10, 500, 10, '', perRef),
             diagMakeSelect('Condição', [['Preço está acima','Acima'],['Preço está abaixo','Abaixo']], condRef),
             diagTestBtn(() => diagApplyAndTest(() => {
               cfg.conditions.push({id:typeRef.val, name:typeRef.val.toUpperCase(), params:{per:parseInt(perRef.val), cond:condRef.val}});
@@ -8317,7 +8332,7 @@ function renderDiagnosticSection() {
           const stepper = diagMakeStepper('Valor', 30, 0, 100, 1, '', valRef);
           row.append(
             opChip('add', '+', 'IFR (RSI)'),
-            diagMakeSelect('Período', [['14','14'],['21','21'],['9','9']], perRef),
+            diagMakeStepper('Período', 14, 2, 50, 1, '', perRef),
             diagMakeSelect('Condição', [['cruza acima de','Cruza acima'],['cruza abaixo de','Cruza abaixo']], condRef),
             stepper,
             diagTestBtn(() => diagApplyAndTest(() => {
@@ -8350,21 +8365,13 @@ function renderDiagnosticSection() {
     } else if (tuwStatus !== 'green') {
       // 6.4.2 — TUW problemático
       block = makeBlock('warning');
-      makeTag(block, 'Tempo sob água elevado');
+      makeTag(block, 'Período sem renovar máximas de resultado elevado');
       const tuwStr = (tuwPct * 100).toFixed(1) + '%';
-      makeText(block, `A estratégia ganha e o drawdown está controlado — mas <strong>${tuwStr}</strong> do período testado foi operado abaixo do pico anterior. Isso significa que por ${tuwStr} do tempo a estratégia estava em recuperação, sem apresentar novos resultados positivos. Esse padrão desgasta a confiança do trader na estratégia ao longo do tempo.`);
+      makeText(block, `A estratégia ganha e o drawdown está controlado — mas <strong>${tuwStr}</strong> do período testado foi um período sem renovar novas máximas de resultado (como demonstrado no gráfico abaixo — Time Under Water TUW). Isso significa que por ${tuwStr} do tempo a estratégia estava em recuperação, sem apresentar novos resultados positivos. Esse padrão desgasta a confiança do trader na estratégia ao longo do tempo.`);
       makeSep(block);
       makeSuggHdr(block);
 
-      if (!hasVolume) {
-        makeSuggNote(block, 'Adicionar <strong>volume acima da média</strong> como condição filtra operações em momentos de baixa liquidez — quando os movimentos tendem a ser menos confiáveis. Isso reduz o número de trades e melhora a qualidade das entradas.');
-        const row = makeRow(block);
-        const perRef = {};
-        row.append(
-          opChip('add', '+', 'Volume acima da média'),
-          diagMakeSelect('Período', [['20','20'],['10','10'],['30','30']], perRef)
-        );
-      } else if (!hasMaxTrades) {
+      if (!hasMaxTrades) {
         makeSuggNote(block, 'Limitar a <strong>2 operações por dia</strong> força a estratégia a selecionar apenas os melhores sinais do dia — o que tende a melhorar a consistência dos resultados.');
         const row = makeRow(block);
         row.append(
@@ -8404,7 +8411,7 @@ function renderDiagnosticSection() {
           opChip('remove', '−', 'Alvo fixo · ' + cfg.tpPts + ' pts'),
           chipArr(),
           opChip('repl', '+', 'Alvo por ATR'),
-          diagMakeSelect('Período', [['14','14'],['10','10'],['21','21']], perRef),
+          diagMakeStepper('Período', 14, 5, 50, 1, '', perRef),
           diagMakeStepper('Mult', 2.0, 0.5, 10.0, 0.5, '× ATR', multRef),
           diagTestBtn(() => diagApplyAndTest(() => {
             cfg.tpType = 'atr';
@@ -8554,7 +8561,9 @@ function renderResults() {
   const mg=div('metrics-grid');mg.style.gridTemplateColumns='repeat(4,1fr)';
   METRICS.forEach(m=>{
     const c=div('metric-card');
-    const lb=div('metric-label');lb.textContent=m.label;
+    const lb=div('metric-label');
+    lb.appendChild(document.createTextNode(m.label));
+    if(m.tip) lb.appendChild(makeTipIcon(m.tip));
     const vl=div('metric-val');vl.style.color=m.color;vl.textContent=m.val;
     c.append(lb,vl);
     if(m.pct!==undefined){const bar=div('');bar.style.cssText='margin-top:8px;height:3px;background:var(--bg2);border-radius:2px';const fill=div('');fill.style.cssText=`height:100%;width:${m.pct}%;background:#F59E0B;border-radius:2px`;bar.appendChild(fill);c.appendChild(bar);}
