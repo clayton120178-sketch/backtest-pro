@@ -907,71 +907,41 @@ async function handleLogout(){
 
 async function verificarAcesso(){
   try {
-    // 1. Buscar registro do usuário (com retry para delay do trigger)
-    let userData = null;
-    for(let i = 0; i < 5; i++){
-      const { data, error } = await db.from('users')
-        .select('id,email,name,role,whatsapp')
-        .eq('id', currentUser.id)
-        .maybeSingle();
-      if(data){ userData = data; break; }
-      if(i < 4) await new Promise(r => setTimeout(r, 1000));
+    let tentativas = 0;
+    let data = null;
+    while(!data && tentativas < 5){
+      const res = await db.from('acesso_status').select('*').eq('id', currentUser.id).maybeSingle();
+      if(res.data){ data = res.data; break; }
+      tentativas++;
+      await new Promise(r => setTimeout(r, 1000));
     }
-
-    // 2. Se ainda não existe, criar (fallback caso trigger falhe)
-    if(!userData){
+    if(!data){
       await db.from('users').upsert({
-        id: currentUser.id,
-        email: currentUser.email,
-        name: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email?.split('@')[0]
+        id: currentUser.id, email: currentUser.email,
+        name: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email.split('@')[0]
       }, { onConflict: 'id', ignoreDuplicates: true });
-      await new Promise(r => setTimeout(r, 800));
-      const { data } = await db.from('users').select('id,email,name,role,whatsapp').eq('id', currentUser.id).maybeSingle();
-      userData = data;
-      if(!userData){ mostrarLogin(); return; }
+      await new Promise(r => setTimeout(r, 1000));
+      const res2 = await db.from('acesso_status').select('*').eq('id', currentUser.id).maybeSingle();
+      data = res2.data;
+      if(!data){ mostrarLogin(); return; }
     }
-
-    // 3. Verificar assinatura ativa
-    const { data: subData } = await db.from('subscriptions')
-      .select('plan,expires_at,status')
-      .eq('user_id', currentUser.id)
-      .eq('status', 'active')
-      .gt('expires_at', new Date().toISOString())
-      .order('expires_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    const isAdmin = userData.role === 'admin';
-    const hasSub  = !!subData;
-
-    // 4. Montar objeto de acesso (compatível com código existente)
-    const data = {
-      ...userData,
-      tipo_acesso:    isAdmin ? 'admin' : (hasSub ? subData.plan : null),
-      status:         (isAdmin || hasSub) ? 'ativo' : 'trial',
-      acesso_anual_fim: subData?.expires_at || null,
-      trial_fim:      null
-    };
-
     currentUsuario = data;
-    if(hasSub){
-      currentSub = { plan: data.tipo_acesso, status: 'active', expires_at: subData.expires_at };
+    if(data.tipo_acesso === 'starter' || data.tipo_acesso === 'advanced' || data.tipo_acesso === 'elite'){
+      currentSub = { plan: data.tipo_acesso, status: 'active', expires_at: data.acesso_anual_fim || data.trial_fim || null };
     } else {
       currentSub = null;
     }
-
     if(!currentSub){
       currentTrialCount = await contarBacktestsSalvos(currentUser.id);
     } else {
       currentTrialCount = 0;
     }
-
     hideAllAuth();
-    if(data.status === 'ativo' || data.status === 'trial' || isAdmin){
+    if(data.status === 'ativo' || data.status === 'trial' || data.tipo_acesso === 'admin'){
       updateAvatarUI();
       if(typeof chatReveal === 'function') chatReveal();
       if(currentScreen === 'plans' || currentScreen === 'payment' || currentScreen === 'history') return;
-      if(isAdmin || currentSub || currentTrialCount < FREE_TRIAL.backtests_max){ renderApp(); maybeAutoTour(); }
+      if(data.role === 'admin' || currentSub || currentTrialCount < FREE_TRIAL.backtests_max){ renderApp(); maybeAutoTour(); }
       else { showScreen('plans'); }
     } else {
       showScreen('plans');
