@@ -5,6 +5,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const ALLOWED_ORIGINS = [
   "https://backtestpro-ashen.vercel.app",
   "https://backtestpro-app.vercel.app",
+  "https://backtestpro.com.br",
+  "https://www.backtestpro.com.br",
 ];
 
 // ─── CORS ────────────────────────────────────────────────────────────────────

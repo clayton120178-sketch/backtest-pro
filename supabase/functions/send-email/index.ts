@@ -82,7 +82,7 @@ function templateWelcome(name: string): { subject: string; html: string } {
           </p>
           <table cellpadding="0" cellspacing="0">
             <tr><td style="background:#00D4AA;border-radius:8px;">
-              <a href="https://backtestpro-app.vercel.app"
+              <a href="https://www.backtestpro.com.br"
                  style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:600;color:#0A0A0F;text-decoration:none;">
                 Rodar meu primeiro backtest
               </a>
@@ -165,7 +165,7 @@ function templateSubscriptionConfirmed(
 
           <table cellpadding="0" cellspacing="0">
             <tr><td style="background:#00D4AA;border-radius:8px;">
-              <a href="https://backtestpro-app.vercel.app"
+              <a href="https://www.backtestpro.com.br"
                  style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:600;color:#0A0A0F;text-decoration:none;">
                 Acessar o Backtest Pro
               </a>
@@ -220,7 +220,7 @@ function templateTrialExhausted(name: string): { subject: string; html: string }
           </p>
           <table cellpadding="0" cellspacing="0">
             <tr><td style="background:#00D4AA;border-radius:8px;">
-              <a href="https://backtestpro-app.vercel.app/#pricing"
+              <a href="https://www.backtestpro.com.br/#pricing"
                  style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:600;color:#0A0A0F;text-decoration:none;">
                 Ver planos e assinar
               </a>
@@ -277,7 +277,7 @@ function templateSubscriptionExpired(
           </p>
           <table cellpadding="0" cellspacing="0">
             <tr><td style="background:#00D4AA;border-radius:8px;">
-              <a href="https://backtestpro-app.vercel.app/#pricing"
+              <a href="https://www.backtestpro.com.br/#pricing"
                  style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:600;color:#0A0A0F;text-decoration:none;">
                 Renovar acesso
               </a>

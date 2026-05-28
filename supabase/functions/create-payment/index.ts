@@ -2,7 +2,11 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // ─── CONSTANTES E WHITELIST ───────────────────────────────────────────────────
-const ALLOWED_ORIGIN = "https://backtestpro-app.vercel.app";
+const ALLOWED_ORIGINS = [
+  "https://backtestpro-app.vercel.app",
+  "https://backtestpro.com.br",
+  "https://www.backtestpro.com.br",
+];
 
 const PRICES: Record<string, Record<string, number>> = {
   starter:  { mensal: 109.90, semestral: 599.40, anual: 1044.00 },
@@ -20,14 +24,13 @@ const EMAIL_RE          = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // ─── CORS — apenas o domínio do produto ──────────────────────────────────────
 function corsHeaders(req: Request) {
   const origin = req.headers.get("origin") ?? "";
-  // Em dev local, aceitar também localhost
   const allowed =
-    origin === ALLOWED_ORIGIN ||
+    ALLOWED_ORIGINS.includes(origin) ||
     origin.startsWith("http://localhost") ||
     origin.startsWith("http://127.0.0.1");
 
   return {
-    "Access-Control-Allow-Origin":  allowed ? origin : ALLOWED_ORIGIN,
+    "Access-Control-Allow-Origin":  allowed ? origin : ALLOWED_ORIGINS[0],
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
