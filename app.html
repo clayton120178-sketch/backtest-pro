@@ -909,17 +909,21 @@ async function _generateNonce(){
   return { raw, hash };
 }
 
+let _gisSigningIn = false;
+
 async function handleGoogleCredential(response){
+  _gisSigningIn = true;
   hideAllAuth();
   const lo = document.getElementById('loading-oauth');
   if(lo) lo.style.display = 'flex';
   try {
-    console.log('[G1] chamando signInWithIdToken...');
     const { data, error } = await db.auth.signInWithIdToken({ provider: 'google', token: response.credential, nonce: _gisNonce });
-    console.log('[G2] signInWithIdToken retornou | error:', error?.message, '| user:', data?.user?.id);
-    if(error){ console.error('[Google]', error); mostrarErroAuth('login-error', error.message || 'Erro ao entrar com Google.'); mostrarLogin(); }
+    _gisSigningIn = false;
+    if(error){ mostrarErroAuth('login-error', error.message || 'Erro ao entrar com Google.'); mostrarLogin(); return; }
+    if(data?.user){ currentUser = data.user; await verificarAcesso(); }
   } catch(e){
-    console.error('[Google catch]', e);
+    _gisSigningIn = false;
+    console.error('[Google]', e);
     mostrarLogin();
   }
 }
@@ -948,13 +952,11 @@ async function handleLogout(){
 }
 
 async function verificarAcesso(){
-  console.log('[VA] inicio user:', currentUser?.id);
   try {
     let tentativas = 0;
     let data = null;
     while(!data && tentativas < 5){
       const res = await db.from('acesso_status').select('*').eq('id', currentUser.id).maybeSingle();
-      console.log('[VA] tentativa', tentativas, 'data:', !!res.data, 'error:', res.error?.message);
       if(res.data){ data = res.data; break; }
       tentativas++;
       await new Promise(r => setTimeout(r, 1000));
@@ -997,8 +999,8 @@ async function verificarAcesso(){
 }
 
 db.auth.onAuthStateChange(async (event, session) => {
-  console.log('[AUTH]', event, session?.user?.id ?? 'null');
   if(event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED'){
+    if(_gisSigningIn) return;
     if(session?.user){ currentUser = session.user; await verificarAcesso(); }
   } else if(event === 'INITIAL_SESSION'){
     if(session?.user){ currentUser = session.user; await verificarAcesso(); }
