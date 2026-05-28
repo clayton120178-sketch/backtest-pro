@@ -626,6 +626,7 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .sugg-note{font-size:12px;color:var(--txs);line-height:1.5;margin-bottom:10px;padding:10px 12px;background:var(--bg2);border-radius:7px;border:1px solid var(--bd)}
 .sugg-note strong{color:var(--tx)}
 .sugg-disc{font-size:11px;color:var(--txs);margin-bottom:10px;opacity:.8}
+.sugg-action-note{font-size:10px;color:var(--txs);margin-top:-6px;margin-bottom:10px;opacity:.65;line-height:1.4}
 .sugg-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
 .op-chip{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:7px;font-size:12px;font-weight:600;border:1px solid;white-space:nowrap}
 .op-chip .op-sign{font-size:13px;font-weight:800;line-height:1}
@@ -8106,6 +8107,9 @@ function renderDiagnosticSection() {
     const hdr = div('sugg-hdr');
     const lbl = div('sugg-lbl'); lbl.textContent = 'Vale a pena testar:';
     hdr.appendChild(lbl); block.appendChild(hdr);
+    const note = div('sugg-action-note');
+    note.textContent = 'Ao clicar em "Testar agora →", o backtest é refeito com a configuração atual + essa alteração aplicada.';
+    block.appendChild(note);
   }
   function makeSuggNote(block, html) {
     const n = div('sugg-note'); n.innerHTML = html; block.appendChild(n);
