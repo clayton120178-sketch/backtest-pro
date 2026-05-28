@@ -601,11 +601,11 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .diag-stitle{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--txs);margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .diag-stitle::after{content:'';flex:1;height:1px;background:var(--bd)}
 .diag-disclosure{display:flex;align-items:center;gap:8px;background:rgba(240,160,32,.07);border:1px solid rgba(240,160,32,.15);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--wn)}
-.diag-block{border-radius:12px;border:1px solid;padding:20px 22px;position:relative;overflow:hidden}
+.diag-block{border-radius:12px;border:1px solid;padding:20px 22px;position:relative}
 .diag-block.danger{background:linear-gradient(135deg,rgba(238,58,58,.07),rgba(238,58,58,.02));border-color:rgba(238,58,58,.25)}
 .diag-block.warning{background:linear-gradient(135deg,rgba(240,160,32,.07),rgba(240,160,32,.02));border-color:rgba(240,160,32,.25)}
 .diag-block.success{background:linear-gradient(135deg,rgba(0,212,170,.08),rgba(120,120,238,.04));border-color:rgba(0,212,170,.3)}
-.diag-block::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:12px 0 0 12px}
+.diag-block::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:12px 0 0 12px;pointer-events:none;z-index:0}
 .diag-block.danger::before{background:var(--dg)}
 .diag-block.warning::before{background:var(--wn)}
 .diag-block.success::before{background:linear-gradient(180deg,var(--adm),var(--in))}
