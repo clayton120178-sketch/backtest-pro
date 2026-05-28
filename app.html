@@ -8230,6 +8230,36 @@ function renderDiagnosticSection() {
           diagTestBtn(() => diagApplyAndTest(() => { cfg.tEnd = closeRef.val; }))
         );
       }
+    } else {
+      // Catch-all sem edge: WR acima do piso mas payoff insuficiente para o break-even
+      block = makeBlock('danger');
+      const breakEvenPayoff = winRate > 0 ? (1 - winRate) / winRate : 1;
+      makeTag(block, 'Expectância negativa');
+      makeText(block, `A taxa de acerto de <strong>${(winRate * 100).toFixed(1)}%</strong> está acima do piso crítico — mas o payoff médio por trade (<strong>${avgPayoff.toFixed(2)}×</strong>) ainda está abaixo do necessário para esse nível de acerto. Para fechar no positivo com ${(winRate * 100).toFixed(1)}% de acerto, o payoff precisaria ser ao menos <strong>${breakEvenPayoff.toFixed(2)}×</strong>. A distância é pequena — o que indica que a estrutura tem fundamentos, mas o alvo está comprimindo os ganhos.`);
+      makeSep(block);
+      makeSuggHdr(block);
+      if (cfg.tpType === 'rr') {
+        const rrRef = {val: cfg.tpRR || 2};
+        makeSuggNote(block, 'Aumentar o multiplicador R:R pode trazer o payoff real acima do ponto de equilíbrio, tornando a estratégia lucrativa sem mudar a lógica de entrada.');
+        makeSuggDisc(block, 'Atenção: alvos maiores tendem a reduzir a taxa de acerto.');
+        const row = makeRow(block);
+        row.append(diagMakeStepper('R:R', cfg.tpRR || 2, 0.5, 20.0, 0.5, '×', rrRef), diagTestBtn(() => diagApplyAndTest(() => { cfg.tpRR = rrRef.val; })));
+      } else if (cfg.tpType === 'fixed') {
+        const tpRef = {};
+        makeSuggNote(block, 'Aumentar o alvo em pontos pode trazer o payoff real acima do ponto de equilíbrio.');
+        makeSuggDisc(block, 'Atenção: alvos maiores tendem a reduzir a taxa de acerto.');
+        const { tick } = getAssetTick(cfg.asset);
+        const row = makeRow(block);
+        row.append(diagMakeStepper('Alvo', cfg.tpPts || 400, tick, 10000, tick, 'pts', tpRef), diagTestBtn(() => diagApplyAndTest(() => { cfg.tpPts = tpRef.val; })));
+      } else if (cfg.tpType === 'atr') {
+        const multRef = {val: cfg.tpAtrMult || 2.0};
+        makeSuggNote(block, 'Aumentar o multiplicador ATR pode trazer o payoff real acima do ponto de equilíbrio — permitindo capturar movimentos maiores nas operações vencedoras.');
+        makeSuggDisc(block, 'Atenção: multiplicadores maiores tendem a reduzir a taxa de acerto.');
+        const row = makeRow(block);
+        row.append(diagMakeStepper('Mult', cfg.tpAtrMult || 2.0, 0.5, 10.0, 0.5, '× ATR', multRef), diagTestBtn(() => diagApplyAndTest(() => { cfg.tpAtrMult = multRef.val; })));
+      } else {
+        makeSuggNote(block, 'O payoff médio real está abaixo do ponto de equilíbrio para a taxa de acerto atual. Aumentar o alvo de ganho ou melhorar a qualidade das entradas pode resolver.');
+      }
     }
   } else {
     // ════════════════════════════════ COM EDGE ════════════════════════════════
