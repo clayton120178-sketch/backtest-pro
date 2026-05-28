@@ -897,27 +897,24 @@ async function cadastrar(){
 }
 
 const GOOGLE_CLIENT_ID = '573043976046-76lt0vabq0qb82p5hsusu3smr8q9n6i0.apps.googleusercontent.com';
+let _gisNonce = null;
 
-(function initGIS(){
-  function setup(){
-    if(!window.google?.accounts?.id) return;
-    google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: handleGoogleCredential,
-      auto_select: false,
-      cancel_on_tap_outside: true
-    });
-  }
-  if(window.google?.accounts?.id) setup();
-  else window.onGoogleLibraryLoad = setup;
-})();
+async function _generateNonce(){
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  const raw = btoa(String.fromCharCode(...array));
+  const hash = Array.from(new Uint8Array(
+    await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw))
+  )).map(b => b.toString(16).padStart(2,'0')).join('');
+  return { raw, hash };
+}
 
 async function handleGoogleCredential(response){
   hideAllAuth();
   const lo = document.getElementById('loading-oauth');
   if(lo) lo.style.display = 'flex';
   try {
-    const { error } = await db.auth.signInWithIdToken({ provider: 'google', token: response.credential });
+    const { error } = await db.auth.signInWithIdToken({ provider: 'google', token: response.credential, nonce: _gisNonce });
     if(error){ console.error('[Google]', error); mostrarErroAuth('login-error', error.message || 'Erro ao entrar com Google.'); mostrarLogin(); }
   } catch(e){
     console.error('[Google]', e);
@@ -925,8 +922,17 @@ async function handleGoogleCredential(response){
   }
 }
 
-function loginGoogle(){
+async function loginGoogle(){
   if(!window.google?.accounts?.id){ console.error('[Google] GIS não carregado'); return; }
+  const { raw, hash } = await _generateNonce();
+  _gisNonce = raw;
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleGoogleCredential,
+    auto_select: false,
+    cancel_on_tap_outside: true,
+    nonce: hash
+  });
   google.accounts.id.prompt((n) => {
     if(n.isNotDisplayed() || n.isSkippedMoment()){
       mostrarErroAuth('login-error', 'Não foi possível abrir o Google. Verifique bloqueadores de popup.');
