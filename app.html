@@ -595,6 +595,68 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .chat-wa-input::placeholder{color:var(--txm)}
 .chat-wa-confirm{background:var(--adm);border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:#000;cursor:pointer;white-space:nowrap;transition:opacity var(--t1)}
 .chat-wa-confirm:hover{opacity:.85}
+/* ── Motor de Diagnóstico ── */
+.diag-section{margin-bottom:24px}
+.diag-stitle{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--txs);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.diag-stitle::after{content:'';flex:1;height:1px;background:var(--bd)}
+.diag-disclosure{display:flex;align-items:center;gap:8px;background:rgba(240,160,32,.07);border:1px solid rgba(240,160,32,.15);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--wn)}
+.diag-block{border-radius:12px;border:1px solid;padding:20px 22px;position:relative;overflow:hidden}
+.diag-block.danger{background:linear-gradient(135deg,rgba(238,58,58,.07),rgba(238,58,58,.02));border-color:rgba(238,58,58,.25)}
+.diag-block.warning{background:linear-gradient(135deg,rgba(240,160,32,.07),rgba(240,160,32,.02));border-color:rgba(240,160,32,.25)}
+.diag-block.success{background:linear-gradient(135deg,rgba(0,212,170,.08),rgba(120,120,238,.04));border-color:rgba(0,212,170,.3)}
+.diag-block::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:12px 0 0 12px}
+.diag-block.danger::before{background:var(--dg)}
+.diag-block.warning::before{background:var(--wn)}
+.diag-block.success::before{background:linear-gradient(180deg,var(--adm),var(--in))}
+.diag-tag{display:inline-flex;align-items:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:3px 9px;border-radius:4px;margin-bottom:10px}
+.diag-block.danger .diag-tag{background:rgba(238,58,58,.15);color:var(--dg)}
+.diag-block.warning .diag-tag{background:rgba(240,160,32,.15);color:var(--wn)}
+.diag-block.success .diag-tag{background:rgba(0,212,170,.12);border:1px solid rgba(0,212,170,.2);color:var(--adm);border-radius:20px}
+.diag-text{font-size:14px;line-height:1.65;color:var(--txs);margin-bottom:16px}
+.diag-text strong{color:var(--tx);font-weight:600}
+.diag-sep{height:1px;background:var(--bd);margin-bottom:16px}
+.sugg-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.sugg-lbl{font-size:13px;font-weight:700;color:var(--adm);white-space:nowrap}
+.sugg-hdr::after{content:'';flex:1;height:1px;background:rgba(0,212,170,.2)}
+.sugg-note{font-size:12px;color:var(--txs);line-height:1.5;margin-bottom:10px;padding:10px 12px;background:var(--bg2);border-radius:7px;border:1px solid var(--bd)}
+.sugg-note strong{color:var(--tx)}
+.sugg-disc{font-size:11px;color:var(--txs);margin-bottom:10px;opacity:.8}
+.sugg-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+.op-chip{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:7px;font-size:12px;font-weight:600;border:1px solid;white-space:nowrap}
+.op-chip .op-sign{font-size:13px;font-weight:800;line-height:1}
+.op-chip.add{background:rgba(0,187,128,.1);border-color:rgba(0,187,128,.3);color:var(--pr)}
+.op-chip.remove{background:rgba(238,58,58,.1);border-color:rgba(238,58,58,.3);color:var(--dg)}
+.op-chip.repl{background:rgba(0,212,170,.1);border-color:rgba(0,212,170,.3);color:var(--adm)}
+.chip-arr{color:var(--txs);font-size:16px}
+.diag-param{display:inline-flex;align-items:center;gap:4px;background:var(--bg1);border:1px solid var(--bd);border-radius:6px;padding:4px 8px;font-family:'JetBrains Mono';font-size:12px;color:var(--tx);transition:border-color var(--t1);position:relative}
+.diag-param:hover{border-color:var(--adm)}
+.diag-plbl{font-size:11px;color:var(--txs);white-space:nowrap;margin-right:2px}
+.diag-param select{background:transparent;border:none;color:var(--tx);font-family:'JetBrains Mono';font-size:12px;cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;padding-right:12px}
+.diag-param::after{content:'▾';font-size:10px;color:var(--txs);pointer-events:none}
+.diag-step{display:inline-flex;align-items:center;background:var(--bg1);border:1px solid var(--bd);border-radius:6px;overflow:hidden;transition:border-color var(--t1)}
+.diag-step:hover{border-color:var(--adm)}
+.diag-step-lbl{font-size:11px;color:var(--txs);padding:0 6px 0 10px;white-space:nowrap}
+.diag-step-btn{width:26px;height:30px;background:var(--bg3);border:none;color:var(--txs);font-size:15px;font-weight:700;cursor:pointer;transition:all var(--t1);display:flex;align-items:center;justify-content:center}
+.diag-step-btn:hover{background:var(--adm);color:#0A0A0F}
+.diag-step-val{font-family:'JetBrains Mono';font-size:12px;font-weight:600;color:var(--tx);padding:0 8px;min-width:48px;text-align:center;user-select:none}
+.diag-step-unit{font-size:11px;color:var(--txs);padding-right:8px}
+.btn-test{display:inline-flex;align-items:center;gap:7px;padding:9px 20px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all var(--t1);white-space:nowrap;margin-left:auto;background:var(--adm);color:#0A0A0F}
+.btn-test:hover{background:#00efc0;box-shadow:0 0 18px rgba(0,212,170,.4);transform:translateY(-1px)}
+.diag-celeb-title{font-size:17px;font-weight:700;color:var(--tx);margin-bottom:10px}
+.diag-celeb-body{font-size:14px;color:var(--txs);line-height:1.65;margin-bottom:20px}
+.diag-celeb-body strong{color:var(--tx)}
+.next-tests-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.next-tests-lbl{font-size:13px;font-weight:700;color:var(--adm);white-space:nowrap}
+.next-tests-hdr::after{content:'';flex:1;height:1px;background:rgba(0,212,170,.2)}
+.next-tests-row{display:flex;gap:10px;flex-wrap:wrap}
+.next-test-card{background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all var(--t1);flex:1;min-width:200px}
+.next-test-card:hover{border-color:var(--adm);background:rgba(0,212,170,.08)}
+.next-test-ico{width:34px;height:34px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.next-test-info{flex:1}
+.next-test-ttl{font-size:13px;font-weight:600;color:var(--tx)}
+.next-test-desc{font-size:11px;color:var(--txs);margin-top:2px}
+.next-test-arr{color:var(--txs);font-size:16px;transition:all var(--t1)}
+.next-test-card:hover .next-test-arr{transform:translateX(3px);color:var(--adm)}
 
 </style>
 </head>
@@ -7847,6 +7909,511 @@ function exitHistoryDetail(){
   showScreen('history');
 }
 
+// ─── MOTOR DE DIAGNÓSTICO ─────────────────────────────────────────────────────
+
+const DIAG_CDI = {
+  2015:13.24,2016:14.00,2017:9.93,2018:6.42,
+  2019:5.96,2020:2.76,2021:4.39,2022:12.37,
+  2023:13.15,2024:10.65,2025:13.25,2026:13.00
+};
+
+function diagComputeCDI(startDate, endDate) {
+  let compound = 1.0;
+  const d = new Date(startDate); d.setDate(1);
+  const end = new Date(endDate);
+  while (d <= end) {
+    const rate = DIAG_CDI[d.getFullYear()] || 10.0;
+    compound *= (1 + Math.pow(1 + rate / 100, 1 / 12) - 1);
+    d.setMonth(d.getMonth() + 1);
+  }
+  return (compound - 1) * 100;
+}
+
+const DIAG_TF_NEXT = {
+  '1m':'5m','2m':'5m','5m':'15m','10m':'30m','15m':'30m','30m':'60m','60m':'D'
+};
+const DIAG_ASSET_PAIR = {
+  'WIN$N':'WDO$N','WDO$N':'WIN$N','IND$N':'DOL$N','DOL$N':'IND$N'
+};
+
+function diagMakeStepper(label, initVal, min, max, step, unit, getRef) {
+  let val = initVal;
+  const wrap = div('diag-step');
+  if (label) { const lbl = div('diag-step-lbl'); lbl.textContent = label; wrap.appendChild(lbl); }
+  const dec = h('button', {class:'diag-step-btn', type:'button'}); dec.textContent = '−';
+  const valEl = div('diag-step-val'); valEl.textContent = val;
+  const inc = h('button', {class:'diag-step-btn', type:'button'}); inc.textContent = '+';
+  if (unit) { const u = div('diag-step-unit'); u.textContent = unit; wrap.append(dec, valEl, inc, u); }
+  else { wrap.append(dec, valEl, inc); }
+  const update = (delta) => {
+    val = Math.max(min, Math.min(max, val + delta));
+    const decimals = step < 1 ? 1 : 0;
+    valEl.textContent = val.toFixed(decimals);
+    getRef.val = val;
+  };
+  dec.onclick = () => update(-step);
+  inc.onclick = () => update(+step);
+  getRef.val = val;
+  return wrap;
+}
+
+function diagMakeSelect(label, options, getRef) {
+  const wrap = div('diag-param');
+  if (label) { const lbl = div('diag-plbl'); lbl.textContent = label + ':'; wrap.appendChild(lbl); }
+  const sel = h('select');
+  options.forEach(([val, txt]) => {
+    const opt = h('option', {value: val}); opt.textContent = txt; sel.appendChild(opt);
+  });
+  sel.onchange = () => { getRef.val = sel.value; };
+  getRef.val = options[0][0];
+  wrap.appendChild(sel);
+  return wrap;
+}
+
+function diagTestBtn(onClick) {
+  const btn = h('button', {class:'btn-test', type:'button'});
+  btn.innerHTML = 'Testar agora →';
+  btn.onclick = onClick;
+  return btn;
+}
+
+function diagApplyAndTest(fn) {
+  fn();
+  startLoading();
+}
+
+function renderDiagnosticSection() {
+  const BM = CURRENT_BACKEND_METRICS;
+  const A = EQ_ANALYSIS;
+  if (viewingHistoryItem || !BM || !state.cfg) return null;
+  const cfg = state.cfg;
+
+  // ── Normalizar resultado ──
+  const totalTrades = BM.total_trades || 0;
+  if (totalTrades === 0) return null;
+  const period = getBacktestPeriod();
+  const periodMonths = Math.max(1, period.totalMonths);
+  const deposit = BM.initial_deposit || 10000;
+  const netProfit = BM.total_net_profit || 0;
+  const winRate = (BM.win_rate || 0) / 100;
+  const profitFactor = BM.profit_factor || 0;
+  const mddPct = (BM.max_drawdown_pct || 0) / 100;
+  const avgPayoff = BM.payoff || 0;
+  const totalReturnPct = deposit > 0 ? (netProfit / deposit) * 100 : 0;
+  const uwTotal = A.uwPeriods ? A.uwPeriods.reduce((s, p) => s + (p.e - p.s + 1), 0) : 0;
+  const tuwPct = totalTrades > 0 ? uwTotal / totalTrades : 0;
+  const cdiPct = diagComputeCDI(period.start, period.end);
+  const trPerMonth = totalTrades / periodMonths;
+
+  // ── Helpers de config ──
+  const hasMA = cfg.conditions.some(c => ['sma','ema'].includes(c.id));
+  const hasOsc = cfg.conditions.some(c => ['rsi','stoch','cci','williams','macd'].includes(c.id));
+  const hasVolume = cfg.conditions.some(c => ['volume','obv','vwap'].includes(c.id));
+  const hasMaxTrades = (cfg.maxDailyTrades || 0) > 0;
+  const tStartH = parseInt((cfg.tStart || '09:00').split(':')[0]);
+  const tLastH  = parseInt((cfg.tLastEntry || '17:00').split(':')[0]);
+  const tEndH   = parseInt((cfg.tEnd || '17:30').split(':')[0]);
+  const closeDurH = tEndH - tStartH;
+
+  let rrConfigured = null;
+  if (cfg.tpType === 'rr') rrConfigured = cfg.tpRR || 2;
+  else if (cfg.tpType === 'fixed' && cfg.stopType === 'fixed' && cfg.stopPts > 0)
+    rrConfigured = (cfg.tpPts || 400) / cfg.stopPts;
+
+  // ── Status com edge ──
+  const hasEdge = netProfit > 0;
+  const mddStatus = mddPct <= 0.25 ? 'green' : mddPct <= 0.40 ? 'yellow' : 'red';
+  const tuwStatus = tuwPct <= 0.20 ? 'green' : tuwPct <= 0.35 ? 'yellow' : 'red';
+  const rentOk = cdiPct > 0 && (totalReturnPct / cdiPct) >= 2.0;
+  const showDisclosure = trPerMonth < 8;
+
+  // ── Builders de DOM ──
+  const section = div('diag-section');
+  const title = div('diag-stitle'); title.textContent = 'O que os dados mostram';
+  section.appendChild(title);
+
+  if (showDisclosure) {
+    const disc = div('diag-disclosure');
+    disc.innerHTML = '⚠ Poucos trades no período — interprete os resultados com cautela.';
+    section.appendChild(disc);
+  }
+
+  function makeBlock(type) {
+    return div('diag-block ' + type);
+  }
+  function makeTag(block, label) {
+    const t = div('diag-tag'); t.textContent = label; block.appendChild(t);
+  }
+  function makeText(block, html) {
+    const t = div('diag-text'); t.innerHTML = html; block.appendChild(t);
+  }
+  function makeSep(block) {
+    block.appendChild(div('diag-sep'));
+  }
+  function makeSuggHdr(block) {
+    const hdr = div('sugg-hdr');
+    const lbl = div('sugg-lbl'); lbl.textContent = 'Vale a pena testar:';
+    hdr.appendChild(lbl); block.appendChild(hdr);
+  }
+  function makeSuggNote(block, html) {
+    const n = div('sugg-note'); n.innerHTML = html; block.appendChild(n);
+  }
+  function makeSuggDisc(block, html) {
+    const d = div('sugg-disc'); d.innerHTML = html; block.appendChild(d);
+  }
+  function makeRow(block) {
+    const r = div('sugg-row'); block.appendChild(r); return r;
+  }
+  function opChip(type, sign, label) {
+    const c = div('op-chip ' + type);
+    const s = div('op-sign'); s.textContent = sign;
+    c.append(s, document.createTextNode(label));
+    return c;
+  }
+  function chipArr() {
+    const a = div('chip-arr'); a.textContent = '→'; return a;
+  }
+
+  // ── Árvore de diagnóstico ──
+  let block = null;
+
+  if (!hasEdge) {
+    // ════════════════════════════════ SEM EDGE ════════════════════════════════
+    if (winRate < 0.33) {
+      // 6.3.1 — WR crítico
+      block = makeBlock('danger');
+      makeTag(block, 'Taxa de acerto crítica');
+      makeText(block, `<strong>${(winRate * 100).toFixed(1)}% de taxa de acerto</strong> é uma assertividade baixa, ainda que a estratégia tenha uma relação de risco-retorno favorável. Na prática, taxas de acerto tão baixas geram drawdowns potencialmente maiores e períodos longos de recuperação — o que pode representar um desafio emocional significativo para qualquer trader. Operar com essa característica exige uma disciplina que vai além da técnica.`);
+      makeSep(block);
+      makeSuggHdr(block);
+
+      if (!hasMA) {
+        // Sem filtro de tendência → sugerir SMA/EMA
+        makeSuggNote(block, 'Adicionar uma <strong>Média Móvel</strong> como filtro de tendência faz a estratégia só sinalizar quando o preço está alinhado com a direção predominante do mercado — o que tende a reduzir entradas contra a tendência e melhorar a taxa de acerto.');
+        const row = makeRow(block);
+        const typeRef = {}, perRef = {}, condRef = {};
+        const typeOpts = [['ema','EMA'],['sma','SMA']];
+        const perOpts = [['200','200'],['100','100'],['50','50']];
+        const condOpts = [['Preço está acima','Acima'],['Preço está abaixo','Abaixo']];
+        row.append(
+          opChip('add', '+', 'Média Móvel'),
+          diagMakeSelect('Tipo', typeOpts, typeRef),
+          diagMakeSelect('Período', perOpts, perRef),
+          diagMakeSelect('Condição', condOpts, condRef),
+          diagTestBtn(() => diagApplyAndTest(() => {
+            const id = typeRef.val;
+            const name = id.toUpperCase();
+            const per = parseInt(perRef.val);
+            const cond = condRef.val;
+            cfg.conditions.push({id, name, params:{per, cond}});
+          }))
+        );
+      } else if (!hasOsc) {
+        // Tem MA, sem oscilador → sugerir RSI
+        makeSuggNote(block, 'Adicionar um <strong>oscilador</strong> como filtro de confirmação faz a estratégia só sinalizar em zonas de maior probabilidade de reversão ou continuação — o que tende a melhorar a assertividade das entradas.');
+        const row = makeRow(block);
+        const perRef = {}, condRef = {}, valRef = {};
+        const perOpts = [['14','14'],['21','21'],['9','9']];
+        const condOpts = [['cruza acima de','Cruza acima'],['cruza abaixo de','Cruza abaixo']];
+        const stepper = diagMakeStepper('Valor', 30, 0, 100, 1, '', valRef);
+        row.append(
+          opChip('add', '+', 'IFR (RSI)'),
+          diagMakeSelect('Período', perOpts, perRef),
+          diagMakeSelect('Condição', condOpts, condRef),
+          stepper,
+          diagTestBtn(() => diagApplyAndTest(() => {
+            cfg.conditions.push({id:'rsi', name:'IFR (RSI)', params:{per:parseInt(perRef.val), cond:condRef.val, val:valRef.val}});
+          }))
+        );
+      } else if (tLastH >= 12) {
+        // Tem MA e oscilador, janela de abertura após 12h → restringir
+        makeSuggNote(block, 'A volatilidade e liquidez do mercado brasileiro são concentradas no período da manhã. <strong>Restringir entradas até 12h</strong> tende a melhorar a qualidade dos sinais gerados.');
+        const row = makeRow(block);
+        row.append(
+          opChip('remove', '−', 'Janela atual: ' + cfg.tLastEntry),
+          chipArr(),
+          opChip('repl', '+', 'Entradas até 12:00'),
+          diagTestBtn(() => diagApplyAndTest(() => { cfg.tLastEntry = '12:00'; }))
+        );
+      } else if (cfg.direction === 'both') {
+        // Tem MA, oscilador, janela ok, direção = ambos → testar 1 direção
+        makeSuggNote(block, 'Testar apenas uma direção elimina operações que podem estar puxando os resultados para baixo. Vale descobrir se o setup tem <strong>desempenho assimétrico</strong> entre compra e venda.');
+        const row = makeRow(block);
+        row.append(
+          opChip('remove', '−', 'Ambas as direções'),
+          chipArr(),
+          diagTestBtn(() => diagApplyAndTest(() => { cfg.direction = 'long'; }))
+        );
+        // botão extra para short
+        const btnShort = diagTestBtn(() => diagApplyAndTest(() => { cfg.direction = 'short'; }));
+        btnShort.textContent = 'Testar apenas venda →';
+        btnShort.style.marginLeft = '6px';
+        row.children[2].textContent = 'Testar apenas compra →';
+        row.append(btnShort);
+      }
+    } else if (rrConfigured && avgPayoff > 0 && avgPayoff < rrConfigured * 0.85) {
+      // 6.3.2 — Payoff baixo
+      block = makeBlock('danger');
+      makeTag(block, 'Payoff baixo');
+      makeText(block, `A estratégia acerta mais da metade das vezes — mas o retorno médio por trade (<strong>${avgPayoff.toFixed(2)}×</strong>) está muito abaixo do R:R configurado (<strong>${rrConfigured.toFixed(2)}×</strong>). Isso indica que os trades estão sendo encerrados antes de atingir o alvo na maioria das operações. Com acerto bom mas retorno comprimido, os ganhos não conseguem compensar as perdas ao longo do tempo.`);
+      makeSep(block);
+      makeSuggHdr(block);
+
+      if (cfg.trailing) {
+        const tpRef = {};
+        const initTp = cfg.stopType === 'fixed' && rrConfigured
+          ? snapToTick(cfg.stopPts * rrConfigured, getAssetTick(cfg.asset).tick)
+          : (cfg.tpPts || 400);
+        makeSuggNote(block, 'O trailing stop protege o lucro parcial, mas frequentemente encerra operações antes do alvo original quando o preço oscila no caminho. <strong>Remover o trailing e usar um alvo fixo</strong> em pontos pode permitir que as operações vencedoras se desenvolvam completamente, recuperando o payoff real.');
+        const row = makeRow(block);
+        const { tick } = getAssetTick(cfg.asset);
+        const stepper = diagMakeStepper('Alvo', initTp, tick, 10000, tick, 'pts', tpRef);
+        row.append(
+          opChip('remove', '−', 'Trailing stop'),
+          chipArr(),
+          opChip('repl', '+', 'Alvo fixo'),
+          stepper,
+          diagTestBtn(() => diagApplyAndTest(() => {
+            cfg.trailing = false;
+            cfg.tpType = 'fixed';
+            cfg.tpPts = tpRef.val;
+          }))
+        );
+      } else if (closeDurH < 3) {
+        makeSuggNote(block, 'A janela operacional está curta demais para que os trades atinjam o alvo. <strong>Ampliar o horário de encerramento</strong> de posições dá mais tempo para o mercado se desenvolver na direção da operação.');
+        const closeRef = {};
+        const row = makeRow(block);
+        row.append(
+          opChip('remove', '−', 'Encerra às ' + cfg.tEnd),
+          chipArr(),
+          diagMakeSelect('Encerrar às', [['17:30','17:30'],['18:00','18:00'],['17:00','17:00']], closeRef),
+          diagTestBtn(() => diagApplyAndTest(() => { cfg.tEnd = closeRef.val; }))
+        );
+      }
+    }
+  } else {
+    // ════════════════════════════════ COM EDGE ════════════════════════════════
+    if (mddStatus !== 'green') {
+      // 6.4.1 — MDD problemático
+      block = makeBlock('warning');
+      makeTag(block, 'Drawdown elevado');
+
+      const mddStr = (mddPct * 100).toFixed(1) + '%';
+      if (cfg.stopType === 'fixed') {
+        makeText(block, `A estratégia é lucrativa — mas um drawdown de <strong>${mddStr}</strong> significa que em algum momento do período testado o capital chegou a cair ${mddStr} antes de se recuperar. Isso é difícil de sustentar na prática: a pressão psicológica de operar em sequências longas de perda costuma levar o trader a abandonar a estratégia antes de ela se recuperar. Um stop definido em pontos fixos ignora a volatilidade do ativo — o mesmo valor pode ser adequado em dias calmos e pequeno demais em dias de maior oscilação, gerando perdas desnecessárias.`);
+      } else {
+        const tuwStr = (tuwPct * 100).toFixed(1) + '%';
+        makeText(block, `A estratégia é lucrativa — mas um drawdown de <strong>${mddStr}</strong> e <strong>${tuwStr}</strong> do tempo operando abaixo do pico tornam essa estratégia difícil de operar com disciplina. O problema está na qualidade das entradas — muitos sinais estão sendo gerados em condições desfavoráveis.`);
+      }
+      makeSep(block);
+      makeSuggHdr(block);
+
+      if (cfg.stopType === 'fixed') {
+        const perRef = {val:14}, multRef = {val:1.5};
+        makeSuggNote(block, 'O <strong>stop por ATR</strong> se ajusta automaticamente à volatilidade do ativo em cada momento — menor nos dias de pouca oscilação, maior quando o mercado se movimenta mais. Isso tende a reduzir stopadas desnecessárias e suavizar o drawdown ao longo do tempo.');
+        const row = makeRow(block);
+        const { tick } = getAssetTick(cfg.asset);
+        row.append(
+          opChip('remove', '−', 'Stop fixo · ' + cfg.stopPts + ' pts'),
+          chipArr(),
+          opChip('repl', '+', 'Stop por ATR'),
+          diagMakeSelect('Período', [['14','14'],['10','10'],['21','21']], perRef),
+          diagMakeStepper('Mult', 1.5, 0.5, 5.0, 0.5, '× ATR', multRef),
+          diagTestBtn(() => diagApplyAndTest(() => {
+            cfg.stopType = 'atr';
+            cfg.stopAtrPer = parseInt(perRef.val);
+            cfg.stopAtrMult = multRef.val;
+          }))
+        );
+      } else {
+        // Stop não fixo: reusa árvore WR crítico
+        if (!hasMA) {
+          makeSuggNote(block, 'Adicionar uma <strong>Média Móvel</strong> como filtro de tendência faz a estratégia só sinalizar quando o preço está alinhado com a direção predominante do mercado — o que tende a reduzir entradas contra a tendência e suavizar o drawdown.');
+          const row = makeRow(block);
+          const typeRef = {}, perRef = {}, condRef = {};
+          row.append(
+            opChip('add', '+', 'Média Móvel'),
+            diagMakeSelect('Tipo', [['ema','EMA'],['sma','SMA']], typeRef),
+            diagMakeSelect('Período', [['200','200'],['100','100'],['50','50']], perRef),
+            diagMakeSelect('Condição', [['Preço está acima','Acima'],['Preço está abaixo','Abaixo']], condRef),
+            diagTestBtn(() => diagApplyAndTest(() => {
+              cfg.conditions.push({id:typeRef.val, name:typeRef.val.toUpperCase(), params:{per:parseInt(perRef.val), cond:condRef.val}});
+            }))
+          );
+        } else if (!hasOsc) {
+          makeSuggNote(block, 'Adicionar um <strong>oscilador</strong> como filtro de confirmação faz a estratégia só sinalizar em zonas de maior probabilidade — o que tende a melhorar a qualidade das entradas e reduzir o drawdown.');
+          const row = makeRow(block);
+          const perRef = {}, condRef = {}, valRef = {};
+          const stepper = diagMakeStepper('Valor', 30, 0, 100, 1, '', valRef);
+          row.append(
+            opChip('add', '+', 'IFR (RSI)'),
+            diagMakeSelect('Período', [['14','14'],['21','21'],['9','9']], perRef),
+            diagMakeSelect('Condição', [['cruza acima de','Cruza acima'],['cruza abaixo de','Cruza abaixo']], condRef),
+            stepper,
+            diagTestBtn(() => diagApplyAndTest(() => {
+              cfg.conditions.push({id:'rsi', name:'IFR (RSI)', params:{per:parseInt(perRef.val), cond:condRef.val, val:valRef.val}});
+            }))
+          );
+        } else if (tLastH >= 12) {
+          makeSuggNote(block, 'A volatilidade e liquidez do mercado brasileiro são concentradas no período da manhã. <strong>Restringir entradas até 12h</strong> tende a melhorar a qualidade dos sinais e reduzir o drawdown.');
+          const row = makeRow(block);
+          row.append(
+            opChip('remove', '−', 'Janela: ' + cfg.tLastEntry),
+            chipArr(),
+            opChip('repl', '+', 'Entradas até 12:00'),
+            diagTestBtn(() => diagApplyAndTest(() => { cfg.tLastEntry = '12:00'; }))
+          );
+        } else if (cfg.direction === 'both') {
+          makeSuggNote(block, 'Testar apenas uma direção pode revelar qual lado está gerando o drawdown. Vale descobrir se o setup tem <strong>desempenho assimétrico</strong> entre compra e venda.');
+          const row = makeRow(block);
+          row.append(
+            opChip('remove', '−', 'Ambas as direções'),
+            chipArr(),
+            diagTestBtn(() => diagApplyAndTest(() => { cfg.direction = 'long'; }))
+          );
+          const btnS = diagTestBtn(() => diagApplyAndTest(() => { cfg.direction = 'short'; }));
+          btnS.textContent = 'Testar apenas venda →';
+          row.children[2].textContent = 'Testar apenas compra →';
+          row.append(btnS);
+        }
+      }
+    } else if (tuwStatus !== 'green') {
+      // 6.4.2 — TUW problemático
+      block = makeBlock('warning');
+      makeTag(block, 'Tempo sob água elevado');
+      const tuwStr = (tuwPct * 100).toFixed(1) + '%';
+      makeText(block, `A estratégia ganha e o drawdown está controlado — mas <strong>${tuwStr}</strong> do período testado foi operado abaixo do pico anterior. Isso significa que por ${tuwStr} do tempo a estratégia estava em recuperação, sem apresentar novos resultados positivos. Esse padrão desgasta a confiança do trader na estratégia ao longo do tempo.`);
+      makeSep(block);
+      makeSuggHdr(block);
+
+      if (!hasVolume) {
+        makeSuggNote(block, 'Adicionar <strong>volume acima da média</strong> como condição filtra operações em momentos de baixa liquidez — quando os movimentos tendem a ser menos confiáveis. Isso reduz o número de trades e melhora a qualidade das entradas.');
+        const row = makeRow(block);
+        const perRef = {};
+        row.append(
+          opChip('add', '+', 'Volume acima da média'),
+          diagMakeSelect('Período', [['20','20'],['10','10'],['30','30']], perRef)
+        );
+      } else if (!hasMaxTrades) {
+        makeSuggNote(block, 'Limitar a <strong>2 operações por dia</strong> força a estratégia a selecionar apenas os melhores sinais do dia — o que tende a melhorar a consistência dos resultados.');
+        const row = makeRow(block);
+        row.append(
+          opChip('add', '+', 'Máximo 2 operações por dia'),
+          diagTestBtn(() => diagApplyAndTest(() => { cfg.maxDailyTrades = 2; }))
+        );
+      } else if (cfg.partial) {
+        makeSuggNote(block, 'A saída parcial reduz o payoff dos trades vencedores — o que pode estar comprimindo os ganhos e prolongando o tempo em recuperação. <strong>Desativar e testar com alvo fixo</strong> pode melhorar a consistência.');
+        const row = makeRow(block);
+        row.append(
+          opChip('remove', '−', 'Saída parcial'),
+          diagTestBtn(() => diagApplyAndTest(() => { cfg.partial = false; }))
+        );
+      }
+    } else if (!rentOk) {
+      // 6.4.3 — Rentabilidade abaixo de 200% CDI
+      block = makeBlock('warning');
+      makeTag(block, 'Retorno abaixo do esperado');
+      const rentRatio = cdiPct > 0 ? ((totalReturnPct / cdiPct) * 100).toFixed(0) : '—';
+      const tpMentionFixed = cfg.tpType === 'fixed' || cfg.tpType === 'rr';
+      const tpMentionATR = cfg.tpType === 'atr';
+      let rentBodyText;
+      if (tpMentionATR) {
+        rentBodyText = `Tem edge aqui — a estrutura de risco está bem controlada. Mas <strong>${rentRatio}% do CDI</strong> não justifica o risco do day trade frente à renda fixa. O alvo atual pode estar com multiplicador conservador demais para capturar os movimentos que o ativo oferece.`;
+      } else {
+        rentBodyText = `Tem edge aqui — a estrutura de risco está bem controlada. Mas <strong>${rentRatio}% do CDI</strong> não justifica o risco do day trade frente à renda fixa. Um alvo definido em pontos fixos não acompanha a volatilidade do ativo: em dias de maior oscilação, a estratégia sai da operação cedo demais e deixa parte do movimento na mesa.`;
+      }
+      makeText(block, rentBodyText);
+      makeSep(block);
+      makeSuggHdr(block);
+
+      if (cfg.tpType === 'fixed') {
+        const perRef = {}, multRef = {};
+        makeSuggNote(block, 'O <strong>alvo por múltiplo de ATR</strong> se expande nos dias em que o mercado oferece mais espaço e se contrai quando a volatilidade é menor — permitindo capturar movimentos maiores quando eles acontecem, sem forçar alvos irreais em dias de pouca oscilação.');
+        const row = makeRow(block);
+        row.append(
+          opChip('remove', '−', 'Alvo fixo · ' + cfg.tpPts + ' pts'),
+          chipArr(),
+          opChip('repl', '+', 'Alvo por ATR'),
+          diagMakeSelect('Período', [['14','14'],['10','10'],['21','21']], perRef),
+          diagMakeStepper('Mult', 2.0, 0.5, 10.0, 0.5, '× ATR', multRef),
+          diagTestBtn(() => diagApplyAndTest(() => {
+            cfg.tpType = 'atr';
+            cfg.tpAtrPer = parseInt(perRef.val);
+            cfg.tpAtrMult = multRef.val;
+          }))
+        );
+      } else if (cfg.tpType === 'rr') {
+        const rrRef = {val: cfg.tpRR || 2};
+        makeSuggNote(block, 'O alvo está dimensionado como múltiplo do stop — mas pode estar conservador demais para o comportamento real do ativo. <strong>Aumentar o multiplicador</strong> permite capturar movimentos maiores nas operações vencedoras.');
+        makeSuggDisc(block, 'Atenção: aumentar o alvo pode reduzir a taxa de acerto.');
+        const { tick } = getAssetTick(cfg.asset);
+        const row = makeRow(block);
+        const stepper = diagMakeStepper('R:R', cfg.tpRR || 2, 0.5, 20.0, 0.5, '×', rrRef);
+        row.append(
+          stepper,
+          diagTestBtn(() => diagApplyAndTest(() => { cfg.tpRR = rrRef.val; }))
+        );
+      } else if (cfg.tpType === 'atr') {
+        const multRef = {val: cfg.tpAtrMult || 2.0};
+        makeSuggNote(block, 'O multiplicador atual pode estar conservador. Aumentar permite capturar movimentos maiores — com o risco de reduzir a taxa de acerto.');
+        const row = makeRow(block);
+        const stepper = diagMakeStepper('Mult', cfg.tpAtrMult || 2.0, 0.5, 10.0, 0.5, '× ATR', multRef);
+        row.append(
+          stepper,
+          diagTestBtn(() => diagApplyAndTest(() => { cfg.tpAtrMult = multRef.val; }))
+        );
+      }
+    } else {
+      // 6.4.4 — Tudo verde
+      block = makeBlock('success');
+      const badge = div('diag-tag'); badge.textContent = '✓ Estratégia aprovada'; block.appendChild(badge);
+      const title2 = div('diag-celeb-title'); title2.textContent = 'Parabéns. Essa estratégia passa em todos os critérios.'; block.appendChild(title2);
+      const body2 = div('diag-celeb-body');
+      body2.innerHTML = 'Sua abordagem objetiva de testar antes de arriscar dinheiro real está funcionando. Você está entre menos de 5% dos traders que conseguem estruturar estratégias com essa consistência de resultado. Agora a pergunta que fica é: <strong>isso funciona além desse contexto?</strong>';
+      block.appendChild(body2);
+
+      const nextHdr = div('next-tests-hdr');
+      const nextLbl = div('next-tests-lbl'); nextLbl.textContent = 'Próximos testes sugeridos:';
+      nextHdr.appendChild(nextLbl); block.appendChild(nextHdr);
+
+      const nextRow = div('next-tests-row');
+      const nextTf = DIAG_TF_NEXT[cfg.tf];
+      const nextAsset = DIAG_ASSET_PAIR[cfg.asset];
+
+      if (nextTf) {
+        const card1 = div('next-test-card');
+        const ico1 = div('next-test-ico'); ico1.textContent = '⏱';
+        const info1 = div('next-test-info');
+        const ttl1 = div('next-test-ttl'); ttl1.textContent = cfg.asset + ' · ' + nextTf;
+        const desc1 = div('next-test-desc'); desc1.textContent = 'Mesmo ativo, timeframe maior';
+        const arr1 = div('next-test-arr'); arr1.textContent = '→';
+        info1.append(ttl1, desc1); card1.append(ico1, info1, arr1);
+        card1.onclick = () => diagApplyAndTest(() => { cfg.tf = nextTf; });
+        nextRow.appendChild(card1);
+      }
+      if (nextAsset) {
+        const aData = findAsset(nextAsset);
+        const card2 = div('next-test-card');
+        const ico2 = div('next-test-ico'); ico2.textContent = '🔄';
+        const info2 = div('next-test-info');
+        const ttl2 = div('next-test-ttl'); ttl2.textContent = (aData ? aData.n : nextAsset) + ' · ' + cfg.tf;
+        const desc2 = div('next-test-desc'); desc2.textContent = 'Ativo diferente, mesmo timeframe';
+        const arr2 = div('next-test-arr'); arr2.textContent = '→';
+        info2.append(ttl2, desc2); card2.append(ico2, info2, arr2);
+        card2.onclick = () => diagApplyAndTest(() => { cfg.asset = nextAsset; const t=getAssetTick(nextAsset).tick; cfg.stopPts=snapToTick(cfg.stopPts,t); cfg.tpPts=snapToTick(cfg.tpPts,t); });
+        nextRow.appendChild(card2);
+      }
+      block.appendChild(nextRow);
+    }
+  }
+
+  if (!block) return null;
+  section.appendChild(block);
+  return section;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function renderResults() {
   const TH=svgTheme();
   const A=EQ_ANALYSIS;const METRICS=getMetrics();
@@ -7924,6 +8491,10 @@ function renderResults() {
     mg.appendChild(c);
   });
   el.appendChild(mg);
+
+  // ── Motor de Diagnóstico ──
+  const diagEl = renderDiagnosticSection();
+  if (diagEl) el.appendChild(diagEl);
 
   // ── Trade Stats Section ──
   const statsCard=div('chart-card');
