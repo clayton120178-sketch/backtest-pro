@@ -906,22 +906,26 @@ async function handleLogout(){
 }
 
 async function verificarAcesso(){
+  console.log('[VA] inicio, user:', currentUser?.id);
   try {
     let tentativas = 0;
     let data = null;
     while(!data && tentativas < 5){
       const res = await db.from('acesso_status').select('*').eq('id', currentUser.id).maybeSingle();
+      console.log('[VA] query acesso_status tentativa', tentativas, '| data:', res.data, '| error:', res.error);
       if(res.data){ data = res.data; break; }
       tentativas++;
       await new Promise(r => setTimeout(r, 1000));
     }
     if(!data){
+      console.log('[VA] sem data apos retry, fazendo upsert...');
       await db.from('users').upsert({
         id: currentUser.id, email: currentUser.email,
         name: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email.split('@')[0]
       }, { onConflict: 'id', ignoreDuplicates: true });
       await new Promise(r => setTimeout(r, 1000));
       const res2 = await db.from('acesso_status').select('*').eq('id', currentUser.id).maybeSingle();
+      console.log('[VA] query pos-upsert | data:', res2.data, '| error:', res2.error);
       data = res2.data;
       if(!data){ mostrarLogin(); return; }
     }
@@ -931,11 +935,13 @@ async function verificarAcesso(){
     } else {
       currentSub = null;
     }
+    console.log('[VA] contando backtests, currentSub:', currentSub);
     if(!currentSub){
       currentTrialCount = await contarBacktestsSalvos(currentUser.id);
     } else {
       currentTrialCount = 0;
     }
+    console.log('[VA] chamando hideAllAuth | status:', data?.status, '| tipo_acesso:', data?.tipo_acesso, '| role:', data?.role, '| trialCount:', currentTrialCount);
     hideAllAuth();
     if(data.status === 'ativo' || data.status === 'trial' || data.tipo_acesso === 'admin'){
       updateAvatarUI();
@@ -947,7 +953,7 @@ async function verificarAcesso(){
       showScreen('plans');
     }
   } catch(e){
-    console.error('[verificarAcesso]', e);
+    console.error('[VA] erro:', e);
     mostrarLogin();
   }
 }
