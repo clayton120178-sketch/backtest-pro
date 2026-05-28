@@ -918,7 +918,7 @@ async function handleGoogleCredential(response){
   if(lo) lo.style.display = 'flex';
   try {
     const { error } = await db.auth.signInWithIdToken({ provider: 'google', token: response.credential });
-    if(error){ console.error('[Google]', error); mostrarErroAuth('login-error', 'Erro ao entrar com Google. Tente novamente.'); mostrarLogin(); }
+    if(error){ console.error('[Google]', error); mostrarErroAuth('login-error', error.message || 'Erro ao entrar com Google.'); mostrarLogin(); }
   } catch(e){
     console.error('[Google]', e);
     mostrarLogin();
