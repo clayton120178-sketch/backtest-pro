@@ -959,6 +959,7 @@ async function verificarAcesso(){
 }
 
 db.auth.onAuthStateChange(async (event, session) => {
+  console.log('[AUTH] event:', event, '| user:', session?.user?.id ?? 'null');
   if(event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED'){
     if(session?.user){ currentUser = session.user; await verificarAcesso(); }
   } else if(event === 'INITIAL_SESSION'){
