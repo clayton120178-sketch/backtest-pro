@@ -9328,22 +9328,23 @@ async function loadHomeData() {
     const uid = currentUser?.id;
     if (!uid) return { backtests: [], allResults: [] };
 
+    const { data: sessionData } = await db.auth.getSession();
+    const token = sessionData?.session?.access_token;
+    if (!token) return { backtests: [], allResults: [] };
+
+    const headers = { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + token };
+
     const [listRes, allRes] = await Promise.all([
-      db.from('backtests')
-        .select('id, config, status, result, created_at, parent_id')
-        .eq('user_id', uid)
-        .eq('status', 'completed')
-        .order('created_at', { ascending: false })
-        .limit(10),
-      db.from('backtests')
-        .select('id, result')
-        .eq('user_id', uid)
-        .eq('status', 'completed')
+      fetch(SUPA_URL + '/rest/v1/backtests?select=id,config,status,result,created_at,parent_id&user_id=eq.' + uid + '&status=eq.completed&order=created_at.desc&limit=10', { headers }),
+      fetch(SUPA_URL + '/rest/v1/backtests?select=id,result&user_id=eq.' + uid + '&status=eq.completed', { headers })
     ]);
 
+    const backtests = listRes.ok ? await listRes.json() : [];
+    const allResults = allRes.ok ? await allRes.json() : [];
+
     return {
-      backtests: listRes.data || [],
-      allResults: allRes.data || []
+      backtests: Array.isArray(backtests) ? backtests : [],
+      allResults: Array.isArray(allResults) ? allResults : []
     };
   } catch(e) {
     console.error('[loadHomeData]', e);
@@ -9396,8 +9397,9 @@ function renderHome(data) {
 
   if (!temHistorico) {
     // — ESTADO B: USUÁRIO NOVO —
-    const dotsUsados = currentTrialCount || 0;
     const totalDots = FREE_TRIAL.backtests_max;
+    const dotsUsados = Math.min(currentTrialCount || 0, totalDots);
+    const disponiveis = totalDots - dotsUsados;
 
     const banner = document.createElement('div');
     banner.className = 'welcome-banner';
@@ -9406,7 +9408,7 @@ function renderHome(data) {
       <div class="welcome-banner-text">Você foi removido do grupo de traders que operam no escuro. Comece a testar suas estratégias gratuitamente agora.</div>
       <div class="trial-dots">
         ${Array.from({length: totalDots}, (_,i) => `<div class="trial-dot ${i < dotsUsados ? 'used' : 'active'}"></div>`).join('')}
-        <span class="trial-dot-label">${totalDots - dotsUsados} teste${totalDots - dotsUsados !== 1 ? 's' : ''} gratuito${totalDots - dotsUsados !== 1 ? 's' : ''} disponível${totalDots - dotsUsados !== 1 ? 'is' : ''}</span>
+        <span class="trial-dot-label">${disponiveis} teste${disponiveis !== 1 ? 's' : ''} gratuito${disponiveis !== 1 ? 's' : ''} disponível${disponiveis !== 1 ? 'is' : ''}</span>
       </div>
       <button class="welcome-cta" id="home-first-test-btn">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
