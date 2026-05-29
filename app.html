@@ -1086,7 +1086,7 @@ async function verificarAcesso(){
       updateAvatarUI();
       if(typeof chatReveal === 'function') chatReveal();
       if(currentScreen === 'plans' || currentScreen === 'payment' || currentScreen === 'history') return;
-      if(data.role === 'admin' || currentSub || currentTrialCount < FREE_TRIAL.backtests_max){ showHome(); maybeAutoTour(); }
+      if(data.role === 'admin' || currentSub || currentTrialCount < FREE_TRIAL.backtests_max){ showHome(); }
       else { showScreen('plans'); }
     } else {
       showScreen('plans');
@@ -9648,20 +9648,19 @@ function _homeLoadSugestao(b, sug) {
   renderApp();
 }
 
-async function showHome() {
+function showHome() {
   currentScreen = 'home';
   const main = document.getElementById('main');
   main.innerHTML = '';
   const pb = document.getElementById('prog-bar');
   if (pb) { pb.innerHTML = ''; const lbl = document.createElement('div'); lbl.style.cssText = 'font-size:13px;color:var(--txs);font-weight:500'; lbl.textContent = 'Início'; pb.appendChild(lbl); }
-
   main.appendChild(renderHomeSkeleton());
-
-  const data = await loadHomeData();
-  _homeData = data;
-
-  main.innerHTML = '';
-  main.appendChild(renderHome(data));
+  loadHomeData().then(data => {
+    if (currentScreen !== 'home') return;
+    _homeData = data;
+    main.innerHTML = '';
+    main.appendChild(renderHome(data));
+  }).catch(e => console.error('[showHome]', e));
 }
 
 // ─── SCREENS ──────────────────────────────────────────────────
