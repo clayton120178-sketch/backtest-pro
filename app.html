@@ -415,8 +415,8 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .history-card-verdict.bad{background:rgba(239,68,68,.15);color:#EF4444}
 .history-card-conds{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px}
 .history-card-cond{font-size:10px;padding:2px 8px;border-radius:4px;background:var(--bg2);border:0.5px solid var(--bd);color:var(--txs);font-family:'JetBrains Mono',monospace}
-.history-card-share{background:none;border:none;cursor:pointer;color:var(--txm);padding:4px 6px;border-radius:6px;display:inline-flex;align-items:center;flex-shrink:0;transition:color var(--t2),background var(--t2)}
-.history-card-share:hover{color:var(--tx);background:var(--bg2)}
+.history-card-share{background:transparent;border:0.5px solid var(--bd);cursor:pointer;color:var(--txs);padding:4px 10px;border-radius:6px;display:inline-flex;align-items:center;gap:5px;flex-shrink:0;font-size:11px;font-weight:600;font-family:inherit;letter-spacing:.02em;transition:all var(--t2);white-space:nowrap}
+.history-card-share:hover{color:var(--tx);border-color:var(--bdh);background:var(--bg2)}
 .history-card-share:disabled{opacity:.5;cursor:default}
 
 /* ── VALIDATION FEEDBACK ─────────────────────────────────── */
@@ -9577,7 +9577,7 @@ function renderHome(data) {
       const verdict = div('history-card-verdict ' + (isGood ? 'ok' : 'bad'));
       verdict.textContent = isGood ? 'APROVADA' : 'REPROVADA';
       const shareBtn = h('button', { class: 'history-card-share', type: 'button', title: 'Compartilhar resultado' });
-      shareBtn.innerHTML = IC.share;
+      shareBtn.innerHTML = IC.share + ' Compartilhar';
       shareBtn.addEventListener('click', e => { e.stopPropagation(); shareFromHistory(b, shareBtn); });
       top.append(strat, verdict, dateEl, shareBtn);
       card.appendChild(top);
@@ -10216,7 +10216,7 @@ async function loadHistoryData() {
       const verdict = div('history-card-verdict ' + (ok ? 'ok' : 'bad'));
       verdict.textContent = ok ? 'LUCRATIVA' : 'DEFICITÁRIA';
       const shareBtn = h('button', { class: 'history-card-share', type: 'button', title: 'Compartilhar resultado' });
-      shareBtn.innerHTML = IC.share;
+      shareBtn.innerHTML = IC.share + ' Compartilhar';
       shareBtn.addEventListener('click', e => { e.stopPropagation(); shareFromHistory(bt, shareBtn); });
       top.append(strat, verdict, dateEl, shareBtn);
       card.appendChild(top);
