@@ -9434,9 +9434,9 @@ function renderHome(data) {
   // Calcular painel de impacto a partir de allResults
   let reprovadas = 0, aprovadas = 0, valReprovadas = 0, valAprovadas = 0;
   allResults.forEach(b => {
-    const tr = b.result?.total_result ?? b.result?.net_profit ?? null;
+    const tr = b.result?.metrics?.total_net_profit ?? null;
     if (tr === null) return;
-    if (tr <= 0) { reprovadas++; valReprovadas += Math.abs(tr); }
+    if (tr < 0) { reprovadas++; valReprovadas += Math.abs(tr); }
     else { aprovadas++; valAprovadas += tr; }
   });
 
@@ -9497,29 +9497,15 @@ function renderHome(data) {
 
   function renderStratList() {
     const filtered = backtests.filter(b => {
-      const tr = b.result?.total_result ?? b.result?.net_profit ?? null;
-      if (activeTab === 'aprovadas') return tr !== null && tr > 0;
-      if (activeTab === 'reprovadas') return tr === null || tr <= 0;
+      const tr = b.result?.metrics?.total_net_profit ?? null;
+      if (activeTab === 'aprovadas') return tr !== null && tr >= 0;
+      if (activeTab === 'reprovadas') return tr === null || tr < 0;
       return true;
     });
 
-    // Montar version chains
-    const versoes = {};
-    backtests.forEach(b => {
-      let root = b.id;
-      let cur = b;
-      const chain = [b.id];
-      while (cur.parent_id) {
-        chain.unshift(cur.parent_id);
-        cur = backtests.find(x => x.id === cur.parent_id) || { id: cur.parent_id, parent_id: null };
-      }
-      chain.forEach((id, idx) => { versoes[id] = { chain, idx }; });
-    });
-
-    let listEl = stratListContainer.querySelector('.strat-list');
+    let listEl = stratListContainer.querySelector('.history-list');
     if (listEl) listEl.remove();
-    listEl = document.createElement('div');
-    listEl.className = 'strat-list';
+    listEl = div('history-list');
 
     if (filtered.length === 0) {
       const empty = document.createElement('div');
@@ -9529,70 +9515,55 @@ function renderHome(data) {
     }
 
     filtered.forEach(b => {
-      const tr = b.result?.total_result ?? b.result?.net_profit ?? null;
-      const isGood = tr !== null && tr > 0;
-      const hasSug = !!b.result?.suggestion;
-      const score = b.result?.score ?? null;
-      const wr = b.result?.win_rate ?? b.result?.wr ?? null;
-      const trades = b.result?.total_trades ?? b.result?.trades ?? null;
-      const sug = b.result?.suggestion;
-      const dotCls = hasSug ? 'sug' : isGood ? 'good' : 'bad';
-
-      // Version chain
-      const vi = versoes[b.id];
-      let chainHtml = '';
-      if (vi && vi.chain.length > 1) {
-        chainHtml = vi.chain.map((cid, idx) => {
-          const isCurr = cid === b.id;
-          return `<span class="strat-v ${isCurr ? 'curr' : ''}">v${idx + 1}</span>${idx < vi.chain.length - 1 ? '<span class="strat-v-arr">→</span>' : ''}`;
-        }).join('');
-      }
-
-      // Score badge
-      let scoreBadge = '';
-      if (score !== null) {
-        const sc = Number(score);
-        const cls = sc >= 71 ? 'hi' : sc >= 41 ? 'mid' : 'lo';
-        scoreBadge = `<span class="score-badge ${cls}">${sc}</span>`;
-      }
-
-      // Sugestão pill
-      let sugPill = '';
-      if (hasSug && sug?.text) {
-        const scls = isGood ? 'accent' : 'warn';
-        sugPill = `<span class="sug-pill ${scls}" data-bt-id="${b.id}" data-sug-step="${sug.wizard_step ?? 0}">${sug.text}</span>`;
-      }
-
-      const card = document.createElement('div');
-      card.className = `strat-card ${hasSug ? 'has-sug ' + (isGood ? 'good' : 'bad') : ''}`;
-      card.innerHTML = `
-        <div class="strat-card-top">
-          <div class="strat-dot ${dotCls}"></div>
-          <div class="strat-name">${gerarNomeEstrategia(b.config)}</div>
-          ${tr !== null ? `<div class="strat-result ${isGood ? 'pos' : 'neg'}">${isGood ? '+' : ''}${fmtBRL(tr)}</div>` : ''}
-        </div>
-        <div class="strat-card-bot">
-          <span class="strat-meta">${trades !== null ? trades + ' trades' : ''}${wr !== null ? ' · WR ' + Math.round(wr * 100) + '%' : ''}</span>
-          <div class="strat-chain">${chainHtml}</div>
-          ${scoreBadge}
-          ${sugPill}
-        </div>
-      `;
-
-      // Clicar no card → abrir resultado
-      card.addEventListener('click', (e) => {
-        if (e.target.classList.contains('sug-pill') || e.target.closest('.sug-pill')) return;
-        _homeLoadBacktest(b);
+      const cfg = b.config || {};
+      const metrics = (b.result && b.result.metrics) ? b.result.metrics : {};
+      const profit = metrics.total_net_profit ?? null;
+      const isGood = profit !== null && profit >= 0;
+      const dir = cfg.direction === 'long' ? 'Compra' : cfg.direction === 'short' ? 'Venda' : 'Compra e Venda';
+      const dateStr = new Date(b.created_at).toLocaleString('pt-BR', {
+        day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'
+      });
+      const conditions = (cfg.conditions || []).map(c => {
+        const p = c.params || {};
+        let label = c.name || c.id || '?';
+        if (p.per && p.per2) label += `(${p.per}/${p.per2})`;
+        else if (p.per)      label += `(${p.per})`;
+        if (p.cond)          label += ' — ' + p.cond;
+        return label;
       });
 
-      // Clicar na sugestão → wizard pré-carregado
-      const pill = card.querySelector('.sug-pill');
-      if (pill) {
-        pill.addEventListener('click', (e) => {
-          e.stopPropagation();
-          _homeLoadSugestao(b, sug);
-        });
+      const card = div('history-card');
+      card.addEventListener('click', () => _homeLoadBacktest(b));
+
+      const top = div('history-card-top');
+      const strat = div('history-card-strat');
+      strat.textContent = `${cfg.asset || '—'} · ${cfg.tf || '—'} · ${dir}`;
+      const dateEl = div('history-card-date');
+      dateEl.textContent = dateStr;
+      const verdict = div('history-card-verdict ' + (isGood ? 'ok' : 'bad'));
+      verdict.textContent = isGood ? 'APROVADA' : 'REPROVADA';
+      top.append(strat, verdict, dateEl);
+      card.appendChild(top);
+
+      if (conditions.length > 0) {
+        const condsEl = div('history-card-conds');
+        conditions.forEach(c => { const tag = div('history-card-cond'); tag.textContent = c; condsEl.appendChild(tag); });
+        card.appendChild(condsEl);
       }
+
+      const metricsEl = div('history-card-metrics');
+      const addM = (label, val, color) => {
+        const m = div('history-card-metric');
+        const l = div('history-card-metric-label'); l.textContent = label;
+        const v = div('history-card-metric-value'); v.textContent = val; if (color) v.style.color = color;
+        m.append(l, v); metricsEl.appendChild(m);
+      };
+      if (profit !== null) addM('Resultado', (isGood ? '+' : '') + 'R$ ' + Math.abs(profit).toLocaleString('pt-BR', {maximumFractionDigits:0}), isGood ? '#10B981' : '#EF4444');
+      if (metrics.total_trades) addM('Trades', metrics.total_trades.toLocaleString('pt-BR'));
+      if (metrics.win_rate != null) addM('Win Rate', metrics.win_rate.toFixed(1) + '%', '#F59E0B');
+      if (metrics.max_drawdown_pct != null) addM('Max DD', '-' + metrics.max_drawdown_pct.toFixed(1) + '%', '#EF4444');
+      if (metrics.profit_factor != null) addM('Profit Factor', metrics.profit_factor.toFixed(2), metrics.profit_factor > 1 ? '#00D4AA' : '#EF4444');
+      card.appendChild(metricsEl);
 
       listEl.appendChild(card);
     });
