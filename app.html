@@ -10569,7 +10569,7 @@ async function shareFromHistory(bt, btn) {
     const blob = await generateShareCard();
     const file = new File([blob], 'backtest-pro-resultado.png', { type: 'image/png' });
     if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: 'Resultado do Backtest Pro', text: 'Testei minha estratégia de trading com dados reais. Testa a sua também, grátis no Backtest PRO 👉 https://backtestpro-app.vercel.app' });
+      await navigator.share({ files: [file], title: 'Resultado do Backtest Pro', text: 'Testei minha estratégia de trading com dados reais. Testa a sua também, grátis no Backtest PRO 👉 https://www.backtestpro.com.br/' });
     } else {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -10592,7 +10592,7 @@ async function shareResult(evt){
     const blob=await generateShareCard();
     const file=new File([blob],'backtest-pro-resultado.png',{type:'image/png'});
     if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
-      await navigator.share({files:[file],title:'Resultado do Backtest Pro',text:'Testei minha estratégia de trading com dados reais. Testa a sua também, grátis no Backtest PRO 👉 https://backtestpro-app.vercel.app'});
+      await navigator.share({files:[file],title:'Resultado do Backtest Pro',text:'Testei minha estratégia de trading com dados reais. Testa a sua também, grátis no Backtest PRO 👉 https://www.backtestpro.com.br/'});
     }else{
       const url=URL.createObjectURL(blob);const a=document.createElement('a');
       a.href=url;a.download='backtest-pro-resultado.png';
