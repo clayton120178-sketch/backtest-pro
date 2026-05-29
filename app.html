@@ -9335,12 +9335,15 @@ async function loadHomeData() {
     const headers = { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + token };
 
     const [listRes, allRes] = await Promise.all([
-      fetch(SUPA_URL + '/rest/v1/backtests?select=id,config,status,result,created_at,parent_id&user_id=eq.' + uid + '&status=eq.completed&order=created_at.desc&limit=10', { headers }),
+      fetch(SUPA_URL + '/rest/v1/backtests?select=id,config,result,created_at&user_id=eq.' + uid + '&status=eq.completed&order=created_at.desc&limit=10', { headers }),
       fetch(SUPA_URL + '/rest/v1/backtests?select=id,result&user_id=eq.' + uid + '&status=eq.completed', { headers })
     ]);
 
-    const backtests = listRes.ok ? await listRes.json() : [];
-    const allResults = allRes.ok ? await allRes.json() : [];
+    if (!listRes.ok) { const t = await listRes.text(); console.warn('[loadHomeData] list failed:', listRes.status, t); }
+    if (!allRes.ok)  { const t = await allRes.text();  console.warn('[loadHomeData] all failed:',  allRes.status,  t); }
+
+    const backtests  = listRes.ok ? await listRes.json() : [];
+    const allResults = allRes.ok  ? await allRes.json()  : [];
 
     return {
       backtests: Array.isArray(backtests) ? backtests : [],
