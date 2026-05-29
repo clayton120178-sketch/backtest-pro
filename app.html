@@ -5,7 +5,7 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Backtest Pro</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800;9..40,900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
@@ -668,10 +668,18 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 /* ── HOME PÓS-LOGIN ──────────────────────────────────────── */
 .home-screen{max-width:1100px;margin:0 auto;padding:28px 16px 48px;display:flex;flex-direction:column;gap:0}
 @media(min-width:640px){.home-screen{padding:40px 32px 64px}}
+/* Desktop: two-column layout */
+.home-left-col{display:flex;flex-direction:column}
+.home-right-col{display:flex;flex-direction:column}
+@media(min-width:900px){
+  .home-screen{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;align-items:start}
+  .home-left-col .cta-strip{margin-bottom:0}
+  .home-right-col .strat-section{animation:none}
+}
 
 /* Saudação */
 .home-greeting-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--txm);font-family:'JetBrains Mono',monospace;margin-bottom:8px}
-.home-greeting-title{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;line-height:1.25;letter-spacing:-.02em;color:var(--tx);margin-bottom:28px;animation:fadeUp .4s var(--out) both}
+.home-greeting-title{font-family:'DM Sans',sans-serif;font-weight:900;font-size:22px;line-height:1.25;letter-spacing:-.03em;color:var(--tx);margin-bottom:28px;animation:fadeUp .4s var(--out) both}
 @media(min-width:640px){.home-greeting-title{font-size:26px}}
 
 /* Painel de impacto */
@@ -682,7 +690,7 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .impact-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-family:'JetBrains Mono',monospace}
 .impact-card.bad .impact-title{color:var(--dg)}
 .impact-card.good .impact-title{color:var(--adm)}
-.impact-num{font-family:'Syne',sans-serif;font-size:40px;font-weight:800;line-height:1;letter-spacing:-.03em}
+.impact-num{font-family:'DM Sans',sans-serif;font-size:40px;font-weight:900;line-height:1;letter-spacing:-.04em}
 @media(min-width:640px){.impact-num{font-size:52px}}
 .impact-card.bad .impact-num{color:var(--dg)}
 .impact-card.good .impact-num{color:var(--adm)}
@@ -9395,8 +9403,11 @@ function renderHome(data) {
     ? `Bem-vindo, ${primeiroNome}! Bora que temos muitos backtests pra fazer 👊`
     : `Bem-vindo ao Backtest Pro.`;
 
-  el.appendChild(greetLabel);
-  el.appendChild(greetTitle);
+  // Left column wrapper (greeting + impact + CTA on desktop)
+  const leftCol = document.createElement('div');
+  leftCol.className = 'home-left-col';
+  leftCol.appendChild(greetLabel);
+  leftCol.appendChild(greetTitle);
 
   if (!temHistorico) {
     // — ESTADO B: USUÁRIO NOVO —
@@ -9418,7 +9429,8 @@ function renderHome(data) {
         Fazer meu primeiro teste
       </button>
     `;
-    el.appendChild(banner);
+    leftCol.appendChild(banner);
+    el.appendChild(leftCol);
 
     banner.querySelector('#home-first-test-btn').addEventListener('click', () => {
       state.animate = true; state.screen = 'wizard'; state.step = 0; state.maxDone = 0;
@@ -9457,7 +9469,7 @@ function renderHome(data) {
       <div class="impact-pill">↑ ${fmtBRL(valAprovadas)} de resultado histórico comprovado</div>
     </div>
   `;
-  el.appendChild(impactGrid);
+  leftCol.appendChild(impactGrid);
 
   // — CTA STRIP —
   const ctaStrip = document.createElement('div');
@@ -9474,7 +9486,8 @@ function renderHome(data) {
     state.cfg = { asset:'WIN$N', market:'local', tf:'5m', tStart:'09:00', tLastEntry:'17:00', tEnd:'17:30', maxDailyTrades:0, conditions:[], direction:'long', entryType:'breakout', validity:3, stopType:'fixed', stopPts:200, stopOffset:10, stopCandles:5, stopNOffset:0, stopAtrPer:14, stopAtrMult:1.5, tpType:'rr', tpPts:400, tpRR:2, tpFibLevel:'161.8', tpAtrPer:14, tpAtrMult:2.0, useFibonacci:false, fiboZZDepth:12, fiboZZDeviation:5, fiboZZBackstep:3, fiboTriggerLevel:'61.8', fiboTriggerMode:'validation', fiboSLLevel:'100.0', fiboTPLevel:'161.8', fiboDirection:'both', trailing:false, trailAct:100, trailDist:100, trailStep:50, partial:false, partPct:50, partAt:200, partMoveStop:true, exitCond:false, exitCondition:null, backtestDateFrom:null, backtestDateTo:null, initialCapital:10000 };
     renderApp();
   });
-  el.appendChild(ctaStrip);
+  leftCol.appendChild(ctaStrip);
+  el.appendChild(leftCol);
 
   // — LISTA DE ESTRATÉGIAS —
   const stratSection = document.createElement('div');
@@ -9599,7 +9612,12 @@ function renderHome(data) {
   stratSection.appendChild(stratListContainer);
   renderStratList();
 
-  el.appendChild(stratSection);
+  // Right column wrapper (strategy list on desktop)
+  const rightCol = document.createElement('div');
+  rightCol.className = 'home-right-col';
+  rightCol.appendChild(stratSection);
+  el.appendChild(rightCol);
+
   return el;
 }
 
