@@ -665,6 +665,105 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .next-test-arr{color:var(--txs);font-size:16px;transition:all var(--t1)}
 .next-test-card:hover .next-test-arr{transform:translateX(3px);color:var(--adm)}
 
+/* ── HOME PÓS-LOGIN ──────────────────────────────────────── */
+.home-screen{max-width:1100px;margin:0 auto;padding:28px 16px 48px;display:flex;flex-direction:column;gap:0}
+@media(min-width:640px){.home-screen{padding:40px 32px 64px}}
+
+/* Saudação */
+.home-greeting-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--txm);font-family:'JetBrains Mono',monospace;margin-bottom:8px}
+.home-greeting-title{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;line-height:1.25;letter-spacing:-.02em;color:var(--tx);margin-bottom:28px;animation:fadeUp .4s var(--out) both}
+@media(min-width:640px){.home-greeting-title{font-size:26px}}
+
+/* Painel de impacto */
+.impact-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;animation:fadeUp .4s var(--out) .08s both}
+.impact-card{border-radius:14px;padding:20px 18px;display:flex;flex-direction:column;gap:10px}
+.impact-card.bad{background:linear-gradient(135deg,rgba(238,58,58,.08),var(--bg2));border:0.5px solid rgba(238,58,58,.22)}
+.impact-card.good{background:linear-gradient(135deg,rgba(0,212,170,.07),var(--bg2));border:0.5px solid rgba(0,212,170,.22)}
+.impact-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-family:'JetBrains Mono',monospace}
+.impact-card.bad .impact-title{color:var(--dg)}
+.impact-card.good .impact-title{color:var(--adm)}
+.impact-num{font-family:'Syne',sans-serif;font-size:40px;font-weight:800;line-height:1;letter-spacing:-.03em}
+@media(min-width:640px){.impact-num{font-size:52px}}
+.impact-card.bad .impact-num{color:var(--dg)}
+.impact-card.good .impact-num{color:var(--adm)}
+.impact-text{font-size:11px;color:var(--txs);line-height:1.5;flex:1}
+@media(max-width:480px){.impact-text{display:none}}
+.impact-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:99px;font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;width:fit-content}
+.impact-card.bad .impact-pill{background:rgba(238,58,58,.1);color:var(--dg);border:0.5px solid rgba(238,58,58,.25)}
+.impact-card.good .impact-pill{background:rgba(0,212,170,.1);color:var(--adm);border:0.5px solid rgba(0,212,170,.25)}
+
+/* CTA Strip */
+.cta-strip{background:var(--bg2);border:0.5px solid var(--bd);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:32px;animation:fadeUp .4s var(--out) .16s both;flex-wrap:wrap}
+.cta-strip-text{font-size:13px;color:var(--txs);line-height:1.5;flex:1;min-width:180px}
+.cta-strip-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:9px;background:var(--adm);color:#08080B;font-size:13px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all var(--t2) var(--spring);flex-shrink:0}
+.cta-strip-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,212,170,.3)}
+
+/* Lista de estratégias */
+.strat-section{animation:fadeUp .4s var(--out) .24s both}
+.strat-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.strat-hdr-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--txs);font-family:'JetBrains Mono',monospace}
+.strat-hdr-link{font-size:12px;color:var(--adm);cursor:pointer;font-weight:600;background:none;border:none;padding:0;font-family:inherit;transition:opacity var(--t1)}
+.strat-hdr-link:hover{opacity:.7}
+
+/* Filter tabs */
+.home-tabs{display:flex;gap:6px;margin-bottom:16px;animation:fadeUp .4s var(--out) .20s both}
+.home-tab{padding:6px 14px;border-radius:99px;font-size:12px;font-weight:600;border:0.5px solid var(--bd);background:transparent;color:var(--txs);cursor:pointer;font-family:inherit;transition:all var(--t1) var(--spring)}
+.home-tab:hover{color:var(--tx);border-color:var(--bdh)}
+.home-tab.on{background:var(--bg3);border-color:var(--bdh);color:var(--tx)}
+
+/* Strategy cards */
+.strat-list{display:flex;flex-direction:column;gap:8px}
+.strat-card{background:var(--bg1);border:0.5px solid var(--bd);border-radius:12px;padding:13px 15px;cursor:pointer;transition:all var(--t2) var(--smooth);position:relative;border-left:3px solid transparent}
+.strat-card:hover{border-color:var(--bdh);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.strat-card.has-sug.good{border-left-color:var(--adm)}
+.strat-card.has-sug.bad{border-left-color:var(--wn)}
+.strat-card-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.strat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:1px}
+.strat-dot.good{background:var(--pr)}
+.strat-dot.bad{background:var(--dg)}
+.strat-dot.sug{background:var(--wn)}
+.strat-name{font-size:13px;font-weight:600;color:var(--tx);flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.strat-result{font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.strat-result.pos{color:var(--pr)}
+.strat-result.neg{color:var(--dg)}
+.strat-card-bot{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.strat-meta{font-size:11px;color:var(--txm);flex-shrink:0}
+.strat-chain{display:flex;align-items:center;gap:4px;flex:1}
+.strat-v{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--bg3);border:0.5px solid var(--bd);color:var(--txm);font-family:'JetBrains Mono',monospace;cursor:default}
+.strat-v.curr{background:var(--acd);border-color:var(--ac);color:var(--ac)}
+.strat-v-arr{font-size:9px;color:var(--txm)}
+.score-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;font-family:'JetBrains Mono',monospace}
+.score-badge.hi{background:var(--prd);color:var(--pr);border:0.5px solid rgba(0,187,128,.2)}
+.score-badge.mid{background:var(--wnd);color:var(--wn);border:0.5px solid rgba(240,160,32,.2)}
+.score-badge.lo{background:var(--dgd);color:var(--dg);border:0.5px solid rgba(238,58,58,.2)}
+.sug-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;transition:all var(--t1) var(--spring);border:0.5px solid;white-space:nowrap}
+.sug-pill.accent{background:var(--acd);color:var(--adm);border-color:rgba(0,212,170,.25)}
+.sug-pill.accent:hover{background:var(--acd2)}
+.sug-pill.warn{background:var(--wnd);color:var(--wn);border-color:rgba(240,160,32,.25)}
+.sug-pill.warn:hover{background:rgba(240,160,32,.15)}
+
+/* Nova estratégia card */
+.new-strat-card{background:transparent;border:0.5px dashed var(--bdh);border-radius:12px;padding:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;color:var(--txs);font-weight:500;transition:all var(--t2) var(--smooth);margin-top:6px}
+.new-strat-card:hover{border-color:var(--adm);color:var(--adm);background:rgba(0,212,170,.04)}
+
+/* Banner usuário novo */
+.welcome-banner{border-radius:14px;padding:24px 20px;background:linear-gradient(135deg,rgba(120,120,238,.07),rgba(0,212,170,.05));border:0.5px solid rgba(120,120,238,.2);margin-bottom:24px;animation:fadeUp .4s var(--out) .08s both}
+.welcome-banner-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--tx);letter-spacing:-.02em;margin-bottom:8px}
+@media(min-width:640px){.welcome-banner-title{font-size:19px}}
+.welcome-banner-text{font-size:13px;color:var(--txs);line-height:1.6;margin-bottom:20px}
+.trial-dots{display:flex;align-items:center;gap:8px;margin-bottom:20px}
+.trial-dot{width:10px;height:10px;border-radius:50%;transition:all var(--t2) var(--smooth)}
+.trial-dot.used{background:var(--bg3);border:0.5px solid var(--bd)}
+.trial-dot.active{background:var(--adm);box-shadow:0 0 8px rgba(0,212,170,.6);border:0.5px solid rgba(0,212,170,.4)}
+.trial-dot-label{font-size:11px;color:var(--txm);margin-left:4px}
+.welcome-cta{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:10px;background:var(--adm);color:#08080B;font-size:14px;font-weight:700;border:none;cursor:pointer;font-family:inherit;transition:all var(--t2) var(--spring)}
+.welcome-cta:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(0,212,170,.3)}
+
+/* Skeleton */
+.skel{background:var(--bg3);border-radius:8px;animation:skelPulse 1.4s ease-in-out infinite}
+@keyframes skelPulse{0%,100%{opacity:.6}50%{opacity:.3}}
+.skel-card{background:var(--bg1);border:0.5px solid var(--bd);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;height:72px}
+
 </style>
 </head>
 <body>
@@ -987,7 +1086,7 @@ async function verificarAcesso(){
       updateAvatarUI();
       if(typeof chatReveal === 'function') chatReveal();
       if(currentScreen === 'plans' || currentScreen === 'payment' || currentScreen === 'history') return;
-      if(data.role === 'admin' || currentSub || currentTrialCount < FREE_TRIAL.backtests_max){ renderApp(); maybeAutoTour(); }
+      if(data.role === 'admin' || currentSub || currentTrialCount < FREE_TRIAL.backtests_max){ showHome(); maybeAutoTour(); }
       else { showScreen('plans'); }
     } else {
       showScreen('plans');
@@ -7970,12 +8069,13 @@ function viewHistoryItem(id){
 }
 
 function exitHistoryDetail(){
+  const fromHome = viewingHistoryItem?._fromHome;
   viewingHistoryItem=null;
-  CURRENT_BACKEND_METRICS=null; // histórico mock não tem métricas de backend
-  // Restore default EQ
+  CURRENT_BACKEND_METRICS=null;
   EQ=(()=>{let v=0,peak=0;return DEFAULT_EQ_DATA.map((x,i)=>{v+=x;if(v>peak)peak=v;const yr=2019+Math.floor(i/12),mo=i%12;return{v:Math.round(v),dd:Math.round(Math.min(0,v-peak)),pnl:x,t:(new Date(yr,mo)).toLocaleDateString('pt-BR',{month:'short'}).replace('.','')+" '"+String(yr).slice(2)};});})();
   EQ_ANALYSIS=computeAnalysis(EQ,100000);
-  showScreen('history');
+  if (fromHome) showScreen('home');
+  else showScreen('history');
 }
 
 // ─── MOTOR DE DIAGNÓSTICO ─────────────────────────────────────────────────────
@@ -8825,7 +8925,7 @@ function renderProgressBar() {
   pb.innerHTML='';
   if(state.screen!=='wizard') {
     const lbl=div('');lbl.style.cssText='font-size:13px;color:var(--txs);font-weight:500';
-    lbl.textContent=state.screen==='confirm'?'Confirmar estratégia':state.screen==='loading'?'Processando...':'Resultado do backtest';
+    lbl.textContent=currentScreen==='home'?'Início':state.screen==='confirm'?'Confirmar estratégia':state.screen==='loading'?'Processando...':'Resultado do backtest';
     pb.appendChild(lbl);return;
   }
   STEPS.forEach((s,i)=>{
@@ -9190,6 +9290,375 @@ function updateAvatarUI() {
   const adminBtn = document.getElementById('avatar-admin-btn');
   if (adminBtn) adminBtn.style.display = currentUsuario?.role === 'admin' ? 'flex' : 'none';
 }
+// ─── HOME PÓS-LOGIN ───────────────────────────────────────────
+let _homeData = null; // cache local por sessão
+
+function gerarNomeEstrategia(cfg) {
+  if (!cfg || !cfg.conditions || cfg.conditions.length === 0) {
+    return (cfg?.asset || 'WIN') + ' ' + (cfg?.tf || '5m');
+  }
+  const conds = cfg.conditions;
+  const nomes = conds.slice(0, 2).map(c => {
+    switch(c.id) {
+      case 'rsi':      return `IFR ${c.params?.per || 14}`;
+      case 'stoch':    return `Estocástico`;
+      case 'macd':     return `MACD Histograma`;
+      case 'cci':      return `CCI ${c.params?.per || 14}`;
+      case 'williams': return `Williams %R`;
+      case 'sma':      return `SMA ${c.params?.per || 200}`;
+      case 'ema':      return `EMA ${c.params?.per || 200}`;
+      case 'bb':       return `Bollinger ${c.params?.per || 20}`;
+      case 'vwap':     return 'VWAP';
+      case 'vol':      return 'Volume';
+      case 'obv':      return 'OBV';
+      case 'avgvol':   return 'Vol.Médio';
+      case 'price':    return 'Preço';
+      case 'range':    return 'Range';
+      default:         return c.name || c.id;
+    }
+  });
+  const base = nomes.length > 1 ? nomes[0] + ' + ' + nomes[1] : nomes[0];
+  const ativo = (cfg.asset || 'WIN').replace('$N', '');
+  const tf = cfg.tf || '5m';
+  return `${base} — ${ativo} ${tf}`;
+}
+
+async function loadHomeData() {
+  try {
+    const uid = currentUser?.id;
+    if (!uid) return { backtests: [], allResults: [] };
+
+    const [listRes, allRes] = await Promise.all([
+      db.from('backtests')
+        .select('id, config, status, result, created_at, parent_id')
+        .eq('user_id', uid)
+        .eq('status', 'completed')
+        .order('created_at', { ascending: false })
+        .limit(10),
+      db.from('backtests')
+        .select('id, result')
+        .eq('user_id', uid)
+        .eq('status', 'completed')
+    ]);
+
+    return {
+      backtests: listRes.data || [],
+      allResults: allRes.data || []
+    };
+  } catch(e) {
+    console.error('[loadHomeData]', e);
+    return { backtests: [], allResults: [] };
+  }
+}
+
+function fmtBRL(v) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v);
+}
+
+function renderHomeSkeleton() {
+  const el = document.createElement('div');
+  el.className = 'home-screen';
+  el.innerHTML = `
+    <div class="skel" style="height:16px;width:120px;margin-bottom:10px"></div>
+    <div class="skel" style="height:28px;width:70%;margin-bottom:28px"></div>
+    <div class="impact-grid" style="margin-bottom:12px">
+      <div class="skel-card"></div><div class="skel-card"></div>
+    </div>
+    <div class="skel" style="height:64px;border-radius:12px;margin-bottom:32px"></div>
+    <div class="skel" style="height:16px;width:140px;margin-bottom:14px"></div>
+    ${[1,2,3].map(()=>`<div class="skel-card" style="margin-bottom:8px;height:72px"></div>`).join('')}
+  `;
+  return el;
+}
+
+function renderHome(data) {
+  const { backtests, allResults } = data;
+  const nome = currentUsuario?.name || currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || currentUser?.email?.split('@')[0] || 'trader';
+  const primeiroNome = nome.split(' ')[0];
+  const temHistorico = backtests.length > 0;
+
+  const el = document.createElement('div');
+  el.className = 'home-screen';
+
+  // — SAUDAÇÃO —
+  const greetLabel = document.createElement('div');
+  greetLabel.className = 'home-greeting-label';
+  greetLabel.textContent = temHistorico ? 'BEM-VINDO DE VOLTA' : 'BEM-VINDO';
+
+  const greetTitle = document.createElement('div');
+  greetTitle.className = 'home-greeting-title';
+  greetTitle.textContent = temHistorico
+    ? `Bem-vindo, ${primeiroNome}! Bora que temos muitos backtests pra fazer 👊`
+    : `Bem-vindo ao Backtest Pro.`;
+
+  el.appendChild(greetLabel);
+  el.appendChild(greetTitle);
+
+  if (!temHistorico) {
+    // — ESTADO B: USUÁRIO NOVO —
+    const dotsUsados = currentTrialCount || 0;
+    const totalDots = FREE_TRIAL.backtests_max;
+
+    const banner = document.createElement('div');
+    banner.className = 'welcome-banner';
+    banner.innerHTML = `
+      <div class="welcome-banner-title">Trading sem dados é jogo de azar.</div>
+      <div class="welcome-banner-text">Você foi removido do grupo de traders que operam no escuro. Comece a testar suas estratégias gratuitamente agora.</div>
+      <div class="trial-dots">
+        ${Array.from({length: totalDots}, (_,i) => `<div class="trial-dot ${i < dotsUsados ? 'used' : 'active'}"></div>`).join('')}
+        <span class="trial-dot-label">${totalDots - dotsUsados} teste${totalDots - dotsUsados !== 1 ? 's' : ''} gratuito${totalDots - dotsUsados !== 1 ? 's' : ''} disponível${totalDots - dotsUsados !== 1 ? 'is' : ''}</span>
+      </div>
+      <button class="welcome-cta" id="home-first-test-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Fazer meu primeiro teste
+      </button>
+    `;
+    el.appendChild(banner);
+
+    banner.querySelector('#home-first-test-btn').addEventListener('click', () => {
+      state.animate = true; state.screen = 'wizard'; state.step = 0; state.maxDone = 0;
+      state.cfg = { asset:'WIN$N', market:'local', tf:'5m', tStart:'09:00', tLastEntry:'17:00', tEnd:'17:30', maxDailyTrades:0, conditions:[], direction:'long', entryType:'breakout', validity:3, stopType:'fixed', stopPts:200, stopOffset:10, stopCandles:5, stopNOffset:0, stopAtrPer:14, stopAtrMult:1.5, tpType:'rr', tpPts:400, tpRR:2, tpFibLevel:'161.8', tpAtrPer:14, tpAtrMult:2.0, useFibonacci:false, fiboZZDepth:12, fiboZZDeviation:5, fiboZZBackstep:3, fiboTriggerLevel:'61.8', fiboTriggerMode:'validation', fiboSLLevel:'100.0', fiboTPLevel:'161.8', fiboDirection:'both', trailing:false, trailAct:100, trailDist:100, trailStep:50, partial:false, partPct:50, partAt:200, partMoveStop:true, exitCond:false, exitCondition:null, backtestDateFrom:null, backtestDateTo:null, initialCapital:10000 };
+      renderApp({ bypassTrialGate: true });
+    });
+
+    return el;
+  }
+
+  // — ESTADO A: USUÁRIO COM HISTÓRICO —
+
+  // Calcular painel de impacto a partir de allResults
+  let reprovadas = 0, aprovadas = 0, valReprovadas = 0, valAprovadas = 0;
+  allResults.forEach(b => {
+    const tr = b.result?.total_result ?? b.result?.net_profit ?? null;
+    if (tr === null) return;
+    if (tr <= 0) { reprovadas++; valReprovadas += Math.abs(tr); }
+    else { aprovadas++; valAprovadas += tr; }
+  });
+
+  // — PAINEL DE IMPACTO —
+  const impactGrid = document.createElement('div');
+  impactGrid.className = 'impact-grid';
+  impactGrid.innerHTML = `
+    <div class="impact-card bad">
+      <div class="impact-title">Estratégias Reprovadas</div>
+      <div class="impact-num">${reprovadas}</div>
+      <div class="impact-text">Isso aqui é a prova de como vale a pena testar tudo antes de operar. Olha quanto dinheiro você está evitando perder no mercado com estratégias que não funcionam.</div>
+      <div class="impact-pill">↓ ${fmtBRL(valReprovadas)} que ficaram no seu bolso</div>
+    </div>
+    <div class="impact-card good">
+      <div class="impact-title">Estratégias Aprovadas</div>
+      <div class="impact-num">${aprovadas}</div>
+      <div class="impact-text">Agora você tem oportunidades reais nas mãos, validadas com dados reais de mercado.</div>
+      <div class="impact-pill">↑ ${fmtBRL(valAprovadas)} de resultado histórico comprovado</div>
+    </div>
+  `;
+  el.appendChild(impactGrid);
+
+  // — CTA STRIP —
+  const ctaStrip = document.createElement('div');
+  ctaStrip.className = 'cta-strip';
+  ctaStrip.innerHTML = `
+    <div class="cta-strip-text">Quanto mais você testa, mais você respeita e valoriza seu dinheiro.</div>
+    <button class="cta-strip-btn" id="home-new-test-btn">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Testar nova estratégia
+    </button>
+  `;
+  ctaStrip.querySelector('#home-new-test-btn').addEventListener('click', () => {
+    state.animate = true; state.screen = 'wizard'; state.step = 0; state.maxDone = 0;
+    state.cfg = { asset:'WIN$N', market:'local', tf:'5m', tStart:'09:00', tLastEntry:'17:00', tEnd:'17:30', maxDailyTrades:0, conditions:[], direction:'long', entryType:'breakout', validity:3, stopType:'fixed', stopPts:200, stopOffset:10, stopCandles:5, stopNOffset:0, stopAtrPer:14, stopAtrMult:1.5, tpType:'rr', tpPts:400, tpRR:2, tpFibLevel:'161.8', tpAtrPer:14, tpAtrMult:2.0, useFibonacci:false, fiboZZDepth:12, fiboZZDeviation:5, fiboZZBackstep:3, fiboTriggerLevel:'61.8', fiboTriggerMode:'validation', fiboSLLevel:'100.0', fiboTPLevel:'161.8', fiboDirection:'both', trailing:false, trailAct:100, trailDist:100, trailStep:50, partial:false, partPct:50, partAt:200, partMoveStop:true, exitCond:false, exitCondition:null, backtestDateFrom:null, backtestDateTo:null, initialCapital:10000 };
+    renderApp();
+  });
+  el.appendChild(ctaStrip);
+
+  // — LISTA DE ESTRATÉGIAS —
+  const stratSection = document.createElement('div');
+  stratSection.className = 'strat-section';
+
+  const stratHdr = document.createElement('div');
+  stratHdr.className = 'strat-hdr';
+  stratHdr.innerHTML = `
+    <div class="strat-hdr-title">Suas Estratégias</div>
+    <button class="strat-hdr-link" id="home-ver-todas">Ver todas →</button>
+  `;
+  stratHdr.querySelector('#home-ver-todas').addEventListener('click', () => showScreen('history'));
+  stratSection.appendChild(stratHdr);
+
+  // Tabs
+  let activeTab = 'todas';
+  const tabsEl = document.createElement('div');
+  tabsEl.className = 'home-tabs';
+  const tabDefs = [['todas','Todas'], ['aprovadas','Aprovadas'], ['reprovadas','Reprovadas']];
+
+  function renderStratList() {
+    const filtered = backtests.filter(b => {
+      const tr = b.result?.total_result ?? b.result?.net_profit ?? null;
+      if (activeTab === 'aprovadas') return tr !== null && tr > 0;
+      if (activeTab === 'reprovadas') return tr === null || tr <= 0;
+      return true;
+    });
+
+    // Montar version chains
+    const versoes = {};
+    backtests.forEach(b => {
+      let root = b.id;
+      let cur = b;
+      const chain = [b.id];
+      while (cur.parent_id) {
+        chain.unshift(cur.parent_id);
+        cur = backtests.find(x => x.id === cur.parent_id) || { id: cur.parent_id, parent_id: null };
+      }
+      chain.forEach((id, idx) => { versoes[id] = { chain, idx }; });
+    });
+
+    let listEl = stratListContainer.querySelector('.strat-list');
+    if (listEl) listEl.remove();
+    listEl = document.createElement('div');
+    listEl.className = 'strat-list';
+
+    if (filtered.length === 0) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'text-align:center;padding:32px 16px;color:var(--txm);font-size:13px';
+      empty.textContent = 'Nenhuma estratégia nesta categoria ainda.';
+      listEl.appendChild(empty);
+    }
+
+    filtered.forEach(b => {
+      const tr = b.result?.total_result ?? b.result?.net_profit ?? null;
+      const isGood = tr !== null && tr > 0;
+      const hasSug = !!b.result?.suggestion;
+      const score = b.result?.score ?? null;
+      const wr = b.result?.win_rate ?? b.result?.wr ?? null;
+      const trades = b.result?.total_trades ?? b.result?.trades ?? null;
+      const sug = b.result?.suggestion;
+      const dotCls = hasSug ? 'sug' : isGood ? 'good' : 'bad';
+
+      // Version chain
+      const vi = versoes[b.id];
+      let chainHtml = '';
+      if (vi && vi.chain.length > 1) {
+        chainHtml = vi.chain.map((cid, idx) => {
+          const isCurr = cid === b.id;
+          return `<span class="strat-v ${isCurr ? 'curr' : ''}">v${idx + 1}</span>${idx < vi.chain.length - 1 ? '<span class="strat-v-arr">→</span>' : ''}`;
+        }).join('');
+      }
+
+      // Score badge
+      let scoreBadge = '';
+      if (score !== null) {
+        const sc = Number(score);
+        const cls = sc >= 71 ? 'hi' : sc >= 41 ? 'mid' : 'lo';
+        scoreBadge = `<span class="score-badge ${cls}">${sc}</span>`;
+      }
+
+      // Sugestão pill
+      let sugPill = '';
+      if (hasSug && sug?.text) {
+        const scls = isGood ? 'accent' : 'warn';
+        sugPill = `<span class="sug-pill ${scls}" data-bt-id="${b.id}" data-sug-step="${sug.wizard_step ?? 0}">${sug.text}</span>`;
+      }
+
+      const card = document.createElement('div');
+      card.className = `strat-card ${hasSug ? 'has-sug ' + (isGood ? 'good' : 'bad') : ''}`;
+      card.innerHTML = `
+        <div class="strat-card-top">
+          <div class="strat-dot ${dotCls}"></div>
+          <div class="strat-name">${gerarNomeEstrategia(b.config)}</div>
+          ${tr !== null ? `<div class="strat-result ${isGood ? 'pos' : 'neg'}">${isGood ? '+' : ''}${fmtBRL(tr)}</div>` : ''}
+        </div>
+        <div class="strat-card-bot">
+          <span class="strat-meta">${trades !== null ? trades + ' trades' : ''}${wr !== null ? ' · WR ' + Math.round(wr * 100) + '%' : ''}</span>
+          <div class="strat-chain">${chainHtml}</div>
+          ${scoreBadge}
+          ${sugPill}
+        </div>
+      `;
+
+      // Clicar no card → abrir resultado
+      card.addEventListener('click', (e) => {
+        if (e.target.classList.contains('sug-pill') || e.target.closest('.sug-pill')) return;
+        _homeLoadBacktest(b);
+      });
+
+      // Clicar na sugestão → wizard pré-carregado
+      const pill = card.querySelector('.sug-pill');
+      if (pill) {
+        pill.addEventListener('click', (e) => {
+          e.stopPropagation();
+          _homeLoadSugestao(b, sug);
+        });
+      }
+
+      listEl.appendChild(card);
+    });
+
+    // Card "Nova estratégia"
+    const newCard = document.createElement('div');
+    newCard.className = 'new-strat-card';
+    newCard.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nova estratégia para testar`;
+    newCard.addEventListener('click', () => {
+      state.animate = true; state.screen = 'wizard'; state.step = 0; state.maxDone = 0;
+      state.cfg = { asset:'WIN$N', market:'local', tf:'5m', tStart:'09:00', tLastEntry:'17:00', tEnd:'17:30', maxDailyTrades:0, conditions:[], direction:'long', entryType:'breakout', validity:3, stopType:'fixed', stopPts:200, stopOffset:10, stopCandles:5, stopNOffset:0, stopAtrPer:14, stopAtrMult:1.5, tpType:'rr', tpPts:400, tpRR:2, tpFibLevel:'161.8', tpAtrPer:14, tpAtrMult:2.0, useFibonacci:false, fiboZZDepth:12, fiboZZDeviation:5, fiboZZBackstep:3, fiboTriggerLevel:'61.8', fiboTriggerMode:'validation', fiboSLLevel:'100.0', fiboTPLevel:'161.8', fiboDirection:'both', trailing:false, trailAct:100, trailDist:100, trailStep:50, partial:false, partPct:50, partAt:200, partMoveStop:true, exitCond:false, exitCondition:null, backtestDateFrom:null, backtestDateTo:null, initialCapital:10000 };
+      renderApp();
+    });
+    listEl.appendChild(newCard);
+    stratListContainer.appendChild(listEl);
+  }
+
+  tabDefs.forEach(([id, label]) => {
+    const t = document.createElement('button');
+    t.className = 'home-tab' + (activeTab === id ? ' on' : '');
+    t.textContent = label;
+    t.addEventListener('click', () => {
+      activeTab = id;
+      tabsEl.querySelectorAll('.home-tab').forEach(x => x.classList.remove('on'));
+      t.classList.add('on');
+      renderStratList();
+    });
+    tabsEl.appendChild(t);
+  });
+  stratSection.appendChild(tabsEl);
+
+  const stratListContainer = document.createElement('div');
+  stratSection.appendChild(stratListContainer);
+  renderStratList();
+
+  el.appendChild(stratSection);
+  return el;
+}
+
+function _homeLoadBacktest(b) {
+  if (!b.result) return;
+  viewHistoryItemFromDB(b);
+  if (viewingHistoryItem) viewingHistoryItem._fromHome = true;
+}
+
+function _homeLoadSugestao(b, sug) {
+  state.animate = true;
+  state.screen = 'wizard';
+  state.step = sug?.wizard_step ?? 0;
+  state.maxDone = sug?.wizard_step ?? 0;
+  if (b.config) state.cfg = JSON.parse(JSON.stringify(b.config));
+  state._sugField = sug?.field;
+  renderApp();
+}
+
+async function showHome() {
+  currentScreen = 'home';
+  const main = document.getElementById('main');
+  main.innerHTML = '';
+  const pb = document.getElementById('prog-bar');
+  if (pb) { pb.innerHTML = ''; const lbl = document.createElement('div'); lbl.style.cssText = 'font-size:13px;color:var(--txs);font-weight:500'; lbl.textContent = 'Início'; pb.appendChild(lbl); }
+
+  main.appendChild(renderHomeSkeleton());
+
+  const data = await loadHomeData();
+  _homeData = data;
+
+  main.innerHTML = '';
+  main.appendChild(renderHome(data));
+}
+
 // ─── SCREENS ──────────────────────────────────────────────────
 function showScreen(name) {
   // Limpar listeners da tela de resultados se existirem
@@ -9200,6 +9669,7 @@ function showScreen(name) {
   cardForm = null; mpInstance = null; mpMounted = false;
   const main = document.getElementById('main');
   main.innerHTML = '';
+  if (name === 'home')    { showHome(); return; }
   if (name === 'nosub')   { main.appendChild(renderNoSub());   return; }
   if (name === 'plans')   { main.appendChild(renderPlans());   return; }
   if (name === 'payment') { main.appendChild(renderPayment()); return; }
