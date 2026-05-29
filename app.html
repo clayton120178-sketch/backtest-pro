@@ -8343,7 +8343,7 @@ function renderDiagnosticSection() {
       // 6.3.2 — Payoff baixo
       block = makeBlock('danger');
       makeTag(block, 'Payoff baixo');
-      makeText(block, `A estratégia acerta mais da metade das vezes — mas o retorno médio por trade (<strong>${avgPayoff.toFixed(2)}×</strong>) está muito abaixo do R:R configurado (<strong>${rrConfigured.toFixed(2)}×</strong>). Isso indica que os trades estão sendo encerrados antes de atingir o alvo na maioria das operações. Com acerto bom mas retorno comprimido, os ganhos não conseguem compensar as perdas ao longo do tempo.`);
+      makeText(block, `O retorno médio por trade (<strong>${avgPayoff.toFixed(2)}×</strong>) está muito abaixo do R:R configurado (<strong>${rrConfigured.toFixed(2)}×</strong>). Isso indica que os trades estão sendo encerrados antes de atingir o alvo na maioria das operações — os ganhos não conseguem compensar as perdas ao longo do tempo.`);
       makeSep(block);
       makeSuggHdr(block);
 
@@ -8376,6 +8376,27 @@ function renderDiagnosticSection() {
           chipArr(),
           diagMakeCycler('Encerrar às', [['17:30','17:30'],['18:00','18:00'],['17:00','17:00']], closeRef),
           diagTestBtn(() => diagApplyAndTest(() => { cfg.tEnd = closeRef.val; }))
+        );
+      } else {
+        // Fallback: alvo configurado além do que os trades atingem — sugerir reduzir TP
+        const rrRef = {};
+        const suggestedRR = Math.max(parseFloat(avgPayoff.toFixed(1)), 1.0);
+        const maxRR = parseFloat((rrConfigured - 0.1).toFixed(1));
+        makeSuggNote(block, `O alvo configurado (<strong>${rrConfigured.toFixed(2)}×</strong>) está além do que os trades atingem na prática — o payoff médio real é de apenas <strong>${avgPayoff.toFixed(2)}×</strong>. <strong>Reduzir o alvo</strong> para próximo do nível que as operações realmente chegam faz mais trades fecharem no gain, podendo compensar a taxa de acerto atual.`);
+        const row = makeRow(block);
+        row.append(
+          opChip('remove', '−', 'Alvo: ' + rrConfigured.toFixed(2) + '×'),
+          chipArr(),
+          opChip('repl', '+', 'Alvo ajustado'),
+          diagMakeStepper('R:R', suggestedRR, 0.5, Math.max(maxRR, suggestedRR), 0.1, '×', rrRef),
+          diagTestBtn(() => diagApplyAndTest(() => {
+            if (cfg.tpType === 'rr') {
+              cfg.tpRR = parseFloat(rrRef.val);
+            } else {
+              const { tick } = getAssetTick(cfg.asset);
+              cfg.tpPts = snapToTick(cfg.stopPts * parseFloat(rrRef.val), tick);
+            }
+          }))
         );
       }
     } else {
