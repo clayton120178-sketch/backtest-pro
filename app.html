@@ -8365,7 +8365,7 @@ function renderDiagnosticSection() {
       // 6.3.2 — Payoff baixo
       block = makeBlock('danger');
       makeTag(block, 'Payoff baixo');
-      makeText(block, `A estratégia acerta mais da metade das vezes — mas o retorno médio por trade (<strong>${avgPayoff.toFixed(2)}×</strong>) está muito abaixo do R:R configurado (<strong>${rrConfigured.toFixed(2)}×</strong>). Isso indica que os trades estão sendo encerrados antes de atingir o alvo na maioria das operações. Com acerto bom mas retorno comprimido, os ganhos não conseguem compensar as perdas ao longo do tempo.`);
+      makeText(block, `O retorno médio por trade (<strong>${avgPayoff.toFixed(2)}×</strong>) está muito abaixo do R:R configurado (<strong>${rrConfigured.toFixed(2)}×</strong>). Isso indica que os trades estão sendo encerrados antes de atingir o alvo na maioria das operações — os ganhos não conseguem compensar as perdas ao longo do tempo.`);
       makeSep(block);
       makeSuggHdr(block);
 
@@ -8398,6 +8398,37 @@ function renderDiagnosticSection() {
           chipArr(),
           diagMakeCycler('Encerrar às', [['17:30','17:30'],['18:00','18:00'],['17:00','17:00']], closeRef),
           diagTestBtn(() => diagApplyAndTest(() => { cfg.tEnd = closeRef.val; }))
+        );
+      } else if (cfg.tpType === 'atr') {
+        // Já usa ATR: sugerir aumentar o múltiplo
+        const currentMult = cfg.tpAtrMult || 2.0;
+        const multRef = { val: currentMult + 0.5 };
+        makeSuggNote(block, `O múltiplo ATR atual (<strong>${currentMult.toFixed(1)}×</strong>) está encerrando as operações antes de capturar o movimento completo. <strong>Aumentar o múltiplo</strong> dá mais espaço para as operações vencedoras se desenvolverem, melhorando o payoff médio.`);
+        makeSuggDisc(block, 'Atenção: múltiplos maiores tendem a reduzir a taxa de acerto.');
+        const row = makeRow(block);
+        row.append(
+          opChip('remove', '−', currentMult.toFixed(1) + '× ATR'),
+          chipArr(),
+          opChip('repl', '+', 'Múltiplo maior'),
+          diagMakeStepper('Mult', currentMult + 0.5, currentMult + 0.5, 10.0, 0.5, '× ATR', multRef),
+          diagTestBtn(() => diagApplyAndTest(() => { cfg.tpAtrMult = multRef.val; }))
+        );
+      } else {
+        // Outros tipos de alvo: sugerir trocar para ATR
+        const multRef = {};
+        makeSuggNote(block, 'O alvo fixo não se adapta à volatilidade do ativo — em dias de maior oscilação o preço poderia ir além, e em dias de menor oscilação o alvo pode estar longe demais. <strong>Usar um alvo por ATR</strong> ajusta o objetivo automaticamente às condições de cada trade, permitindo capturar mais movimento nas operações vencedoras.');
+        makeSuggDisc(block, 'Atenção: múltiplos maiores tendem a reduzir a taxa de acerto.');
+        const row = makeRow(block);
+        row.append(
+          opChip('remove', '−', 'Alvo fixo'),
+          chipArr(),
+          opChip('repl', '+', 'Alvo por ATR'),
+          diagMakeStepper('Mult', 2.0, 0.5, 10.0, 0.5, '× ATR', multRef),
+          diagTestBtn(() => diagApplyAndTest(() => {
+            cfg.tpType = 'atr';
+            cfg.tpAtrMult = multRef.val;
+            cfg.tpAtrPer = cfg.tpAtrPer || 14;
+          }))
         );
       }
     } else {
