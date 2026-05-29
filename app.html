@@ -1089,6 +1089,7 @@ async function verificarAcesso(){
       updateAvatarUI();
       if(typeof chatReveal === 'function') chatReveal();
       if(currentScreen === 'plans' || currentScreen === 'payment' || currentScreen === 'history') return;
+      if(state?.screen === 'loading' || state?.screen === 'results') return;
       if(data.role === 'admin' || currentSub || currentTrialCount < FREE_TRIAL.backtests_max){ showHome(); }
       else { showScreen('plans'); }
     } else {
