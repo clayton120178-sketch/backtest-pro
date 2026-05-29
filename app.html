@@ -415,6 +415,9 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .history-card-verdict.bad{background:rgba(239,68,68,.15);color:#EF4444}
 .history-card-conds{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px}
 .history-card-cond{font-size:10px;padding:2px 8px;border-radius:4px;background:var(--bg2);border:0.5px solid var(--bd);color:var(--txs);font-family:'JetBrains Mono',monospace}
+.history-card-share{background:none;border:none;cursor:pointer;color:var(--txm);padding:4px 6px;border-radius:6px;display:inline-flex;align-items:center;flex-shrink:0;transition:color var(--t2),background var(--t2)}
+.history-card-share:hover{color:var(--tx);background:var(--bg2)}
+.history-card-share:disabled{opacity:.5;cursor:default}
 
 /* ── VALIDATION FEEDBACK ─────────────────────────────────── */
 .val-issue{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border-radius:8px;margin-top:7px;font-size:12px;line-height:1.5}
@@ -9573,7 +9576,10 @@ function renderHome(data) {
       dateEl.textContent = dateStr;
       const verdict = div('history-card-verdict ' + (isGood ? 'ok' : 'bad'));
       verdict.textContent = isGood ? 'APROVADA' : 'REPROVADA';
-      top.append(strat, verdict, dateEl);
+      const shareBtn = h('button', { class: 'history-card-share', type: 'button', title: 'Compartilhar resultado' });
+      shareBtn.innerHTML = IC.share;
+      shareBtn.addEventListener('click', e => { e.stopPropagation(); shareFromHistory(b, shareBtn); });
+      top.append(strat, verdict, dateEl, shareBtn);
       card.appendChild(top);
 
       if (conditions.length > 0) {
@@ -10209,7 +10215,10 @@ async function loadHistoryData() {
       dateEl.textContent = dateStr;
       const verdict = div('history-card-verdict ' + (ok ? 'ok' : 'bad'));
       verdict.textContent = ok ? 'LUCRATIVA' : 'DEFICITÁRIA';
-      top.append(strat, verdict, dateEl);
+      const shareBtn = h('button', { class: 'history-card-share', type: 'button', title: 'Compartilhar resultado' });
+      shareBtn.innerHTML = IC.share;
+      shareBtn.addEventListener('click', e => { e.stopPropagation(); shareFromHistory(bt, shareBtn); });
+      top.append(strat, verdict, dateEl, shareBtn);
       card.appendChild(top);
 
       const condsEl = div('history-card-conds');
@@ -10536,6 +10545,43 @@ async function generateShareCard(){
   cx.fillText('Teste suas estrat\u00e9gias gratuitamente agora  \u2192',sc(28),S-sc(20));
 
   return new Promise(r=>cv.toBlob(r,'image/png'));
+}
+
+async function shareFromHistory(bt, btn) {
+  if (!bt || !bt.result) return;
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span style="display:inline-flex;animation:spin .6s linear infinite">⟳</span>';
+  btn.disabled = true;
+  const saved = {
+    BM: CURRENT_BACKEND_METRICS, ID: CURRENT_BACKTEST_ID,
+    EQ: EQ, EQA: EQ_ANALYSIS, cfg: JSON.parse(JSON.stringify(state.cfg))
+  };
+  try {
+    const metrics = bt.result.metrics || {};
+    const deposit = metrics.initial_deposit || 10000;
+    CURRENT_BACKEND_METRICS = metrics;
+    CURRENT_BACKTEST_ID = bt.id;
+    EQ = convertBackendResult(bt.result, deposit);
+    if (EQ.length === 0) EQ = [{ v: 0, dd: 0, pnl: 0, t: 'N/A' }];
+    EQ_ANALYSIS = computeAnalysis(EQ, deposit);
+    if (bt.config) Object.assign(state.cfg, bt.config);
+
+    const blob = await generateShareCard();
+    const file = new File([blob], 'backtest-pro-resultado.png', { type: 'image/png' });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'Resultado do Backtest Pro', text: 'Testei minha estratégia de trading com dados reais. Testa a sua também, grátis no Backtest PRO 👉 https://backtestpro-app.vercel.app' });
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'backtest-pro-resultado.png';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  } catch(e) { if (e.name !== 'AbortError') console.error('Share error:', e); }
+  CURRENT_BACKEND_METRICS = saved.BM; CURRENT_BACKTEST_ID = saved.ID;
+  EQ = saved.EQ; EQ_ANALYSIS = saved.EQA;
+  Object.assign(state.cfg, saved.cfg);
+  btn.innerHTML = orig; btn.disabled = false;
 }
 
 async function shareResult(evt){
