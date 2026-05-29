@@ -878,7 +878,7 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
           <span style="color:#00D4AA;font-weight:600">Painel Admin</span>
         </button>
-        <button class="avatar-item" onclick="showScreen('history');document.getElementById('avatar-menu').classList.remove('open')">
+        <button class="avatar-item" onclick="showScreen('home');document.getElementById('avatar-menu').classList.remove('open')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           Meus backtests
         </button>
@@ -9342,21 +9342,21 @@ async function loadHomeData() {
 
     const headers = { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + token };
 
-    const [listRes, allRes] = await Promise.all([
-      fetch(SUPA_URL + '/rest/v1/backtests?select=id,config,result,created_at&user_id=eq.' + uid + '&status=eq.completed&order=created_at.desc&limit=10', { headers }),
-      fetch(SUPA_URL + '/rest/v1/backtests?select=id,result&user_id=eq.' + uid + '&status=eq.completed', { headers })
-    ]);
+    // Query única com todos os campos — sem limite — para que painel de
+    // impacto e lista de cards usem exatamente os mesmos dados.
+    const res = await fetch(
+      SUPA_URL + '/rest/v1/backtests?select=id,config,result,created_at&user_id=eq.' + uid +
+      '&status=eq.completed&order=created_at.desc',
+      { headers }
+    );
 
-    if (!listRes.ok) { const t = await listRes.text(); console.warn('[loadHomeData] list failed:', listRes.status, t); }
-    if (!allRes.ok)  { const t = await allRes.text();  console.warn('[loadHomeData] all failed:',  allRes.status,  t); }
+    if (!res.ok) { const t = await res.text(); console.warn('[loadHomeData] failed:', res.status, t); }
 
-    const backtests  = listRes.ok ? await listRes.json() : [];
-    const allResults = allRes.ok  ? await allRes.json()  : [];
+    const backtests = res.ok ? await res.json() : [];
+    const all = Array.isArray(backtests) ? backtests : [];
 
-    return {
-      backtests: Array.isArray(backtests) ? backtests : [],
-      allResults: Array.isArray(allResults) ? allResults : []
-    };
+    // allResults aponta para o mesmo array — painel e filtros sempre batem
+    return { backtests: all, allResults: all };
   } catch(e) {
     console.error('[loadHomeData]', e);
     return { backtests: [], allResults: [] };
@@ -9495,11 +9495,7 @@ function renderHome(data) {
 
   const stratHdr = document.createElement('div');
   stratHdr.className = 'strat-hdr';
-  stratHdr.innerHTML = `
-    <div class="strat-hdr-title">Suas Estratégias</div>
-    <button class="strat-hdr-link" id="home-ver-todas">Ver todas →</button>
-  `;
-  stratHdr.querySelector('#home-ver-todas').addEventListener('click', () => showScreen('history'));
+  stratHdr.innerHTML = `<div class="strat-hdr-title">Suas Estratégias</div>`;
   stratSection.appendChild(stratHdr);
 
   // Tabs
