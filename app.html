@@ -714,10 +714,24 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .strat-hdr-link:hover{opacity:.7}
 
 /* Filter tabs */
-.home-tabs{display:flex;gap:6px;margin-bottom:16px;animation:fadeUp .4s var(--out) .20s both}
+.home-tabs{display:flex;gap:6px;margin-bottom:10px;animation:fadeUp .4s var(--out) .20s both;flex-wrap:wrap}
 .home-tab{padding:6px 14px;border-radius:99px;font-size:12px;font-weight:600;border:0.5px solid var(--bd);background:transparent;color:var(--txs);cursor:pointer;font-family:inherit;transition:all var(--t1) var(--spring)}
 .home-tab:hover{color:var(--tx);border-color:var(--bdh)}
 .home-tab.on{background:var(--bg3);border-color:var(--bdh);color:var(--tx)}
+
+/* Barra de controles (sort + stepper) */
+.home-controls{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.home-sort-wrap{display:flex;align-items:center;gap:7px}
+.home-sort-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--txm);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.home-sort-sel{background:var(--bg2);border:0.5px solid var(--bd);border-radius:7px;padding:5px 26px 5px 10px;font-size:12px;color:var(--tx);font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;transition:border-color var(--t1);appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666680' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+.home-sort-sel:hover,.home-sort-sel:focus{border-color:var(--bdh)}
+.home-sort-sel option{background:var(--bg2);color:var(--tx)}
+.home-stepper{display:flex;align-items:center;border:0.5px solid var(--bd);border-radius:7px;overflow:hidden;background:var(--bg2)}
+.home-stepper-btn{width:28px;height:28px;border:none;background:transparent;color:var(--txs);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background var(--t1),color var(--t1);line-height:1;padding:0}
+.home-stepper-btn:hover:not(:disabled){background:var(--bg3);color:var(--tx)}
+.home-stepper-btn:disabled{opacity:.35;cursor:default}
+.home-stepper-val{min-width:36px;text-align:center;font-size:12px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace;padding:0 4px;border-left:0.5px solid var(--bd);border-right:0.5px solid var(--bd);line-height:28px}
+.home-list-info{font-size:11px;color:var(--txm);font-family:'JetBrains Mono',monospace;margin-bottom:10px}
 
 /* Strategy cards */
 .strat-list{display:flex;flex-direction:column;gap:8px}
@@ -9498,19 +9512,103 @@ function renderHome(data) {
   stratHdr.innerHTML = `<div class="strat-hdr-title">Suas Estratégias</div>`;
   stratSection.appendChild(stratHdr);
 
-  // Tabs
+  // Tabs + controles
   let activeTab = 'todas';
+  let displayLimit = 30;
+  let sortBy = 'resultado'; // resultado | trades | winrate | maxdd | profitfactor
+
+  const SORT_OPTS = [
+    ['resultado',    'Resultado'],
+    ['trades',       'Qtde trades'],
+    ['winrate',      'Win rate'],
+    ['maxdd',        'Max DD'],
+    ['profitfactor', 'Profit factor'],
+  ];
+
+  function getSortVal(b, key) {
+    const m = b.result?.metrics || {};
+    switch (key) {
+      case 'resultado':    return m.total_net_profit    ?? -Infinity;
+      case 'trades':       return m.total_trades        ?? -Infinity;
+      case 'winrate':      return m.win_rate            ?? -Infinity;
+      case 'maxdd':        return -(m.max_drawdown_pct  ?? Infinity);  // menor DD = melhor → inverte
+      case 'profitfactor': return m.profit_factor       ?? -Infinity;
+      default:             return -Infinity;
+    }
+  }
+
   const tabsEl = document.createElement('div');
   tabsEl.className = 'home-tabs';
   const tabDefs = [['todas','Todas'], ['aprovadas','Aprovadas'], ['reprovadas','Reprovadas']];
 
+  // — Barra de controles: Sort + Stepper —
+  const controlsBar = document.createElement('div');
+  controlsBar.className = 'home-controls';
+
+  // Sort
+  const sortWrap = document.createElement('div');
+  sortWrap.className = 'home-sort-wrap';
+  const sortLabel = document.createElement('span');
+  sortLabel.className = 'home-sort-label';
+  sortLabel.textContent = 'Ordenar';
+  const sortSel = document.createElement('select');
+  sortSel.className = 'home-sort-sel';
+  SORT_OPTS.forEach(([val, lbl]) => {
+    const o = document.createElement('option');
+    o.value = val; o.textContent = lbl;
+    if (val === sortBy) o.selected = true;
+    sortSel.appendChild(o);
+  });
+  sortSel.addEventListener('change', () => { sortBy = sortSel.value; renderStratList(); });
+  sortWrap.append(sortLabel, sortSel);
+
+  // Stepper
+  const stepper = document.createElement('div');
+  stepper.className = 'home-stepper';
+  const stepMinus = document.createElement('button');
+  stepMinus.className = 'home-stepper-btn';
+  stepMinus.type = 'button';
+  stepMinus.textContent = '−';
+  const stepVal = document.createElement('span');
+  stepVal.className = 'home-stepper-val';
+  stepVal.textContent = displayLimit;
+  const stepPlus = document.createElement('button');
+  stepPlus.className = 'home-stepper-btn';
+  stepPlus.type = 'button';
+  stepPlus.textContent = '+';
+
+  function updateStepper(delta) {
+    displayLimit = Math.max(10, displayLimit + delta);
+    stepVal.textContent = displayLimit;
+    stepMinus.disabled = displayLimit <= 10;
+    renderStratList();
+  }
+  stepMinus.disabled = displayLimit <= 10;
+  stepMinus.addEventListener('click', () => updateStepper(-10));
+  stepPlus.addEventListener('click',  () => updateStepper(+10));
+  stepper.append(stepMinus, stepVal, stepPlus);
+
+  controlsBar.append(sortWrap, stepper);
+
   function renderStratList() {
-    const filtered = backtests.filter(b => {
-      const tr = b.result?.metrics?.total_net_profit ?? null;
-      if (activeTab === 'aprovadas') return tr !== null && tr >= 0;
-      if (activeTab === 'reprovadas') return tr === null || tr < 0;
-      return true;
-    });
+    const filtered = backtests
+      .filter(b => {
+        const tr = b.result?.metrics?.total_net_profit ?? null;
+        if (activeTab === 'aprovadas') return tr !== null && tr >= 0;
+        if (activeTab === 'reprovadas') return tr === null || tr < 0;
+        return true;
+      })
+      .slice()
+      .sort((a, b) => getSortVal(b, sortBy) - getSortVal(a, sortBy));
+
+    const visible = filtered.slice(0, displayLimit);
+
+    // Info count
+    let infoEl = stratListContainer.querySelector('.home-list-info');
+    if (!infoEl) { infoEl = document.createElement('div'); infoEl.className = 'home-list-info'; stratListContainer.prepend(infoEl); }
+    infoEl.textContent = visible.length < filtered.length
+      ? `Exibindo ${visible.length} de ${filtered.length}`
+      : `${filtered.length} estratégia${filtered.length !== 1 ? 's' : ''}`;
 
     let listEl = stratListContainer.querySelector('.history-list');
     if (listEl) listEl.remove();
@@ -9523,7 +9621,7 @@ function renderHome(data) {
       listEl.appendChild(empty);
     }
 
-    filtered.forEach(b => {
+    visible.forEach(b => {
       const cfg = b.config || {};
       const metrics = (b.result && b.result.metrics) ? b.result.metrics : {};
       const profit = metrics.total_net_profit ?? null;
@@ -9603,6 +9701,7 @@ function renderHome(data) {
     tabsEl.appendChild(t);
   });
   stratSection.appendChild(tabsEl);
+  stratSection.appendChild(controlsBar);
 
   const stratListContainer = document.createElement('div');
   stratSection.appendChild(stratListContainer);
