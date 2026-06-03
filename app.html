@@ -116,9 +116,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;b
 #app{display:flex;flex-direction:column;min-height:100vh}
 header{background:var(--bg1);border-bottom:0.5px solid var(--bd);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:100;transition:background var(--t3) var(--smooth)}
 .logo{display:flex;align-items:center;gap:9px;flex-shrink:0}
-.logo-icon{width:28px;height:28px;border-radius:7px;background:var(--acd2);border:0.5px solid var(--ac);display:flex;align-items:center;justify-content:center;animation:breathe 2.4s var(--smooth) infinite}
-.logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;letter-spacing:-.02em}
-.logo-text span{color:var(--ac)}
 
 /* Progress bar */
 .prog-bar{display:flex;align-items:center;gap:0;flex:1;justify-content:center;overflow:hidden}
@@ -532,12 +529,6 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
   width:100%;max-width:420px;padding:36px 32px;box-shadow:0 32px 80px rgba(0,0,0,.8);
 }
 .auth-logo{display:flex;align-items:center;gap:9px;margin-bottom:28px;justify-content:center}
-.auth-logo-icon{
-  width:32px;height:32px;border-radius:8px;background:var(--acd2);
-  border:0.5px solid var(--ac);display:flex;align-items:center;justify-content:center;
-}
-.auth-logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--tx);letter-spacing:-.02em}
-.auth-logo-text span{color:var(--ac)}
 .auth-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--tx);margin-bottom:6px;text-align:center;letter-spacing:-.02em}
 .auth-sub{font-size:13px;color:var(--txs);text-align:center;margin-bottom:24px;line-height:1.5}
 .auth-field{margin-bottom:14px}
@@ -810,12 +801,10 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 <div id="auth-login">
   <div class="auth-modal">
     <div class="auth-logo">
-      <div class="auth-logo-icon">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round">
-          <path d="M3 3v18h18"/><path d="m9 17 3-5 3 3 3-5"/>
-        </svg>
-      </div>
-      <div class="auth-logo-text">Backtest<span> Pro</span></div>
+      <picture>
+        <source srcset="/logo-dark.svg" media="(prefers-color-scheme:dark)">
+        <img src="/logo-dark.svg" alt="BacktestPro" id="auth-logo-img" style="height:36px;width:auto;display:block">
+      </picture>
     </div>
     <div class="auth-title">Entrar na sua conta</div>
     <div class="auth-sub">Acesse sua conta para continuar.</div>
@@ -845,12 +834,10 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 <div id="auth-reset">
   <div class="auth-modal">
     <div class="auth-logo">
-      <div class="auth-logo-icon">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round">
-          <path d="M3 3v18h18"/><path d="m9 17 3-5 3 3 3-5"/>
-        </svg>
-      </div>
-      <div class="auth-logo-text">Backtest<span> Pro</span></div>
+      <picture>
+        <source srcset="/logo-dark.svg" media="(prefers-color-scheme:dark)">
+        <img src="/logo-dark.svg" alt="BacktestPro" id="auth-logo-img" style="height:36px;width:auto;display:block">
+      </picture>
     </div>
     <div class="auth-title">Redefinir senha</div>
     <div class="auth-sub">Digite seu e-mail e enviaremos um link para criar uma nova senha.</div>
@@ -869,12 +856,10 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 <div id="auth-nova-senha">
   <div class="auth-modal">
     <div class="auth-logo">
-      <div class="auth-logo-icon">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round">
-          <path d="M3 3v18h18"/><path d="m9 17 3-5 3 3 3-5"/>
-        </svg>
-      </div>
-      <div class="auth-logo-text">Backtest<span> Pro</span></div>
+      <picture>
+        <source srcset="/logo-dark.svg" media="(prefers-color-scheme:dark)">
+        <img src="/logo-dark.svg" alt="BacktestPro" id="auth-logo-img" style="height:36px;width:auto;display:block">
+      </picture>
     </div>
     <div class="auth-title">Criar nova senha</div>
     <div class="auth-sub">Escolha uma senha com pelo menos 6 caracteres.</div>
@@ -895,12 +880,10 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 <div id="auth-cadastro">
   <div class="auth-modal">
     <div class="auth-logo">
-      <div class="auth-logo-icon">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round">
-          <path d="M3 3v18h18"/><path d="m9 17 3-5 3 3 3-5"/>
-        </svg>
-      </div>
-      <div class="auth-logo-text">Backtest<span> Pro</span></div>
+      <picture>
+        <source srcset="/logo-dark.svg" media="(prefers-color-scheme:dark)">
+        <img src="/logo-dark.svg" alt="BacktestPro" id="auth-logo-img" style="height:36px;width:auto;display:block">
+      </picture>
     </div>
     <div class="auth-title">Criar conta</div>
     <div class="auth-sub">Crie sua conta para começar.</div>
@@ -931,12 +914,7 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 <div id="storage-toast"></div>
 <div id="app">
   <header>
-    <div class="logo">
-      <div class="logo-icon">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="m9 17 3-5 3 3 3-5"/></svg>
-      </div>
-      <div class="logo-text">Backtest<span> Pro</span></div>
-    </div>
+    <div class="logo"><img src="/logo-dark.svg" alt="BacktestPro" id="app-logo-img" style="height:28px;width:auto;display:block"></div>
     <div class="prog-bar" id="prog-bar"></div>
     <div style="display:flex;align-items:center">
       <div class="theme-sw" id="theme-sw" style="margin-right:8px">
@@ -1269,12 +1247,15 @@ function setAppTheme(t){
   const d=document.getElementById('themeD'),l=document.getElementById('themeL');
   if(d){d.classList.toggle('on',t==='dark');l.classList.toggle('on',t==='light');}
   try{localStorage.setItem('bp-theme',t);}catch(e){}
+  // Troca logo conforme tema
+  const logoSrc = t==='light' ? '/logo-light.svg' : '/logo-dark.svg';
+  document.querySelectorAll('#auth-logo-img,#app-logo-img').forEach(el=>el.src=logoSrc);
   // Re-render only if app is already booted (renderApp exists and main has content)
   if(typeof renderApp==='function'&&document.getElementById('main')?.children.length>0){
     try{renderApp();}catch(e){}
   }
 }
-(function(){try{const t=localStorage.getItem('bp-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+(function(){try{const t=localStorage.getItem('bp-theme');if(t){document.documentElement.setAttribute('data-theme',t);if(t==='light'){document.querySelectorAll('#auth-logo-img,#app-logo-img').forEach(el=>{if(el)el.src='/logo-light.svg';});}}}catch(e){}})();
 
 // Theme-aware SVG colors — reads CSS variables at render time
 function svgTheme(){

@@ -1,0 +1,9 @@
+<svg width="800" height="160" viewBox="0 0 800 160" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&amp;display=swap');</style>
+  </defs>
+  <rect x="40" y="28" width="14" height="104" rx="7" fill="white"/>
+  <path d="M60,80 L104,42 L104,118 Z" fill="white" stroke="white" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M110,80 L154,42 L154,118 Z" fill="white" stroke="white" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+  <text x="180" y="108" font-family="'Archivo Black', sans-serif" font-size="72" font-weight="900" letter-spacing="-1" fill="white">BacktestPro</text>
+</svg>

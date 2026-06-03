@@ -53,7 +53,6 @@ serve(async (req) => {
   console.log(`[CHECK-EXPIRED] ${expired.length} assinatura(s) vencida(s) encontrada(s).`);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const serviceKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
   for (const sub of expired) {
     // ── Atualizar status para 'expired' ──
