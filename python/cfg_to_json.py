@@ -198,15 +198,14 @@ def _map_condition_slot(
     # hilon cobre maxima (40) e minima (41): seleciona variante pelo texto da condicao
     effective_cid = cid
     if cid == "hilon":
-        cond_lower = cond_text.lower()
-        if "mínima" in cond_lower or "minima" in cond_lower or "abaixo da mínima" in cond_lower:
+        if "minima" in normalize_condition_text(cond_text):
             effective_cid = "hilon_low"
 
     ind_info = INDICATOR_MAP.get(effective_cid)
     if not ind_info:
         raise ConversionError(f"Indicador '{cid}' nao encontrado no INDICATOR_MAP.")
 
-    cond_info = resolve_condition(cid, cond_text)
+    cond_info = resolve_condition(effective_cid, cond_text)
     if not cond_info:
         raise ConversionError(
             f"Condicao '{cond_text}' do indicador '{cid}' nao encontrada no CONDITION_MAP."
