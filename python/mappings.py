@@ -31,7 +31,8 @@ INDICATOR_MAP = {
     # Volatilidade
     "atr":      {"enum": "BP_IND_ATR",        "value": 30, "group": "volatility"},
     # Preco
-    "hilon":    {"enum": "BP_IND_PRICE_HIGH_N","value": 40, "group": "price"},
+    "hilon":     {"enum": "BP_IND_PRICE_HIGH_N", "value": 40, "group": "price"},
+    "hilon_low": {"enum": "BP_IND_PRICE_LOW_N",  "value": 41, "group": "price"},
     "range":    {"enum": "BP_IND_PRICE_HIGH_N","value": 40, "group": "price"},  # Range usa mesmo enum internamente
     "prevday":  {"enum": "BP_IND_PREV_HIGH",  "value": 42, "group": "price"},
     "fib":      {"enum": "BP_IND_FIBONACCI",  "value": 44, "group": "price"},

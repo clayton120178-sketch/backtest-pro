@@ -187,6 +187,38 @@ bool BP_Oscillators_EvaluateCondition(int handle, const BPCondition &cond)
          }
       }
 
+      //--- Maxima de N periodos: compara preco vs HighN
+      case BP_IND_PRICE_HIGH_N:
+      {
+         v1 = BP_Indicators_HighN(ih, cond.period, 1);
+         v2 = BP_Indicators_HighN(ih, cond.period, 2);
+         if(v1 == EMPTY_VALUE || v2 == EMPTY_VALUE) return false;
+         switch(cond.condition)
+         {
+            case BP_COND_CROSS_ABOVE: return _CrossedAbove(preco1, preco2, v1);
+            case BP_COND_CROSS_BELOW: return _CrossedBelow(preco1, preco2, v1);
+            case BP_COND_ABOVE:       return (preco1 > v1);
+            case BP_COND_BELOW:       return (preco1 < v1);
+            default: return false;
+         }
+      }
+
+      //--- Minima de N periodos: compara preco vs LowN
+      case BP_IND_PRICE_LOW_N:
+      {
+         v1 = BP_Indicators_LowN(ih, cond.period, 1);
+         v2 = BP_Indicators_LowN(ih, cond.period, 2);
+         if(v1 == EMPTY_VALUE || v2 == EMPTY_VALUE) return false;
+         switch(cond.condition)
+         {
+            case BP_COND_CROSS_ABOVE: return _CrossedAbove(preco1, preco2, v1);
+            case BP_COND_CROSS_BELOW: return _CrossedBelow(preco1, preco2, v1);
+            case BP_COND_ABOVE:       return (preco1 > v1);
+            case BP_COND_BELOW:       return (preco1 < v1);
+            default: return false;
+         }
+      }
+
       default:
          return false;
    }
