@@ -195,7 +195,14 @@ def _map_condition_slot(
     params = condition.get("params", {})
     cond_text = params.get("cond", "")
 
-    ind_info = INDICATOR_MAP.get(cid)
+    # hilon cobre maxima (40) e minima (41): seleciona variante pelo texto da condicao
+    effective_cid = cid
+    if cid == "hilon":
+        cond_lower = cond_text.lower()
+        if "mínima" in cond_lower or "minima" in cond_lower or "abaixo da mínima" in cond_lower:
+            effective_cid = "hilon_low"
+
+    ind_info = INDICATOR_MAP.get(effective_cid)
     if not ind_info:
         raise ConversionError(f"Indicador '{cid}' nao encontrado no INDICATOR_MAP.")
 
