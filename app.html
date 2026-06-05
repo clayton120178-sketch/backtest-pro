@@ -564,6 +564,22 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .auth-google:hover{color:var(--tx);border-color:var(--bdh);transform:translateY(-1px)}
 .auth-toggle{text-align:center;margin-top:20px;font-size:13px;color:var(--txs)}
 .auth-toggle a{color:var(--ac);cursor:pointer;font-weight:600}
+.auth-google-wrap{display:flex;justify-content:center;align-items:center;min-height:44px;width:100%;}
+#auth-otp{
+  position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(12px);
+  z-index:2000;display:none;align-items:center;justify-content:center;padding:16px;
+}
+.auth-otp-digits{display:flex;gap:10px;justify-content:center;margin:20px 0;}
+.auth-otp-digit{
+  width:44px;height:52px;text-align:center;font-size:22px;font-weight:700;
+  background:var(--bg3);border:0.5px solid var(--bd);border-radius:9px;
+  color:var(--tx);font-family:inherit;outline:none;
+  transition:border-color var(--t2),box-shadow var(--t2);
+}
+.auth-otp-digit:focus{border-color:var(--ac);box-shadow:0 0 0 3px var(--acd)}
+.auth-otp-resend{text-align:center;margin-top:14px;font-size:12px;color:var(--txs)}
+.auth-otp-resend a{color:var(--ac);cursor:pointer;font-weight:600}
+.auth-otp-resend a.disabled{color:var(--txm);cursor:not-allowed;pointer-events:none}
 
 /* ── CHAT SUPPORT WIDGET ─────────────────────────────────── */
 #chat-btn{position:fixed;bottom:24px;right:24px;z-index:9999;width:52px;height:52px;border-radius:50%;background:var(--adm);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,212,170,0.35);transition:transform 150ms var(--smooth)}
@@ -822,10 +838,7 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
       <a onclick="mostrarResetSenha()" style="font-size:13px;color:var(--txs);cursor:pointer;text-decoration:underline;">Esqueci minha senha</a>
     </div>
     <div class="auth-divider">ou</div>
-    <button class="auth-google" onclick="loginGoogle()">
-      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
-      Continuar com Google
-    </button>
+    <div id="gis-btn-login" class="auth-google-wrap"></div>
     <div class="auth-toggle">Não tem conta? <a onclick="mostrarCadastro()">Criar conta</a></div>
   </div>
 </div>
@@ -902,11 +915,34 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
     </div>
     <button class="auth-btn" id="cad-submit" onclick="cadastrar()">Criar conta</button>
     <div class="auth-divider">ou</div>
-    <button class="auth-google" onclick="loginGoogle()">
-      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
-      Continuar com Google
-    </button>
+    <div id="gis-btn-cadastro" class="auth-google-wrap"></div>
     <div class="auth-toggle">Já tem conta? <a onclick="mostrarLogin()">Entrar</a></div>
+  </div>
+</div>
+
+<!-- TELA DE CONFIRMAÇÃO OTP (cadastro por e-mail) -->
+<div id="auth-otp">
+  <div class="auth-modal">
+    <div class="auth-logo">
+      <picture>
+        <source srcset="/logo-dark.svg" media="(prefers-color-scheme:dark)">
+        <img src="/logo-dark.svg" alt="BacktestPro" id="auth-logo-img" style="height:36px;width:auto;display:block">
+      </picture>
+    </div>
+    <div class="auth-title">Confirme seu e-mail</div>
+    <div class="auth-sub" id="otp-sub">Digite o código de 6 dígitos enviado para o seu e-mail.</div>
+    <div class="auth-error" id="otp-error"></div>
+    <div class="auth-otp-digits">
+      <input class="auth-otp-digit" id="otp-0" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code">
+      <input class="auth-otp-digit" id="otp-1" type="text" inputmode="numeric" maxlength="1">
+      <input class="auth-otp-digit" id="otp-2" type="text" inputmode="numeric" maxlength="1">
+      <input class="auth-otp-digit" id="otp-3" type="text" inputmode="numeric" maxlength="1">
+      <input class="auth-otp-digit" id="otp-4" type="text" inputmode="numeric" maxlength="1">
+      <input class="auth-otp-digit" id="otp-5" type="text" inputmode="numeric" maxlength="1">
+    </div>
+    <button class="auth-btn" id="otp-submit" onclick="confirmarOTP()">Confirmar</button>
+    <div class="auth-otp-resend">Não recebeu? <a id="otp-resend-link" onclick="reenviarOTP()">Reenviar código</a> <span id="otp-resend-timer" style="display:none"></span></div>
+    <div class="auth-toggle" style="margin-top:12px"><a onclick="mostrarLogin()">← Voltar para o login</a></div>
   </div>
 </div>
 
@@ -985,7 +1021,7 @@ let currentTrialCount = 0;
 })();
 
 function hideAllAuth(){
-  ['loading-oauth','auth-login','auth-cadastro','auth-reset','auth-nova-senha'].forEach(id => {
+  ['loading-oauth','auth-login','auth-cadastro','auth-reset','auth-nova-senha','auth-otp'].forEach(id => {
     const el = document.getElementById(id);
     if(el) el.style.display = 'none';
   });
@@ -996,6 +1032,7 @@ function mostrarLogin(){
   const el = document.getElementById('auth-login');
   if(el) el.style.display = 'flex';
   setTimeout(()=>document.getElementById('login-email')?.focus(), 100);
+  _initGIS();
 }
 
 function mostrarCadastro(){
@@ -1003,6 +1040,7 @@ function mostrarCadastro(){
   const el = document.getElementById('auth-cadastro');
   if(el) el.style.display = 'flex';
   setTimeout(()=>document.getElementById('cad-nome')?.focus(), 100);
+  _initGIS();
 }
 
 function mostrarResetSenha(){
@@ -1116,11 +1154,98 @@ async function cadastrar(){
     return;
   }
   if(!data.session){
-    hideAllAuth();
-    alert('Verifique seu e-mail para confirmar o cadastro. Depois faça login.');
-    mostrarLogin();
+    mostrarOTP(email);
     return;
   }
+}
+
+let _otpEmail = null;
+let _otpResendTimer = null;
+
+function mostrarOTP(email){
+  _otpEmail = email;
+  hideAllAuth();
+  const sub = document.getElementById('otp-sub');
+  if(sub) sub.textContent = `Digite o código de 6 dígitos enviado para ${email}.`;
+  limparErroAuth('otp-error');
+  for(let i=0;i<6;i++){ const d=document.getElementById(`otp-${i}`); if(d) d.value=''; }
+  const el = document.getElementById('auth-otp');
+  if(el) el.style.display = 'flex';
+  _iniciarCooldownReenvio(60);
+  _iniciarNavegacaoOTP();
+  setTimeout(()=>document.getElementById('otp-0')?.focus(), 100);
+}
+
+function _iniciarNavegacaoOTP(){
+  for(let i=0;i<6;i++){
+    const d = document.getElementById(`otp-${i}`);
+    if(!d) continue;
+    d.oninput = (e) => {
+      const v = e.target.value.replace(/\D/g,'');
+      e.target.value = v ? v[0] : '';
+      if(v && i < 5) document.getElementById(`otp-${i+1}`)?.focus();
+      if(i===5 && v) confirmarOTP();
+    };
+    d.onkeydown = (e) => {
+      if(e.key==='Backspace' && !e.target.value && i>0) document.getElementById(`otp-${i-1}`)?.focus();
+    };
+    d.onpaste = (e) => {
+      e.preventDefault();
+      const txt = (e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6);
+      txt.split('').forEach((c,j)=>{ const el=document.getElementById(`otp-${j}`); if(el) el.value=c; });
+      document.getElementById(`otp-${Math.min(txt.length,5)}`)?.focus();
+      if(txt.length===6) confirmarOTP();
+    };
+  }
+}
+
+function _iniciarCooldownReenvio(segundos){
+  const link  = document.getElementById('otp-resend-link');
+  const timer = document.getElementById('otp-resend-timer');
+  if(!link||!timer) return;
+  link.classList.add('disabled');
+  timer.style.display='inline';
+  let restante = segundos;
+  timer.textContent = `(${restante}s)`;
+  clearInterval(_otpResendTimer);
+  _otpResendTimer = setInterval(()=>{
+    restante--;
+    timer.textContent = `(${restante}s)`;
+    if(restante<=0){
+      clearInterval(_otpResendTimer);
+      link.classList.remove('disabled');
+      timer.style.display='none';
+    }
+  }, 1000);
+}
+
+async function confirmarOTP(){
+  limparErroAuth('otp-error');
+  const code = [0,1,2,3,4,5].map(i=>document.getElementById(`otp-${i}`)?.value||'').join('');
+  if(code.length<6){ mostrarErroAuth('otp-error','Digite os 6 dígitos do código.'); return; }
+  const btn = document.getElementById('otp-submit');
+  if(btn){ btn.disabled=true; btn.textContent='Verificando...'; }
+  const { error } = await db.auth.verifyOtp({ email: _otpEmail, token: code, type: 'signup' });
+  if(error){
+    const msg = error.message?.includes('expired')||error.message?.includes('invalid')
+      ? 'Código inválido ou expirado. Solicite um novo código.'
+      : traduzirErro(error.message);
+    mostrarErroAuth('otp-error', msg);
+    if(btn){ btn.disabled=false; btn.textContent='Confirmar'; }
+    return;
+  }
+  // onAuthStateChange detecta a sessão e entra no app automaticamente
+}
+
+async function reenviarOTP(){
+  if(!_otpEmail) return;
+  limparErroAuth('otp-error');
+  const { error } = await db.auth.resend({ type: 'signup', email: _otpEmail });
+  if(error){
+    mostrarErroAuth('otp-error', 'Erro ao reenviar. Tente novamente.');
+    return;
+  }
+  _iniciarCooldownReenvio(60);
 }
 
 const GOOGLE_CLIENT_ID = '573043976046-76lt0vabq0qb82p5hsusu3smr8q9n6i0.apps.googleusercontent.com';
@@ -1149,8 +1274,8 @@ async function handleGoogleCredential(response){
   }
 }
 
-async function loginGoogle(){
-  if(!window.google?.accounts?.id){ console.error('[Google] GIS não carregado'); return; }
+async function _initGIS(){
+  if(!window.google?.accounts?.id) return;
   const { raw, hash } = await _generateNonce();
   _gisNonce = raw;
   google.accounts.id.initialize({
@@ -1158,11 +1283,27 @@ async function loginGoogle(){
     callback: handleGoogleCredential,
     auto_select: false,
     cancel_on_tap_outside: true,
-    nonce: hash
+    nonce: hash,
+    use_fedcm_for_prompt: true
   });
+  ['gis-btn-login','gis-btn-cadastro'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el && !el.firstChild){
+      google.accounts.id.renderButton(el, {
+        theme: 'outline', size: 'large', width: 356,
+        text: 'continue_with', locale: 'pt-BR', shape: 'rectangular'
+      });
+    }
+  });
+}
+
+async function loginGoogle(){
+  if(!window.google?.accounts?.id){ console.error('[Google] GIS não carregado'); return; }
+  await _initGIS();
   google.accounts.id.prompt((n) => {
-    if(n.isNotDisplayed() || n.isSkippedMoment()){
-      mostrarErroAuth('login-error', 'Não foi possível abrir o Google. Verifique bloqueadores de popup.');
+    // Se One Tap não exibe, o botão GIS renderizado já está visível — sem erro de bloqueio
+    if(n.getMomentType() === 'display' && n.isNotDisplayed()){
+      console.info('[Google] One Tap não exibido; use o botão Continuar com Google.');
     }
   });
 }
