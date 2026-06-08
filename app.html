@@ -10436,7 +10436,10 @@ async function submitPix() {
         </div>
         <button class="pay-btn" onclick="checkPix('${data.payment_id}')">Já paguei — Verificar acesso</button>
       </div>`;
+    // Persistir payment_id para reconciliar se o usuário recarregar a página
+    sessionStorage.setItem('pix_payment_id', data.payment_id);
     startPixTimer();
+    startPixPolling(data.payment_id);
   } catch(e) { console.error(e); showPayError('Erro ao gerar Pix.'); btn.disabled=false; btn.textContent='Gerar QR Code Pix'; }
 }
 
@@ -10455,12 +10458,53 @@ function startPixTimer() {
   }, 1000);
 }
 
+// Polling automático a cada 5s — para quando provisionar ou após 5 min
+let _pixPollInterval = null;
+function startPixPolling(paymentId) {
+  if (_pixPollInterval) clearInterval(_pixPollInterval);
+  const deadline = Date.now() + 5 * 60 * 1000;
+  _pixPollInterval = setInterval(async () => {
+    if (!document.getElementById('pix-timer') || Date.now() > deadline) {
+      clearInterval(_pixPollInterval); _pixPollInterval = null; return;
+    }
+    try {
+      const provisioned = await _callConfirmPayment(paymentId);
+      if (provisioned) { clearInterval(_pixPollInterval); _pixPollInterval = null; }
+    } catch(e) { /* ignorar erros de rede no polling */ }
+  }, 5000);
+}
+
+async function _callConfirmPayment(paymentId) {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) return false;
+  const res = await fetch(`${SUPA_URL}/functions/v1/confirm-payment`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+    body: JSON.stringify({ payment_id: paymentId }),
+  });
+  if (!res.ok) return false;
+  const data = await res.json();
+  if (data.provisioned) {
+    sessionStorage.removeItem('pix_payment_id');
+    await verificarAcesso();
+    if (currentSub) { updateAvatarUI(); showPaySuccess(); }
+    return true;
+  }
+  return false;
+}
+
 async function checkPix(paymentId) {
   const btn = event.target; btn.disabled=true; btn.textContent='Verificando...';
-  const { data: { session } } = await db.auth.getSession();
-  await verificarAcesso();
-  if (currentSub) { updateAvatarUI(); showPaySuccess(); }
-  else { btn.disabled=false; btn.textContent='Verificar novamente'; showPayError('Pagamento ainda não confirmado. Aguarde e tente novamente.'); }
+  try {
+    const provisioned = await _callConfirmPayment(paymentId);
+    if (!provisioned) {
+      btn.disabled=false; btn.textContent='Verificar novamente';
+      showPayError('Pagamento ainda não confirmado. Aguarde e tente novamente.');
+    }
+  } catch(e) {
+    btn.disabled=false; btn.textContent='Verificar novamente';
+    showPayError('Erro ao verificar pagamento. Tente novamente.');
+  }
 }
 
 function showPayError(msg) { const el=document.getElementById('pay-error'); if(el){el.textContent=msg;el.classList.add('show');} }

@@ -21,7 +21,7 @@ const VALID_CYCLES      = new Set(Object.keys(CYCLE_DAYS));
 const VALID_PAY_TYPES   = new Set(["pix", "credit_card", "debit_card"]);
 const EMAIL_RE          = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// ─── CORS — apenas o domínio do produto ──────────────────────────────────────
+// ─── CORS ─────────────────────────────────────────────────────────────────────
 function corsHeaders(req: Request) {
   const origin = req.headers.get("origin") ?? "";
   const allowed =
@@ -76,7 +76,6 @@ serve(async (req) => {
     const cycle        = sanitizeString(raw.cycle);
     const payment_type = sanitizeString(raw.payment_type);
 
-    // Whitelist rigorosa — rejeita qualquer valor não esperado
     if (!plan || !VALID_PLANS.has(plan)) {
       return new Response(JSON.stringify({ error: "Plano inválido" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
     }
@@ -87,21 +86,24 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Método de pagamento inválido" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
     }
 
-    // ── 3. Preço vem do backend — nunca do frontend ─────────────────────────
-    const amount = PRICES[plan][cycle];
-    const days   = CYCLE_DAYS[cycle];
+    // ── 3. Preço vem do backend ─────────────────────────────────────────────
+    const amount   = PRICES[plan][cycle];
+    const days     = CYCLE_DAYS[cycle];
     const MP_TOKEN = Deno.env.get("MP_ACCESS_TOKEN")!;
 
+    const adminSupabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
     // ── 4. Validar payer ────────────────────────────────────────────────────
-    const payerRaw = raw.payer as Record<string, unknown> | undefined;
+    const payerRaw   = raw.payer as Record<string, unknown> | undefined;
     const payerEmail = sanitizeString(payerRaw?.email);
 
-    // Email do payer deve bater com o do usuário autenticado (ou ser seu email)
     if (!payerEmail || !EMAIL_RE.test(payerEmail)) {
       return new Response(JSON.stringify({ error: "Email do pagador inválido" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
     }
 
-    // Forçar email autenticado (não confiamos no email que vem do frontend)
     const payerEmailSafe = user.email!;
 
     // ── 5. Montar payload para o MP ─────────────────────────────────────────
@@ -111,7 +113,6 @@ serve(async (req) => {
       payment_method_id: sanitizeString(raw.payment_method_id) ?? payment_type,
       payer: {
         email: payerEmailSafe,
-        // CPF só se vier e estiver em formato válido
         ...(payerRaw?.identification ? { identification: payerRaw.identification } : {}),
       },
       metadata: { user_id: user.id, plan, cycle, days },
@@ -128,7 +129,7 @@ serve(async (req) => {
       if (raw.issuer_id) mpPayload.issuer_id = sanitizeString(raw.issuer_id);
     }
 
-    // ── 6. Idempotency key com UUID criptográfico (evita cobranças duplicadas) ──
+    // ── 6. Idempotency key ──────────────────────────────────────────────────
     const idempotencyKey = crypto.randomUUID();
 
     // ── 7. Chamar API do Mercado Pago ───────────────────────────────────────
@@ -145,7 +146,6 @@ serve(async (req) => {
     const mpData = await mpRes.json() as Record<string, unknown>;
 
     if (!mpRes.ok) {
-      // Log interno completo, resposta externa genérica
       console.error("[MP] Erro na API:", mpData);
       const userMsg = typeof mpData.message === "string"
         ? mpData.message
@@ -155,48 +155,78 @@ serve(async (req) => {
       });
     }
 
-    // ── 8. Pix: retornar dados para o frontend ──────────────────────────────
+    const mpPaymentId = String(mpData.id);
+    const methodLabel = payment_type === "credit_card" ? "credit_card"
+                      : payment_type === "debit_card"  ? "debit_card"
+                      : "pix";
+
+    // ── 8. Pix: persistir intenção de pagamento e retornar QR ──────────────
     if (payment_type === "pix") {
+      // Persiste antes de retornar — se o webhook falhar, temos registro para reconciliar
+      const { error: payErr } = await adminSupabase.from("payments").upsert({
+        user_id:       user.id,
+        mp_payment_id: mpPaymentId,
+        plan,
+        cycle,
+        amount,
+        method:        "pix",
+        status:        "pending",
+      }, { onConflict: "mp_payment_id" });
+
+      if (payErr) {
+        console.error("[create-payment] Falha ao persistir payments (Pix):", payErr);
+      }
+
       const qrCode = (mpData.point_of_interaction as Record<string, unknown>)
         ?.transaction_data as Record<string, unknown> | undefined;
 
       return new Response(JSON.stringify({
-        status:          mpData.status,
-        payment_id:      mpData.id,
-        pix_copy_paste:  qrCode?.qr_code     ?? null,
-        pix_qr_base64:   qrCode?.qr_code_base64 ?? null,
+        status:         mpData.status,
+        payment_id:     mpPaymentId,
+        pix_copy_paste: qrCode?.qr_code        ?? null,
+        pix_qr_base64:  qrCode?.qr_code_base64 ?? null,
       }), { headers: { ...cors, "Content-Type": "application/json" } });
     }
 
-    // ── 9. Cartão aprovado: criar assinatura via service_role ───────────────
+    // ── 9. Cartão aprovado: criar assinatura + gravar payments ─────────────
     if (mpData.status === "approved") {
-      const adminSupabase = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SERVICE_ROLE_KEY")!
-      );
-
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + days);
 
-      const { error: insertError } = await adminSupabase.from("subscriptions").insert({
-        user_id:        user.id,
-        plan,
-        cycle,
-        expires_at:     expiresAt.toISOString(),
-        status:         "active",
-        payment_method: payment_type === "credit_card" ? "cartao" : "cartao_debito",
-        payment_ref:    String(mpData.id),
-      });
+      const { data: sub, error: insertError } = await adminSupabase
+        .from("subscriptions").insert({
+          user_id:        user.id,
+          plan,
+          cycle,
+          expires_at:     expiresAt.toISOString(),
+          status:         "active",
+          payment_method: payment_type === "credit_card" ? "cartao" : "cartao_debito",
+          payment_ref:    mpPaymentId,
+        }).select("id").single();
 
-      if (insertError && insertError.code !== "23505") {
+      if (insertError && (insertError as { code?: string }).code !== "23505") {
         console.error("[DB] Erro ao criar assinatura:", insertError);
       }
+
+      const subscriptionId = (sub as { id: string } | null)?.id ?? null;
+      const { error: payErr } = await adminSupabase.from("payments").upsert({
+        user_id:         user.id,
+        mp_payment_id:   mpPaymentId,
+        plan,
+        cycle,
+        amount,
+        method:          methodLabel,
+        status:          "approved",
+        subscription_id: subscriptionId,
+      }, { onConflict: "mp_payment_id" });
+
+      if (payErr) console.error("[create-payment] Falha ao gravar payments (cartão):", payErr);
     }
 
     return new Response(JSON.stringify({
       status:        mpData.status,
       status_detail: mpData.status_detail,
-      payment_id:    mpData.id,
+      payment_id:    mpPaymentId,
     }), { headers: { ...cors, "Content-Type": "application/json" } });
 
   } catch (err) {
