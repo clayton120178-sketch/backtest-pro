@@ -94,7 +94,7 @@ function templateWelcome(name: string): { subject: string; html: string } {
         <tr><td style="padding:24px 40px;border-top:1px solid #2A2A3C;">
           <p style="margin:0;font-size:13px;color:#4A4A5A;line-height:1.6;">
             alphaQuant · Backtest Pro<br>
-            Você recebeu este e-mail porque criou uma conta em backtestpro-app.vercel.app
+            Você recebeu este e-mail porque criou uma conta em backtestpro.com.br
           </p>
         </td></tr>
 
@@ -336,7 +336,7 @@ async function sendViaResend(
       "Authorization": `Bearer ${resendKey}`,
     },
     body: JSON.stringify({
-      from:    "Backtest Pro <noreply@resend.dev>",
+      from:    "Backtest Pro <noreply@backtestpro.com.br>",
       to:      [to],
       subject,
       html,
