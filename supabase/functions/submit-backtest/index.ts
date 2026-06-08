@@ -84,6 +84,9 @@ serve(async (req: Request) => {
       .order("expires_at", { ascending: false })
       .limit(1);
 
+    // Limites mensais por plano (janela móvel de 30 dias a partir de now())
+    const PLAN_LIMITS: Record<string, number> = { starter: 100, advanced: 150, elite: 200 };
+
     if (!subs || subs.length === 0) {
       // Sem assinatura ativa — verificar se ainda está dentro do free trial
       const { count: trialCount } = await serviceClient
@@ -100,6 +103,30 @@ serve(async (req: Request) => {
         );
       }
       // Dentro do trial — prosseguir com a execução
+    } else {
+      // Assinatura ativa — aplicar cota do plano (janela móvel de 30 dias)
+      const activeSub = subs[0];
+      const planLimit = PLAN_LIMITS[activeSub.plan];
+
+      if (planLimit !== undefined) {
+        const windowStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+        const { count: monthlyCount } = await serviceClient
+          .from("backtests")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .in("status", ["queued", "running", "completed"])
+          .gte("created_at", windowStart);
+
+        if ((monthlyCount ?? 0) >= planLimit) {
+          const planName = activeSub.plan.charAt(0).toUpperCase() + activeSub.plan.slice(1);
+          return new Response(
+            JSON.stringify({
+              error: `Limite mensal do plano ${planName} atingido (${monthlyCount}/${planLimit}). Renova no próximo ciclo ou faz upgrade.`
+            }),
+            { status: 429, headers: { ...cors, "Content-Type": "application/json" } }
+          );
+        }
+      }
     }
 
     // 3. Parsear body (state.cfg do frontend)
