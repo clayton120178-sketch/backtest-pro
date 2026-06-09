@@ -379,6 +379,54 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .coupon-feedback.err{color:var(--dg)}
 .pay-summary-val-old{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:500;color:var(--txm);text-decoration:line-through;flex-shrink:0}
 .pay-summary-prices{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+/* ── Área do Parceiro ── */
+.aff-screen{max-width:680px;margin:0 auto;padding:24px 0 60px}
+.aff-header{margin-bottom:24px}
+.aff-title{font-size:22px;font-weight:800;color:var(--tx);letter-spacing:-.03em;margin-bottom:4px}
+.aff-sub{font-size:13px;color:var(--txs)}
+.aff-tabs{display:flex;gap:4px;border-bottom:1px solid var(--bd);margin-bottom:24px}
+.aff-tab{padding:8px 16px;border:none;background:none;color:var(--txs);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s}
+.aff-tab.active{color:var(--ac);border-bottom-color:var(--ac)}
+.aff-tab:hover{color:var(--tx)}
+.aff-kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:24px}
+.aff-kpi{background:var(--bg1);border:0.5px solid var(--bd);border-radius:12px;padding:14px 16px}
+.aff-kpi-label{font-size:11px;color:var(--txm);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.aff-kpi-val{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--tx)}
+.aff-kpi-val.green{color:var(--pr)}
+.aff-coupon-card{background:var(--bg1);border:0.5px solid var(--bdh);border-radius:12px;padding:16px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.aff-coupon-code{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--ac);letter-spacing:.1em}
+.aff-coupon-actions{display:flex;gap:8px}
+.aff-btn-sm{padding:7px 14px;border-radius:8px;border:0.5px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+.aff-btn-sm:hover{border-color:var(--bdh);background:var(--bg2)}
+.aff-tier-bar{background:var(--bg1);border:0.5px solid var(--bd);border-radius:12px;padding:16px 18px;margin-bottom:24px}
+.aff-tier-name{font-size:15px;font-weight:700;color:var(--ac);margin-bottom:4px}
+.aff-tier-detail{font-size:12px;color:var(--txs);margin-bottom:10px}
+.aff-tier-progress{height:4px;border-radius:2px;background:var(--bg3);overflow:hidden;margin-bottom:6px}
+.aff-tier-fill{height:100%;border-radius:2px;background:var(--ac);transition:width .4s}
+.aff-tier-next{font-size:11px;color:var(--txm)}
+.aff-table-wrap{overflow-x:auto}
+.aff-table{width:100%;border-collapse:collapse;font-size:12px}
+.aff-table th{text-align:left;color:var(--txm);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--bd);white-space:nowrap}
+.aff-table td{padding:10px 10px;border-bottom:0.5px solid rgba(42,42,60,.5);color:var(--tx);vertical-align:middle}
+.aff-table tr:last-child td{border-bottom:none}
+.aff-status-pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.aff-status-pill.pending{background:rgba(245,158,11,.12);color:#F59E0B}
+.aff-status-pill.approved{background:rgba(16,185,129,.12);color:#10B981}
+.aff-status-pill.paid{background:rgba(99,102,241,.12);color:#6366F1}
+.aff-status-pill.reversed{background:rgba(239,68,68,.1);color:#EF4444}
+.aff-empty{text-align:center;padding:40px 20px;color:var(--txm);font-size:13px}
+.aff-form-group{margin-bottom:16px}
+.aff-label{font-size:12px;font-weight:600;color:var(--txs);margin-bottom:6px;display:block}
+.aff-input{width:100%;background:var(--bg2);border:0.5px solid var(--bd);border-radius:9px;padding:10px 14px;font-size:13px;color:var(--tx);outline:none;font-family:inherit;transition:border-color .15s}
+.aff-input:focus{border-color:var(--bdh)}
+.aff-select{width:100%;background:var(--bg2);border:0.5px solid var(--bd);border-radius:9px;padding:10px 14px;font-size:13px;color:var(--tx);outline:none;font-family:inherit;cursor:pointer}
+.aff-save-btn{width:100%;padding:12px;border-radius:10px;border:none;background:var(--ac);color:#08080B;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px;transition:all .15s}
+.aff-save-btn:hover{background:#00ecc0}
+.aff-save-btn:disabled{opacity:.5;cursor:not-allowed}
+.aff-signup-screen{max-width:480px;margin:0 auto;padding:32px 0 60px}
+.aff-terms{font-size:12px;color:var(--txs);line-height:1.6;background:var(--bg1);border:0.5px solid var(--bd);border-radius:9px;padding:12px 14px;margin-bottom:14px;max-height:120px;overflow-y:auto}
+.aff-check-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:18px;cursor:pointer}
+.aff-check-row input{margin-top:2px;accent-color:var(--ac)}
 .pay-success{display:flex;flex-direction:column;align-items:center;text-align:center;padding:56px 20px}
 .pay-success-icon{width:64px;height:64px;border-radius:50%;background:rgba(0,187,128,.1);border:0.5px solid rgba(0,187,128,.3);display:flex;align-items:center;justify-content:center;margin-bottom:20px}
 .pay-success h3{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--tx);margin-bottom:8px;letter-spacing:-.02em}
@@ -980,6 +1028,10 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
       </div>
       <div class="avatar-menu" id="avatar-menu">
         <div class="avatar-name" id="avatar-name">—</div>
+        <button class="avatar-item" id="avatar-affiliate-btn" style="display:none" onclick="showScreen('affiliate');document.getElementById('avatar-menu').classList.remove('open')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span style="color:var(--ac);font-weight:600">Área do Parceiro</span>
+        </button>
         <button class="avatar-item" id="avatar-admin-btn" style="display:none" onclick="window.open('/admin.html','_blank');document.getElementById('avatar-menu').classList.remove('open')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00D4AA" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
           <span style="color:#00D4AA;font-weight:600">Painel Admin</span>
@@ -1358,10 +1410,23 @@ async function verificarAcesso(){
     } else {
       currentTrialCount = 0;
     }
+    // Carregar afiliado (se existir)
+    try {
+      const { data: affRow } = await db.from('affiliates').select('id,display_name,status,pix_key,pix_key_type').eq('user_id', currentUser.id).maybeSingle();
+      if (affRow && affRow.status === 'active') {
+        const { data: cpRow } = await db.from('coupons').select('code').eq('affiliate_id', affRow.id).maybeSingle();
+        currentAffiliate = { ...affRow, coupon_code: cpRow?.code || null };
+      } else { currentAffiliate = null; }
+    } catch(e) { currentAffiliate = null; }
+
     hideAllAuth();
     if(data.status === 'ativo' || data.status === 'trial' || data.tipo_acesso === 'admin'){
       updateAvatarUI();
       if(typeof chatReveal === 'function') chatReveal();
+      // Tratar ?parceiro=cadastro
+      const _urlP = new URLSearchParams(window.location.search).get('parceiro');
+      if (_urlP === 'cadastro' && !currentAffiliate) { showScreen('affiliate-signup'); return; }
+      if (_urlP === 'cadastro' && currentAffiliate)  { showScreen('affiliate'); return; }
       if(currentScreen === 'plans' || currentScreen === 'payment' || currentScreen === 'history') return;
       if(state?.screen === 'loading' || state?.screen === 'results') return;
       if(data.role === 'admin' || currentSub || currentTrialCount < FREE_TRIAL.backtests_max){ showHome(); }
@@ -9586,6 +9651,7 @@ let mpInstance = null;
 let cardForm = null;
 let mpMounted = false;
 let activeCoupon = null; // { code, discount_type, discount_value, applies_to } | null
+let currentAffiliate = null; // { id, display_name, status, pix_key, pix_key_type, coupon_code } | null
 
 // ─── AVATAR ───────────────────────────────────────────────────
 function toggleAvatarMenu() {
@@ -9608,6 +9674,8 @@ function updateAvatarUI() {
   if (nameEl) nameEl.innerHTML = `<div style="font-weight:600;color:var(--tx);font-size:13px">${name}</div><div style="font-size:11px;color:var(--txm);margin-top:2px">${email}</div>${currentSub?`<div style="margin-top:5px;font-size:11px;color:#00D4AA;font-weight:700">${currentSub.plan.toUpperCase()} · ativo até ${new Date(currentSub.expires_at).toLocaleDateString('pt-BR')}</div>`:'<div style="margin-top:5px;font-size:11px;color:#EF4444">Sem assinatura ativa</div>'}`;
   const adminBtn = document.getElementById('avatar-admin-btn');
   if (adminBtn) adminBtn.style.display = currentUsuario?.role === 'admin' ? 'flex' : 'none';
+  const affBtn = document.getElementById('avatar-affiliate-btn');
+  if (affBtn) affBtn.style.display = currentAffiliate ? 'flex' : 'none';
 }
 // ─── HOME PÓS-LOGIN ───────────────────────────────────────────
 let _homeData = null; // cache local por sessão
@@ -10063,6 +10131,8 @@ function showScreen(name) {
   if (name === 'plans')   { main.appendChild(renderPlans());   return; }
   if (name === 'payment') { main.appendChild(renderPayment()); return; }
   if (name === 'history') { main.appendChild(renderHistory()); return; }
+  if (name === 'affiliate') { main.appendChild(renderAffiliate()); return; }
+  if (name === 'affiliate-signup') { main.appendChild(renderAffiliateSignup()); return; }
 }
 
 function renderNoSub() {
@@ -11436,6 +11506,337 @@ async function shareResult(evt){
   const _origChatAddBubble = chatAddBubble;
 
 })();
+
+// ─── ÁREA DO PARCEIRO (placeholder — ver abaixo do IIFE) ─────────────────────
+
+function _affFmt(n){ return 'R$ ' + Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2}); }
+function _maskEmail(id){ return 'cliente-' + String(id).slice(0,6) + '***'; }
+function _statusLabel(s){ return {pending:'Pendente',approved:'Aprovado',paid:'Pago',reversed:'Estornado'}[s]||s; }
+
+function renderAffiliate(){
+  const el = document.createElement('div');
+  el.className = 'aff-screen';
+  const aff = currentAffiliate;
+  if(!aff){ el.innerHTML = '<div class="aff-empty">Acesso restrito.</div>'; return el; }
+
+  el.innerHTML = `
+    <div class="aff-header">
+      <div class="aff-title">Área do Parceiro</div>
+      <div class="aff-sub">Olá, ${aff.display_name} — acompanhe suas comissões e resultados.</div>
+    </div>
+    <div class="aff-tabs">
+      <button class="aff-tab active" id="aff-tab-resumo" onclick="affShowTab('resumo')">Resumo</button>
+      <button class="aff-tab" id="aff-tab-producao" onclick="affShowTab('producao')">Produção</button>
+      <button class="aff-tab" id="aff-tab-config" onclick="affShowTab('config')">Configurações</button>
+    </div>
+    <div id="aff-tab-content"><div class="aff-empty"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="animation:spin 1s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>Carregando...</div></div>`;
+
+  affShowTab('resumo');
+  return el;
+}
+
+async function affShowTab(tab){
+  document.querySelectorAll('.aff-tab').forEach(t => t.classList.remove('active'));
+  const tabEl = document.getElementById('aff-tab-' + tab);
+  if(tabEl) tabEl.classList.add('active');
+  const content = document.getElementById('aff-tab-content');
+  if(!content) return;
+  content.innerHTML = '<div class="aff-empty" style="padding:24px 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="animation:spin 1s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>Carregando...</div>';
+
+  const aff = currentAffiliate;
+  if(tab === 'resumo') await affRenderResumo(content, aff);
+  if(tab === 'producao') await affRenderProducao(content, aff);
+  if(tab === 'config') affRenderConfig(content, aff);
+}
+
+async function affRenderResumo(el, aff){
+  // Carregar tier + comissões
+  const { data: tierRows } = await db.rpc('resolve_affiliate_tier', { p_affiliate: aff.id });
+  const tier = tierRows?.[0] || { tier_name:'Afiliado', active_clients:0, commission_percent:20 };
+
+  const now = new Date();
+  const mesInicio = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+  const { data: comsMes } = await db.from('affiliate_commissions').select('commission_amount,status').eq('affiliate_id', aff.id).gte('created_at', mesInicio);
+  const { data: comsApproved } = await db.from('affiliate_commissions').select('commission_amount').eq('affiliate_id', aff.id).in('status', ['approved']);
+  const { data: comsPaid } = await db.from('affiliate_commissions').select('commission_amount').eq('affiliate_id', aff.id).eq('status', 'paid');
+  const { data: payouts } = await db.from('affiliate_payouts').select('amount,status,reference_month,created_at').eq('affiliate_id', aff.id).order('created_at', {ascending:false}).limit(5);
+
+  const mesCom = (comsMes||[]).filter(c => c.status !== 'reversed').reduce((s,c) => s + Number(c.commission_amount), 0);
+  const saldo  = (comsApproved||[]).reduce((s,c) => s + Number(c.commission_amount), 0);
+  const pago   = (comsPaid||[]).reduce((s,c) => s + Number(c.commission_amount), 0);
+
+  const TIER_MAX = { Afiliado:20, Parceiro:50, Embaixador:null };
+  const maxClients = TIER_MAX[tier.tier_name];
+  const pct = maxClients ? Math.min(100, Math.round(tier.active_clients / maxClients * 100)) : 100;
+  const nextTier = { Afiliado:'Parceiro (20 clientes)', Parceiro:'Embaixador (50 clientes)', Embaixador:null }[tier.tier_name];
+
+  const couponShare = aff.coupon_code
+    ? `Olá! Você pode usar meu cupom *${aff.coupon_code}* para ganhar 10% de desconto no Backtest Pro — a ferramenta que uso para validar estratégias antes de operar com dinheiro real. Acesse: https://backtestpro.com.br`
+    : '';
+
+  el.innerHTML = `
+    <div class="aff-coupon-card">
+      <div>
+        <div style="font-size:11px;color:var(--txm);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Seu cupom</div>
+        <div class="aff-coupon-code">${aff.coupon_code || '—'}</div>
+        <div style="font-size:11px;color:var(--txs);margin-top:3px">10% de desconto para seus indicados em todas as compras</div>
+      </div>
+      <div class="aff-coupon-actions">
+        ${aff.coupon_code ? `<button class="aff-btn-sm" onclick="navigator.clipboard.writeText('${aff.coupon_code}');this.textContent='✓ Copiado!';setTimeout(()=>this.textContent='Copiar código',2000)">Copiar código</button>
+        <button class="aff-btn-sm" onclick="navigator.clipboard.writeText(${JSON.stringify(couponShare)});this.textContent='✓ Copiado!';setTimeout(()=>this.textContent='Compartilhar',2000)">Compartilhar</button>` : ''}
+      </div>
+    </div>
+    <div class="aff-tier-bar">
+      <div class="aff-tier-name">${tier.tier_name} · ${tier.commission_percent}% de comissão</div>
+      <div class="aff-tier-detail">${tier.active_clients} cliente${tier.active_clients !== 1 ? 's' : ''} ativo${tier.active_clients !== 1 ? 's' : ''} no momento</div>
+      ${maxClients ? `<div class="aff-tier-progress"><div class="aff-tier-fill" style="width:${pct}%"></div></div>
+      <div class="aff-tier-next">${nextTier ? 'Faltam ' + (maxClients - tier.active_clients) + ' clientes ativos para ' + nextTier : ''}</div>` : '<div class="aff-tier-next">Tier máximo atingido 🏆</div>'}
+    </div>
+    <div class="aff-kpi-grid">
+      <div class="aff-kpi"><div class="aff-kpi-label">Comissões do mês</div><div class="aff-kpi-val">${_affFmt(mesCom)}</div></div>
+      <div class="aff-kpi"><div class="aff-kpi-label">Saldo a receber</div><div class="aff-kpi-val green">${_affFmt(saldo)}</div></div>
+      <div class="aff-kpi"><div class="aff-kpi-label">Total pago</div><div class="aff-kpi-val">${_affFmt(pago)}</div></div>
+      <div class="aff-kpi"><div class="aff-kpi-label">Clientes ativos</div><div class="aff-kpi-val">${tier.active_clients}</div></div>
+    </div>
+    ${payouts && payouts.length > 0 ? `
+    <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:12px">Histórico de pagamentos</div>
+    <div class="aff-table-wrap"><table class="aff-table">
+      <thead><tr><th>Mês ref.</th><th>Valor</th><th>Status</th></tr></thead>
+      <tbody>${payouts.map(p => `<tr>
+        <td>${p.reference_month || new Date(p.created_at).toLocaleDateString('pt-BR',{month:'short',year:'numeric'})}</td>
+        <td>${_affFmt(p.amount)}</td>
+        <td><span class="aff-status-pill ${p.status}">${{processing:'Em processo',paid:'Pago',failed:'Falhou'}[p.status]||p.status}</span></td>
+      </tr>`).join('')}</tbody>
+    </table></div>` : ''}`;
+}
+
+async function affRenderProducao(el, aff){
+  // Filtro por período
+  const now = new Date();
+  const periodos = {
+    mes:   new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+    tri:   new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString(),
+    ano:   new Date(now.getFullYear(), 0, 1).toISOString(),
+    total: null,
+  };
+  let filtro = 'mes';
+
+  async function load(){
+    const desde = periodos[filtro];
+    let q = db.from('affiliate_commissions')
+      .select('referred_user_id,plan,cycle,net_amount,commission_amount,commission_rate,tier_name,status,created_at')
+      .eq('affiliate_id', aff.id)
+      .order('created_at', {ascending:false})
+      .limit(100);
+    if(desde) q = q.gte('created_at', desde);
+    const { data: coms } = await q;
+
+    const tableEl = document.getElementById('aff-prod-table');
+    if(!tableEl) return;
+    if(!coms || coms.length === 0){ tableEl.innerHTML = '<div class="aff-empty">Nenhuma comissão neste período.</div>'; return; }
+
+    tableEl.innerHTML = `<div class="aff-table-wrap"><table class="aff-table">
+      <thead><tr><th>Indicado</th><th>Plano</th><th>Líquido</th><th>Comissão</th><th>Tier</th><th>Status</th><th>Data</th></tr></thead>
+      <tbody>${coms.map(c => `<tr>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--txs)">${_maskEmail(c.referred_user_id)}</td>
+        <td>${c.plan} ${c.cycle}</td>
+        <td>${_affFmt(c.net_amount)}</td>
+        <td style="color:var(--pr);font-weight:600">${_affFmt(c.commission_amount)} <span style="font-size:10px;color:var(--txm)">(${c.commission_rate}%)</span></td>
+        <td>${c.tier_name}</td>
+        <td><span class="aff-status-pill ${c.status}">${_statusLabel(c.status)}</span></td>
+        <td style="color:var(--txm);white-space:nowrap">${new Date(c.created_at).toLocaleDateString('pt-BR')}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  }
+
+  el.innerHTML = `
+    <div style="display:flex;gap:6px;margin-bottom:16px">
+      ${['mes','tri','ano','total'].map(p => `<button id="aff-f-${p}" class="aff-btn-sm${p===filtro?' active':''}" style="${p===filtro?'border-color:var(--ac);color:var(--ac)':''}" onclick="document.querySelectorAll('[id^=aff-f-]').forEach(b=>{b.style.borderColor='';b.style.color=''});this.style.borderColor='var(--ac)';this.style.color='var(--ac)';affProdFiltro('${p}')">${{mes:'Este mês',tri:'Trimestre',ano:'Este ano',total:'Tudo'}[p]}</button>`).join('')}
+    </div>
+    <div id="aff-prod-table"></div>`;
+
+  window.affProdFiltro = function(p){ filtro = p; load(); };
+  load();
+}
+
+function affRenderConfig(el, aff){
+  el.innerHTML = `
+    <div style="max-width:420px">
+      <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:16px">Chave Pix para recebimento</div>
+      <div class="aff-form-group">
+        <label class="aff-label">Tipo de chave</label>
+        <select class="aff-select" id="aff-pix-type">
+          ${['cpf','cnpj','email','phone','random'].map(t => `<option value="${t}"${aff.pix_key_type===t?' selected':''}>${{cpf:'CPF',cnpj:'CNPJ',email:'E-mail',phone:'Telefone',random:'Aleatória'}[t]}</option>`).join('')}
+        </select>
+      </div>
+      <div class="aff-form-group">
+        <label class="aff-label">Chave Pix</label>
+        <input class="aff-input" id="aff-pix-key" type="text" value="${aff.pix_key||''}" placeholder="Digite sua chave Pix">
+      </div>
+      <div class="aff-form-group">
+        <label class="aff-label">Nome de exibição</label>
+        <input class="aff-input" id="aff-display-name" type="text" value="${aff.display_name||''}" placeholder="Seu nome">
+      </div>
+      <div id="aff-config-msg" style="font-size:12px;min-height:16px;margin-bottom:8px"></div>
+      <button class="aff-save-btn" id="aff-save-btn" onclick="affSaveConfig()">Salvar alterações</button>
+    </div>`;
+}
+
+async function affSaveConfig(){
+  const btn = document.getElementById('aff-save-btn');
+  const msg = document.getElementById('aff-config-msg');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  msg.textContent = ''; msg.style.color = '';
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    const res = await fetch(SUPA_URL + '/functions/v1/affiliate-self', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({
+        display_name: document.getElementById('aff-display-name')?.value.trim() || undefined,
+        pix_key:      document.getElementById('aff-pix-key')?.value.trim() || null,
+        pix_key_type: document.getElementById('aff-pix-type')?.value || null,
+      }),
+    });
+    const data = await res.json();
+    if(data.success){
+      // Actualizar currentAffiliate local
+      if(currentAffiliate){
+        currentAffiliate.pix_key      = document.getElementById('aff-pix-key')?.value.trim() || null;
+        currentAffiliate.pix_key_type = document.getElementById('aff-pix-type')?.value || null;
+        currentAffiliate.display_name = document.getElementById('aff-display-name')?.value.trim() || currentAffiliate.display_name;
+      }
+      msg.textContent = '✓ Salvo com sucesso.'; msg.style.color = 'var(--pr)';
+    } else {
+      msg.textContent = data.error || 'Erro ao salvar.'; msg.style.color = 'var(--dg)';
+    }
+  } catch(e) {
+    msg.textContent = 'Erro de conexão.'; msg.style.color = 'var(--dg)';
+  }
+  btn.disabled = false; btn.textContent = 'Salvar alterações';
+}
+
+// ─── AUTO-CADASTRO DE PARCEIRO ────────────────────────────────────────────────
+function renderAffiliateSignup(){
+  const el = document.createElement('div');
+  el.className = 'aff-signup-screen';
+  el.innerHTML = `
+    <button class="pay-back" onclick="showScreen('home')" style="margin-bottom:20px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Voltar
+    </button>
+    <div class="aff-title" style="margin-bottom:4px">Torne-se parceiro</div>
+    <div class="aff-sub" style="margin-bottom:24px">Indique o Backtest Pro e ganhe até 30% de comissão recorrente.</div>
+
+    <div class="aff-form-group">
+      <label class="aff-label">Seu nome de exibição *</label>
+      <input class="aff-input" id="aff-sig-name" type="text" placeholder="Como quer ser identificado">
+    </div>
+    <div class="aff-form-group">
+      <label class="aff-label">Código do cupom *<span style="color:var(--txm);font-weight:400"> (4–20 letras/números, sem espaços)</span></label>
+      <input class="aff-input" id="aff-sig-coupon" type="text" maxlength="20" placeholder="Ex: JOAO10"
+        oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');affCheckCoupon(this.value)"
+        style="font-family:'JetBrains Mono',monospace;letter-spacing:.06em">
+      <div id="aff-sig-coupon-msg" style="font-size:11px;margin-top:4px;min-height:14px"></div>
+    </div>
+    <div class="aff-form-group">
+      <label class="aff-label">Tipo de chave Pix</label>
+      <select class="aff-select" id="aff-sig-pix-type">
+        <option value="">Selecione (opcional)</option>
+        <option value="cpf">CPF</option><option value="cnpj">CNPJ</option>
+        <option value="email">E-mail</option><option value="phone">Telefone</option><option value="random">Aleatória</option>
+      </select>
+    </div>
+    <div class="aff-form-group">
+      <label class="aff-label">Chave Pix</label>
+      <input class="aff-input" id="aff-sig-pix-key" type="text" placeholder="Sua chave Pix (opcional agora)">
+    </div>
+    <div class="aff-terms">
+      <strong>Termo de Parceria</strong><br><br>
+      Ao se cadastrar como parceiro do Backtest Pro, você concorda que:<br>
+      • As comissões seguem a tabela de tiers vigente, podendo ser alterada com aviso prévio.<br>
+      • O pagamento é realizado mensalmente via Pix, após o período de carência de 7 dias por comissão.<br>
+      • O valor mínimo para saque é de R$ 50,00.<br>
+      • Comissões de transações estornadas ou canceladas são revertidas.<br>
+      • O uso indevido do cupom (auto-compra, fraude) implica cancelamento do programa.<br>
+      • A alphaQuant reserva-se o direito de encerrar a parceria a qualquer momento em caso de violação dos termos.
+    </div>
+    <label class="aff-check-row">
+      <input type="checkbox" id="aff-sig-terms">
+      <span style="font-size:12px;color:var(--txs)">Li e aceito os termos do programa de parceiros</span>
+    </label>
+    <div id="aff-sig-msg" style="font-size:12px;margin-bottom:10px;min-height:14px"></div>
+    <button class="aff-save-btn" id="aff-sig-btn" onclick="affSubmitSignup()">Cadastrar como parceiro</button>
+    <div style="font-size:11px;color:var(--txm);text-align:center;margin-top:16px">Acesso imediato. Sem aprovação prévia necessária.</div>`;
+  return el;
+}
+
+let _couponCheckTimer = null;
+function affCheckCoupon(code){
+  const msg = document.getElementById('aff-sig-coupon-msg');
+  if(!msg) return;
+  if(code.length < 4){ msg.textContent = ''; return; }
+  clearTimeout(_couponCheckTimer);
+  msg.style.color = 'var(--txm)'; msg.textContent = 'Verificando...';
+  _couponCheckTimer = setTimeout(async () => {
+    try {
+      const res  = await fetch(SUPA_URL + '/functions/v1/validate-coupon', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json();
+      if(data.valid){ msg.style.color='var(--dg)'; msg.textContent='❌ Código já está em uso. Escolha outro.'; }
+      else { msg.style.color='var(--pr)'; msg.textContent='✓ Código disponível.'; }
+    } catch(e){ msg.textContent = ''; }
+  }, 500);
+}
+
+async function affSubmitSignup(){
+  const btn  = document.getElementById('aff-sig-btn');
+  const msg  = document.getElementById('aff-sig-msg');
+  const name = document.getElementById('aff-sig-name')?.value.trim();
+  const code = document.getElementById('aff-sig-coupon')?.value.trim().toUpperCase();
+  const terms= document.getElementById('aff-sig-terms')?.checked;
+  const pixT = document.getElementById('aff-sig-pix-type')?.value || null;
+  const pixK = document.getElementById('aff-sig-pix-key')?.value.trim() || null;
+
+  msg.style.color = 'var(--dg)'; msg.textContent = '';
+  if(!name){ msg.textContent = 'Informe seu nome de exibição.'; return; }
+  if(!code || code.length < 4){ msg.textContent = 'Código do cupom deve ter 4–20 caracteres.'; return; }
+  if(!terms){ msg.textContent = 'Você precisa aceitar os termos para continuar.'; return; }
+
+  btn.disabled = true; btn.textContent = 'Cadastrando...';
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    const res = await fetch(SUPA_URL + '/functions/v1/affiliate-signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({ display_name: name, coupon_code: code, pix_key: pixK, pix_key_type: pixT || undefined, terms_accepted: true }),
+    });
+    const data = await res.json();
+    if(data.success){
+      currentAffiliate = { id: data.affiliate_id, display_name: name, status: data.status, pix_key: pixK, pix_key_type: pixT, coupon_code: data.coupon_code };
+      updateAvatarUI();
+      const main = document.getElementById('main');
+      main.innerHTML = `
+        <div class="aff-signup-screen" style="text-align:center;padding-top:60px">
+          <div style="font-size:40px;margin-bottom:16px">🎉</div>
+          <div class="aff-title" style="margin-bottom:8px">Bem-vindo ao programa!</div>
+          <div class="aff-sub" style="margin-bottom:24px">Seu cupom é <strong style="color:var(--ac);font-family:'JetBrains Mono',monospace">${data.coupon_code}</strong>.<br>Compartilhe e comece a ganhar.</div>
+          <button class="aff-save-btn" style="max-width:300px;margin:0 auto;display:block" onclick="showScreen('affiliate')">Ir para a Área do Parceiro</button>
+        </div>`;
+    } else {
+      const errMap = { already_affiliate:'Você já é parceiro.', coupon_code_taken:'Esse código já está em uso.', terms_required:'Aceite os termos.', invalid_coupon_code:'Código inválido.' };
+      msg.textContent = errMap[data.error] || data.error || 'Erro ao cadastrar.';
+      btn.disabled = false; btn.textContent = 'Cadastrar como parceiro';
+    }
+  } catch(e){
+    msg.textContent = 'Erro de conexão. Tente novamente.';
+    btn.disabled = false; btn.textContent = 'Cadastrar como parceiro';
+  }
+}
+
 </script>
 </body>
 </html>
