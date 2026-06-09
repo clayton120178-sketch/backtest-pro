@@ -167,6 +167,15 @@ serve(async (req) => {
         await supabase.from("payments")
           .update({ status: mpStatus === "refunded" ? "refunded" : mpStatus === "charged_back" ? "charged_back" : "cancelled", updated_at: new Date().toISOString() })
           .eq("mp_payment_id", String(paymentId));
+
+        // Estornar comissão de afiliado se existir (fire-and-forget)
+        supabase.from("affiliate_commissions")
+          .update({ status: "reversed" })
+          .eq("mp_payment_ref", String(paymentId))
+          .in("status", ["pending", "approved"])
+          .then(({ error: revErr }) => {
+            if (revErr) console.error("[WEBHOOK] Erro ao reverter comissão:", revErr);
+          });
       }
 
       return new Response("ok", { status: 200 });
@@ -256,9 +265,30 @@ serve(async (req) => {
       updated_at:      new Date().toISOString(),
     }, { onConflict: "mp_payment_id" });
 
-    // Disparar email (fire-and-forget)
+    // Comissão de afiliado (fire-and-forget, após subscription criada)
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const couponCode  = typeof meta?.coupon_code === "string" ? meta.coupon_code : null;
+    const grossAmount = Number(meta?.gross_amount ?? payment.transaction_amount ?? 0);
+    const discountAmt = Number(meta?.discount_amount ?? 0);
+    const netAmount   = Number(meta?.net_amount ?? grossAmount - discountAmt);
+    fetch(`${supabaseUrl}/functions/v1/process-affiliate-commission`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${serviceKey}` },
+      body: JSON.stringify({
+        mp_payment_ref:   String(paymentId),
+        user_id,
+        subscription_id:  (newSub as { id: string } | null)?.id ?? null,
+        plan,
+        cycle,
+        gross_amount:     grossAmount,
+        discount_amount:  discountAmt,
+        net_amount:       netAmount,
+        coupon_code:      couponCode,
+      }),
+    }).catch((e) => console.error("[WEBHOOK] Falha ao processar comissão:", e));
+
+    // Disparar email (fire-and-forget);
     fetch(`${supabaseUrl}/functions/v1/send-email`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${serviceKey}` },
