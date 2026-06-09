@@ -1340,18 +1340,8 @@ async function handleGoogleCredential(response){
   }
 }
 
-async function _initGIS(){
-  if(!window.google?.accounts?.id) return;
-  const { raw, hash } = await _generateNonce();
-  _gisNonce = raw;
-  google.accounts.id.initialize({
-    client_id: GOOGLE_CLIENT_ID,
-    callback: handleGoogleCredential,
-    auto_select: false,
-    cancel_on_tap_outside: true,
-    nonce: hash,
-    use_fedcm_for_prompt: true
-  });
+let _gisInitPromise = null;
+function _renderGisButtons(){
   ['gis-btn-login','gis-btn-cadastro'].forEach(id => {
     const el = document.getElementById(id);
     if(el && !el.firstChild){
@@ -1361,6 +1351,31 @@ async function _initGIS(){
       });
     }
   });
+}
+async function _initGIS(){
+  if(!window.google?.accounts?.id) return;
+  // Initialize at most once per page load to avoid nonce races:
+  // if initialize() is called again while a Google credential is in flight,
+  // _gisNonce gets overwritten and the returned JWT fails verification.
+  if(_gisInitPromise){
+    await _gisInitPromise;
+    _renderGisButtons();
+    return;
+  }
+  _gisInitPromise = (async () => {
+    const { raw, hash } = await _generateNonce();
+    _gisNonce = raw;
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleCredential,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+      nonce: hash,
+      use_fedcm_for_prompt: true
+    });
+  })();
+  await _gisInitPromise;
+  _renderGisButtons();
 }
 
 async function loginGoogle(){
