@@ -86,15 +86,37 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Método de pagamento inválido" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
     }
 
-    // ── 3. Preço vem do backend ─────────────────────────────────────────────
-    const amount   = PRICES[plan][cycle];
-    const days     = CYCLE_DAYS[cycle];
-    const MP_TOKEN = Deno.env.get("MP_ACCESS_TOKEN")!;
+    // ── 3. Preço e desconto calculados no backend ───────────────────────────
+    const grossAmount = PRICES[plan][cycle];
+    const days        = CYCLE_DAYS[cycle];
+    const MP_TOKEN    = Deno.env.get("MP_ACCESS_TOKEN")!;
 
     const adminSupabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Validar cupom server-side (nunca confia no valor de desconto do cliente)
+    const couponCodeRaw = sanitizeString(raw.coupon_code, 20);
+    let discountAmount = 0;
+    let validCouponCode: string | null = null;
+
+    if (couponCodeRaw) {
+      const { data: couponRows } = await adminSupabase
+        .rpc("validate_coupon", { p_code: couponCodeRaw });
+      const coupon = couponRows?.[0];
+      if (coupon?.valid) {
+        if (coupon.discount_type === "percent") {
+          discountAmount = Math.round(grossAmount * coupon.discount_value / 100 * 100) / 100;
+        } else if (coupon.discount_type === "fixed") {
+          discountAmount = Math.min(coupon.discount_value, grossAmount);
+        }
+        validCouponCode = couponCodeRaw.toUpperCase().trim();
+      }
+    }
+
+    const netAmount = Math.round((grossAmount - discountAmount) * 100) / 100;
+    const amount    = netAmount;
 
     // ── 4. Validar payer ────────────────────────────────────────────────────
     const payerRaw   = raw.payer as Record<string, unknown> | undefined;
@@ -115,7 +137,7 @@ serve(async (req) => {
         email: payerEmailSafe,
         ...(payerRaw?.identification ? { identification: payerRaw.identification } : {}),
       },
-      metadata: { user_id: user.id, plan, cycle, days },
+      metadata: { user_id: user.id, plan, cycle, days, coupon_code: validCouponCode, gross_amount: grossAmount, discount_amount: discountAmount, net_amount: netAmount },
       notification_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/payment-webhook`,
     };
 

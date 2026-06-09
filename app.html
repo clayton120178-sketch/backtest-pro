@@ -365,6 +365,20 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 .pay-error{font-size:13px;color:#EF4444;background:rgba(239,68,68,.08);border:0.5px solid rgba(239,68,68,.2);border-radius:9px;padding:10px 14px;margin-bottom:14px;display:none;animation:fadeUp .15s var(--out)}
 .pay-error.show{display:block}
 .pay-secure{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;color:var(--txm);margin-top:24px;padding-top:18px;border-top:0.5px solid var(--bd)}
+.coupon-row{display:flex;gap:8px;margin-bottom:12px}
+.coupon-input{flex:1;background:var(--bg2);border:0.5px solid var(--bd);border-radius:9px;padding:10px 14px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--tx);outline:none;letter-spacing:.06em;text-transform:uppercase;transition:border-color .15s}
+.coupon-input::placeholder{text-transform:none;letter-spacing:0;color:var(--txm);font-family:'DM Sans',sans-serif}
+.coupon-input:focus{border-color:var(--bdh)}
+.coupon-input.valid{border-color:var(--pr)}
+.coupon-input.invalid{border-color:var(--dg)}
+.coupon-apply-btn{padding:10px 16px;border-radius:9px;border:0.5px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all .15s}
+.coupon-apply-btn:hover{border-color:var(--bdh);background:var(--bg2)}
+.coupon-apply-btn:disabled{opacity:.5;cursor:not-allowed}
+.coupon-feedback{font-size:12px;margin-bottom:10px;min-height:16px}
+.coupon-feedback.ok{color:var(--pr)}
+.coupon-feedback.err{color:var(--dg)}
+.pay-summary-val-old{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:500;color:var(--txm);text-decoration:line-through;flex-shrink:0}
+.pay-summary-prices{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
 .pay-success{display:flex;flex-direction:column;align-items:center;text-align:center;padding:56px 20px}
 .pay-success-icon{width:64px;height:64px;border-radius:50%;background:rgba(0,187,128,.1);border:0.5px solid rgba(0,187,128,.3);display:flex;align-items:center;justify-content:center;margin-bottom:20px}
 .pay-success h3{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--tx);margin-bottom:8px;letter-spacing:-.02em}
@@ -9571,6 +9585,7 @@ let payMethod = 'pix';
 let mpInstance = null;
 let cardForm = null;
 let mpMounted = false;
+let activeCoupon = null; // { code, discount_type, discount_value, applies_to } | null
 
 // ─── AVATAR ───────────────────────────────────────────────────
 function toggleAvatarMenu() {
@@ -10040,6 +10055,7 @@ function showScreen(name) {
   currentScreen = name;
   if (window.cardPaymentBrickController) { try { window.cardPaymentBrickController.unmount(); } catch(e){} window.cardPaymentBrickController = null; }
   cardForm = null; mpInstance = null; mpMounted = false;
+  activeCoupon = null;
   const main = document.getElementById('main');
   main.innerHTML = '';
   if (name === 'home')    { showHome(); return; }
@@ -10219,13 +10235,23 @@ function renderPayment() {
     </button>
     <div class="pay-title">Finalizar assinatura</div>
     <div class="pay-sub">Complete o pagamento para ativar seu acesso imediatamente.</div>
-    <div class="pay-summary">
+    <div class="pay-summary" id="pay-summary-box">
       <div class="pay-summary-info">
         <div class="pay-summary-plan">${planoAtual.nome} · ${cycleLabel}</div>
         <div class="pay-summary-detail">${CYCLE_DAYS[selectedCycle]} dias de acesso · cobrança única</div>
       </div>
-      <div class="pay-summary-val">R$ ${price.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+      <div class="pay-summary-prices">
+        <div class="pay-summary-val-old" id="pay-price-old" style="display:none"></div>
+        <div class="pay-summary-val" id="pay-price-final">R$ ${price.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+      </div>
     </div>
+    <div class="coupon-row">
+      <input class="coupon-input" id="coupon-input" type="text" maxlength="20" placeholder="Cupom de desconto (opcional)"
+        oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();applyCoupon()}">
+      <button class="coupon-apply-btn" id="coupon-apply-btn" onclick="applyCoupon()">Aplicar</button>
+    </div>
+    <div class="coupon-feedback" id="coupon-feedback"></div>
     <div class="pay-methods" id="pay-methods">
       <button class="pay-method-btn${payMethod==='pix'?' active':''}" onclick="switchPayMethod('pix',this)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
@@ -10254,6 +10280,75 @@ function renderPayment() {
     setTimeout(() => initCardBrick(), 50);
   }
   return el;
+}
+
+async function applyCoupon() {
+  const input = document.getElementById('coupon-input');
+  const btn   = document.getElementById('coupon-apply-btn');
+  const fb    = document.getElementById('coupon-feedback');
+  const code  = (input ? input.value : '').trim().toUpperCase();
+  if (!code) return;
+
+  btn.disabled = true;
+  btn.textContent = '...';
+  fb.className = 'coupon-feedback';
+  fb.textContent = '';
+
+  try {
+    const res  = await fetch(`${SUPA_URL}/functions/v1/validate-coupon`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+
+    if (!data.valid) {
+      activeCoupon = null;
+      input.className = 'coupon-input invalid';
+      fb.className = 'coupon-feedback err';
+      fb.textContent = 'Cupom não encontrado ou inválido.';
+      updatePaySummary();
+      btn.disabled = false; btn.textContent = 'Aplicar';
+      return;
+    }
+
+    activeCoupon = { code, discount_type: data.discount_type, discount_value: data.discount_value, applies_to: data.applies_to };
+    input.className = 'coupon-input valid';
+    input.disabled  = true;
+    btn.textContent = '✓';
+    fb.className = 'coupon-feedback ok';
+    const gross = PLANOS[selectedPlan].precos[selectedCycle].total;
+    const disc  = computeDiscount(gross);
+    fb.textContent = `Desconto de R$ ${disc.toLocaleString('pt-BR',{minimumFractionDigits:2})} aplicado.`;
+    updatePaySummary();
+  } catch(e) {
+    fb.className = 'coupon-feedback err';
+    fb.textContent = 'Erro ao validar o cupom. Tente novamente.';
+    btn.disabled = false; btn.textContent = 'Aplicar';
+  }
+}
+
+function computeDiscount(gross) {
+  if (!activeCoupon) return 0;
+  if (activeCoupon.discount_type === 'percent') return Math.round(gross * activeCoupon.discount_value / 100 * 100) / 100;
+  if (activeCoupon.discount_type === 'fixed')   return Math.min(activeCoupon.discount_value, gross);
+  return 0;
+}
+
+function updatePaySummary() {
+  const gross     = PLANOS[selectedPlan].precos[selectedCycle].total;
+  const disc      = computeDiscount(gross);
+  const net       = Math.round((gross - disc) * 100) / 100;
+  const priceEl   = document.getElementById('pay-price-final');
+  const oldEl     = document.getElementById('pay-price-old');
+  if (!priceEl) return;
+  if (disc > 0) {
+    priceEl.textContent = 'R$ ' + net.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    if (oldEl) { oldEl.textContent = 'R$ ' + gross.toLocaleString('pt-BR', { minimumFractionDigits: 2 }); oldEl.style.display = ''; }
+  } else {
+    priceEl.textContent = 'R$ ' + gross.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    if (oldEl) oldEl.style.display = 'none';
+  }
 }
 
 function switchPayMethod(method, btnEl) {
@@ -10308,7 +10403,9 @@ async function renderCardBrick() {
   if (!container) return;
   if (mpMounted) return;
   mpMounted = true;
-  const price = PLANOS[selectedPlan].precos[selectedCycle].total;
+  const _gross = PLANOS[selectedPlan].precos[selectedCycle].total;
+  const _disc  = computeDiscount(_gross);
+  const price  = Math.round((_gross - _disc) * 100) / 100;
 
   const brickTimeout = setTimeout(() => {
     if (!document.getElementById('cardPaymentBrick_container')) return;
@@ -10356,19 +10453,22 @@ async function renderCardBrick() {
             const res = await fetch(`${SUPA_URL}/functions/v1/create-payment`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-              body: JSON.stringify({
-                plan: selectedPlan,
-                cycle: selectedCycle,
-                payment_type: payMethod,
-                payment_method_id: formData.payment_method_id,
-                token: formData.token,
-                issuer_id: formData.issuer_id || null,
-                installments: formData.installments || 1,
-                payer: {
-                  email: currentUser?.email || '',
-                  identification: formData.payer?.identification || { type: 'CPF', number: '' },
-                },
-              }),
+              body: JSON.stringify((function(){
+                const gross = PLANOS[selectedPlan].precos[selectedCycle].total;
+                const disc  = computeDiscount(gross);
+                const net   = Math.round((gross - disc) * 100) / 100;
+                return {
+                  plan: selectedPlan, cycle: selectedCycle,
+                  payment_type: payMethod,
+                  payment_method_id: formData.payment_method_id,
+                  token: formData.token,
+                  issuer_id: formData.issuer_id || null,
+                  installments: formData.installments || 1,
+                  payer: { email: currentUser?.email || '', identification: formData.payer?.identification || { type: 'CPF', number: '' } },
+                  coupon_code: activeCoupon ? activeCoupon.code : null,
+                  gross_amount: gross, discount_amount: disc, net_amount: net,
+                };
+              })()),
             });
             const data = await res.json();
             if (!res.ok || data.error) { showPayError(data.error || 'Erro no pagamento.'); return; }
@@ -10411,7 +10511,14 @@ async function submitPix() {
     const res = await fetch(`${SUPA_URL}/functions/v1/create-payment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-      body: JSON.stringify({ plan: selectedPlan, cycle: selectedCycle, payment_method_id: 'pix', payment_type: 'pix', payer: { email: currentUser.email } }),
+      body: JSON.stringify((function(){
+        const gross = PLANOS[selectedPlan].precos[selectedCycle].total;
+        const disc  = computeDiscount(gross);
+        const net   = Math.round((gross - disc) * 100) / 100;
+        return { plan: selectedPlan, cycle: selectedCycle, payment_method_id: 'pix', payment_type: 'pix', payer: { email: currentUser.email },
+          coupon_code: activeCoupon ? activeCoupon.code : null,
+          gross_amount: gross, discount_amount: disc, net_amount: net };
+      })()),
     });
     const data = await res.json();
     if (!res.ok || data.error) { showPayError(data.error||'Erro ao gerar Pix.'); btn.disabled=false; btn.textContent='Gerar QR Code Pix'; return; }
