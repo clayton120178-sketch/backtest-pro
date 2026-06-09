@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Programa de Afiliados — Backtest Pro</title>
+<meta name="description" content="Indique o Backtest Pro e ganhe até 30% de comissão recorrente em cada assinatura. Cadastre-se grátis e comece a ganhar.">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800;9..40,900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#0A0A0F;--bg1:#12121A;--bg2:#1A1A28;--bg3:#1E1E2E;
+  --bd:#2A2A3C;--bdh:#3A3A52;
+  --tx:#E8E8ED;--txs:#8888A0;--txm:#44445A;
+  --ac:#00D4AA;--acd:rgba(0,212,170,.08);--acd2:rgba(0,212,170,.18);
+  --in:#6366F1;
+  --dg:#EF4444;--wn:#F59E0B;--pr:#10B981;
+}
+html{scroll-behavior:smooth}
+body{min-height:100vh;background:var(--bg0);color:var(--tx);font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg0)}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
+a{color:var(--ac);text-decoration:none;transition:opacity .15s}a:hover{opacity:.85}
+.container{max-width:1080px;margin:0 auto;padding:0 24px}
+.mono{font-family:'JetBrains Mono',monospace}
+
+/* NAV — idêntico ao index.html */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88);backdrop-filter:blur(16px);border-bottom:1px solid rgba(42,42,60,.5)}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;height:60px;max-width:1080px;margin:0 auto;padding:0 24px}
+.logo{display:flex;align-items:center;gap:10px}
+.nav-links{display:flex;align-items:center;gap:28px}
+.nav-links a{color:var(--txs);font-size:14px;font-weight:500;transition:color .15s}
+.nav-links a:hover{color:var(--tx);opacity:1}
+.nav-cta{background:var(--ac);color:var(--bg0)!important;padding:8px 18px;border-radius:8px;font-weight:700!important;font-size:13px!important}
+.nav-cta:hover{background:#00ecc0;opacity:1!important}
+.nav-login{color:var(--txs)!important;padding:7px 16px;border-radius:8px;font-weight:600!important;font-size:13px!important;border:1px solid var(--bd)}
+.nav-login:hover{border-color:var(--bdh);color:var(--tx)!important;background:var(--bg2);opacity:1!important}
+@media(max-width:700px){.nav-links a:not(.nav-cta):not(.nav-login){display:none}}
+
+/* FOOTER — idêntico ao index.html */
+footer{border-top:1px solid var(--bd);padding:36px 0}
+.footer-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.footer-left p{font-size:12px;color:var(--txm);margin-top:6px}
+.footer-tagline{font-size:13px;color:var(--txm)}
+.footer-tagline a{color:var(--ac);font-weight:600}
+
+/* BADGE PILL */
+.pill{display:inline-flex;align-items:center;gap:6px;background:var(--acd);border:1px solid rgba(0,212,170,.25);border-radius:99px;padding:5px 14px;font-size:12px;color:var(--ac);font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.pill-dot{width:6px;height:6px;border-radius:50%;background:var(--ac);display:inline-block}
+
+/* HERO */
+.aff-hero{padding:130px 24px 80px;text-align:center;position:relative;overflow:hidden}
+.hero-glow{position:absolute;top:10%;left:50%;transform:translateX(-50%);width:700px;height:500px;background:radial-gradient(circle,rgba(0,212,170,.05) 0%,transparent 65%);pointer-events:none}
+.aff-hero h1{font-size:clamp(30px,5vw,50px);font-weight:800;line-height:1.1;letter-spacing:-.8px;margin:20px 0 18px}
+.grad-text{background:linear-gradient(135deg,var(--ac),var(--in));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.aff-hero p{font-size:17px;color:var(--txs);max-width:520px;margin:0 auto 36px;line-height:1.65}
+.btn-primary{display:inline-block;background:var(--ac);color:var(--bg0);border:none;border-radius:10px;padding:14px 36px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:.02em;box-shadow:0 0 28px rgba(0,212,170,.25);transition:all .2s;font-family:'DM Sans',sans-serif}
+.btn-primary:hover{background:#00ecc0;transform:translateY(-1px);box-shadow:0 0 40px rgba(0,212,170,.35);opacity:1}
+
+/* STATS STRIP */
+.stats-strip{display:flex;justify-content:center;border-top:1px solid var(--bd);border-bottom:1px solid var(--bd);background:var(--bg1);flex-wrap:wrap}
+.stat-item{text-align:center;padding:22px 40px;border-right:1px solid var(--bd)}
+.stat-item:last-child{border-right:none}
+.stat-val{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--ac)}
+.stat-lbl{font-size:13px;color:var(--txs);margin-top:4px}
+@media(max-width:600px){.stat-item{border-right:none;border-bottom:1px solid var(--bd);padding:18px 24px}.stat-item:last-child{border-bottom:none}}
+
+/* TIER CARDS */
+.tiers-section{padding:72px 24px}
+.tiers-section h2{text-align:center;font-size:28px;font-weight:800;letter-spacing:-.3px;margin-bottom:10px}
+.tiers-section > .container > p{text-align:center;color:var(--txs);font-size:15px;margin-bottom:36px}
+.tiers-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.tier-card{background:var(--bg1);border:1.5px solid var(--bd);border-radius:14px;padding:28px 28px 24px;position:relative;transition:transform .2s,box-shadow .2s}
+.tier-card:hover{transform:translateY(-2px)}
+.tier-card.active-tier{box-shadow:0 0 32px var(--tier-glow)}
+.tier-badge{position:absolute;top:-11px;font-size:10px;font-weight:800;padding:3px 10px;border-radius:6px;letter-spacing:.08em}
+.tier-badge.left{left:20px;background:var(--tier-color);color:var(--bg0)}
+.tier-badge.right-amber{right:20px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.35);color:var(--wn)}
+.tier-badge.right-amber-solid{right:20px;background:var(--wn);color:var(--bg0)}
+.tier-label{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.tier-pct{font-family:'JetBrains Mono',monospace;font-size:42px;font-weight:700;line-height:1;margin-bottom:2px}
+.tier-sub{font-size:13px;color:var(--txs);margin-bottom:22px}
+.tier-feats{display:flex;flex-direction:column;gap:8px}
+.tier-feat{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--txs)}
+.tier-feat-check{font-size:12px}
+
+/* SIMULADOR */
+.sim-section{background:var(--bg1);border-top:1px solid var(--bd);border-bottom:1px solid var(--bd);padding:72px 24px}
+.sim-section h2{text-align:center;font-size:28px;font-weight:800;letter-spacing:-.3px;margin-bottom:10px}
+.sim-section > .sim-wrap > p{text-align:center;color:var(--txs);font-size:15px;margin-bottom:44px}
+.sim-wrap{max-width:700px;margin:0 auto}
+.plan-tabs{display:flex;justify-content:center;gap:8px;margin-bottom:48px}
+.plan-tab{background:var(--bg2);border:1px solid var(--bd);color:var(--txs);border-radius:8px;padding:9px 22px;font-size:14px;font-weight:600;cursor:pointer;transition:all .18s;font-family:'DM Sans',sans-serif}
+.plan-tab.active{background:var(--acd);border-color:rgba(0,212,170,.4);color:var(--ac)}
+.plan-tab:hover:not(.active){border-color:var(--bdh);color:var(--tx)}
+.slider-card{background:var(--bg2);border:1px solid var(--bd);border-radius:16px;padding:36px 36px 28px}
+.slider-top{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px}
+.slider-clients-lbl{font-size:12px;color:var(--txs);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.slider-clients-val{font-family:'JetBrains Mono',monospace;font-size:46px;font-weight:700;line-height:1;transition:color .3s}
+.slider-tier-lbl{font-size:12px;color:var(--txs);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;text-align:right}
+.slider-tier-val{display:flex;align-items:center;gap:6px;justify-content:flex-end}
+.slider-tier-dot{width:8px;height:8px;border-radius:50%;display:inline-block;transition:background .3s}
+.slider-tier-name{font-weight:700;font-size:16px;transition:color .3s}
+.slider-tier-pct{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;transition:color .3s}
+
+/* Custom range slider */
+input[type=range].aff-range{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:99px;outline:none;cursor:pointer;border:none;background:var(--bd)}
+input[type=range].aff-range::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:var(--bg0);border:2.5px solid var(--ac);box-shadow:0 0 0 5px rgba(0,212,170,.18),0 2px 8px rgba(0,0,0,.5);cursor:pointer;transition:box-shadow .2s,border-color .3s}
+input[type=range].aff-range::-webkit-slider-thumb:hover{box-shadow:0 0 0 8px rgba(0,212,170,.25),0 2px 8px rgba(0,0,0,.5)}
+input[type=range].aff-range::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:var(--bg0);border:2.5px solid var(--ac);box-shadow:0 0 0 5px rgba(0,212,170,.18);cursor:pointer}
+
+.slider-marks{display:flex;justify-content:space-between;font-size:12px;color:var(--txs);margin-top:10px}
+.slider-tiers-row{display:flex;justify-content:space-between;margin-top:8px;padding:0 2px}
+.slider-tier-hint{font-size:11px;font-weight:600;opacity:.4;transition:opacity .3s}
+.slider-tier-hint.active-hint{opacity:1}
+.result-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}
+.result-card{background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:24px 24px 20px}
+.result-card.highlight{background:rgba(0,212,170,.04);border-color:rgba(0,212,170,.2);box-shadow:0 0 32px rgba(0,212,170,.06)}
+.result-lbl{font-size:12px;color:var(--txs);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px}
+.result-val{font-family:'JetBrains Mono',monospace;font-size:34px;font-weight:700;color:var(--ac)}
+.result-sub{font-size:12px;color:var(--txs);margin-top:6px}
+.next-tier-bar{margin-top:14px;background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:12px 18px;font-size:14px;color:var(--txs);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.next-tier-bar strong{color:var(--tx)}
+.next-tier-bar .gain{color:var(--ac);font-weight:700}
+@media(max-width:500px){.result-cards{grid-template-columns:1fr}.slider-card{padding:24px 20px 20px}.slider-top{flex-direction:column;align-items:flex-start;gap:14px}.slider-tier-val{justify-content:flex-start}}
+
+/* PROJECAO POR VOLUME */
+.proj-section{padding:80px 24px}
+.proj-wrap{max-width:780px;margin:0 auto}
+.proj-header{text-align:center;margin-bottom:52px}
+.proj-header h2{font-size:clamp(22px,4vw,36px);font-weight:800;line-height:1.2;margin-bottom:16px;letter-spacing:-.3px}
+.proj-header p{color:var(--txs);font-size:15px;max-width:500px;margin:0 auto;line-height:1.65}
+.proj-table{border-radius:14px;overflow:hidden;border:1px solid var(--bd)}
+.proj-thead{display:grid;grid-template-columns:1fr 1.4fr 1fr 1fr;background:var(--bg2);border-bottom:1px solid var(--bd)}
+.proj-th{padding:13px 20px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--txs);text-transform:uppercase}
+.proj-th.right{text-align:right}
+.proj-row{display:grid;grid-template-columns:1fr 1.4fr 1fr 1fr;border-bottom:1px solid var(--bd);transition:background .15s;border-left:3px solid transparent}
+.proj-row:last-child{border-bottom:none}
+.proj-row:hover{background:rgba(255,255,255,0.02)}
+.proj-row.top-row{border-left-color:var(--wn)}
+.proj-td{padding:18px 20px;font-size:15px}
+.proj-td.right{text-align:right}
+.proj-td.mono-val{font-family:'JetBrains Mono',monospace;font-weight:700}
+.proj-td.annual{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700}
+.proj-tier-inner{display:flex;align-items:center;gap:7px}
+.proj-tier-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+.proj-tier-name{font-weight:700;font-size:14px}
+.proj-tier-sub{color:var(--txs);font-size:13px}
+.proj-max-badge{font-size:10px;background:rgba(245,158,11,.15);color:var(--wn);padding:2px 8px;border-radius:4px;font-weight:700;letter-spacing:.05em;margin-left:6px}
+.proj-note{text-align:center;color:var(--txm);font-size:12px;margin-top:14px}
+
+/* COMO FUNCIONA */
+.how-section{background:var(--bg1);border-top:1px solid var(--bd);border-bottom:1px solid var(--bd);padding:72px 24px}
+.how-section h2{text-align:center;font-size:28px;font-weight:800;letter-spacing:-.3px;margin-bottom:48px}
+.how-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.how-item{text-align:center;padding:0 28px}
+.how-item+.how-item{border-left:1px solid var(--bd)}
+.how-step{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:rgba(0,212,170,.18);margin-bottom:12px}
+.how-title{font-size:16px;font-weight:700;margin-bottom:10px}
+.how-desc{font-size:14px;color:var(--txs);line-height:1.65}
+@media(max-width:600px){.how-item{border-left:none;border-bottom:1px solid var(--bd);padding:24px 0}.how-item:last-child{border-bottom:none}}
+
+/* FAQ */
+.faq-section{padding:72px 24px}
+.faq-wrap{max-width:680px;margin:0 auto}
+.faq-section h2{text-align:center;font-size:28px;font-weight:800;letter-spacing:-.3px;margin-bottom:36px}
+details{margin-bottom:6px;background:var(--bg1);border-radius:10px;border:1px solid var(--bd)}
+details[open]{border-color:var(--bdh)}
+summary{padding:16px 20px;cursor:pointer;font-weight:600;font-size:15px;display:flex;justify-content:space-between;align-items:center;gap:12px;list-style:none;-webkit-user-select:none;user-select:none}
+summary::-webkit-details-marker{display:none}
+.faq-icon{color:var(--txs);font-size:20px;flex-shrink:0;line-height:1;transition:transform .2s;display:inline-block}
+details[open] .faq-icon{transform:rotate(45deg)}
+.faq-body{padding:0 20px 18px;color:var(--txs);font-size:14px;line-height:1.7}
+
+/* CTA FINAL */
+.cta-section{background:var(--bg1);border-top:1px solid var(--bd);text-align:center;padding:72px 24px 88px}
+.cta-section h2{font-size:clamp(22px,4vw,32px);font-weight:800;margin-bottom:16px;letter-spacing:-.3px}
+.cta-section p{color:var(--txs);font-size:15px;max-width:440px;margin:0 auto 36px;line-height:1.65}
+</style>
+</head>
+<body>
+
+<!-- NAV — idêntico ao index.html -->
+<nav id="main-nav">
+  <div class="nav-inner">
+    <a href="/index.html" class="logo"><img src="/logo-dark.svg" alt="BacktestPro" style="height:32px;width:auto;display:block"></a>
+    <div class="nav-links">
+      <a href="/index.html#como-funciona">Como funciona</a>
+      <a href="/index.html#pricing">Planos</a>
+      <a href="/index.html#faq">FAQ</a>
+      <a href="/app.html" class="nav-login">Entrar</a>
+      <a href="/app.html" class="nav-cta">Começar grátis</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="aff-hero">
+  <div class="hero-glow"></div>
+  <div class="container" style="position:relative;z-index:1">
+    <div class="pill"><span class="pill-dot"></span>Programa de Afiliados</div>
+    <h1>Indique o Backtest Pro.<br><span class="grad-text">Ganhe comissão recorrente.</span></h1>
+    <p>Receba até 30% em cada assinatura indicada — na ativação e em toda renovação, enquanto o cliente permanecer ativo.</p>
+    <button class="btn-primary" onclick="scrollToSignup()">Quero ser parceiro →</button>
+  </div>
+</section>
+
+<!-- STATS STRIP -->
+<div class="stats-strip">
+  <div class="stat-item"><div class="stat-val">Até 30%</div><div class="stat-lbl">Comissão recorrente</div></div>
+  <div class="stat-item"><div class="stat-val">Vitalício</div><div class="stat-lbl">Vínculo com o indicado</div></div>
+  <div class="stat-item"><div class="stat-val">R$ 0</div><div class="stat-lbl">Custo de entrada</div></div>
+</div>
+
+<!-- TIER CARDS -->
+<section class="tiers-section">
+  <div class="container">
+    <h2>Três faixas. Uma escada.</h2>
+    <p>Quanto mais clientes ativos você tiver, maior sua comissão.</p>
+    <div class="tiers-grid" id="tier-cards"></div>
+  </div>
+</section>
+
+<!-- SIMULADOR -->
+<section class="sim-section" id="simulador">
+  <div class="sim-wrap">
+    <h2>Quanto você pode ganhar?</h2>
+    <p>Ajuste o número de clientes ativos e escolha o plano para ver sua projeção.</p>
+
+    <div class="plan-tabs" id="plan-tabs"></div>
+
+    <div class="slider-card">
+      <div class="slider-top">
+        <div>
+          <div class="slider-clients-lbl">Clientes ativos</div>
+          <div class="slider-clients-val" id="sim-clients-val">25</div>
+        </div>
+        <div>
+          <div class="slider-tier-lbl">Seu tier</div>
+          <div class="slider-tier-val">
+            <span class="slider-tier-dot" id="sim-tier-dot"></span>
+            <span class="slider-tier-name" id="sim-tier-name"></span>
+            <span class="slider-tier-pct" id="sim-tier-pct"></span>
+          </div>
+        </div>
+      </div>
+
+      <input type="range" class="aff-range" id="clients-slider" min="1" max="200" value="25">
+      <div class="slider-marks"><span>1</span><span>50</span><span>100</span><span>150</span><span>200</span></div>
+      <div class="slider-tiers-row" id="slider-tier-hints"></div>
+    </div>
+
+    <div class="result-cards">
+      <div class="result-card">
+        <div class="result-lbl">Estimativa mensal</div>
+        <div class="result-val" id="sim-monthly"></div>
+        <div class="result-sub" id="sim-monthly-sub"></div>
+      </div>
+      <div class="result-card highlight">
+        <div class="result-lbl">Projeção anual</div>
+        <div class="result-val" id="sim-yearly"></div>
+        <div class="result-sub">12 meses de renovações recorrentes</div>
+      </div>
+    </div>
+
+    <div class="next-tier-bar" id="next-tier-bar" style="display:none"></div>
+  </div>
+</section>
+
+<!-- PROJEÇÃO POR VOLUME -->
+<section class="proj-section">
+  <div class="proj-wrap">
+    <div class="proj-header">
+      <div class="pill" style="margin-bottom:20px"><span class="pill-dot"></span>Receita recorrente</div>
+      <h2>Aumente sua receita enquanto os<br><span class="grad-text">traders melhoram suas estratégias.</span></h2>
+      <p>Cada renovação do seu indicado gera comissão automática.<br>Quanto maior sua base ativa, maior o seu percentual.</p>
+    </div>
+    <div class="proj-table">
+      <div class="proj-thead">
+        <div class="proj-th">Clientes ativos</div>
+        <div class="proj-th">Tier</div>
+        <div class="proj-th right">Mensal</div>
+        <div class="proj-th right">Anual</div>
+      </div>
+      <div id="proj-body"></div>
+    </div>
+    <p class="proj-note" id="proj-note"></p>
+  </div>
+</section>
+
+<!-- COMO FUNCIONA -->
+<section class="how-section">
+  <div class="container">
+    <h2>Como funciona</h2>
+    <div class="how-grid">
+      <div class="how-item"><div class="how-step">01</div><div class="how-title">Cadastre-se</div><div class="how-desc">Crie sua conta de parceiro em 2 minutos e receba seu cupom exclusivo.</div></div>
+      <div class="how-item"><div class="how-step">02</div><div class="how-title">Divulgue</div><div class="how-desc">Compartilhe seu cupom. O cliente ganha 10% de desconto em toda compra.</div></div>
+      <div class="how-item"><div class="how-step">03</div><div class="how-title">Ganhe</div><div class="how-desc">Cada ativação e renovação gera comissão. Pix mensal automático.</div></div>
+      <div class="how-item"><div class="how-step">04</div><div class="how-title">Escale</div><div class="how-desc">Mais clientes ativos = tier maior. Sua comissão sobe de 20% até 30%.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq-section">
+  <div class="faq-wrap">
+    <h2>Perguntas frequentes</h2>
+    <details><summary>Quanto custa participar?<span class="faq-icon">+</span></summary><div class="faq-body">Zero. Não há taxa de adesão, custo mensal ou investimento. Você se cadastra, recebe seu cupom e começa a indicar.</div></details>
+    <details><summary>Como a comissão é calculada?<span class="faq-icon">+</span></summary><div class="faq-body">É um percentual sobre o valor que o cliente efetivamente paga (preço do plano menos o desconto de 10%). Você ganha na ativação e em toda renovação enquanto o cliente estiver ativo.</div></details>
+    <details><summary>O que determina meu tier?<span class="faq-icon">+</span></summary><div class="faq-body">O número de clientes com assinatura ativa indicados por você. Mais clientes ativos = tier maior = comissão mais alta. A faixa é reavaliada em cada nova venda.</div></details>
+    <details><summary>Quando recebo?<span class="faq-icon">+</span></summary><div class="faq-body">Pagamento mensal via Pix, no dia 7 do mês seguinte, para saldos acima de R$ 50. Sem burocracia.</div></details>
+    <details><summary>O cliente recebe desconto sempre?<span class="faq-icon">+</span></summary><div class="faq-body">Sim. O cupom do afiliado dá 10% de desconto na ativação e em qualquer renovação. É o incentivo para o cliente usar seu cupom em toda compra.</div></details>
+    <details><summary>E se o cliente pedir reembolso?<span class="faq-icon">+</span></summary><div class="faq-body">A comissão daquela venda é cancelada. Há uma carência de 7 dias após cada compra — alinhada ao CDC — para proteger contra isso.</div></details>
+    <details><summary>Preciso ser cliente do Backtest Pro?<span class="faq-icon">+</span></summary><div class="faq-body">Não é obrigatório, mas afiliados que usam o produto convertem mais porque falam com propriedade e credibilidade.</div></details>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<section class="cta-section" id="cadastro">
+  <h2>Comece a ganhar indicando traders<br>para a plataforma que prova o que funciona.</h2>
+  <p>Cadastro gratuito. Sem metas obrigatórias. Sem prazo de validade.</p>
+  <button class="btn-primary" onclick="scrollToSignup()">Quero ser parceiro →</button>
+</section>
+
+<!-- FOOTER — idêntico ao index.html -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <a href="/index.html" class="logo"><img src="/logo-dark.svg" alt="BacktestPro" style="height:26px;width:auto;display:block"></a>
+        <p>© 2026 alphaQuant. Todos os direitos reservados.</p>
+      </div>
+      <div class="footer-tagline">Se o assunto for o seu dinheiro, não chute. <a href="/app.html">Teste.</a></div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── DADOS ──
+const TIERS = [
+  { name:'Afiliado',   min:1,  max:19,  pct:20, color:'#8888A0', glow:'rgba(136,136,160,.15)' },
+  { name:'Parceiro',   min:20, max:49,  pct:25, color:'#00D4AA', glow:'rgba(0,212,170,.15)' },
+  { name:'Embaixador', min:50, max:999, pct:30, color:'#F59E0B', glow:'rgba(245,158,11,.18)' },
+];
+const PLANS = [
+  { key:'starter',  label:'Starter',  monthly:109.9 },
+  { key:'advanced', label:'Advanced', monthly:139.9 },
+  { key:'elite',    label:'Elite',    monthly:159.9 },
+];
+const DISCOUNT = 0.10;
+
+function getTier(n) {
+  for (let i = TIERS.length-1; i >= 0; i--) {
+    if (n >= TIERS[i].min) return TIERS[i];
+  }
+  return TIERS[0];
+}
+function fmt(v) {
+  return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0,maximumFractionDigits:0});
+}
+function fmtFull(v) {
+  return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2});
+}
+function netPrice(p) { return p*(1-DISCOUNT); }
+function commUnit(p, tier) { return netPrice(p)*(tier.pct/100); }
+
+// ── ESTADO ──
+let currentClients = 25;
+let currentPlanIdx = 1;
+
+// ── TIER CARDS ──
+function renderTierCards() {
+  const activeTier = getTier(currentClients);
+  const html = TIERS.map(t => {
+    const isActive = t.name === activeTier.name;
+    const isTop    = t.name === 'Embaixador';
+    const range    = t.max === 999 ? `${t.min}+ clientes ativos` : `${t.min}–${t.max} clientes ativos`;
+    let badges = '';
+    if (isActive && t.name !== 'Parceiro') {
+      badges += `<span class="tier-badge left" style="background:${t.color};color:#0A0A0F">SEU TIER</span>`;
+    }
+    if (isTop && !isActive) {
+      badges += `<span class="tier-badge right-amber">MAIOR COMISSÃO</span>`;
+    }
+    if (isTop && isActive) {
+      badges += `<span class="tier-badge right-amber-solid">MAIOR COMISSÃO</span>`;
+    }
+    return `
+      <div class="tier-card ${isActive?'active-tier':''}" style="
+        --tier-color:${t.color};--tier-glow:${t.glow};
+        ${isActive ? `background:rgba(${t.name==='Embaixador'?'245,158,11':t.name==='Parceiro'?'0,212,170':'136,136,160'},.06);border-color:${t.color}60` : ''}
+      ">
+        ${badges}
+        <div class="tier-label" style="color:${t.color}">${t.name}</div>
+        <div class="tier-pct" style="color:${t.color}">${t.pct}%</div>
+        <div class="tier-sub">comissão recorrente</div>
+        <div class="tier-feats">
+          <div class="tier-feat"><span class="tier-feat-check" style="color:${t.color}">✓</span>${range}</div>
+          <div class="tier-feat"><span class="tier-feat-check" style="color:${t.color}">✓</span>10% desconto p/ indicado</div>
+          <div class="tier-feat"><span class="tier-feat-check" style="color:${t.color}">✓</span>Pix mensal automático</div>
+          <div class="tier-feat"><span class="tier-feat-check" style="color:${t.color}">✓</span>Dashboard completo</div>
+        </div>
+      </div>`;
+  }).join('');
+  document.getElementById('tier-cards').innerHTML = html;
+}
+
+// ── PLAN TABS ──
+function renderPlanTabs() {
+  document.getElementById('plan-tabs').innerHTML = PLANS.map((p,i) =>
+    `<button class="plan-tab ${i===currentPlanIdx?'active':''}" onclick="setPlan(${i})">${p.label}</button>`
+  ).join('');
+}
+function setPlan(i) { currentPlanIdx = i; renderPlanTabs(); updateSim(); renderProjTable(); }
+
+// ── SLIDER / SIMULADOR ──
+function updateSliderTrack() {
+  const slider = document.getElementById('clients-slider');
+  const pct = ((currentClients-1)/199)*100;
+  const tier = getTier(currentClients);
+  slider.style.background = `linear-gradient(to right,${tier.color} ${pct}%,var(--bd) ${pct}%)`;
+  slider.style.setProperty('--thumb-color', tier.color);
+  // update thumb color via inline style on pseudo — workaround via CSS var on parent
+  slider.parentElement.style.setProperty('--tc', tier.color);
+}
+
+function updateSim() {
+  const tier   = getTier(currentClients);
+  const plan   = PLANS[currentPlanIdx];
+  const monthly = commUnit(plan.monthly, tier) * currentClients;
+  const yearly  = monthly * 12;
+
+  // grande número de clientes
+  const clientsEl = document.getElementById('sim-clients-val');
+  clientsEl.textContent = currentClients;
+  clientsEl.style.color = tier.color;
+
+  // tier info
+  document.getElementById('sim-tier-dot').style.background  = tier.color;
+  document.getElementById('sim-tier-name').textContent       = tier.name;
+  document.getElementById('sim-tier-name').style.color       = tier.color;
+  document.getElementById('sim-tier-pct').textContent        = `(${tier.pct}%)`;
+  document.getElementById('sim-tier-pct').style.color        = tier.color;
+
+  // thumb color: apply via CSS custom property in :root then read in CSS
+  document.documentElement.style.setProperty('--aff-thumb', tier.color);
+  document.documentElement.style.setProperty('--aff-thumb-glow', tier.glow);
+
+  // resultados
+  document.getElementById('sim-monthly').textContent     = fmt(monthly);
+  document.getElementById('sim-monthly-sub').textContent = `${currentClients} × ${fmtFull(commUnit(plan.monthly,tier))}/cliente`;
+  document.getElementById('sim-yearly').textContent      = fmt(yearly);
+
+  // tier hints
+  const hintsEl = document.getElementById('slider-tier-hints');
+  hintsEl.innerHTML = TIERS.map(t =>
+    `<span class="slider-tier-hint ${t.name===tier.name?'active-hint':''}" style="color:${t.color}">${t.min}+ → ${t.pct}%</span>`
+  ).join('');
+
+  // próximo tier
+  const nextTier = TIERS.find(t => t.min > currentClients);
+  const bar      = document.getElementById('next-tier-bar');
+  if (nextTier) {
+    const gain = currentClients * netPrice(plan.monthly) * ((nextTier.pct - tier.pct)/100);
+    bar.style.display = 'flex';
+    bar.innerHTML = `<span style="color:${nextTier.color}">↑</span> Faltam <strong style="margin:0 3px">${nextTier.min - currentClients} clientes</strong> para o tier <strong style="color:${nextTier.color};margin:0 3px">${nextTier.name} (${nextTier.pct}%)</strong> — ganho adicional de <span class="gain">${fmt(gain)}/mês</span>`;
+  } else {
+    bar.style.display = 'none';
+  }
+
+  updateSliderTrack();
+  renderTierCards();
+}
+
+// ── TABELA DE PROJEÇÃO ──
+function renderProjTable() {
+  const plan = PLANS[currentPlanIdx];
+  const rows = [10,20,50,100,200].map((n,idx) => {
+    const t   = getTier(n);
+    const m   = netPrice(plan.monthly) * t.pct/100 * n;
+    const top = t.name === 'Embaixador';
+    return `
+      <div class="proj-row ${top?'top-row':''}" style="background:${top?'rgba(245,158,11,.04)':idx%2===0?'var(--bg0)':'var(--bg1)'}">
+        <div class="proj-td">
+          <span class="mono" style="font-weight:700;font-size:17px">${n}</span>
+          ${top?'<span class="proj-max-badge">MAX</span>':''}
+        </div>
+        <div class="proj-td">
+          <div class="proj-tier-inner">
+            <span class="proj-tier-dot" style="background:${t.color}"></span>
+            <span class="proj-tier-name" style="color:${t.color}">${t.name}</span>
+            <span class="proj-tier-sub">(${t.pct}%)</span>
+          </div>
+        </div>
+        <div class="proj-td right mono-val">${fmt(m)}</div>
+        <div class="proj-td right annual" style="color:${top?'var(--wn)':'var(--ac)'}">${fmt(m*12)}</div>
+      </div>`;
+  }).join('');
+  document.getElementById('proj-body').innerHTML = rows;
+  document.getElementById('proj-note').textContent =
+    `Projeção baseada no plano ${plan.label} Mensal · Valores reais dependem do mix de planos e renovações`;
+}
+
+// ── SLIDER THUMB COLOR (workaround CSS pseudo) ──
+// Injetamos uma <style> dinâmica para colorir o thumb via CSS var
+const thumbStyle = document.createElement('style');
+document.head.appendChild(thumbStyle);
+function updateThumbStyle(color, glow) {
+  thumbStyle.textContent = `
+    input[type=range].aff-range::-webkit-slider-thumb{border-color:${color}!important;box-shadow:0 0 0 5px ${glow},0 2px 8px rgba(0,0,0,.5)!important}
+    input[type=range].aff-range::-webkit-slider-thumb:hover{box-shadow:0 0 0 8px ${glow},0 2px 8px rgba(0,0,0,.5)!important}
+    input[type=range].aff-range::-moz-range-thumb{border-color:${color}!important;box-shadow:0 0 0 5px ${glow}!important}
+  `;
+}
+
+// ── EVENTOS ──
+document.getElementById('clients-slider').addEventListener('input', function() {
+  currentClients = parseInt(this.value);
+  updateSim();
+  const tier = getTier(currentClients);
+  updateThumbStyle(tier.color, tier.glow);
+});
+
+function scrollToSignup() {
+  // No MVP, redireciona para app.html?parceiro=cadastro
+  window.location.href = '/app.html?parceiro=cadastro';
+}
+
+// ── INIT ──
+renderPlanTabs();
+renderTierCards();
+updateSim();
+updateThumbStyle(getTier(currentClients).color, getTier(currentClients).glow);
+renderProjTable();
+</script>
+</body>
+</html>

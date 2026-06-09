@@ -4,13 +4,13 @@ __pycache__/
 *.pyo
 python/_output/
 python/_cache/
+python/Logs/
 
 # Node
 node_modules/
 
 # Environment
 .env
-.env.example
 .env.local
 .env.*.local
 

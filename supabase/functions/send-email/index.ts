@@ -82,7 +82,7 @@ function templateWelcome(name: string): { subject: string; html: string } {
           </p>
           <table cellpadding="0" cellspacing="0">
             <tr><td style="background:#00D4AA;border-radius:8px;">
-              <a href="https://backtestpro-app.vercel.app"
+              <a href="https://www.backtestpro.com.br"
                  style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:600;color:#0A0A0F;text-decoration:none;">
                 Rodar meu primeiro backtest
               </a>
@@ -94,7 +94,7 @@ function templateWelcome(name: string): { subject: string; html: string } {
         <tr><td style="padding:24px 40px;border-top:1px solid #2A2A3C;">
           <p style="margin:0;font-size:13px;color:#4A4A5A;line-height:1.6;">
             alphaQuant · Backtest Pro<br>
-            Você recebeu este e-mail porque criou uma conta em backtestpro-app.vercel.app
+            Você recebeu este e-mail porque criou uma conta em backtestpro.com.br
           </p>
         </td></tr>
 
@@ -165,7 +165,7 @@ function templateSubscriptionConfirmed(
 
           <table cellpadding="0" cellspacing="0">
             <tr><td style="background:#00D4AA;border-radius:8px;">
-              <a href="https://backtestpro-app.vercel.app"
+              <a href="https://www.backtestpro.com.br"
                  style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:600;color:#0A0A0F;text-decoration:none;">
                 Acessar o Backtest Pro
               </a>
@@ -220,7 +220,7 @@ function templateTrialExhausted(name: string): { subject: string; html: string }
           </p>
           <table cellpadding="0" cellspacing="0">
             <tr><td style="background:#00D4AA;border-radius:8px;">
-              <a href="https://backtestpro-app.vercel.app/#pricing"
+              <a href="https://www.backtestpro.com.br/#pricing"
                  style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:600;color:#0A0A0F;text-decoration:none;">
                 Ver planos e assinar
               </a>
@@ -277,7 +277,7 @@ function templateSubscriptionExpired(
           </p>
           <table cellpadding="0" cellspacing="0">
             <tr><td style="background:#00D4AA;border-radius:8px;">
-              <a href="https://backtestpro-app.vercel.app/#pricing"
+              <a href="https://www.backtestpro.com.br/#pricing"
                  style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:600;color:#0A0A0F;text-decoration:none;">
                 Renovar acesso
               </a>
@@ -336,7 +336,7 @@ async function sendViaResend(
       "Authorization": `Bearer ${resendKey}`,
     },
     body: JSON.stringify({
-      from:    "Backtest Pro <onboarding@resend.dev>",
+      from:    "Backtest Pro <noreply@backtestpro.com.br>",
       to:      [to],
       subject,
       html,

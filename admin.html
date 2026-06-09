@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Backtest Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+/* ── DESIGN TOKENS (copiado do app.html) ───────────────── */
+:root{
+  --spring:cubic-bezier(0.34,1.56,0.64,1);
+  --smooth:cubic-bezier(0.4,0,0.2,1);
+  --t1:100ms;--t2:180ms;--t3:300ms;
+  --bg0:#08080B;--bg1:#0F0F14;--bg2:#151519;--bg3:#1C1C22;
+  --bd:rgba(255,255,255,0.07);--bdh:rgba(255,255,255,0.14);
+  --tx:#F2F2F6;--txs:#72728A;--txm:#6B6B82;
+  --ac:#F0A020;--acd:rgba(240,160,32,0.09);--acd2:rgba(240,160,32,0.16);
+  --action:#F2F2F6;--action-t:#08080B;
+  --pr:#00BB80;--prd:rgba(0,187,128,0.09);
+  --dg:#EE3A3A;--dgd:rgba(238,58,58,0.09);
+  --in:#7878EE;--ind:rgba(120,120,238,0.09);
+  --wn:#F0A020;
+  /* Admin-specific */
+  --adm:#00D4AA;--admd:rgba(0,212,170,0.1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg0);color:var(--tx);font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.5}
+::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-track{background:var(--bg0)}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
+button,input,select{font-family:inherit}
+a{text-decoration:none;color:inherit}
+
+/* ── LAYOUT ────────────────────────────────────────────── */
+#loading{position:fixed;inset:0;background:var(--bg0);display:flex;align-items:center;justify-content:center;z-index:999;transition:opacity var(--t3) var(--smooth)}
+.spin{width:32px;height:32px;border:2px solid var(--bd);border-top-color:var(--adm);border-radius:50%;animation:spin 600ms linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+#app{display:none;height:100vh;flex-direction:column}
+
+.adm-header{height:52px;background:var(--bg1);border-bottom:0.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:100;flex-shrink:0}
+.adm-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.adm-badge{font-size:9px;font-weight:800;letter-spacing:.1em;background:var(--admd);color:var(--adm);border:0.5px solid var(--adm);border-radius:4px;padding:2px 6px}
+.adm-user{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--txs)}
+.btn-logout{background:transparent;border:0.5px solid var(--bd);color:var(--txs);padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;transition:all var(--t1) var(--smooth)}
+.btn-logout:hover{color:var(--tx);border-color:var(--bdh)}
+
+.adm-layout{display:flex;height:calc(100vh - 52px);overflow:hidden}
+
+/* ── SIDEBAR ───────────────────────────────────────────── */
+.sidebar{width:188px;background:var(--bg1);border-right:0.5px solid var(--bd);padding:16px 10px;display:flex;flex-direction:column;gap:2px;flex-shrink:0;overflow-y:auto}
+.sidebar-label{font-size:9px;font-weight:700;letter-spacing:.12em;color:var(--txm);text-transform:uppercase;padding:8px 10px 4px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:var(--txs);transition:all var(--t1) var(--smooth);border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{color:var(--tx);background:var(--bg2)}
+.nav-item.active{color:var(--adm);background:var(--admd)}
+.nav-item svg{flex-shrink:0;opacity:.7}
+.nav-item.active svg{opacity:1}
+
+/* ── CONTENT ───────────────────────────────────────────── */
+.adm-content{flex:1;overflow-y:auto;padding:20px 24px}
+
+/* ── PERIOD BAR ────────────────────────────────────────── */
+.period-bar{display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.period-bar-title{font-size:11px;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.08em;margin-right:4px}
+.period-btn{padding:5px 12px;border-radius:6px;border:0.5px solid var(--bd);background:var(--bg2);color:var(--txs);font-size:12px;font-weight:500;cursor:pointer;transition:all var(--t1) var(--smooth)}
+.period-btn:hover{color:var(--tx);border-color:var(--bdh)}
+.period-btn.active{background:var(--admd);border-color:var(--adm);color:var(--adm)}
+.period-sep{width:0.5px;height:20px;background:var(--bd);margin:0 4px}
+.period-input{background:var(--bg2);border:0.5px solid var(--bd);color:var(--tx);padding:5px 8px;border-radius:6px;font-size:12px;outline:none;transition:border-color var(--t1)}
+.period-input:focus{border-color:var(--adm)}
+.period-apply{padding:5px 12px;border-radius:6px;border:0.5px solid var(--adm);background:var(--admd);color:var(--adm);font-size:12px;font-weight:600;cursor:pointer;transition:all var(--t1) var(--smooth)}
+.period-apply:hover{background:var(--adm);color:#000}
+
+/* ── SECTION HEADER ────────────────────────────────────── */
+.section-hdr{margin-bottom:16px}
+.section-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;letter-spacing:-.02em}
+.section-sub{font-size:12px;color:var(--txs);margin-top:2px}
+
+/* ── KPI CARDS ─────────────────────────────────────────── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+.kpi-card{background:var(--bg1);border:0.5px solid var(--bd);border-radius:12px;padding:16px 18px;transition:border-color var(--t2) var(--smooth)}
+.kpi-card:hover{border-color:var(--bdh)}
+.kpi-label{font-size:9px;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;font-family:'JetBrains Mono',monospace}
+.kpi-value{font-size:30px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1;letter-spacing:-.03em;color:var(--tx)}
+.kpi-delta{font-size:11px;margin-top:6px;font-weight:500}
+.kpi-delta.pos{color:var(--pr)}
+.kpi-delta.neg{color:var(--dg)}
+.kpi-delta.neu{color:var(--txm)}
+
+/* ── CHART CARDS ───────────────────────────────────────── */
+.chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:12px;margin-bottom:20px}
+.chart-card{background:var(--bg1);border:0.5px solid var(--bd);border-radius:12px;padding:16px 18px}
+.chart-card-title{font-size:9px;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;font-family:'JetBrains Mono',monospace}
+.chart-wrap{height:160px;position:relative}
+
+/* ── TABLE ─────────────────────────────────────────────── */
+.table-card{background:var(--bg1);border:0.5px solid var(--bd);border-radius:12px;overflow:hidden;margin-bottom:20px}
+.table-card-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:0.5px solid var(--bd)}
+.table-card-title{font-size:12px;font-weight:700;color:var(--tx)}
+.search-input{background:var(--bg2);border:0.5px solid var(--bd);color:var(--tx);padding:5px 10px;border-radius:6px;font-size:12px;outline:none;width:200px;transition:border-color var(--t1)}
+.search-input:focus{border-color:var(--adm)}
+.search-input::placeholder{color:var(--txm)}
+table{width:100%;border-collapse:collapse}
+th{font-size:9px;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.08em;padding:10px 14px;text-align:left;border-bottom:0.5px solid var(--bd);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+td{padding:10px 14px;border-bottom:0.5px solid var(--bd);font-size:13px;color:var(--txs);vertical-align:middle}
+td:first-child,th:first-child{padding-left:18px}
+td:last-child,th:last-child{padding-right:18px}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2);color:var(--tx)}
+.td-mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.td-email{color:var(--tx);font-weight:500}
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:0.5px solid var(--bd)}
+.pag-info{font-size:12px;color:var(--txm)}
+.pag-btns{display:flex;gap:6px}
+.pag-btn{padding:5px 10px;border-radius:6px;border:0.5px solid var(--bd);background:var(--bg2);color:var(--txs);font-size:12px;cursor:pointer;transition:all var(--t1)}
+.pag-btn:hover:not(:disabled){color:var(--tx);border-color:var(--bdh)}
+.pag-btn:disabled{opacity:.35;cursor:default}
+
+/* ── BADGES ────────────────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:800;letter-spacing:.04em;white-space:nowrap}
+.badge-trial{background:rgba(136,136,160,0.12);color:#8888A0}
+.badge-essencial,.badge-starter{background:var(--admd);color:var(--adm)}
+.badge-pro,.badge-advanced{background:rgba(99,102,241,0.12);color:#6366F1}
+.badge-elite{background:rgba(245,158,11,0.12);color:#F59E0B}
+.badge-queued{background:rgba(136,136,160,0.12);color:#8888A0}
+.badge-running{background:var(--acd);color:var(--ac)}
+.badge-completed{background:var(--prd);color:var(--pr)}
+.badge-failed{background:var(--dgd);color:var(--dg)}
+.badge-active{background:var(--prd);color:var(--pr)}
+.badge-expired{background:rgba(136,136,160,0.12);color:#8888A0}
+.dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px}
+.dot-green{background:var(--pr)}
+.dot-gray{background:#8888A0}
+
+/* ── ABC RANKING ───────────────────────────────────────── */
+.ranking-card{background:var(--bg1);border:0.5px solid var(--bd);border-radius:12px;overflow:hidden;margin-bottom:12px}
+.ranking-card-title{font-size:11px;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.08em;padding:12px 16px;border-bottom:0.5px solid var(--bd);font-family:'JetBrains Mono',monospace}
+.abc-row{display:grid;grid-template-columns:28px 1fr 56px 1fr 44px;align-items:center;gap:10px;padding:8px 16px;border-bottom:0.5px solid var(--bd);transition:background var(--t1)}
+.abc-row:last-child{border-bottom:none}
+.abc-row:hover{background:var(--bg2)}
+.abc-badge{border-radius:4px;padding:2px 6px;font-size:10px;font-weight:800;text-align:center}
+.abc-A{background:rgba(0,212,170,0.12);color:#00D4AA}
+.abc-B{background:rgba(245,158,11,0.12);color:#F59E0B}
+.abc-C{background:rgba(136,136,160,0.12);color:#8888A0}
+.abc-label{font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.abc-count{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--txs);text-align:right}
+.abc-bar-wrap{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.abc-bar{height:100%;border-radius:2px;background:var(--adm);transition:width .4s var(--smooth)}
+.abc-pct{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--txm);text-align:right}
+.ranking-empty{padding:24px;text-align:center;color:var(--txm);font-size:12px}
+
+/* ── TABS ──────────────────────────────────────────────── */
+.tabs-bar{display:flex;border-bottom:0.5px solid var(--bd);gap:0;margin-bottom:16px}
+.tab-btn{padding:8px 14px;cursor:pointer;font-size:13px;font-weight:500;color:var(--txs);border-bottom:2px solid transparent;transition:all var(--t2) var(--smooth);background:none;border-left:none;border-right:none;border-top:none;font-family:inherit;white-space:nowrap}
+.tab-btn:hover{color:var(--tx)}
+.tab-btn.active{color:var(--adm);border-bottom-color:var(--adm)}
+
+/* ── RANKINGS GRID ─────────────────────────────────────── */
+.rankings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+
+/* ── ACTIVITY ──────────────────────────────────────────── */
+.activity-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px}
+.activity-kpi{background:var(--bg1);border:0.5px solid var(--bd);border-radius:10px;padding:14px 16px}
+.activity-kpi-label{font-size:9px;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-family:'JetBrains Mono',monospace}
+.activity-kpi-val{font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace}
+
+/* ── DISTRIBUTION TABLE ────────────────────────────────── */
+.dist-table{width:100%;border-collapse:collapse}
+.dist-table td{padding:8px 14px;font-size:13px;border-bottom:0.5px solid var(--bd)}
+.dist-table tr:last-child td{border-bottom:none}
+.dist-bar-wrap{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;flex:1;min-width:60px}
+.dist-bar{height:100%;border-radius:2px;background:var(--adm)}
+
+/* ── REALTIME INDICATOR ────────────────────────────────── */
+.live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--pr);margin-right:5px;animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── LOADING / EMPTY ───────────────────────────────────── */
+.loading-rows{padding:32px;text-align:center;color:var(--txm);font-size:12px}
+.empty-state{padding:40px;text-align:center}
+.empty-state-icon{font-size:32px;margin-bottom:8px}
+.empty-state-msg{color:var(--txm);font-size:13px}
+
+/* ── FADE-IN ANIMATION ─────────────────────────────────── */
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.section-visible{animation:fadeIn var(--t3) var(--smooth)}
+.row-new{animation:fadeIn .4s var(--smooth)}
+
+/* ── SUPPORT BADGE ─────────────────────────────────────── */
+.support-badge{background:var(--dg);color:#fff;font-size:10px;font-weight:800;font-family:'JetBrains Mono',monospace;border-radius:10px;padding:1px 6px;margin-left:auto;min-width:18px;text-align:center}
+
+/* ── SUPPORT DRAWER ────────────────────────────────────── */
+.sup-drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none}
+.sup-drawer-overlay.open{display:block}
+.sup-drawer{position:fixed;top:0;right:0;width:420px;height:100vh;background:var(--bg1);border-left:0.5px solid var(--bd);z-index:201;display:flex;flex-direction:column;transform:translateX(100%);transition:transform var(--t3) var(--smooth)}
+.sup-drawer.open{transform:none}
+.sup-drawer-head{height:52px;border-bottom:0.5px solid var(--bd);display:flex;align-items:center;gap:10px;padding:0 16px;flex-shrink:0}
+.sup-drawer-back{background:none;border:0.5px solid var(--bd);color:var(--txs);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px;transition:all var(--t1)}
+.sup-drawer-back:hover{color:var(--tx);border-color:var(--bdh)}
+.sup-drawer-id{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--txm);flex:1}
+.sup-drawer-resolve{background:var(--admd);border:0.5px solid var(--adm);color:var(--adm);padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;transition:all var(--t1)}
+.sup-drawer-resolve:hover{background:var(--adm);color:#000}
+.sup-drawer-meta{padding:14px 16px;border-bottom:0.5px solid var(--bd);display:flex;flex-direction:column;gap:4px;flex-shrink:0}
+.sup-drawer-meta-row{font-size:12px;color:var(--txs)}
+.sup-drawer-meta-row strong{color:var(--tx);font-weight:600}
+.sup-drawer-meta-row a{color:var(--adm);text-decoration:none}
+.sup-drawer-meta-row a:hover{text-decoration:underline}
+.sup-drawer-section{font-size:9px;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.1em;padding:12px 16px 6px;font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.sup-conv{flex:1;overflow-y:auto;padding:10px 16px;display:flex;flex-direction:column;gap:6px}
+.sup-conv-bubble{max-width:88%;padding:8px 12px;font-size:12px;color:var(--tx);line-height:1.5;word-break:break-word;border-radius:10px}
+.sup-conv-bubble.user{align-self:flex-end;background:rgba(0,212,170,0.12);border:1px solid rgba(0,212,170,0.25)}
+.sup-conv-bubble.agent{align-self:flex-start;background:var(--bg3);border:1px solid var(--bd)}
+.sup-drawer-notes{padding:12px 16px;border-top:0.5px solid var(--bd);display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.sup-notes-textarea{background:var(--bg2);border:0.5px solid var(--bd);color:var(--tx);border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;resize:vertical;min-height:80px;outline:none;transition:border-color var(--t1)}
+.sup-notes-textarea:focus{border-color:var(--adm)}
+.sup-notes-textarea::placeholder{color:var(--txm)}
+.sup-notes-btns{display:flex;gap:8px}
+.sup-btn-save{background:var(--bg3);border:0.5px solid var(--bd);color:var(--tx);padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;transition:all var(--t1)}
+.sup-btn-save:hover{border-color:var(--bdh)}
+.sup-btn-done{background:var(--admd);border:0.5px solid var(--adm);color:var(--adm);padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;transition:all var(--t1)}
+.sup-btn-done:hover{background:var(--adm);color:#000}
+
+/* category badge colors */
+.badge-cat-duvida{background:var(--ind);color:var(--in)}
+.badge-cat-tecnico{background:var(--dgd);color:var(--dg)}
+.badge-cat-plano{background:var(--acd);color:var(--ac)}
+.badge-cat-backtest{background:var(--admd);color:var(--adm)}
+.badge-cat-outro{background:rgba(136,136,160,0.12);color:#8888A0}
+.badge-pending{background:var(--acd);color:var(--ac)}
+.badge-resolved{background:var(--prd);color:var(--pr)}
+</style>
+</head>
+<body>
+<div id="loading"><div class="spin"></div></div>
+
+<div id="app" style="display:flex;flex-direction:column">
+  <!-- Header -->
+  <header class="adm-header">
+    <div class="adm-logo">
+      Backtest Pro <span class="adm-badge">ADMIN</span>
+    </div>
+    <div class="adm-user">
+      <span id="admin-email"></span>
+      <button class="btn-logout" onclick="handleLogout()">Sair</button>
+    </div>
+  </header>
+
+  <div class="adm-layout">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sidebar-label">Painel</div>
+      <button class="nav-item active" data-section="overview" onclick="navTo('overview')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Visão Geral
+      </button>
+      <button class="nav-item" data-section="users" onclick="navTo('users')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Usuários
+      </button>
+      <button class="nav-item" data-section="backtests" onclick="navTo('backtests')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Backtests
+      </button>
+      <button class="nav-item" data-section="rankings" onclick="navTo('rankings')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Rankings
+      </button>
+      <button class="nav-item" data-section="activity" onclick="navTo('activity')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Atividade
+      </button>
+      <button class="nav-item" data-section="support" onclick="navTo('support')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Suporte
+        <span id="support-badge" class="support-badge" style="display:none">0</span>
+      </button>
+    </nav>
+
+    <!-- Content -->
+    <main class="adm-content">
+      <!-- Period Bar -->
+      <div class="period-bar">
+        <span class="period-bar-title">Período:</span>
+        <button class="period-btn" onclick="setPeriodPreset('today')">Hoje</button>
+        <button class="period-btn" onclick="setPeriodPreset('7d')">7 dias</button>
+        <button class="period-btn active" onclick="setPeriodPreset('30d')">30 dias</button>
+        <button class="period-btn" onclick="setPeriodPreset('90d')">90 dias</button>
+        <button class="period-btn" onclick="setPeriodPreset('all')">Tudo</button>
+        <span class="period-sep"></span>
+        <input type="date" class="period-input" id="date-from">
+        <span style="color:var(--txm);font-size:12px">até</span>
+        <input type="date" class="period-input" id="date-to">
+        <button class="period-apply" onclick="applyCustomPeriod()">Aplicar</button>
+      </div>
+
+      <!-- Sections -->
+      <section id="s-overview"></section>
+      <section id="s-users" style="display:none"></section>
+      <section id="s-backtests" style="display:none"></section>
+      <section id="s-rankings" style="display:none"></section>
+      <section id="s-activity" style="display:none"></section>
+      <section id="s-support" style="display:none"></section>
+    </main>
+  </div>
+</div>
+
+<!-- Suporte drawer -->
+<div class="sup-drawer-overlay" id="sup-drawer-overlay" onclick="closeTicketDrawer()"></div>
+<div class="sup-drawer" id="sup-drawer">
+  <div class="sup-drawer-head">
+    <button class="sup-drawer-back" onclick="closeTicketDrawer()">← Voltar</button>
+    <span class="sup-drawer-id" id="sup-drawer-id"></span>
+    <button class="sup-drawer-resolve" id="sup-drawer-resolve-btn" onclick="resolveTicket()">Marcar resolvido</button>
+  </div>
+  <div class="sup-drawer-meta" id="sup-drawer-meta"></div>
+  <div class="sup-drawer-section">Histórico da conversa</div>
+  <div class="sup-conv" id="sup-conv"></div>
+  <div class="sup-drawer-notes">
+    <div class="sup-drawer-section" style="padding:0 0 6px">Resposta do admin</div>
+    <textarea class="sup-notes-textarea" id="sup-notes-textarea" placeholder="Adicionar nota ou resposta..."></textarea>
+    <div class="sup-notes-btns">
+      <button class="sup-btn-save" onclick="saveAdminNotes()">Salvar nota</button>
+      <button class="sup-btn-done" onclick="resolveTicket()">Marcar como resolvido</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   CONFIG
+══════════════════════════════════════════════════════════ */
+const SUPA_URL = 'https://lmrpxtshdiwufbfkaymg.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtcnB4dHNoZGl3dWZiZmtheW1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4OTM1MjQsImV4cCI6MjA4OTQ2OTUyNH0.c8giT7wbSAcHecrHR9IMB1x39Uy_TTA5p2-Q_QyQvXs';
+const { createClient } = supabase;
+const db = createClient(SUPA_URL, SUPA_KEY);
+
+/* ══════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════ */
+const state = {
+  dateFrom: new Date(Date.now() - 30 * 864e5),
+  dateTo: new Date(),
+  activeSection: 'overview',
+  admin: null,
+  usersPage: 0,
+  usersAll: [],
+  usersFiltered: [],
+  rankingsTab: 'strategy',
+  rankingsLoaded: { strategy: false, market: false },
+  chartInstances: [],
+  realtimeChannel: null,
+  supportChannel: null,
+  pendingCountChannel: null,
+  debounceTimer: null,
+  openTicket: null,
+  supTickets: [],
+  supFilter: 'all',
+  supSearch: '',
+};
+
+/* ══════════════════════════════════════════════════════════
+   CACHE
+══════════════════════════════════════════════════════════ */
+const cache = {};
+async function cachedFetch(key, fn, ttl = 60000) {
+  const now = Date.now();
+  if (cache[key] && now - cache[key].ts < ttl) return cache[key].data;
+  const data = await fn();
+  cache[key] = { data, ts: now };
+  return data;
+}
+function clearCache() { Object.keys(cache).forEach(k => delete cache[k]); }
+
+/* ══════════════════════════════════════════════════════════
+   FORMATTERS
+══════════════════════════════════════════════════════════ */
+function fmtN(n) {
+  if (n == null) return '—';
+  return Number(n).toLocaleString('pt-BR');
+}
+function fmtBRL(n) {
+  return (n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+}
+function fmtDatetime(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+function fmtRelative(d) {
+  if (!d) return '—';
+  const diff = Date.now() - new Date(d).getTime();
+  const mins = Math.floor(diff / 6e4);
+  if (mins < 60) return `há ${mins}min`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `há ${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  return `há ${days}d`;
+}
+function fmtMs(ms) {
+  if (!ms) return '—';
+  if (ms < 1000) return `${ms}ms`;
+  return `${(ms / 1000).toFixed(1)}s`;
+}
+function toISODate(dt) {
+  return dt.toISOString().split('T')[0];
+}
+
+/* ══════════════════════════════════════════════════════════
+   BADGES
+══════════════════════════════════════════════════════════ */
+const PLAN_LABELS = {
+  trial: 'TRIAL', essencial: 'ESSENCIAL', pro: 'PRO',
+  starter: 'STARTER', advanced: 'ADVANCED', elite: 'ELITE'
+};
+const PLAN_PRICES = { essencial: 109.9, pro: 139.9, starter: 109.9, advanced: 139.9, elite: 159.9 };
+
+function planBadge(plan) {
+  const p = (plan || 'trial').toLowerCase();
+  const cls = `badge badge-${p}`;
+  const label = PLAN_LABELS[p] || p.toUpperCase();
+  return `<span class="${cls}">${label}</span>`;
+}
+function statusBadge(status) {
+  const s = (status || 'queued').toLowerCase();
+  const labels = { queued: 'QUEUED', running: 'RUNNING', completed: '✓ DONE', failed: '✗ FAILED' };
+  return `<span class="badge badge-${s}">${labels[s] || s.toUpperCase()}</span>`;
+}
+
+/* ══════════════════════════════════════════════════════════
+   PERIOD
+══════════════════════════════════════════════════════════ */
+function setPeriodPreset(preset) {
+  const now = new Date();
+  let from;
+  switch (preset) {
+    case 'today': from = new Date(now.toDateString()); break;
+    case '7d': from = new Date(now - 7 * 864e5); break;
+    case '30d': from = new Date(now - 30 * 864e5); break;
+    case '90d': from = new Date(now - 90 * 864e5); break;
+    case 'all': from = new Date('2024-01-01'); break;
+    default: from = new Date(now - 30 * 864e5);
+  }
+  state.dateFrom = from;
+  state.dateTo = now;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  event && event.target && event.target.classList.add('active');
+  document.getElementById('date-from').value = toISODate(from);
+  document.getElementById('date-to').value = toISODate(now);
+  onPeriodChange();
+}
+function applyCustomPeriod() {
+  const f = document.getElementById('date-from').value;
+  const t = document.getElementById('date-to').value;
+  if (!f || !t) return;
+  state.dateFrom = new Date(f);
+  state.dateTo = new Date(t + 'T23:59:59');
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  clearTimeout(state.debounceTimer);
+  state.debounceTimer = setTimeout(onPeriodChange, 300);
+}
+function onPeriodChange() {
+  clearCache();
+  state.rankingsLoaded = { strategy: false, market: false };
+  loadSection(state.activeSection);
+}
+
+/* ══════════════════════════════════════════════════════════
+   RPC HELPER
+══════════════════════════════════════════════════════════ */
+async function rpc(fn, extraParams = {}) {
+  const { data, error } = await db.rpc(fn, {
+    p_date_from: state.dateFrom.toISOString(),
+    p_date_to: state.dateTo.toISOString(),
+    ...extraParams
+  });
+  if (error) { console.error(fn, error); return []; }
+  return data || [];
+}
+
+/* ══════════════════════════════════════════════════════════
+   CHARTS
+══════════════════════════════════════════════════════════ */
+function destroyCharts() {
+  state.chartInstances.forEach(c => { try { c.remove(); } catch(e) {} });
+  state.chartInstances = [];
+}
+
+function makeChart(containerId, data, color = '#00D4AA') {
+  const el = document.getElementById(containerId);
+  if (!el || !window.LightweightCharts) return;
+  const chart = LightweightCharts.createChart(el, {
+    layout: { background: { color: 'transparent' }, textColor: '#72728A' },
+    grid: { vertLines: { color: 'rgba(255,255,255,0.04)' }, horzLines: { color: 'rgba(255,255,255,0.04)' } },
+    rightPriceScale: { borderColor: 'rgba(255,255,255,0.07)', minimumWidth: 40 },
+    timeScale: { borderColor: 'rgba(255,255,255,0.07)', fixLeftEdge: true, fixRightEdge: true },
+    handleScroll: false,
+    handleScale: false,
+    width: el.clientWidth,
+    height: el.clientHeight
+  });
+  const series = chart.addAreaSeries({
+    lineColor: color,
+    topColor: color.replace(')', ',0.18)').replace('rgb', 'rgba'),
+    bottomColor: color.replace(')', ',0)').replace('rgb', 'rgba'),
+    lineWidth: 2,
+    priceLineVisible: false,
+    lastValueVisible: false
+  });
+  series.setData(data);
+  chart.timeScale().fitContent();
+  state.chartInstances.push(chart);
+  return chart;
+}
+
+function aggregateByDay(items, dateField = 'created_at') {
+  const map = {};
+  items.forEach(item => {
+    const d = toISODate(new Date(item[dateField]));
+    map[d] = (map[d] || 0) + 1;
+  });
+  return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0])).map(([time, value]) => ({ time, value }));
+}
+
+/* ══════════════════════════════════════════════════════════
+   ABC RANKING COMPONENT
+══════════════════════════════════════════════════════════ */
+const LABEL_MAP = {
+  RSI: 'RSI / IFR', SMA: 'SMA (Média Simples)', EMA: 'EMA (Média Exp.)',
+  MACD: 'MACD', Stoch: 'Estocástico', CCI: 'CCI', Williams: 'Williams %R',
+  Bollinger: 'Bandas de Bollinger', VWAP: 'VWAP', Volume: 'Volume', OBV: 'OBV',
+  'WIN$N': 'Mini Índice', 'WDO$N': 'Mini Dólar', 'WIN': 'Mini Índice', 'WDO': 'Mini Dólar',
+  'IND$N': 'Índice Cheio', 'DOL$N': 'Dólar Cheio', 'IND': 'Índice Cheio', 'DOL': 'Dólar Cheio',
+  'PETR4': 'PETR4',
+  '1m': '1 min', '2m': '2 min', '5m': '5 min', '10m': '10 min',
+  '15m': '15 min', '30m': '30 min', '60m': '60 min',
+  'breakout': 'Rompimento', 'next_open': 'Abertura do candle', 'close': 'Fechamento',
+  'fixed': 'Stop Fixo', 'candle': 'Stop no Candle', 'n_candles': 'Stop N Candles', 'atr': 'ATR',
+  'rr': 'Ratio R:R', 'fibo': 'Fibonacci',
+  'long': 'Long', 'short': 'Short', 'both': 'Long e Short',
+};
+
+function renderRankingABC(containerId, data, labelKey, countKey) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!data || !data.length) {
+    el.innerHTML = '<div class="ranking-empty">Sem dados no período</div>';
+    return;
+  }
+  const total = data.reduce((s, r) => s + Number(r[countKey]), 0);
+  let acc = 0;
+  el.innerHTML = data.map(row => {
+    acc += Number(row[countKey]);
+    const pct = (Number(row[countKey]) / total * 100).toFixed(1);
+    const accPct = (acc / total * 100);
+    const cls = accPct <= 80 ? 'A' : accPct <= 95 ? 'B' : 'C';
+    const rawLabel = String(row[labelKey] ?? '—');
+    const label = LABEL_MAP[rawLabel] || rawLabel;
+    return `<div class="abc-row">
+      <span class="abc-badge abc-${cls}">${cls}</span>
+      <span class="abc-label" title="${label}">${label}</span>
+      <span class="abc-count">${fmtN(row[countKey])}</span>
+      <div class="abc-bar-wrap"><div class="abc-bar" style="width:${Math.min(pct,100)}%"></div></div>
+      <span class="abc-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════════════
+   NAVIGATION
+══════════════════════════════════════════════════════════ */
+function navTo(section) {
+  if (state.activeSection === section) return;
+  stopRealtime();
+  destroyCharts();
+  document.querySelectorAll('.nav-item').forEach(b => {
+    b.classList.toggle('active', b.dataset.section === section);
+  });
+  document.querySelectorAll('main section').forEach(s => s.style.display = 'none');
+  document.getElementById('s-' + section).style.display = '';
+  document.getElementById('s-' + section).classList.add('section-visible');
+  state.activeSection = section;
+  loadSection(section);
+}
+
+function loadSection(name) {
+  switch (name) {
+    case 'overview': return loadOverview();
+    case 'users': return loadUsers(0);
+    case 'backtests': return loadBacktests();
+    case 'rankings': return loadRankings(state.rankingsTab);
+    case 'activity': return loadActivity();
+    case 'support': return loadSupport();
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   SECTION: VISÃO GERAL
+══════════════════════════════════════════════════════════ */
+async function loadOverview() {
+  const sec = document.getElementById('s-overview');
+  sec.innerHTML = `
+    <div class="section-hdr">
+      <div class="section-title">Visão Geral</div>
+      <div class="section-sub">Métricas consolidadas do produto</div>
+    </div>
+    <div class="kpi-grid">
+      ${['kpi-total','kpi-active','kpi-bts','kpi-rev'].map(id =>
+        `<div class="kpi-card"><div class="kpi-label" id="${id}-lbl">—</div><div class="kpi-value" id="${id}-val"><div class="spin" style="margin:4px 0;width:20px;height:20px"></div></div><div class="kpi-delta neu" id="${id}-delta"></div></div>`
+      ).join('')}
+    </div>
+    <div class="chart-grid">
+      <div class="chart-card"><div class="chart-card-title">Novos Cadastros / Dia</div><div class="chart-wrap" id="chart-signups"></div></div>
+      <div class="chart-card"><div class="chart-card-title">Backtests Completados / Dia</div><div class="chart-wrap" id="chart-bts"></div></div>
+    </div>
+    <div class="table-card">
+      <div class="table-card-header"><span class="table-card-title">Distribuição por Plano</span></div>
+      <div id="dist-table-wrap"><div class="loading-rows">Carregando...</div></div>
+    </div>`;
+
+  const from = state.dateFrom.toISOString();
+  const to   = state.dateTo.toISOString();
+
+  const [users, subs, bts, prevBts] = await Promise.all([
+    cachedFetch('ov-users', () => db.from('users').select('id,created_at').then(r => r.data || [])),
+    cachedFetch('ov-subs',  () => db.from('subscriptions').select('id,user_id,plan,status,expires_at').then(r => r.data || [])),
+    cachedFetch(`ov-bts-${from}`, () =>
+      db.from('backtests').select('id,created_at,status').gte('created_at', from).lte('created_at', to).then(r => r.data || [])
+    ),
+    cachedFetch('ov-prev-bts', () => {
+      const prevFrom = new Date(state.dateFrom.getTime() - (state.dateTo - state.dateFrom)).toISOString();
+      return db.from('backtests').select('id').gte('created_at', prevFrom).lte('created_at', from)
+        .eq('status', 'completed').then(r => r.data || []);
+    })
+  ]);
+
+  const now = new Date().toISOString();
+  const activeSubs = subs.filter(s => s.status === 'active' && s.expires_at > now);
+  const btsCompleted = bts.filter(b => b.status === 'completed');
+  const revenue = activeSubs.reduce((s, sub) => s + (PLAN_PRICES[sub.plan] || 0), 0);
+  const prevCount = prevBts.length;
+  const delta = btsCompleted.length - prevCount;
+
+  const setKPI = (id, lbl, val, delta, deltaLabel) => {
+    document.getElementById(id + '-lbl').textContent = lbl;
+    document.getElementById(id + '-val').textContent = val;
+    const dEl = document.getElementById(id + '-delta');
+    if (delta !== null) {
+      dEl.className = 'kpi-delta ' + (delta > 0 ? 'pos' : delta < 0 ? 'neg' : 'neu');
+      dEl.textContent = deltaLabel || (delta > 0 ? `+${delta}` : String(delta));
+    }
+  };
+
+  setKPI('kpi-total', 'Total de Usuários', fmtN(users.length), null, null);
+  document.getElementById('kpi-total-delta').className = 'kpi-delta neu';
+  document.getElementById('kpi-total-delta').textContent =
+    `+${users.filter(u => u.created_at >= from).length} no período`;
+
+  setKPI('kpi-active', 'Usuários Ativos', fmtN(activeSubs.length), null, null);
+  document.getElementById('kpi-active-delta').className = 'kpi-delta neu';
+  document.getElementById('kpi-active-delta').textContent =
+    users.length ? `${((activeSubs.length/users.length)*100).toFixed(0)}% do total` : '';
+
+  setKPI('kpi-bts', 'Backtests no Período', fmtN(btsCompleted.length), delta,
+    delta > 0 ? `+${delta} vs período anterior` : `${delta} vs período anterior`);
+
+  setKPI('kpi-rev', 'Receita Estimada', fmtBRL(revenue), null, null);
+  document.getElementById('kpi-rev-delta').className = 'kpi-delta neu';
+  document.getElementById('kpi-rev-delta').textContent = `${activeSubs.length} assinaturas ativas`;
+
+  // Charts
+  const signupData = aggregateByDay(users.filter(u => u.created_at >= from && u.created_at <= to));
+  const btData = aggregateByDay(btsCompleted);
+  setTimeout(() => {
+    if (signupData.length) makeChart('chart-signups', signupData);
+    else document.getElementById('chart-signups').innerHTML = '<div class="empty-state" style="padding:20px"><div class="empty-state-msg">Sem cadastros no período</div></div>';
+    if (btData.length) makeChart('chart-bts', btData);
+    else document.getElementById('chart-bts').innerHTML = '<div class="empty-state" style="padding:20px"><div class="empty-state-msg">Sem backtests no período</div></div>';
+  }, 50);
+
+  // Distribution table
+  const planCounts = {};
+  const activeUserIds = new Set(activeSubs.map(s => s.user_id));
+  const trialCount = users.filter(u => !activeUserIds.has(u.id)).length;
+  planCounts['trial'] = trialCount;
+  activeSubs.forEach(s => { planCounts[s.plan] = (planCounts[s.plan] || 0) + 1; });
+  const totalUsers = users.length || 1;
+  const planOrder = ['trial', 'essencial', 'pro', 'starter', 'advanced', 'elite'];
+  const rows = planOrder.filter(p => planCounts[p]).map(p => {
+    const cnt = planCounts[p];
+    const pct = ((cnt / totalUsers) * 100).toFixed(1);
+    return `<tr>
+      <td>${planBadge(p)}</td>
+      <td class="td-mono">${fmtN(cnt)}</td>
+      <td style="width:40%">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="dist-bar-wrap"><div class="dist-bar" style="width:${pct}%"></div></div>
+          <span class="td-mono" style="font-size:11px;color:var(--txm);white-space:nowrap">${pct}%</span>
+        </div>
+      </td>
+    </tr>`;
+  });
+  document.getElementById('dist-table-wrap').innerHTML = rows.length
+    ? `<table class="dist-table">${rows.join('')}</table>`
+    : '<div class="loading-rows">Sem dados</div>';
+}
+
+/* ══════════════════════════════════════════════════════════
+   SECTION: USUÁRIOS
+══════════════════════════════════════════════════════════ */
+async function loadUsers(page = 0) {
+  const sec = document.getElementById('s-users');
+  if (!state.usersAll.length || page === 0) {
+    sec.innerHTML = `
+      <div class="section-hdr">
+        <div class="section-title">Usuários</div>
+        <div class="section-sub">Todos os cadastros</div>
+      </div>
+      <div class="table-card">
+        <div class="table-card-header">
+          <span class="table-card-title">Lista de Usuários</span>
+          <input class="search-input" id="user-search" placeholder="Buscar por email..." oninput="filterUsers()" autocomplete="off">
+        </div>
+        <div id="users-table-wrap"><div class="loading-rows">Carregando...</div></div>
+        <div class="pagination" id="users-pagination"></div>
+      </div>`;
+
+    const now = new Date().toISOString();
+    const [users, subs, btCounts] = await Promise.all([
+      cachedFetch('usr-users', () => db.from('users').select('id,email,name,created_at').order('created_at', { ascending: false }).then(r => r.data || [])),
+      cachedFetch('usr-subs', () => db.from('subscriptions').select('user_id,plan,cycle,expires_at,status').then(r => r.data || [])),
+      cachedFetch('usr-btcount', () => db.from('backtests').select('user_id').eq('status', 'completed').then(r => r.data || []))
+    ]);
+
+    const activeSubByUser = {};
+    subs.filter(s => s.status === 'active' && s.expires_at > now).forEach(s => {
+      if (!activeSubByUser[s.user_id]) activeSubByUser[s.user_id] = s;
+    });
+    const btCountByUser = {};
+    btCounts.forEach(b => { btCountByUser[b.user_id] = (btCountByUser[b.user_id] || 0) + 1; });
+
+    state.usersAll = users.map(u => ({
+      ...u,
+      sub: activeSubByUser[u.id] || null,
+      btCount: btCountByUser[u.id] || 0
+    }));
+    state.usersFiltered = [...state.usersAll];
+    state.usersPage = 0;
+  }
+
+  renderUsersTable(state.usersPage);
+}
+
+function filterUsers() {
+  const q = (document.getElementById('user-search')?.value || '').toLowerCase();
+  state.usersFiltered = q
+    ? state.usersAll.filter(u => (u.email || '').toLowerCase().includes(q) || (u.name || '').toLowerCase().includes(q))
+    : [...state.usersAll];
+  state.usersPage = 0;
+  renderUsersTable(0);
+}
+
+function renderUsersTable(page) {
+  const PAGE_SIZE = 20;
+  const data = state.usersFiltered;
+  const total = data.length;
+  const start = page * PAGE_SIZE;
+  const slice = data.slice(start, start + PAGE_SIZE);
+
+  const rows = slice.map(u => `<tr>
+    <td class="td-email">${u.email || '—'}</td>
+    <td style="color:var(--tx)">${u.name || '—'}</td>
+    <td class="td-mono">${fmtDate(u.created_at)}</td>
+    <td>${planBadge(u.sub ? u.sub.plan : 'trial')}</td>
+    <td class="td-mono" style="font-size:11px;color:var(--txm)">${u.sub?.cycle || '—'}</td>
+    <td class="td-mono">${fmtDate(u.sub?.expires_at)}</td>
+    <td class="td-mono" style="text-align:right">${fmtN(u.btCount)}</td>
+  </tr>`).join('');
+
+  document.getElementById('users-table-wrap').innerHTML = rows
+    ? `<table><thead><tr>
+        <th>Email</th><th>Nome</th><th>Cadastro</th><th>Plano</th>
+        <th>Ciclo</th><th>Expira em</th><th style="text-align:right">Backtests</th>
+       </tr></thead><tbody>${rows}</tbody></table>`
+    : '<div class="loading-rows">Nenhum usuário encontrado</div>';
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  document.getElementById('users-pagination').innerHTML =
+    `<span class="pag-info">${start + 1}–${Math.min(start + PAGE_SIZE, total)} de ${fmtN(total)}</span>
+     <div class="pag-btns">
+       <button class="pag-btn" onclick="loadUsers(${page - 1})" ${page === 0 ? 'disabled' : ''}>← Anterior</button>
+       <button class="pag-btn" onclick="loadUsers(${page + 1})" ${page >= totalPages - 1 ? 'disabled' : ''}>Próximo →</button>
+     </div>`;
+  state.usersPage = page;
+}
+
+/* ══════════════════════════════════════════════════════════
+   SECTION: BACKTESTS
+══════════════════════════════════════════════════════════ */
+async function loadBacktests() {
+  const sec = document.getElementById('s-backtests');
+  const from = state.dateFrom.toISOString();
+  const to   = state.dateTo.toISOString();
+
+  sec.innerHTML = `
+    <div class="section-hdr">
+      <div class="section-title">Backtests</div>
+      <div class="section-sub">Fila e histórico de execuções</div>
+    </div>
+    <div class="kpi-grid">
+      ${['kpi-bt-total','kpi-bt-running','kpi-bt-fail','kpi-bt-avg'].map(id =>
+        `<div class="kpi-card"><div class="kpi-label" id="${id}-lbl">—</div><div class="kpi-value" id="${id}-val"><div class="spin" style="margin:4px 0;width:20px;height:20px"></div></div><div class="kpi-delta neu" id="${id}-delta"></div></div>`
+      ).join('')}
+    </div>
+    <div class="chart-grid">
+      <div class="chart-card" style="grid-column:1/-1">
+        <div class="chart-card-title">Volume de Backtests / Dia</div>
+        <div class="chart-wrap" id="chart-bt-vol" style="height:180px"></div>
+      </div>
+    </div>
+    <div class="table-card">
+      <div class="table-card-header">
+        <span class="table-card-title"><span class="live-dot"></span>Últimos 50 Backtests (ao vivo)</span>
+      </div>
+      <div id="bt-table-wrap"><div class="loading-rows">Carregando...</div></div>
+    </div>`;
+
+  const [bts, live] = await Promise.all([
+    cachedFetch(`bt-period-${from}`, () =>
+      db.from('backtests').select('id,status,elapsed_ms,created_at').gte('created_at', from).lte('created_at', to).then(r => r.data || [])
+    ),
+    db.from('backtests')
+      .select('id,user_id,config,status,elapsed_ms,created_at,completed_at,error,users(email)')
+      .order('created_at', { ascending: false })
+      .limit(50)
+      .then(r => r.data || [])
+  ]);
+
+  const completed = bts.filter(b => b.status === 'completed');
+  const failed    = bts.filter(b => b.status === 'failed');
+  const running   = bts.filter(b => b.status === 'running' || b.status === 'queued');
+  const avgMs     = completed.length
+    ? completed.reduce((s, b) => s + (b.elapsed_ms || 0), 0) / completed.length
+    : 0;
+  const failRate  = bts.length ? ((failed.length / bts.length) * 100).toFixed(1) : 0;
+
+  const setKPI = (id, lbl, val, sub) => {
+    document.getElementById(id + '-lbl').textContent = lbl;
+    document.getElementById(id + '-val').textContent = val;
+    document.getElementById(id + '-delta').textContent = sub || '';
+  };
+  setKPI('kpi-bt-total',   'Total no Período', fmtN(completed.length), `${fmtN(bts.length)} submetidos`);
+  setKPI('kpi-bt-running', 'Em Andamento', fmtN(running.length), 'queued + running');
+  setKPI('kpi-bt-fail',    'Taxa de Falha', `${failRate}%`, `${fmtN(failed.length)} erros`);
+  setKPI('kpi-bt-avg',     'Tempo Médio', fmtMs(Math.round(avgMs)), 'de execução');
+
+  const volData = aggregateByDay(completed);
+  setTimeout(() => {
+    if (volData.length) makeChart('chart-bt-vol', volData);
+    else document.getElementById('chart-bt-vol').innerHTML = '<div class="empty-state" style="padding:20px"><div class="empty-state-msg">Sem dados no período</div></div>';
+  }, 50);
+
+  renderBtTable(live);
+  startRealtime();
+}
+
+function renderBtTable(data) {
+  const wrap = document.getElementById('bt-table-wrap');
+  if (!wrap) return;
+  if (!data.length) {
+    wrap.innerHTML = '<div class="loading-rows">Nenhum backtest encontrado</div>';
+    return;
+  }
+  const rows = data.map(b => {
+    const asset = b.config?.asset || b.config?.symbol || '—';
+    const tf    = b.config?.tf || b.config?.timeframe || '—';
+    return `<tr id="bt-row-${b.id}">
+      <td class="td-email">${b.users?.email || '—'}</td>
+      <td class="td-mono">${asset} <span style="color:var(--txm)">/ ${tf}</span></td>
+      <td>${statusBadge(b.status)}</td>
+      <td class="td-mono">${fmtMs(b.elapsed_ms)}</td>
+      <td class="td-mono" style="color:var(--txm)">${fmtDatetime(b.created_at)}</td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML = `<table><thead><tr>
+    <th>Usuário</th><th>Ativo / TF</th><th>Status</th><th>Tempo</th><th>Criado em</th>
+  </tr></thead><tbody id="bt-tbody">${rows}</tbody></table>`;
+}
+
+/* ══════════════════════════════════════════════════════════
+   REALTIME
+══════════════════════════════════════════════════════════ */
+function startRealtime() {
+  if (state.realtimeChannel) return;
+  state.realtimeChannel = db.channel('admin-backtests-live')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'backtests' }, payload => {
+      if (state.activeSection !== 'backtests') return;
+      const tbody = document.getElementById('bt-tbody');
+      if (!tbody) return;
+      const row = document.getElementById('bt-row-' + payload.new?.id);
+      if (row) {
+        const statusCell = row.querySelector('td:nth-child(3)');
+        const timeCell   = row.querySelector('td:nth-child(4)');
+        if (statusCell) statusCell.innerHTML = statusBadge(payload.new.status);
+        if (timeCell)   timeCell.textContent  = fmtMs(payload.new.elapsed_ms);
+      } else if (payload.eventType === 'INSERT') {
+        const b = payload.new;
+        const newRow = document.createElement('tr');
+        newRow.id = 'bt-row-' + b.id;
+        newRow.className = 'row-new';
+        newRow.innerHTML = `
+          <td class="td-email">—</td>
+          <td class="td-mono">${b.config?.asset || '—'} <span style="color:var(--txm)">/ ${b.config?.tf || '—'}</span></td>
+          <td>${statusBadge(b.status)}</td>
+          <td class="td-mono">${fmtMs(b.elapsed_ms)}</td>
+          <td class="td-mono" style="color:var(--txm)">${fmtDatetime(b.created_at)}</td>`;
+        tbody.prepend(newRow);
+        if (tbody.children.length > 50) tbody.lastElementChild?.remove();
+      }
+    })
+    .subscribe();
+}
+
+function stopRealtime() {
+  if (state.realtimeChannel) {
+    db.removeChannel(state.realtimeChannel);
+    state.realtimeChannel = null;
+  }
+  if (state.supportChannel) {
+    db.removeChannel(state.supportChannel);
+    state.supportChannel = null;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   SECTION: RANKINGS
+══════════════════════════════════════════════════════════ */
+async function loadRankings(tab = 'strategy') {
+  state.rankingsTab = tab;
+  const sec = document.getElementById('s-rankings');
+
+  if (!sec.querySelector('.tabs-bar')) {
+    sec.innerHTML = `
+      <div class="section-hdr">
+        <div class="section-title">Rankings — Curva ABC</div>
+        <div class="section-sub">Distribuição de uso por configuração</div>
+      </div>
+      <div class="tabs-bar">
+        <button class="tab-btn ${tab==='strategy'?'active':''}" onclick="switchRankingTab('strategy')">Estratégia</button>
+        <button class="tab-btn ${tab==='market'?'active':''}" onclick="switchRankingTab('market')">Mercado</button>
+      </div>
+      <div id="rankings-content"></div>`;
+  }
+
+  if (state.rankingsLoaded[tab]) return;
+  state.rankingsLoaded[tab] = true;
+  document.getElementById('rankings-content').innerHTML = '<div class="loading-rows">Carregando rankings...</div>';
+
+  if (tab === 'strategy') {
+    const [indicators, directions, entries, stops, tps, trailing] = await Promise.all([
+      rpc('admin_ranking_indicators'),
+      rpc('admin_ranking_directions'),
+      rpc('admin_ranking_entry_types'),
+      rpc('admin_ranking_stop_types'),
+      rpc('admin_ranking_tp_types'),
+      rpc('admin_ranking_trailing')
+    ]);
+
+    const trailingMapped = trailing.map(r => ({
+      label: r.trailing_used ? 'Trailing Ativo' : 'Sem Trailing',
+      count: r.count
+    }));
+
+    document.getElementById('rankings-content').innerHTML = `<div class="rankings-grid">
+      ${makeRankingCard('rank-indicators', 'Indicadores Mais Usados')}
+      ${makeRankingCard('rank-directions', 'Direção')}
+      ${makeRankingCard('rank-entries', 'Tipo de Entrada')}
+      ${makeRankingCard('rank-stops', 'Tipo de Stop Loss')}
+      ${makeRankingCard('rank-tps', 'Tipo de Take Profit')}
+      ${makeRankingCard('rank-trailing', 'Trailing Stop')}
+    </div>`;
+
+    renderRankingABC('rank-indicators', indicators, 'indicator', 'count');
+    renderRankingABC('rank-directions', directions, 'direction', 'count');
+    renderRankingABC('rank-entries', entries, 'entry_type', 'count');
+    renderRankingABC('rank-stops', stops, 'stop_type', 'count');
+    renderRankingABC('rank-tps', tps, 'tp_type', 'count');
+    renderRankingABC('rank-trailing', trailingMapped, 'label', 'count');
+
+  } else {
+    const [assets, tfs, windows] = await Promise.all([
+      rpc('admin_ranking_assets'),
+      rpc('admin_ranking_timeframes'),
+      rpc('admin_ranking_trade_windows')
+    ]);
+
+    const windowsMapped = windows.map(r => ({
+      window: `${r.window_start || '—'} – ${r.window_end || '—'}`,
+      count: r.count
+    }));
+
+    document.getElementById('rankings-content').innerHTML = `<div class="rankings-grid">
+      ${makeRankingCard('rank-assets', 'Ativos Mais Testados')}
+      ${makeRankingCard('rank-tfs', 'Timeframes Mais Usados')}
+      ${makeRankingCard('rank-windows', 'Janelas Operacionais', true)}
+    </div>`;
+
+    renderRankingABC('rank-assets', assets, 'asset', 'count');
+    renderRankingABC('rank-tfs', tfs, 'tf', 'count');
+    renderRankingABC('rank-windows', windowsMapped, 'window', 'count');
+  }
+}
+
+function makeRankingCard(id, title, fullWidth = false) {
+  return `<div class="ranking-card" ${fullWidth ? 'style="grid-column:1/-1"' : ''}>
+    <div class="ranking-card-title">${title}</div>
+    <div id="${id}"><div class="ranking-empty">Carregando...</div></div>
+  </div>`;
+}
+
+function switchRankingTab(tab) {
+  state.rankingsTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.trim().toLowerCase().includes(tab === 'strategy' ? 'strat' : 'merc'));
+  });
+  if (!state.rankingsLoaded[tab]) {
+    state.rankingsLoaded[tab] = false;
+    loadRankings(tab);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   SECTION: ATIVIDADE
+══════════════════════════════════════════════════════════ */
+async function loadActivity() {
+  const sec = document.getElementById('s-activity');
+  sec.innerHTML = `
+    <div class="section-hdr">
+      <div class="section-title">Atividade por Usuário</div>
+      <div class="section-sub">Quem está usando de verdade</div>
+    </div>
+    <div class="activity-kpis" id="act-kpis">
+      ${['act-k1','act-k2','act-k3','act-k4'].map(id =>
+        `<div class="activity-kpi"><div class="activity-kpi-label" id="${id}-lbl">—</div><div class="activity-kpi-val" id="${id}-val">...</div></div>`
+      ).join('')}
+    </div>
+    <div class="table-card">
+      <div class="table-card-header"><span class="table-card-title">Ranking de Uso no Período</span></div>
+      <div id="act-table-wrap"><div class="loading-rows">Carregando...</div></div>
+    </div>
+    <div class="chart-grid" style="margin-top:16px">
+      <div class="chart-card" style="grid-column:1/-1">
+        <div class="chart-card-title">Distribuição — Backtests por Usuário (histograma)</div>
+        <div id="act-histogram" style="padding:8px 16px 16px"></div>
+      </div>
+    </div>`;
+
+  const activity = await cachedFetch(`act-${state.dateFrom.toISOString()}`, () => rpc('admin_user_activity'));
+
+  const usersWithBt  = activity.filter(u => u.backtest_count > 0);
+  const totalUsers   = activity.length;
+  const avgBt        = usersWithBt.length
+    ? (usersWithBt.reduce((s, u) => s + Number(u.backtest_count), 0) / usersWithBt.length).toFixed(1)
+    : 0;
+  const activationRate = totalUsers ? ((usersWithBt.length / totalUsers) * 100).toFixed(1) : 0;
+  const zeroTrial    = activity.filter(u => u.backtest_count === 0).length;
+
+  const setActKPI = (id, lbl, val) => {
+    document.getElementById(id + '-lbl').textContent = lbl;
+    document.getElementById(id + '-val').textContent = val;
+  };
+  setActKPI('act-k1', 'Rodaram ≥1 Backtest', fmtN(usersWithBt.length));
+  setActKPI('act-k2', 'Média por Usuário Ativo', avgBt);
+  setActKPI('act-k3', 'Taxa de Ativação', `${activationRate}%`);
+  setActKPI('act-k4', 'Sem Nenhum Backtest', fmtN(zeroTrial));
+
+  const rows = activity.slice(0, 100).map((u, i) => {
+    const isActive = u.backtest_count > 0;
+    return `<tr>
+      <td class="td-mono" style="color:var(--txm)">${i + 1}</td>
+      <td class="td-email">${u.email || '—'}</td>
+      <td class="td-mono">${fmtN(u.backtest_count)}</td>
+      <td class="td-mono">${fmtRelative(u.last_backtest)}</td>
+      <td>${isActive
+        ? '<span class="dot dot-green"></span><span style="color:var(--pr);font-size:12px">ativo</span>'
+        : '<span class="dot dot-gray"></span><span style="color:var(--txm);font-size:12px">sem uso</span>'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('act-table-wrap').innerHTML = rows
+    ? `<table><thead><tr>
+        <th>#</th><th>Usuário</th><th>Backtests</th><th>Último</th><th>Status</th>
+       </tr></thead><tbody>${rows}</tbody></table>`
+    : '<div class="loading-rows">Sem dados no período</div>';
+
+  // Histograma de distribuição
+  const buckets = [
+    { label: '0', min: 0, max: 0, count: 0 },
+    { label: '1–5', min: 1, max: 5, count: 0 },
+    { label: '6–20', min: 6, max: 20, count: 0 },
+    { label: '21–50', min: 21, max: 50, count: 0 },
+    { label: '50+', min: 51, max: Infinity, count: 0 }
+  ];
+  activity.forEach(u => {
+    const n = Number(u.backtest_count);
+    const b = buckets.find(b => n >= b.min && n <= b.max);
+    if (b) b.count++;
+  });
+  const maxCount = Math.max(...buckets.map(b => b.count)) || 1;
+  document.getElementById('act-histogram').innerHTML = `
+    <div style="display:flex;align-items:flex-end;gap:12px;height:80px">
+      ${buckets.map(b => {
+        const h = Math.round((b.count / maxCount) * 72);
+        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
+          <span class="td-mono" style="font-size:11px;color:var(--txm)">${fmtN(b.count)}</span>
+          <div style="width:100%;height:${h}px;background:var(--adm);border-radius:4px 4px 0 0;opacity:${h>0?0.8:0.2};min-height:2px"></div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="display:flex;gap:12px;margin-top:4px">
+      ${buckets.map(b => `<div style="flex:1;text-align:center;font-size:10px;color:var(--txm);font-family:'JetBrains Mono',monospace">${b.label}</div>`).join('')}
+    </div>`;
+}
+
+/* ══════════════════════════════════════════════════════════
+   SECTION: SUPORTE
+══════════════════════════════════════════════════════════ */
+function supCatClass(cat) {
+  if (!cat) return 'badge-cat-outro';
+  const c = cat.toLowerCase();
+  if (c.includes('dúvida') || c.includes('produto')) return 'badge-cat-duvida';
+  if (c.includes('técnico') || c.includes('tecnico')) return 'badge-cat-tecnico';
+  if (c.includes('plano') || c.includes('pagamento')) return 'badge-cat-plano';
+  if (c.includes('backtest')) return 'badge-cat-backtest';
+  return 'badge-cat-outro';
+}
+
+function fmtDatetimeBR(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleString('pt-BR', {
+    day: '2-digit', month: '2-digit', year: '2-digit',
+    hour: '2-digit', minute: '2-digit'
+  });
+}
+
+async function loadSupport() {
+  const sec = document.getElementById('s-support');
+  sec.innerHTML = `
+    <div class="section-hdr">
+      <div class="section-title">Suporte</div>
+      <div class="section-sub">Tickets de atendimento ao cliente</div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Pendentes</div><div class="kpi-value" id="kpi-sup-pending">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Resolvidos</div><div class="kpi-value" id="kpi-sup-resolved">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Tempo médio (h)</div><div class="kpi-value" id="kpi-sup-avg">—</div></div>
+    </div>
+    <div class="table-card">
+      <div class="table-card-header" style="flex-wrap:wrap;gap:8px">
+        <span class="table-card-title">Tickets</span>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div style="display:flex;gap:4px">
+            <button class="period-btn active" id="sup-f-all"    onclick="supSetFilter('all')">Todos</button>
+            <button class="period-btn"        id="sup-f-pending" onclick="supSetFilter('pending')">Pendentes</button>
+            <button class="period-btn"        id="sup-f-resolved" onclick="supSetFilter('resolved')">Resolvidos</button>
+          </div>
+          <input class="search-input" id="sup-search" placeholder="Buscar por email ou nome..."
+            oninput="supSetSearch(this.value)" autocomplete="off" style="width:220px">
+        </div>
+      </div>
+      <div id="sup-table-wrap"><div class="loading-rows">Carregando...</div></div>
+    </div>`;
+
+  const { data: tickets } = await db
+    .from('support_tickets')
+    .select('*')
+    .order('status', { ascending: true })
+    .order('created_at', { ascending: false });
+
+  state.supTickets = tickets || [];
+  renderSupKPIs();
+  renderSupTable();
+  startSupportRealtime();
+}
+
+function renderSupKPIs() {
+  const tickets = state.supTickets;
+  const pending  = tickets.filter(t => t.status === 'pending').length;
+  const resolved = tickets.filter(t => t.status === 'resolved').length;
+
+  const resolvedWithTime = tickets.filter(t => t.status === 'resolved' && t.resolved_at && t.created_at);
+  const avgMs = resolvedWithTime.length
+    ? resolvedWithTime.reduce((s, t) => s + (new Date(t.resolved_at) - new Date(t.created_at)), 0) / resolvedWithTime.length
+    : 0;
+  const avgH = avgMs ? (avgMs / 36e5).toFixed(1) : '—';
+
+  const p = document.getElementById('kpi-sup-pending');
+  const r = document.getElementById('kpi-sup-resolved');
+  const a = document.getElementById('kpi-sup-avg');
+  if (p) p.textContent = fmtN(pending);
+  if (r) r.textContent = fmtN(resolved);
+  if (a) a.textContent = avgH;
+}
+
+function supSetFilter(f) {
+  state.supFilter = f;
+  ['all','pending','resolved'].forEach(k => {
+    const el = document.getElementById(`sup-f-${k}`);
+    if (el) el.classList.toggle('active', k === f);
+  });
+  renderSupTable();
+}
+
+function supSetSearch(v) {
+  state.supSearch = v.toLowerCase();
+  renderSupTable();
+}
+
+function supFilteredTickets() {
+  let list = state.supTickets;
+  if (state.supFilter !== 'all') list = list.filter(t => t.status === state.supFilter);
+  if (state.supSearch) {
+    list = list.filter(t =>
+      (t.user_email || '').toLowerCase().includes(state.supSearch) ||
+      (t.user_name  || '').toLowerCase().includes(state.supSearch)
+    );
+  }
+  return list;
+}
+
+function renderSupTable() {
+  const wrap = document.getElementById('sup-table-wrap');
+  if (!wrap) return;
+  const list = supFilteredTickets();
+  if (!list.length) {
+    wrap.innerHTML = '<div class="loading-rows">Nenhum ticket encontrado</div>';
+    return;
+  }
+  const rows = list.map(t => `
+    <tr id="sup-row-${t.id}">
+      <td>
+        <div style="color:var(--tx);font-weight:500;font-size:13px">${t.user_name || '—'}</div>
+        <div style="color:var(--txs);font-size:11px">${t.user_email || '—'}</div>
+      </td>
+      <td><span class="badge ${supCatClass(t.category)}">${t.category || '—'}</span></td>
+      <td><a href="https://wa.me/55${t.user_whatsapp}" target="_blank" style="color:var(--adm);font-size:12px;font-family:'JetBrains Mono',monospace">${t.user_whatsapp}</a></td>
+      <td>${planBadge(t.user_plan || 'trial')}</td>
+      <td class="td-mono" style="font-size:11px;color:var(--txm)">${fmtDatetimeBR(t.created_at)}</td>
+      <td><span class="badge ${t.status === 'pending' ? 'badge-pending' : 'badge-resolved'}">${t.status === 'pending' ? 'PENDENTE' : 'RESOLVIDO'}</span></td>
+      <td><button class="period-btn" onclick="openTicketDrawer('${t.id}')" style="font-size:11px">Ver / Responder</button></td>
+    </tr>`).join('');
+
+  wrap.innerHTML = `<table><thead><tr>
+    <th>Usuário</th><th>Categoria</th><th>WhatsApp</th><th>Plano</th>
+    <th>Aberto em</th><th>Status</th><th>Ações</th>
+  </tr></thead><tbody id="sup-tbody">${rows}</tbody></table>`;
+}
+
+function openTicketDrawer(ticketId) {
+  const ticket = state.supTickets.find(t => t.id === ticketId);
+  if (!ticket) return;
+  state.openTicket = ticket;
+
+  document.getElementById('sup-drawer-id').textContent = `Ticket #${ticket.id.slice(0, 8)}`;
+
+  const resolveBtn = document.getElementById('sup-drawer-resolve-btn');
+  if (resolveBtn) resolveBtn.style.display = ticket.status === 'resolved' ? 'none' : '';
+
+  const meta = document.getElementById('sup-drawer-meta');
+  if (meta) meta.innerHTML = `
+    <div class="sup-drawer-meta-row"><strong>${ticket.user_name || '—'}</strong> (${ticket.user_email || '—'})</div>
+    <div class="sup-drawer-meta-row">Plano: ${ticket.user_plan || '—'} &nbsp;|&nbsp;
+      WhatsApp: <a href="https://wa.me/55${ticket.user_whatsapp}" target="_blank">${ticket.user_whatsapp}</a></div>
+    <div class="sup-drawer-meta-row">Categoria: ${ticket.category || '—'}</div>
+    <div class="sup-drawer-meta-row">Aberto em: ${fmtDatetimeBR(ticket.created_at)}</div>`;
+
+  const conv = document.getElementById('sup-conv');
+  if (conv) {
+    const history = Array.isArray(ticket.conversation) ? ticket.conversation : [];
+    conv.innerHTML = history.map(m => `
+      <div class="sup-conv-bubble ${m.role === 'user' ? 'user' : 'agent'}">${m.content}</div>
+    `).join('') || '<div style="color:var(--txm);font-size:12px;padding:8px 0">Sem histórico</div>';
+    setTimeout(() => { conv.scrollTop = conv.scrollHeight; }, 50);
+  }
+
+  const notes = document.getElementById('sup-notes-textarea');
+  if (notes) notes.value = ticket.admin_notes || '';
+
+  document.getElementById('sup-drawer-overlay').classList.add('open');
+  document.getElementById('sup-drawer').classList.add('open');
+}
+
+function closeTicketDrawer() {
+  document.getElementById('sup-drawer-overlay').classList.remove('open');
+  document.getElementById('sup-drawer').classList.remove('open');
+  state.openTicket = null;
+}
+
+async function saveAdminNotes() {
+  if (!state.openTicket) return;
+  const notes = document.getElementById('sup-notes-textarea')?.value || '';
+  const btn = document.querySelector('.sup-btn-save');
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+
+  await db.from('support_tickets').update({ admin_notes: notes }).eq('id', state.openTicket.id);
+
+  const idx = state.supTickets.findIndex(t => t.id === state.openTicket.id);
+  if (idx !== -1) state.supTickets[idx].admin_notes = notes;
+  state.openTicket.admin_notes = notes;
+
+  if (btn) { btn.disabled = false; btn.textContent = 'Salvar nota'; }
+}
+
+async function resolveTicket() {
+  if (!state.openTicket || state.openTicket.status === 'resolved') return;
+  const btn = document.getElementById('sup-drawer-resolve-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
+  const now = new Date().toISOString();
+  await db.from('support_tickets').update({
+    status: 'resolved',
+    resolved_at: now,
+    resolved_by: state.admin?.id || null,
+  }).eq('id', state.openTicket.id);
+
+  const idx = state.supTickets.findIndex(t => t.id === state.openTicket.id);
+  if (idx !== -1) {
+    state.supTickets[idx].status = 'resolved';
+    state.supTickets[idx].resolved_at = now;
+  }
+  renderSupKPIs();
+  renderSupTable();
+  refreshPendingBadge();
+  closeTicketDrawer();
+}
+
+function startSupportRealtime() {
+  if (state.supportChannel) return;
+  state.supportChannel = db.channel('admin-support-live')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_tickets' }, payload => {
+      if (state.activeSection !== 'support') return;
+      state.supTickets.unshift(payload.new);
+      renderSupKPIs();
+      renderSupTable();
+      const newRow = document.getElementById(`sup-row-${payload.new.id}`);
+      if (newRow) newRow.classList.add('row-new');
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'support_tickets' }, payload => {
+      if (state.activeSection !== 'support') return;
+      const idx = state.supTickets.findIndex(t => t.id === payload.new.id);
+      if (idx !== -1) state.supTickets[idx] = { ...state.supTickets[idx], ...payload.new };
+      renderSupKPIs();
+      renderSupTable();
+    })
+    .subscribe();
+}
+
+/* Sempre ativo — mantém badge atualizada mesmo fora da seção Suporte */
+function watchPendingCount() {
+  if (state.pendingCountChannel) return;
+  state.pendingCountChannel = db.channel('support-count')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, () => {
+      refreshPendingBadge();
+    })
+    .subscribe();
+  refreshPendingBadge();
+}
+
+async function refreshPendingBadge() {
+  const { count } = await db
+    .from('support_tickets')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending');
+  const badge = document.getElementById('support-badge');
+  if (!badge) return;
+  badge.textContent = count || 0;
+  badge.style.display = count > 0 ? 'inline' : 'none';
+}
+
+/* ══════════════════════════════════════════════════════════
+   AUTH
+══════════════════════════════════════════════════════════ */
+async function initAdmin() {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { window.location.href = '/app.html'; return; }
+
+  const { data: user } = await db.from('users').select('id,email,name,role')
+    .eq('id', session.user.id).maybeSingle();
+
+  if (!user || user.role !== 'admin') { window.location.href = '/app.html'; return; }
+
+  state.admin = user;
+  document.getElementById('admin-email').textContent = user.email;
+
+  const now = new Date();
+  const from30 = new Date(now - 30 * 864e5);
+  document.getElementById('date-from').value = toISODate(from30);
+  document.getElementById('date-to').value   = toISODate(now);
+
+  document.getElementById('loading').style.opacity = '0';
+  setTimeout(() => document.getElementById('loading').style.display = 'none', 300);
+  document.getElementById('app').style.display = 'flex';
+
+  watchPendingCount();
+  loadOverview();
+}
+
+async function handleLogout() {
+  stopRealtime();
+  await db.auth.signOut();
+  window.location.href = '/app.html';
+}
+
+document.addEventListener('DOMContentLoaded', initAdmin);
+</script>
+</body>
+</html>

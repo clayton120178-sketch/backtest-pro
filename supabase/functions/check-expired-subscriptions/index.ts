@@ -19,9 +19,16 @@ serve(async (req) => {
     return new Response("Method Not Allowed", { status: 405 });
   }
 
+  // Verificar que o chamador e o proprio Supabase (pg_cron via service role)
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  if (authHeader !== `Bearer ${serviceKey}`) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    serviceKey
   );
 
   const now = new Date().toISOString();
@@ -46,7 +53,6 @@ serve(async (req) => {
   console.log(`[CHECK-EXPIRED] ${expired.length} assinatura(s) vencida(s) encontrada(s).`);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const serviceKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
   for (const sub of expired) {
     // ── Atualizar status para 'expired' ──
