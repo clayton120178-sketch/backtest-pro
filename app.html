@@ -11527,7 +11527,7 @@ function renderAffiliate(){
     <div class="aff-tabs">
       <button class="aff-tab active" id="aff-tab-resumo" onclick="affShowTab('resumo')">Resumo</button>
       <button class="aff-tab" id="aff-tab-producao" onclick="affShowTab('producao')">Produção</button>
-      <button class="aff-tab" id="aff-tab-config" onclick="affShowTab('config')">Configurações</button>
+      <button class="aff-tab" id="aff-tab-config" onclick="affShowTab('config')">Meu Cadastro</button>
     </div>
     <div id="aff-tab-content"><div class="aff-empty"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="animation:spin 1s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>Carregando...</div></div>`;
 
@@ -11550,6 +11550,8 @@ async function affShowTab(tab){
 }
 
 async function affRenderResumo(el, aff){
+  if(!aff){ el.innerHTML = '<div class="aff-empty">Sem dados de parceiro.</div>'; return; }
+  try {
   // Carregar tier + comissões
   const { data: tierRows } = await db.rpc('resolve_affiliate_tier', { p_affiliate: aff.id });
   const tier = tierRows?.[0] || { tier_name:'Afiliado', active_clients:0, commission_percent:20 };
@@ -11583,8 +11585,8 @@ async function affRenderResumo(el, aff){
         <div style="font-size:11px;color:var(--txs);margin-top:3px">10% de desconto para seus indicados em todas as compras</div>
       </div>
       <div class="aff-coupon-actions">
-        ${aff.coupon_code ? `<button class="aff-btn-sm" onclick="navigator.clipboard.writeText('${aff.coupon_code}');this.textContent='✓ Copiado!';setTimeout(()=>this.textContent='Copiar código',2000)">Copiar código</button>
-        <button class="aff-btn-sm" onclick="navigator.clipboard.writeText(${JSON.stringify(couponShare)});this.textContent='✓ Copiado!';setTimeout(()=>this.textContent='Compartilhar',2000)">Compartilhar</button>` : ''}
+        ${aff.coupon_code ? `<button class="aff-btn-sm" onclick="var b=this;navigator.clipboard.writeText('${aff.coupon_code}');b.textContent='✓ Copiado!';setTimeout(function(){b.textContent='Copiar código'},2000)">Copiar código</button>
+        <button class="aff-btn-sm" data-share="${couponShare.replace(/"/g,'&quot;')}" onclick="var b=this,t=b.dataset.share;navigator.clipboard.writeText(t);b.textContent='✓ Copiado!';setTimeout(function(){b.textContent='Compartilhar'},2000)">Compartilhar</button>` : ''}
       </div>
     </div>
     <div class="aff-tier-bar">
@@ -11609,6 +11611,10 @@ async function affRenderResumo(el, aff){
         <td><span class="aff-status-pill ${p.status}">${{processing:'Em processo',paid:'Pago',failed:'Falhou'}[p.status]||p.status}</span></td>
       </tr>`).join('')}</tbody>
     </table></div>` : ''}`;
+  } catch(e) {
+    el.innerHTML = '<div class="aff-empty" style="color:var(--dg)">Erro ao carregar. Tente novamente.</div>';
+    console.error('[affRenderResumo]', e);
+  }
 }
 
 async function affRenderProducao(el, aff){
@@ -11662,8 +11668,21 @@ async function affRenderProducao(el, aff){
 
 function affRenderConfig(el, aff){
   el.innerHTML = `
-    <div style="max-width:420px">
-      <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:16px">Chave Pix para recebimento</div>
+    <div style="max-width:440px">
+      <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:16px">Dados do cadastro</div>
+      <div class="aff-form-group">
+        <label class="aff-label">Nome de exibição *</label>
+        <input class="aff-input" id="aff-display-name" type="text" value="${aff.display_name||''}" placeholder="Seu nome">
+      </div>
+      <div class="aff-form-group">
+        <label class="aff-label">E-mail (somente leitura)</label>
+        <input class="aff-input" id="aff-cfg-email" type="email" value="" readonly style="opacity:.55;cursor:not-allowed">
+      </div>
+      <div class="aff-form-group">
+        <label class="aff-label">WhatsApp <span style="color:var(--txm);font-weight:400">(DDD + número, só dígitos)</span></label>
+        <input class="aff-input" id="aff-whatsapp" type="tel" value="${aff.whatsapp||''}" placeholder="Ex: 11999990000" oninput="this.value=this.value.replace(/\D/g,'').slice(0,15)">
+      </div>
+      <div style="font-size:13px;font-weight:700;color:var(--tx);margin:20px 0 12px">Chave Pix para recebimento</div>
       <div class="aff-form-group">
         <label class="aff-label">Tipo de chave</label>
         <select class="aff-select" id="aff-pix-type">
@@ -11674,15 +11693,14 @@ function affRenderConfig(el, aff){
         <label class="aff-label">Chave Pix</label>
         <input class="aff-input" id="aff-pix-key" type="text" value="${aff.pix_key||''}" placeholder="Digite sua chave Pix">
       </div>
-      <div class="aff-form-group">
-        <label class="aff-label">Nome de exibição</label>
-        <input class="aff-input" id="aff-display-name" type="text" value="${aff.display_name||''}" placeholder="Seu nome">
-      </div>
       <div id="aff-config-msg" style="font-size:12px;min-height:16px;margin-bottom:8px"></div>
       <button class="aff-save-btn" id="aff-save-btn" onclick="affSaveConfig()">Salvar alterações</button>
     </div>`;
+  db.auth.getSession().then(function(r){
+    var emailEl = document.getElementById('aff-cfg-email');
+    if(emailEl && r.data && r.data.session) emailEl.value = r.data.session.user.email || '';
+  });
 }
-
 async function affSaveConfig(){
   const btn = document.getElementById('aff-save-btn');
   const msg = document.getElementById('aff-config-msg');
@@ -11697,6 +11715,7 @@ async function affSaveConfig(){
         display_name: document.getElementById('aff-display-name')?.value.trim() || undefined,
         pix_key:      document.getElementById('aff-pix-key')?.value.trim() || null,
         pix_key_type: document.getElementById('aff-pix-type')?.value || null,
+        whatsapp:     document.getElementById('aff-whatsapp')?.value.trim() || null,
       }),
     });
     const data = await res.json();
@@ -11706,6 +11725,7 @@ async function affSaveConfig(){
         currentAffiliate.pix_key      = document.getElementById('aff-pix-key')?.value.trim() || null;
         currentAffiliate.pix_key_type = document.getElementById('aff-pix-type')?.value || null;
         currentAffiliate.display_name = document.getElementById('aff-display-name')?.value.trim() || currentAffiliate.display_name;
+        currentAffiliate.whatsapp     = document.getElementById('aff-whatsapp')?.value.trim() || null;
       }
       msg.textContent = '✓ Salvo com sucesso.'; msg.style.color = 'var(--pr)';
     } else {
@@ -11734,6 +11754,14 @@ function renderAffiliateSignup(){
       <input class="aff-input" id="aff-sig-name" type="text" placeholder="Como quer ser identificado">
     </div>
     <div class="aff-form-group">
+      <label class="aff-label">E-mail (somente leitura)</label>
+      <input class="aff-input" id="aff-sig-email" type="email" value="" readonly style="opacity:.55;cursor:not-allowed">
+    </div>
+    <div class="aff-form-group">
+      <label class="aff-label">WhatsApp <span style="color:var(--txm);font-weight:400">(DDD + número, só dígitos)</span></label>
+      <input class="aff-input" id="aff-sig-whatsapp" type="tel" placeholder="Ex: 11999990000" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,15)">
+    </div>
+    <div class="aff-form-group">
       <label class="aff-label">Código do cupom *<span style="color:var(--txm);font-weight:400"> (4–20 letras/números, sem espaços)</span></label>
       <input class="aff-input" id="aff-sig-coupon" type="text" maxlength="20" placeholder="Ex: JOAO10"
         oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');affCheckCoupon(this.value)"
@@ -11753,14 +11781,41 @@ function renderAffiliateSignup(){
       <input class="aff-input" id="aff-sig-pix-key" type="text" placeholder="Sua chave Pix (opcional agora)">
     </div>
     <div class="aff-terms">
-      <strong>Termo de Parceria</strong><br><br>
-      Ao se cadastrar como parceiro do Backtest Pro, você concorda que:<br>
-      • As comissões seguem a tabela de tiers vigente, podendo ser alterada com aviso prévio.<br>
-      • O pagamento é realizado mensalmente via Pix, após o período de carência de 7 dias por comissão.<br>
-      • O valor mínimo para saque é de R$ 50,00.<br>
-      • Comissões de transações estornadas ou canceladas são revertidas.<br>
-      • O uso indevido do cupom (auto-compra, fraude) implica cancelamento do programa.<br>
-      • A alphaQuant reserva-se o direito de encerrar a parceria a qualquer momento em caso de violação dos termos.
+      <strong>Termos e Condições do Programa de Parceiros — Backtest Pro</strong><br><br>
+      <strong>1. Objeto</strong><br>
+      Este instrumento rege a relação entre o Backtest Pro e o afiliado que, de forma voluntária e independente, promove os planos de assinatura da plataforma em troca de comissões sobre vendas realizadas por sua indicação.<br><br>
+      <strong>2. Elegibilidade</strong><br>
+      Pode se cadastrar como afiliado qualquer pessoa física maior de 18 anos ou pessoa jurídica regularmente constituída, possuidora de conta ativa no Backtest Pro e chave Pix válida para recebimento.<br><br>
+      <strong>3. Código de Cupom</strong><br>
+      Cada afiliado recebe um código de cupom único, intransferível e de uso exclusivo para divulgação. O código deve ser composto por 4 a 20 caracteres alfanuméricos sem espaços. É vedada a utilização do próprio cupom em compras pessoais (auto-compra).<br><br>
+      <strong>4. Atribuição de Vendas</strong><br>
+      A atribuição é do tipo <em>first-touch vitalício</em>: o primeiro cupom utilizado por um cliente determina o afiliado responsável por todas as compras futuras daquele cliente, independentemente de trocas de cupom posteriores.<br><br>
+      <strong>5. Estrutura de Comissões</strong><br>
+      As comissões seguem a tabela de tiers dinâmica vigente:<br>
+      • Afiliado (1–19 clientes ativos): 20% sobre o valor líquido de cada assinatura;<br>
+      • Parceiro (20–49 clientes ativos): 25%;<br>
+      • Embaixador (50+ clientes ativos): 30%.<br>
+      O tier é recalculado mensalmente com base no número de clientes ativos vinculados ao afiliado.<br><br>
+      <strong>6. Período de Carência</strong><br>
+      Em observância ao art. 49 do Código de Defesa do Consumidor, toda comissão ficará retida por 7 (sete) dias corridos após a confirmação do pagamento, durante os quais o cliente poderá solicitar reembolso integral. Comissões de transações reembolsadas ou estornadas serão automaticamente canceladas.<br><br>
+      <strong>7. Pagamento</strong><br>
+      Os repasses são realizados mensalmente até o 7.º dia útil do mês subsequente ao da apuração, via Pix, na chave cadastrada pelo afiliado. O valor mínimo acumulado para efetivação do pagamento é de R$ 50,00 (cinquenta reais). Saldos inferiores são mantidos para o período seguinte.<br><br>
+      <strong>8. Obrigações do Afiliado</strong><br>
+      O afiliado compromete-se a: (a) divulgar o Backtest Pro de forma ética, verdadeira e compatível com as diretrizes de comunicação da plataforma; (b) não praticar spam, compra de tráfego fraudulento ou qualquer forma de clique/conversão artificial; (c) não fazer afirmações enganosas sobre resultados de investimentos; (d) manter seus dados cadastrais atualizados, incluindo chave Pix válida.<br><br>
+      <strong>9. Vedações</strong><br>
+      São expressamente proibidos: auto-compra; uso do cupom em contas de terceiros controladas pelo afiliado; falsificação de identidade; divulgação em canais que violem legislação vigente.<br><br>
+      <strong>10. Suspensão e Encerramento</strong><br>
+      O Backtest Pro poderá suspender ou encerrar a parceria, sem prejuízo de responsabilidade por danos, nos casos de: violação de quaisquer termos aqui previstos; inatividade superior a 90 dias sem nenhuma conversão; solicitação expressa do afiliado. Em caso de encerramento, comissões já apuradas e fora do período de carência serão pagas normalmente.<br><br>
+      <strong>11. Alteração de Comissões e Tiers</strong><br>
+      A tabela de tiers e percentuais de comissão pode ser alterada mediante comunicação ao afiliado com antecedência mínima de 30 (trinta) dias. A continuidade na divulgação após esse prazo implica aceitação das novas condições.<br><br>
+      <strong>12. Propriedade Intelectual</strong><br>
+      O afiliado poderá utilizar materiais de divulgação disponibilizados oficialmente pelo Backtest Pro. É vedada a criação de materiais que reproduzam marca, logotipo ou identidade visual da plataforma sem autorização prévia e escrita.<br><br>
+      <strong>13. Confidencialidade</strong><br>
+      O afiliado concorda em manter em sigilo quaisquer informações comerciais, técnicas ou estratégicas do Backtest Pro a que tenha acesso em razão da parceria, durante a vigência e por 2 (dois) anos após o encerramento.<br><br>
+      <strong>14. Responsabilidade</strong><br>
+      O Backtest Pro não se responsabiliza por declarações feitas pelo afiliado em suas ações de divulgação que excedam o conteúdo oficial da plataforma. O afiliado responde civil e criminalmente por eventuais danos causados a terceiros em razão de divulgação irregular.<br><br>
+      <strong>15. Disposições Gerais</strong><br>
+      A eventual invalidade de qualquer cláusula deste termo não afeta a validade das demais. A tolerância de qualquer descumprimento não implica renúncia ao direito de exigir o cumprimento futuro. Este instrumento representa o acordo integral entre as partes sobre o programa de afiliados.
     </div>
     <label class="aff-check-row">
       <input type="checkbox" id="aff-sig-terms">
@@ -11769,6 +11824,10 @@ function renderAffiliateSignup(){
     <div id="aff-sig-msg" style="font-size:12px;margin-bottom:10px;min-height:14px"></div>
     <button class="aff-save-btn" id="aff-sig-btn" onclick="affSubmitSignup()">Cadastrar como parceiro</button>
     <div style="font-size:11px;color:var(--txm);text-align:center;margin-top:16px">Acesso imediato. Sem aprovação prévia necessária.</div>`;
+  db.auth.getSession().then(function(r){
+    var emailEl = document.getElementById('aff-sig-email');
+    if(emailEl && r.data && r.data.session) emailEl.value = r.data.session.user.email || '';
+  });
   return el;
 }
 
@@ -11812,11 +11871,11 @@ async function affSubmitSignup(){
     const res = await fetch(SUPA_URL + '/functions/v1/affiliate-signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-      body: JSON.stringify({ display_name: name, coupon_code: code, pix_key: pixK, pix_key_type: pixT || undefined, terms_accepted: true }),
+      body: JSON.stringify({ display_name: name, coupon_code: code, pix_key: pixK, pix_key_type: pixT || undefined, terms_accepted: true, whatsapp: document.getElementById('aff-sig-whatsapp')?.value.trim() || null }),
     });
     const data = await res.json();
     if(data.success){
-      currentAffiliate = { id: data.affiliate_id, display_name: name, status: data.status, pix_key: pixK, pix_key_type: pixT, coupon_code: data.coupon_code };
+      currentAffiliate = { id: data.affiliate_id, display_name: name, status: data.status, pix_key: pixK, pix_key_type: pixT, coupon_code: data.coupon_code, whatsapp: document.getElementById('aff-sig-whatsapp')?.value.trim() || null };
       updateAvatarUI();
       const main = document.getElementById('main');
       main.innerHTML = `

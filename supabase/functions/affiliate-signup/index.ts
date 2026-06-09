@@ -52,7 +52,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { display_name, pix_key, pix_key_type, coupon_code, terms_accepted } = body;
+    const { display_name, pix_key, pix_key_type, coupon_code, terms_accepted, whatsapp } = body;
 
     if (!terms_accepted) return json({ error: "terms_required" }, 400);
     if (!display_name?.trim()) return json({ error: "display_name_required" }, 400);
@@ -95,6 +95,7 @@ serve(async (req) => {
         display_name: display_name.trim(),
         pix_key: pix_key ?? null,
         pix_key_type: pix_key_type ?? null,
+        whatsapp: typeof whatsapp === "string" ? whatsapp.replace(/\D/g, "").slice(0, 15) || null : null,
         signup_source: "self",
         terms_accepted_at: new Date().toISOString(),
         status,

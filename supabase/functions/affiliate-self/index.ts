@@ -51,7 +51,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { display_name, pix_key, pix_key_type } = body;
+    const { display_name, pix_key, pix_key_type, whatsapp } = body;
 
     // Find affiliate by user_id
     const { data: affiliate, error: findErr } = await supabase
@@ -72,6 +72,9 @@ serve(async (req) => {
     if (pix_key_type !== undefined) {
       if (pix_key_type && !PIX_TYPES.has(pix_key_type)) return json({ error: "invalid_pix_key_type" }, 400);
       update.pix_key_type = pix_key_type ?? null;
+    }
+    if (whatsapp !== undefined) {
+      update.whatsapp = typeof whatsapp === "string" ? whatsapp.replace(/\D/g, "").slice(0, 15) || null : null;
     }
 
     const { error: updateErr } = await supabase
