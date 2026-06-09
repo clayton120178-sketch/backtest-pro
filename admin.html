@@ -221,6 +221,27 @@ tr:hover td{background:var(--bg2);color:var(--tx)}
 .sup-btn-done{background:var(--admd);border:0.5px solid var(--adm);color:var(--adm);padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;transition:all var(--t1)}
 .sup-btn-done:hover{background:var(--adm);color:#000}
 
+/* ── PARCEIROS SECTION ─────────────────────────────────── */
+.parceiro-badge{background:var(--ac);color:#000;font-size:10px;font-weight:800;font-family:'JetBrains Mono',monospace;border-radius:10px;padding:1px 6px;margin-left:auto;min-width:18px;text-align:center}
+.tier-pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:800;letter-spacing:.04em}
+.tier-afiliado{background:rgba(120,120,238,0.12);color:var(--in)}
+.tier-parceiro{background:var(--acd);color:var(--ac)}
+.tier-embaixador{background:rgba(0,187,128,0.12);color:var(--pr)}
+.aff-status-active{background:var(--prd);color:var(--pr)}
+.aff-status-pending{background:var(--acd);color:var(--ac)}
+.aff-status-rejected{background:var(--dgd);color:var(--dg)}
+.aff-status-suspended{background:rgba(136,136,160,0.12);color:#8888A0}
+.parc-drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none}
+.parc-drawer-overlay.open{display:block}
+.parc-drawer{position:fixed;top:0;right:0;width:520px;height:100vh;background:var(--bg1);border-left:0.5px solid var(--bd);z-index:201;display:flex;flex-direction:column;transform:translateX(100%);transition:transform var(--t3) var(--smooth)}
+.parc-drawer.open{transform:none}
+.parc-drawer-head{height:52px;border-bottom:0.5px solid var(--bd);display:flex;align-items:center;gap:10px;padding:0 16px;flex-shrink:0}
+.parc-drawer-name{font-weight:600;font-size:14px;color:var(--tx);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.parc-drawer-close{background:none;border:0.5px solid var(--bd);color:var(--txs);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px;transition:all var(--t1)}
+.parc-drawer-close:hover{color:var(--tx);border-color:var(--bdh)}
+.parc-drawer-tabs{display:flex;border-bottom:0.5px solid var(--bd);flex-shrink:0}
+.parc-drawer-body{flex:1;overflow-y:auto;padding:16px}
+
 /* category badge colors */
 .badge-cat-duvida{background:var(--ind);color:var(--in)}
 .badge-cat-tecnico{background:var(--dgd);color:var(--dg)}
@@ -275,6 +296,11 @@ tr:hover td{background:var(--bg2);color:var(--tx)}
         Suporte
         <span id="support-badge" class="support-badge" style="display:none">0</span>
       </button>
+      <button class="nav-item" data-section="parceiros" onclick="navTo('parceiros')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Parceiros
+        <span id="parceiros-badge" class="parceiro-badge" style="display:none">0</span>
+      </button>
     </nav>
 
     <!-- Content -->
@@ -301,8 +327,25 @@ tr:hover td{background:var(--bg2);color:var(--tx)}
       <section id="s-rankings" style="display:none"></section>
       <section id="s-activity" style="display:none"></section>
       <section id="s-support" style="display:none"></section>
+      <section id="s-parceiros" style="display:none"></section>
     </main>
   </div>
+</div>
+
+<!-- Parceiro drawer -->
+<div class="parc-drawer-overlay" id="parc-drawer-overlay" onclick="closeParceiroDrawer()"></div>
+<div class="parc-drawer" id="parc-drawer">
+  <div class="parc-drawer-head">
+    <button class="parc-drawer-close" onclick="closeParceiroDrawer()">← Voltar</button>
+    <span class="parc-drawer-name" id="parc-drawer-name"></span>
+    <span id="parc-drawer-status"></span>
+  </div>
+  <div class="parc-drawer-tabs">
+    <button class="tab-btn active" id="parc-dtab-resumo"     onclick="switchParceiroDrawerTab('resumo')">Resumo</button>
+    <button class="tab-btn"        id="parc-dtab-comissoes"  onclick="switchParceiroDrawerTab('comissoes')">Comissões</button>
+    <button class="tab-btn"        id="parc-dtab-saques"     onclick="switchParceiroDrawerTab('saques')">Saques</button>
+  </div>
+  <div class="parc-drawer-body" id="parc-drawer-body"></div>
 </div>
 
 <!-- Suporte drawer -->
@@ -357,6 +400,12 @@ const state = {
   supTickets: [],
   supFilter: 'all',
   supSearch: '',
+  parceirosTab: 'parceiros',
+  parceiros: [],
+  parceiroDrawer: null,
+  parceiroDrawerTab: 'resumo',
+  parceirosFilter: 'all',
+  parceirosSearch: '',
 };
 
 /* ══════════════════════════════════════════════════════════
@@ -594,6 +643,7 @@ function loadSection(name) {
     case 'rankings': return loadRankings(state.rankingsTab);
     case 'activity': return loadActivity();
     case 'support': return loadSupport();
+    case 'parceiros': return loadParceiros();
   }
 }
 
@@ -1381,6 +1431,571 @@ async function refreshPendingBadge() {
 }
 
 /* ══════════════════════════════════════════════════════════
+   SECTION: PARCEIROS
+══════════════════════════════════════════════════════════ */
+function affTierPill(tier) {
+  const t = (tier || 'afiliado').toLowerCase();
+  const labels = { afiliado: 'AFILIADO', parceiro: 'PARCEIRO', embaixador: 'EMBAIXADOR' };
+  return '<span class="tier-pill tier-' + t + '">' + (labels[t] || t.toUpperCase()) + '</span>';
+}
+
+function affStatusPill(status) {
+  const s = (status || 'pending').toLowerCase();
+  const labels = { active: 'ATIVO', pending: 'PENDENTE', rejected: 'REJEITADO', suspended: 'SUSPENSO' };
+  return '<span class="badge aff-status-' + s + '">' + (labels[s] || s.toUpperCase()) + '</span>';
+}
+
+function affClientTier(clients) {
+  const n = Number(clients || 0);
+  if (n >= 50) return 'embaixador';
+  if (n >= 20) return 'parceiro';
+  return 'afiliado';
+}
+
+async function loadParceiros() {
+  const sec = document.getElementById('s-parceiros');
+  sec.innerHTML = `
+    <div class="section-hdr">
+      <div class="section-title">Parceiros / Afiliados</div>
+      <div class="section-sub">Programa de afiliados e comissões</div>
+    </div>
+    <div class="tabs-bar">
+      <button class="tab-btn active" id="parc-tab-parceiros" onclick="switchParceiroTab('parceiros')">Parceiros</button>
+      <button class="tab-btn" id="parc-tab-saques" onclick="switchParceiroTab('saques')">Saques</button>
+      <button class="tab-btn" id="parc-tab-config" onclick="switchParceiroTab('config')">Configurações</button>
+    </div>
+    <div id="parceiros-tab-content"></div>`;
+  await loadParceiroTabContent(state.parceirosTab || 'parceiros');
+}
+
+async function switchParceiroTab(tab) {
+  state.parceirosTab = tab;
+  ['parceiros','saques','config'].forEach(k => {
+    const b = document.getElementById('parc-tab-' + k);
+    if (b) b.classList.toggle('active', k === tab);
+  });
+  await loadParceiroTabContent(tab);
+}
+
+async function loadParceiroTabContent(tab) {
+  if (tab === 'parceiros') await loadParceirosList();
+  else if (tab === 'saques') await loadSaques();
+  else if (tab === 'config') await loadParceiroConfig();
+}
+
+async function loadParceirosList() {
+  const wrap = document.getElementById('parceiros-tab-content');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="loading-rows">Carregando...</div>';
+
+  const [affRes, commRes, couponRes, payRes, refRes] = await Promise.all([
+    db.from('affiliates').select('id,user_id,display_name,status,created_at,pix_key,pix_key_type,signup_source').then(r => r.data || []),
+    db.from('affiliate_commissions').select('id,affiliate_id,commission_amount,status').then(r => r.data || []),
+    db.from('coupons').select('id,affiliate_id,code,redemptions_count').then(r => r.data || []),
+    db.from('affiliate_payouts').select('id,affiliate_id,amount,status').then(r => r.data || []),
+    db.from('affiliate_referrals').select('affiliate_id,status').eq('status','active').then(r => r.data || []),
+  ]);
+
+  const userIds = affRes.map(a => a.user_id).filter(Boolean);
+  const usersData = userIds.length
+    ? await db.from('users').select('id,email').in('id', userIds).then(r => r.data || [])
+    : [];
+  const userMap = Object.fromEntries(usersData.map(u => [u.id, u.email]));
+
+  const couponByAff = {};
+  couponRes.forEach(c => { if (c.affiliate_id) couponByAff[c.affiliate_id] = c; });
+
+  const commByAff = {};
+  commRes.forEach(c => {
+    if (!commByAff[c.affiliate_id]) commByAff[c.affiliate_id] = { pending: 0, total: 0 };
+    if (c.status === 'pending' || c.status === 'approved') commByAff[c.affiliate_id].pending += Number(c.commission_amount || 0);
+    commByAff[c.affiliate_id].total += Number(c.commission_amount || 0);
+  });
+
+  const paidByAff = {};
+  payRes.filter(p => p.status === 'paid').forEach(p => {
+    paidByAff[p.affiliate_id] = (paidByAff[p.affiliate_id] || 0) + Number(p.amount || 0);
+  });
+
+  const refCountByAff = {};
+  refRes.forEach(r => { refCountByAff[r.affiliate_id] = (refCountByAff[r.affiliate_id] || 0) + 1; });
+
+  state.parceiros = affRes.map(a => ({
+    ...a,
+    email: userMap[a.user_id] || '—',
+    coupon: couponByAff[a.id] || null,
+    pendingComm: commByAff[a.id] ? commByAff[a.id].pending : 0,
+    totalComm: commByAff[a.id] ? commByAff[a.id].total : 0,
+    paidOut: paidByAff[a.id] || 0,
+    activeClients: refCountByAff[a.id] || 0,
+  }));
+
+  const activeCount  = affRes.filter(a => a.status === 'active').length;
+  const pendingCount = affRes.filter(a => a.status === 'pending').length;
+  const totalPending = commRes.filter(c => c.status === 'pending' || c.status === 'approved')
+    .reduce((s, c) => s + Number(c.commission_amount || 0), 0);
+  const totalClients = refRes.length;
+  const totalPaid    = payRes.filter(p => p.status === 'paid').reduce((s, p) => s + Number(p.amount || 0), 0);
+
+  wrap.innerHTML = `
+    <div class="kpi-grid" style="margin-top:0">
+      <div class="kpi-card"><div class="kpi-label">Ativos</div><div class="kpi-value">${fmtN(activeCount)}</div><div class="kpi-delta neu">${pendingCount > 0 ? pendingCount + ' aguardando aprovação' : 'nenhum pendente'}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Comissões a Pagar</div><div class="kpi-value" style="font-size:22px">${fmtBRL(totalPending)}</div><div class="kpi-delta neu">pendentes + aprovadas</div></div>
+      <div class="kpi-card"><div class="kpi-label">Clientes Indicados</div><div class="kpi-value">${fmtN(totalClients)}</div><div class="kpi-delta neu">vínculos ativos</div></div>
+      <div class="kpi-card"><div class="kpi-label">Total Pago</div><div class="kpi-value" style="font-size:22px">${fmtBRL(totalPaid)}</div><div class="kpi-delta neu">saques realizados</div></div>
+    </div>
+    <div class="table-card">
+      <div class="table-card-header" style="flex-wrap:wrap;gap:8px">
+        <span class="table-card-title">Lista de Parceiros</span>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div style="display:flex;gap:4px">
+            <button class="period-btn active" id="parc-f-all"     onclick="parcSetFilter('all')">Todos</button>
+            <button class="period-btn"        id="parc-f-active"  onclick="parcSetFilter('active')">Ativos</button>
+            <button class="period-btn"        id="parc-f-pending" onclick="parcSetFilter('pending')">Pendentes</button>
+          </div>
+          <input class="search-input" id="parc-search" placeholder="Buscar por email, nome ou cupom..." oninput="parcSetSearch(this.value)" style="width:240px">
+          <button class="period-apply" onclick="openCadastrarParceiro()">+ Cadastrar</button>
+        </div>
+      </div>
+      <div id="parceiros-table-wrap"></div>
+    </div>`;
+
+  state.parceirosFilter = 'all';
+  state.parceirosSearch = '';
+  renderParceirosTable();
+}
+
+function parcSetFilter(f) {
+  state.parceirosFilter = f;
+  ['all','active','pending'].forEach(k => {
+    const el = document.getElementById('parc-f-' + k);
+    if (el) el.classList.toggle('active', k === f);
+  });
+  renderParceirosTable();
+}
+
+function parcSetSearch(v) {
+  state.parceirosSearch = (v || '').toLowerCase();
+  renderParceirosTable();
+}
+
+function parcFiltered() {
+  let list = state.parceiros || [];
+  if (state.parceirosFilter !== 'all') list = list.filter(p => p.status === state.parceirosFilter);
+  if (state.parceirosSearch) {
+    const q = state.parceirosSearch;
+    list = list.filter(p =>
+      (p.display_name || '').toLowerCase().includes(q) ||
+      (p.email || '').toLowerCase().includes(q) ||
+      (p.coupon ? p.coupon.code : '').toLowerCase().includes(q)
+    );
+  }
+  return list;
+}
+
+function renderParceirosTable() {
+  const wrap = document.getElementById('parceiros-table-wrap');
+  if (!wrap) return;
+  const list = parcFiltered();
+  if (!list.length) {
+    wrap.innerHTML = '<div class="loading-rows">Nenhum parceiro encontrado</div>';
+    return;
+  }
+  const rows = list.map(p =>
+    '<tr id="parc-row-' + p.id + '">' +
+    '<td><div style="color:var(--tx);font-weight:500">' + (p.display_name || '—') + '</div>' +
+    '<div style="color:var(--txs);font-size:11px">' + p.email + '</div></td>' +
+    '<td><code style="font-family:\'JetBrains Mono\',monospace;font-size:12px;color:var(--adm)">' + (p.coupon ? p.coupon.code : '—') + '</code></td>' +
+    '<td>' + affTierPill(affClientTier(p.activeClients)) + '</td>' +
+    '<td class="td-mono" style="text-align:right">' + fmtN(p.activeClients) + '</td>' +
+    '<td class="td-mono" style="text-align:right;color:var(--ac)">' + fmtBRL(p.pendingComm) + '</td>' +
+    '<td class="td-mono" style="text-align:right">' + fmtBRL(p.totalComm) + '</td>' +
+    '<td>' + affStatusPill(p.status) + '</td>' +
+    '<td><button class="period-btn" onclick="openParceiroDrawer(\'' + p.id + '\')" style="font-size:11px">Ver detalhes</button></td>' +
+    '</tr>'
+  ).join('');
+
+  wrap.innerHTML = '<table><thead><tr>' +
+    '<th>Parceiro</th><th>Cupom</th><th>Tier</th>' +
+    '<th style="text-align:right">Clientes</th>' +
+    '<th style="text-align:right">Pendente</th>' +
+    '<th style="text-align:right">Total Gerado</th>' +
+    '<th>Status</th><th>Ações</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+async function openParceiroDrawer(affiliateId) {
+  const aff = (state.parceiros || []).find(p => p.id === affiliateId);
+  if (!aff) return;
+  state.parceiroDrawer = aff;
+  state.parceiroDrawerTab = 'resumo';
+
+  const nameEl = document.getElementById('parc-drawer-name');
+  if (nameEl) nameEl.textContent = aff.display_name || aff.email;
+  const statusEl = document.getElementById('parc-drawer-status');
+  if (statusEl) statusEl.innerHTML = affStatusPill(aff.status);
+
+  document.getElementById('parc-drawer-overlay').classList.add('open');
+  document.getElementById('parc-drawer').classList.add('open');
+
+  ['resumo','comissoes','saques'].forEach(t => {
+    const b = document.getElementById('parc-dtab-' + t);
+    if (b) b.classList.toggle('active', t === 'resumo');
+  });
+
+  await renderParceiroDrawerTab('resumo');
+}
+
+function closeParceiroDrawer() {
+  document.getElementById('parc-drawer-overlay').classList.remove('open');
+  document.getElementById('parc-drawer').classList.remove('open');
+  state.parceiroDrawer = null;
+}
+
+async function switchParceiroDrawerTab(tab) {
+  state.parceiroDrawerTab = tab;
+  ['resumo','comissoes','saques'].forEach(t => {
+    const b = document.getElementById('parc-dtab-' + t);
+    if (b) b.classList.toggle('active', t === tab);
+  });
+  await renderParceiroDrawerTab(tab);
+}
+
+async function renderParceiroDrawerTab(tab) {
+  const body = document.getElementById('parc-drawer-body');
+  if (!body || !state.parceiroDrawer) return;
+  const aff = state.parceiroDrawer;
+
+  if (tab === 'resumo') {
+    const tier = affClientTier(aff.activeClients);
+    const tierPct = { afiliado: 20, parceiro: 25, embaixador: 30 };
+    const pct = tierPct[tier];
+    const actionBtns =
+      aff.status === 'pending'
+        ? '<div style="display:flex;gap:8px;margin-bottom:12px">' +
+          '<button class="period-apply" style="flex:1;padding:8px" onclick="parceiroApprove(\'' + aff.id + '\')">✓ Aprovar</button>' +
+          '<button class="parc-drawer-close" style="flex:1;padding:8px;border-color:var(--dg);color:var(--dg)" onclick="parceiroReject(\'' + aff.id + '\')">✗ Rejeitar</button>' +
+          '</div>'
+        : aff.status === 'active'
+        ? '<div style="margin-bottom:12px"><button class="parc-drawer-close" style="width:100%;padding:8px;border-color:var(--dg);color:var(--dg)" onclick="parceiroSuspend(\'' + aff.id + '\')">Suspender parceiro</button></div>'
+        : aff.status === 'suspended'
+        ? '<div style="margin-bottom:12px"><button class="period-apply" style="width:100%;padding:8px" onclick="parceiroUnsuspend(\'' + aff.id + '\')">Reativar parceiro</button></div>'
+        : '';
+
+    body.innerHTML =
+      '<div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">' +
+      '<div class="kpi-card"><div class="kpi-label">Clientes Ativos</div><div class="kpi-value">' + fmtN(aff.activeClients) + '</div></div>' +
+      '<div class="kpi-card"><div class="kpi-label">Comissão Pendente</div><div class="kpi-value" style="font-size:20px">' + fmtBRL(aff.pendingComm) + '</div></div>' +
+      '<div class="kpi-card"><div class="kpi-label">Total Gerado</div><div class="kpi-value" style="font-size:20px">' + fmtBRL(aff.totalComm) + '</div></div>' +
+      '</div>' +
+      '<div class="table-card" style="margin-bottom:12px">' +
+      '<div class="table-card-header"><span class="table-card-title">Informações</span></div>' +
+      '<div style="padding:14px 18px;display:flex;flex-direction:column;gap:8px;font-size:13px">' +
+      '<div style="display:flex;justify-content:space-between"><span style="color:var(--txs)">Cupom:</span> <code style="font-family:\'JetBrains Mono\',monospace;color:var(--adm)">' + (aff.coupon ? aff.coupon.code : '—') + '</code></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--txs)">Tier:</span> <span style="display:flex;align-items:center;gap:6px">' + affTierPill(tier) + '<span style="color:var(--txm);font-size:11px">' + pct + '% comissão</span></span></div>' +
+      '<div style="display:flex;justify-content:space-between"><span style="color:var(--txs)">Resgates:</span> <span>' + fmtN(aff.coupon ? aff.coupon.redemptions_count : 0) + '</span></div>' +
+      '<div style="display:flex;justify-content:space-between"><span style="color:var(--txs)">Pix:</span> <span>' + (aff.pix_key ? aff.pix_key + ' (' + (aff.pix_key_type || '—') + ')' : '<span style="color:var(--txm)">não configurado</span>') + '</span></div>' +
+      '<div style="display:flex;justify-content:space-between"><span style="color:var(--txs)">Cadastro:</span> <span>' + fmtDate(aff.created_at) + '</span></div>' +
+      '<div style="display:flex;justify-content:space-between"><span style="color:var(--txs)">Origem:</span> <span style="color:var(--txm)">' + (aff.signup_source || '—') + '</span></div>' +
+      '</div></div>' +
+      actionBtns;
+
+  } else if (tab === 'comissoes') {
+    body.innerHTML = '<div class="loading-rows">Carregando comissões...</div>';
+    const { data: comms } = await db.from('affiliate_commissions')
+      .select('id,plan,cycle,net_amount,commission_rate,commission_amount,status,created_at')
+      .eq('affiliate_id', aff.id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (!comms || !comms.length) {
+      body.innerHTML = '<div class="empty-state"><div class="empty-state-icon" style="font-size:32px;margin-bottom:8px">💸</div><div class="empty-state-msg">Nenhuma comissão ainda</div></div>';
+      return;
+    }
+
+    const csb = function(s) {
+      var map = { pending: ['badge-pending','PENDENTE'], approved: ['badge-active','APROVADA'], paid: ['badge-completed','PAGA'], reversed: ['badge-failed','ESTORNADA'] };
+      var p = map[s] || ['badge-trial', s.toUpperCase()];
+      return '<span class="badge ' + p[0] + '">' + p[1] + '</span>';
+    };
+
+    const rows = comms.map(c =>
+      '<tr>' +
+      '<td class="td-mono" style="font-size:11px">' + fmtDate(c.created_at) + '</td>' +
+      '<td>' + (c.plan || '').toUpperCase() + ' <span style="color:var(--txm)">' + (c.cycle || '') + '</span></td>' +
+      '<td class="td-mono" style="text-align:right">' + fmtBRL(c.net_amount) + '</td>' +
+      '<td class="td-mono" style="text-align:right">' + (c.commission_rate || 0) + '%</td>' +
+      '<td class="td-mono" style="text-align:right;color:var(--ac)">' + fmtBRL(c.commission_amount) + '</td>' +
+      '<td>' + csb(c.status) + '</td>' +
+      '</tr>'
+    ).join('');
+
+    body.innerHTML = '<table><thead><tr>' +
+      '<th>Data</th><th>Plano/Ciclo</th><th style="text-align:right">Líquido</th>' +
+      '<th style="text-align:right">Taxa</th><th style="text-align:right">Comissão</th><th>Status</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>';
+
+  } else if (tab === 'saques') {
+    body.innerHTML = '<div class="loading-rows">Carregando saques...</div>';
+    const { data: payts } = await db.from('affiliate_payouts')
+      .select('id,amount,period_start,period_end,status,created_at,paid_at,commissions_count')
+      .eq('affiliate_id', aff.id)
+      .order('created_at', { ascending: false });
+
+    if (!payts || !payts.length) {
+      body.innerHTML = '<div class="empty-state"><div class="empty-state-icon" style="font-size:32px;margin-bottom:8px">🏦</div><div class="empty-state-msg">Nenhum saque ainda</div></div>';
+      return;
+    }
+
+    const psb = function(s) {
+      var map = { pending: ['badge-pending','PENDENTE'], paid: ['badge-active','PAGO'], cancelled: ['badge-failed','CANCELADO'] };
+      var p = map[s] || ['badge-trial', s.toUpperCase()];
+      return '<span class="badge ' + p[0] + '">' + p[1] + '</span>';
+    };
+
+    const rows = payts.map(p =>
+      '<tr>' +
+      '<td class="td-mono" style="font-size:11px">' + fmtDate(p.period_start) + ' – ' + fmtDate(p.period_end) + '</td>' +
+      '<td class="td-mono" style="text-align:right;color:var(--pr)">' + fmtBRL(p.amount) + '</td>' +
+      '<td class="td-mono" style="text-align:right">' + fmtN(p.commissions_count) + '</td>' +
+      '<td>' + psb(p.status) + '</td>' +
+      '<td class="td-mono" style="font-size:11px;color:var(--txm)">' + (p.paid_at ? fmtDate(p.paid_at) : '—') + '</td>' +
+      '</tr>'
+    ).join('');
+
+    body.innerHTML = '<table><thead><tr>' +
+      '<th>Período</th><th style="text-align:right">Valor</th>' +
+      '<th style="text-align:right">Comissões</th><th>Status</th><th>Pago em</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+}
+
+async function parceiroApprove(affiliateId) {
+  await db.from('affiliates').update({ status: 'active', updated_at: new Date().toISOString() }).eq('id', affiliateId);
+  const p = (state.parceiros || []).find(p => p.id === affiliateId);
+  if (p) { p.status = 'active'; state.parceiroDrawer = p; }
+  renderParceirosTable();
+  refreshParceiroBadge();
+  await renderParceiroDrawerTab('resumo');
+}
+
+async function parceiroReject(affiliateId) {
+  if (!confirm('Rejeitar este parceiro?')) return;
+  await db.from('affiliates').update({ status: 'rejected', updated_at: new Date().toISOString() }).eq('id', affiliateId);
+  const p = (state.parceiros || []).find(p => p.id === affiliateId);
+  if (p) { p.status = 'rejected'; state.parceiroDrawer = p; }
+  renderParceirosTable();
+  refreshParceiroBadge();
+  await renderParceiroDrawerTab('resumo');
+}
+
+async function parceiroSuspend(affiliateId) {
+  if (!confirm('Suspender este parceiro? Comissões pendentes serão mantidas.')) return;
+  await db.from('affiliates').update({ status: 'suspended', updated_at: new Date().toISOString() }).eq('id', affiliateId);
+  const p = (state.parceiros || []).find(p => p.id === affiliateId);
+  if (p) { p.status = 'suspended'; state.parceiroDrawer = p; }
+  renderParceirosTable();
+  await renderParceiroDrawerTab('resumo');
+}
+
+async function parceiroUnsuspend(affiliateId) {
+  await db.from('affiliates').update({ status: 'active', updated_at: new Date().toISOString() }).eq('id', affiliateId);
+  const p = (state.parceiros || []).find(p => p.id === affiliateId);
+  if (p) { p.status = 'active'; state.parceiroDrawer = p; }
+  renderParceirosTable();
+  await renderParceiroDrawerTab('resumo');
+}
+
+async function loadSaques() {
+  const wrap = document.getElementById('parceiros-tab-content');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="loading-rows">Carregando saques...</div>';
+
+  const { data: payouts } = await db.from('affiliate_payouts')
+    .select('id,affiliate_id,amount,period_start,period_end,status,created_at,paid_at,commissions_count,affiliates(display_name)')
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  const list = payouts || [];
+  const totalPending = list.filter(p => p.status === 'pending').reduce((s, p) => s + Number(p.amount || 0), 0);
+  const pendingCount = list.filter(p => p.status === 'pending').length;
+
+  const psb = function(s) {
+    var map = { pending: ['badge-pending','PENDENTE'], paid: ['badge-active','PAGO'], cancelled: ['badge-failed','CANCELADO'] };
+    var kv = map[s] || ['badge-trial', s.toUpperCase()];
+    return '<span class="badge ' + kv[0] + '">' + kv[1] + '</span>';
+  };
+
+  const rows = list.map(p =>
+    '<tr>' +
+    '<td style="color:var(--tx)">' + (p.affiliates ? p.affiliates.display_name : '—') + '</td>' +
+    '<td class="td-mono" style="font-size:11px">' + fmtDate(p.period_start) + ' – ' + fmtDate(p.period_end) + '</td>' +
+    '<td class="td-mono" style="text-align:right;color:var(--pr)">' + fmtBRL(p.amount) + '</td>' +
+    '<td class="td-mono" style="text-align:right">' + fmtN(p.commissions_count) + '</td>' +
+    '<td>' + psb(p.status) + '</td>' +
+    '<td class="td-mono" style="font-size:11px;color:var(--txm)">' + (p.paid_at ? fmtDate(p.paid_at) : '—') + '</td>' +
+    '<td>' + (p.status === 'pending' ? '<button class="sup-btn-done" onclick="markPayoutPaid(\'' + p.id + '\')" style="font-size:11px;padding:4px 10px">Marcar Pago</button>' : '') + '</td>' +
+    '</tr>'
+  ).join('');
+
+  wrap.innerHTML =
+    '<div class="kpi-grid" style="margin-top:0;grid-template-columns:repeat(3,1fr)">' +
+    '<div class="kpi-card"><div class="kpi-label">Aguardando Pagamento</div><div class="kpi-value" style="font-size:22px">' + fmtBRL(totalPending) + '</div></div>' +
+    '<div class="kpi-card"><div class="kpi-label">Saques Pendentes</div><div class="kpi-value">' + fmtN(pendingCount) + '</div></div>' +
+    '<div class="kpi-card"><div class="kpi-label">Total Registros</div><div class="kpi-value">' + fmtN(list.length) + '</div></div>' +
+    '</div>' +
+    '<div class="table-card">' +
+    '<div class="table-card-header"><span class="table-card-title">Saques</span></div>' +
+    (rows
+      ? '<table><thead><tr><th>Parceiro</th><th>Período</th><th style="text-align:right">Valor</th><th style="text-align:right">Comissões</th><th>Status</th><th>Pago em</th><th>Ação</th></tr></thead><tbody>' + rows + '</tbody></table>'
+      : '<div class="loading-rows">Nenhum saque registrado</div>') +
+    '</div>';
+}
+
+async function markPayoutPaid(payoutId) {
+  if (!confirm('Confirmar pagamento deste saque?')) return;
+  const now = new Date().toISOString();
+  const { error } = await db.from('affiliate_payouts')
+    .update({ status: 'paid', paid_at: now, updated_at: now })
+    .eq('id', payoutId);
+  if (!error) await loadSaques();
+}
+
+async function loadParceiroConfig() {
+  const wrap = document.getElementById('parceiros-tab-content');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="loading-rows">Carregando configurações...</div>';
+
+  const [settingsRes, tiersRes] = await Promise.all([
+    db.from('affiliate_settings').select('*').maybeSingle(),
+    db.from('affiliate_tiers').select('*').order('min_clients'),
+  ]);
+
+  const settings = settingsRes.data || {};
+  const tiers    = tiersRes.data || [];
+
+  const tierRows = tiers.map(t =>
+    '<tr id="tier-row-' + t.id + '">' +
+    '<td>' + affTierPill(t.tier_name) + '</td>' +
+    '<td class="td-mono" style="text-align:right">' + fmtN(t.min_clients) + '</td>' +
+    '<td class="td-mono" style="text-align:right">' + (t.max_clients !== null ? fmtN(t.max_clients) : '∞') + '</td>' +
+    '<td><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">' +
+    '<input type="number" id="tier-pct-' + t.id + '" value="' + t.commission_percent + '" min="0" max="100" step="0.1" class="search-input" style="width:80px;text-align:right">' +
+    '<span style="color:var(--txm)">%</span></div></td>' +
+    '<td><button class="period-btn" id="tier-save-' + t.id + '" onclick="saveTierPercent(\'' + t.id + '\')" style="font-size:11px">Salvar</button></td>' +
+    '</tr>'
+  ).join('');
+
+  wrap.innerHTML =
+    '<div class="table-card" style="margin-bottom:16px">' +
+    '<div class="table-card-header"><span class="table-card-title">Configurações Gerais</span></div>' +
+    '<div style="padding:16px 18px;display:flex;flex-direction:column;gap:14px">' +
+    '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px">' +
+    '<input type="checkbox" id="cfg-require-approval"' + (settings.require_approval ? ' checked' : '') + ' style="width:16px;height:16px;accent-color:var(--adm)">' +
+    '<span>Exigir aprovação manual de novos parceiros</span></label>' +
+    '<label style="display:flex;flex-direction:column;gap:4px">' +
+    '<span style="font-size:11px;color:var(--txm);font-family:\'JetBrains Mono\',monospace;text-transform:uppercase;letter-spacing:.08em">Valor mínimo de saque (R$)</span>' +
+    '<input type="number" id="cfg-min-payout" value="' + (settings.min_payout_amount || 50) + '" min="0" step="0.01" class="search-input" style="width:140px"></label>' +
+    '<label style="display:flex;flex-direction:column;gap:4px">' +
+    '<span style="font-size:11px;color:var(--txm);font-family:\'JetBrains Mono\',monospace;text-transform:uppercase;letter-spacing:.08em">Dias de carência (CDC Art. 49)</span>' +
+    '<input type="number" id="cfg-carencia" value="' + (settings.carencia_days || 7) + '" min="0" class="search-input" style="width:140px"></label>' +
+    '<div style="display:flex;align-items:center;gap:12px">' +
+    '<button class="period-apply" onclick="saveParceiroSettings()">Salvar configurações</button>' +
+    '<span id="cfg-settings-msg" style="font-size:12px;color:var(--pr);display:none">Salvo com sucesso</span>' +
+    '</div></div></div>' +
+    '<div class="table-card">' +
+    '<div class="table-card-header"><span class="table-card-title">Tiers de Comissão</span></div>' +
+    (tiers.length
+      ? '<table><thead><tr><th>Tier</th><th style="text-align:right">Min. Clientes</th><th style="text-align:right">Max. Clientes</th><th style="text-align:right">Comissão</th><th>Ação</th></tr></thead><tbody>' + tierRows + '</tbody></table>'
+      : '<div class="loading-rows">Sem tiers configurados</div>') +
+    '</div>';
+}
+
+async function saveParceiroSettings() {
+  const require_approval  = document.getElementById('cfg-require-approval') ? document.getElementById('cfg-require-approval').checked : false;
+  const min_payout_amount = parseFloat(document.getElementById('cfg-min-payout') ? document.getElementById('cfg-min-payout').value : '50') || 50;
+  const carencia_days     = parseInt(document.getElementById('cfg-carencia') ? document.getElementById('cfg-carencia').value : '7', 10) || 7;
+
+  const { data: existing } = await db.from('affiliate_settings').select('id').maybeSingle();
+  if (existing) {
+    await db.from('affiliate_settings').update({ require_approval, min_payout_amount, carencia_days, updated_at: new Date().toISOString() }).eq('id', existing.id);
+  } else {
+    await db.from('affiliate_settings').insert({ require_approval, min_payout_amount, carencia_days });
+  }
+
+  const msg = document.getElementById('cfg-settings-msg');
+  if (msg) { msg.style.display = ''; setTimeout(function() { msg.style.display = 'none'; }, 2000); }
+}
+
+async function saveTierPercent(tierId) {
+  const input = document.getElementById('tier-pct-' + tierId);
+  if (!input) return;
+  const pct = parseFloat(input.value);
+  if (isNaN(pct) || pct < 0 || pct > 100) return;
+  const btn = document.getElementById('tier-save-' + tierId);
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  const { error } = await db.from('affiliate_tiers').update({ commission_percent: pct, updated_at: new Date().toISOString() }).eq('id', tierId);
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = error ? 'Erro' : 'Salvo ✓';
+    setTimeout(function() { btn.textContent = 'Salvar'; }, 1500);
+  }
+}
+
+async function openCadastrarParceiro() {
+  const email = prompt('Email do usuário a cadastrar como parceiro:');
+  if (!email || !email.trim()) return;
+  const couponCode = prompt('Código do cupom (4–20 chars, A-Z e 0-9):');
+  if (!couponCode || !couponCode.trim()) return;
+  if (!/^[A-Z0-9]{4,20}$/i.test(couponCode.trim())) { alert('Código inválido. Use apenas letras e números, 4 a 20 caracteres.'); return; }
+  const displayName = prompt('Nome de exibição do parceiro:') || email.trim().split('@')[0];
+
+  const { data: user } = await db.from('users').select('id').eq('email', email.trim().toLowerCase()).maybeSingle();
+  if (!user) { alert('Usuário não encontrado com esse email.'); return; }
+
+  const { data: existingAff } = await db.from('affiliates').select('id').eq('user_id', user.id).maybeSingle();
+  if (existingAff) { alert('Usuário já é parceiro.'); return; }
+
+  const normalCode = couponCode.trim().toUpperCase();
+  const { data: existingCpn } = await db.from('coupons').select('id').eq('code', normalCode).maybeSingle();
+  if (existingCpn) { alert('Cupom já em uso. Escolha outro.'); return; }
+
+  const { data: newAff, error: affErr } = await db.from('affiliates').insert({
+    user_id: user.id,
+    display_name: displayName,
+    status: 'active',
+    terms_accepted: true,
+    signup_source: 'admin',
+  }).select('id').single();
+
+  if (affErr) { alert('Erro ao criar parceiro: ' + affErr.message); return; }
+
+  const { error: cpnErr } = await db.from('coupons').insert({
+    affiliate_id: newAff.id,
+    code: normalCode,
+    discount_type: 'percent',
+    discount_value: 10,
+    applies_to: 'all_purchases',
+    status: 'active',
+  });
+
+  if (cpnErr) { alert('Parceiro criado, mas erro no cupom: ' + cpnErr.message); }
+  else { alert('Parceiro criado!\nCupom: ' + normalCode); }
+
+  await loadParceirosList();
+}
+
+async function refreshParceiroBadge() {
+  const { count } = await db.from('affiliates')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending');
+  const badge = document.getElementById('parceiros-badge');
+  if (!badge) return;
+  badge.textContent = count || 0;
+  badge.style.display = count > 0 ? 'inline' : 'none';
+}
+
+/* ══════════════════════════════════════════════════════════
    AUTH
 ══════════════════════════════════════════════════════════ */
 async function initAdmin() {
@@ -1405,6 +2020,7 @@ async function initAdmin() {
   document.getElementById('app').style.display = 'flex';
 
   watchPendingCount();
+  refreshParceiroBadge();
   loadOverview();
 }
 
