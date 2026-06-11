@@ -179,6 +179,38 @@ details[open] .faq-icon{transform:rotate(45deg)}
 .cta-section h2{font-size:clamp(22px,4vw,32px);font-weight:800;margin-bottom:16px;letter-spacing:-.3px}
 .cta-section p{color:var(--txs);font-size:15px;max-width:440px;margin:0 auto 36px;line-height:1.65}
 </style>
+<!-- Sentry: error monitoring + session replay -->
+<script
+  src="https://js.sentry-cdn.com/0380a4ef5f6a4a492b64c17f431e9ae8.min.js"
+  crossorigin="anonymous"></script>
+<script>
+  if (window.Sentry && typeof window.Sentry.onLoad === 'function') {
+    window.Sentry.onLoad(function(){
+      window.Sentry.init({
+        release: 'btp@' + (typeof APP_VERSION !== 'undefined' ? APP_VERSION : 'unknown'),
+        environment: (location.hostname === 'www.backtestpro.com.br' || location.hostname === 'backtestpro.com.br')
+          ? 'production' : 'preview',
+        beforeSend: function(event){
+          try {
+            var frames = event.exception
+                      && event.exception.values
+                      && event.exception.values[0]
+                      && event.exception.values[0].stacktrace
+                      && event.exception.values[0].stacktrace.frames;
+            if (frames && frames.some(function(f){
+              return f.filename && (
+                f.filename.indexOf('extension://') !== -1 ||
+                f.filename.indexOf('chrome-extension://') !== -1 ||
+                f.filename.indexOf('moz-extension://') !== -1
+              );
+            })) return null;
+          } catch(e){ /* swallow */ }
+          return event;
+        },
+      });
+    });
+  }
+</script>
 </head>
 <body>
 
@@ -338,6 +370,7 @@ details[open] .faq-icon{transform:rotate(45deg)}
 </footer>
 
 <script>
+const APP_VERSION = '2.1.0';
 // ── DADOS ──
 const TIERS = [
   { name:'Afiliado',   min:1,  max:19,  pct:20, color:'#8888A0', glow:'rgba(136,136,160,.15)' },

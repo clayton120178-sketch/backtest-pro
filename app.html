@@ -6,6 +6,38 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Backtest Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800;9..40,900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Sentry: error monitoring + session replay -->
+<script
+  src="https://js.sentry-cdn.com/0380a4ef5f6a4a492b64c17f431e9ae8.min.js"
+  crossorigin="anonymous"></script>
+<script>
+  if (window.Sentry && typeof window.Sentry.onLoad === 'function') {
+    window.Sentry.onLoad(function(){
+      window.Sentry.init({
+        release: 'btp@' + (typeof APP_VERSION !== 'undefined' ? APP_VERSION : 'unknown'),
+        environment: (location.hostname === 'www.backtestpro.com.br' || location.hostname === 'backtestpro.com.br')
+          ? 'production' : 'preview',
+        beforeSend: function(event){
+          try {
+            var frames = event.exception
+                      && event.exception.values
+                      && event.exception.values[0]
+                      && event.exception.values[0].stacktrace
+                      && event.exception.values[0].stacktrace.frames;
+            if (frames && frames.some(function(f){
+              return f.filename && (
+                f.filename.indexOf('extension://') !== -1 ||
+                f.filename.indexOf('chrome-extension://') !== -1 ||
+                f.filename.indexOf('moz-extension://') !== -1
+              );
+            })) return null;
+          } catch(e){ /* swallow */ }
+          return event;
+        },
+      });
+    });
+  }
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async onload="window.__gisLoaded=true;if(typeof _initGIS==='function')_initGIS();"></script>
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
@@ -1594,7 +1626,7 @@ db.auth.onAuthStateChange(async (event, session) => {
 });
 
 // ─── STATE ────────────────────────────────────────────────────
-const APP_VERSION = '2.0.0'; // Versão do produto — atualizar a cada release
+const APP_VERSION = '2.1.0'; // Versão do produto — atualizar a cada release
 
 // ─── THEME ───────────────────────────────────────────────────
 function setAppTheme(t){

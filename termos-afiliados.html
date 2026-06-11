@@ -76,6 +76,39 @@ footer{border-top:1px solid var(--bd);padding:32px 0;margin-top:48px}
 .footer-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;max-width:840px;margin:0 auto;padding:0 24px}
 .footer-inner p{font-size:12px;color:var(--txm)}
 </style>
+<script>const APP_VERSION = '2.1.0';</script>
+<!-- Sentry: error monitoring + session replay -->
+<script
+  src="https://js.sentry-cdn.com/0380a4ef5f6a4a492b64c17f431e9ae8.min.js"
+  crossorigin="anonymous"></script>
+<script>
+  if (window.Sentry && typeof window.Sentry.onLoad === 'function') {
+    window.Sentry.onLoad(function(){
+      window.Sentry.init({
+        release: 'btp@' + (typeof APP_VERSION !== 'undefined' ? APP_VERSION : 'unknown'),
+        environment: (location.hostname === 'www.backtestpro.com.br' || location.hostname === 'backtestpro.com.br')
+          ? 'production' : 'preview',
+        beforeSend: function(event){
+          try {
+            var frames = event.exception
+                      && event.exception.values
+                      && event.exception.values[0]
+                      && event.exception.values[0].stacktrace
+                      && event.exception.values[0].stacktrace.frames;
+            if (frames && frames.some(function(f){
+              return f.filename && (
+                f.filename.indexOf('extension://') !== -1 ||
+                f.filename.indexOf('chrome-extension://') !== -1 ||
+                f.filename.indexOf('moz-extension://') !== -1
+              );
+            })) return null;
+          } catch(e){ /* swallow */ }
+          return event;
+        },
+      });
+    });
+  }
+</script>
 </head>
 <body>
 
