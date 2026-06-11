@@ -228,6 +228,31 @@ tr:hover td{background:var(--bg2);color:var(--tx)}
 /* ── SUPPORT BADGE ─────────────────────────────────────── */
 .support-badge{background:var(--dg);color:#fff;font-size:10px;font-weight:800;font-family:'JetBrains Mono',monospace;border-radius:10px;padding:1px 6px;margin-left:auto;min-width:18px;text-align:center}
 
+/* ── OUTREACH (PROSPECÇÃO) ─────────────────────────────── */
+.badge-contato-inicial{background:rgba(255,255,255,0.07);color:var(--txs)}
+.badge-proposta-enviada{background:var(--acd);color:var(--ac)}
+.badge-aceitou{background:var(--prd);color:var(--pr)}
+.badge-sem-retorno{background:rgba(136,136,160,0.08);color:var(--txm)}
+.badge-recusou{background:var(--dgd);color:var(--dg)}
+.out-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;display:none;align-items:center;justify-content:center}
+.out-modal-overlay.open{display:flex}
+.out-modal{background:var(--bg1);border:0.5px solid var(--bd);border-radius:16px;padding:24px 28px;width:440px;max-width:96vw;animation:fadeIn var(--t2) var(--smooth)}
+.out-modal-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:18px}
+.out-field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.out-field-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txm);font-family:'JetBrains Mono',monospace}
+.out-field-input{background:var(--bg2);border:0.5px solid var(--bd);color:var(--tx);padding:8px 12px;border-radius:8px;font-size:13px;font-family:inherit;outline:none;transition:border-color var(--t1)}
+.out-field-input:focus{border-color:var(--adm)}
+.out-field-prefix{display:flex;align-items:center;background:var(--bg2);border:0.5px solid var(--bd);border-radius:8px;overflow:hidden;transition:border-color var(--t1)}
+.out-field-prefix:focus-within{border-color:var(--adm)}
+.out-field-prefix-tag{padding:8px 10px;color:var(--txm);font-size:13px;border-right:0.5px solid var(--bd)}
+.out-field-prefix input{background:none;border:none;color:var(--tx);padding:8px 12px;font-size:13px;font-family:inherit;outline:none;flex:1}
+.out-modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+.out-btn-cancel{background:none;border:0.5px solid var(--bd);color:var(--txs);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;transition:all var(--t1)}
+.out-btn-cancel:hover{border-color:var(--bdh);color:var(--tx)}
+.out-btn-primary{background:var(--admd);border:0.5px solid var(--adm);color:var(--adm);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:all var(--t1)}
+.out-btn-primary:hover{background:var(--adm);color:var(--bg0)}
+.out-btn-primary:disabled{opacity:.5;cursor:default}
+
 /* ── SUPPORT DRAWER ────────────────────────────────────── */
 .sup-drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none}
 .sup-drawer-overlay.open{display:block}
@@ -407,8 +432,20 @@ tr:hover td{background:var(--bg2);color:var(--tx)}
   </div>
 </div>
 
+<!-- Outreach modal -->
+<div class="out-modal-overlay" id="out-modal-overlay">
+  <div class="out-modal" id="out-modal">
+    <div class="out-modal-title" id="out-modal-title"></div>
+    <div id="out-modal-body"></div>
+    <div class="out-modal-btns">
+      <button class="out-btn-cancel" onclick="closeOutModal()">Cancelar</button>
+      <button class="out-btn-primary" id="out-modal-confirm-btn" onclick="outModalConfirm()"></button>
+    </div>
+  </div>
+</div>
+
 <script>
-const APP_VERSION = '2.1.0';
+const APP_VERSION = '2.2.0';
 /* ══════════════════════════════════════════════════════════
    CONFIG
 ══════════════════════════════════════════════════════════ */
@@ -445,6 +482,12 @@ const state = {
   parceiroDrawerTab: 'resumo',
   parceirosFilter: 'all',
   parceirosSearch: '',
+  outreachTab: 'novo',
+  outreachContatos: null,
+  outreachPlatformFilter: 'all',
+  outreachStatusFilter: 'contato_inicial',
+  outreachSearch: '',
+  outModalAction: null,
 };
 
 /* ══════════════════════════════════════════════════════════
@@ -1502,6 +1545,7 @@ async function loadParceiros() {
       <button class="tab-btn active" id="parc-tab-parceiros" onclick="switchParceiroTab('parceiros')">Parceiros</button>
       <button class="tab-btn" id="parc-tab-saques" onclick="switchParceiroTab('saques')">Saques</button>
       <button class="tab-btn" id="parc-tab-config" onclick="switchParceiroTab('config')">Configurações</button>
+      <button class="tab-btn" id="parc-tab-prospeccao" onclick="switchParceiroTab('prospeccao')">Prospecção</button>
     </div>
     <div id="parceiros-tab-content"></div>`;
   await loadParceiroTabContent(state.parceirosTab || 'parceiros');
@@ -1509,7 +1553,7 @@ async function loadParceiros() {
 
 async function switchParceiroTab(tab) {
   state.parceirosTab = tab;
-  ['parceiros','saques','config'].forEach(k => {
+  ['parceiros','saques','config','prospeccao'].forEach(k => {
     const b = document.getElementById('parc-tab-' + k);
     if (b) b.classList.toggle('active', k === tab);
   });
@@ -1520,6 +1564,7 @@ async function loadParceiroTabContent(tab) {
   if (tab === 'parceiros') await loadParceirosList();
   else if (tab === 'saques') await loadSaques();
   else if (tab === 'config') await loadParceiroConfig();
+  else if (tab === 'prospeccao') await loadProspeccao();
 }
 
 async function loadParceirosList() {
@@ -2032,6 +2077,362 @@ async function refreshParceiroBadge() {
   if (!badge) return;
   badge.textContent = count || 0;
   badge.style.display = count > 0 ? 'inline' : 'none';
+}
+
+/* ══════════════════════════════════════════════════════════
+   SECTION: PROSPECÇÃO (OUTREACH CRM)
+══════════════════════════════════════════════════════════ */
+
+async function outreachCall(fnName, body) {
+  const { data: { session } } = await db.auth.getSession();
+  const r = await fetch(SUPA_URL + '/functions/v1/' + fnName, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+    body: JSON.stringify(body),
+  });
+  const j = await r.json().catch(function() { return {}; });
+  return { ok: r.ok, status: r.status, data: j };
+}
+
+function outToast(msg, isError) {
+  var d = document.createElement('div');
+  d.textContent = msg;
+  d.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:' +
+    (isError ? 'var(--dg)' : 'var(--adm)') + ';color:' + (isError ? '#fff' : 'var(--bg0)') +
+    ';padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;pointer-events:none;animation:fadeIn .2s var(--smooth)';
+  document.body.appendChild(d);
+  setTimeout(function() { d.remove(); }, 3000);
+}
+
+function outStatusBadge(status) {
+  var map = {
+    contato_inicial: ['badge-contato-inicial', 'Contato inicial'],
+    proposta_enviada: ['badge-proposta-enviada', 'Proposta enviada'],
+    aceitou: ['badge-aceitou', 'Aceitou'],
+    sem_retorno: ['badge-sem-retorno', 'Sem retorno'],
+    recusou: ['badge-recusou', 'Recusou'],
+  };
+  var kv = map[status] || ['badge-trial', status];
+  return '<span class="badge ' + kv[0] + '">' + kv[1] + '</span>';
+}
+
+function openOutModal(title, bodyHtml, confirmLabel, onConfirm) {
+  document.getElementById('out-modal-title').textContent = title;
+  document.getElementById('out-modal-body').innerHTML = bodyHtml;
+  var btn = document.getElementById('out-modal-confirm-btn');
+  btn.textContent = confirmLabel;
+  btn.disabled = false;
+  state.outModalAction = onConfirm;
+  document.getElementById('out-modal-overlay').classList.add('open');
+}
+
+function closeOutModal() {
+  document.getElementById('out-modal-overlay').classList.remove('open');
+  state.outModalAction = null;
+}
+
+async function outModalConfirm() {
+  if (typeof state.outModalAction !== 'function') return;
+  var btn = document.getElementById('out-modal-confirm-btn');
+  if (!btn) return;
+  var origText = btn.textContent;
+  btn.disabled = true; btn.textContent = '...';
+  try { await state.outModalAction(); }
+  catch(e) { /* action threw to halt */ }
+  finally {
+    var b = document.getElementById('out-modal-confirm-btn');
+    if (b) { b.disabled = false; b.textContent = origText; }
+  }
+}
+
+async function loadProspeccao() {
+  var wrap = document.getElementById('parceiros-tab-content');
+  if (!wrap) return;
+  wrap.innerHTML =
+    '<div class="tabs-bar" style="margin-top:4px">' +
+    '<button class="tab-btn" id="out-tab-novo" onclick="switchOutreachTab(\'novo\')">Novo contato</button>' +
+    '<button class="tab-btn" id="out-tab-contatos" onclick="switchOutreachTab(\'contatos\')">Contatos</button>' +
+    '<button class="tab-btn" id="out-tab-propostas" onclick="switchOutreachTab(\'propostas\')">Propostas enviadas</button>' +
+    '</div>' +
+    '<div id="out-tab-content"></div>';
+  await switchOutreachTab(state.outreachTab || 'novo');
+}
+
+async function switchOutreachTab(tab) {
+  state.outreachTab = tab;
+  ['novo','contatos','propostas'].forEach(function(k) {
+    var b = document.getElementById('out-tab-' + k);
+    if (b) b.classList.toggle('active', k === tab);
+  });
+  var wrap = document.getElementById('out-tab-content');
+  if (!wrap) return;
+  if (tab === 'novo') renderOutreachNovoContato(wrap);
+  else if (tab === 'contatos') await renderOutreachContatos(wrap);
+  else if (tab === 'propostas') await renderOutreachPropostas(wrap);
+}
+
+// ---- (A) Novo Contato ----
+function renderOutreachNovoContato(wrap) {
+  wrap.innerHTML =
+    '<div class="table-card" style="margin-top:0;max-width:480px">' +
+    '<div class="table-card-header"><span class="table-card-title">Registrar novo contato</span></div>' +
+    '<div style="padding:20px 20px 24px;display:flex;flex-direction:column;gap:12px">' +
+    '<div class="out-field"><label class="out-field-label">Handle (@)</label>' +
+    '<div class="out-field-prefix"><span class="out-field-prefix-tag">@</span>' +
+    '<input id="oc-handle" type="text" placeholder="handle_sem_arroba" autocomplete="off"></div></div>' +
+    '<div class="out-field"><label class="out-field-label">Nome do influenciador</label>' +
+    '<input id="oc-name" type="text" class="out-field-input" placeholder="Ex: João Silva" autocomplete="off"></div>' +
+    '<div class="out-field"><label class="out-field-label">Plataforma</label>' +
+    '<select id="oc-platform" class="out-field-input"><option value="instagram">Instagram</option><option value="tiktok">TikTok</option></select></div>' +
+    '<div class="out-field"><label class="out-field-label">Observações (opcional)</label>' +
+    '<textarea id="oc-notes" class="out-field-input" style="resize:vertical;min-height:64px" placeholder="Notas, canal de contato, detalhes..."></textarea></div>' +
+    '<div style="display:flex;align-items:center;gap:12px;margin-top:4px">' +
+    '<button class="out-btn-primary" id="oc-submit-btn" onclick="submitNovoContato()">Registrar contato</button>' +
+    '</div></div></div>';
+}
+
+async function submitNovoContato() {
+  var handle = (document.getElementById('oc-handle').value || '').replace(/@/g, '').trim();
+  var display_name = (document.getElementById('oc-name').value || '').trim();
+  var platform = document.getElementById('oc-platform').value;
+  var notes = (document.getElementById('oc-notes').value || '').trim() || null;
+
+  if (!handle || !display_name) { outToast('Preencha handle e nome', true); return; }
+
+  var btn = document.getElementById('oc-submit-btn');
+  btn.disabled = true; btn.textContent = '...';
+
+  var res = await outreachCall('outreach-admin', { action: 'create', handle: handle, display_name: display_name, platform: platform, notes: notes });
+
+  btn.disabled = false; btn.textContent = 'Registrar contato';
+
+  if (!res.ok) {
+    if (res.status === 409 || res.data.error === 'duplicate')
+      outToast('Esse @ já está registrado nessa plataforma', true);
+    else
+      outToast('Erro: ' + (res.data.error || 'desconhecido'), true);
+    return;
+  }
+
+  outToast('Contato registrado');
+  document.getElementById('oc-handle').value = '';
+  document.getElementById('oc-name').value = '';
+  document.getElementById('oc-notes').value = '';
+  state.outreachContatos = null;
+}
+
+// ---- (B) Contatos ----
+async function renderOutreachContatos(wrap) {
+  wrap.innerHTML = '<div class="loading-rows">Carregando contatos...</div>';
+  var q = await db.from('partner_outreach').select('*').order('contacted_at', { ascending: false });
+  if (q.error) { wrap.innerHTML = '<div class="loading-rows">Erro ao carregar</div>'; return; }
+  state.outreachContatos = q.data || [];
+  renderOutreachContatosUI(wrap);
+}
+
+function renderOutreachContatosUI(wrap) {
+  var rows = state.outreachContatos || [];
+  var total = rows.length;
+  var emContato = rows.filter(function(r) { return r.status === 'contato_inicial'; }).length;
+  var propostas = rows.filter(function(r) { return r.status === 'proposta_enviada' || r.status === 'aceitou'; }).length;
+  var aceites = rows.filter(function(r) { return r.status === 'aceitou'; }).length;
+  var convRate = propostas > 0 ? Math.round(aceites / propostas * 100) : 0;
+
+  var pf = state.outreachPlatformFilter || 'all';
+  var sf = state.outreachStatusFilter !== undefined ? state.outreachStatusFilter : 'contato_inicial';
+  var sq = (state.outreachSearch || '').toLowerCase();
+
+  var filtered = rows.slice();
+  if (pf !== 'all') filtered = filtered.filter(function(r) { return r.platform === pf; });
+  if (sf !== 'all') filtered = filtered.filter(function(r) { return r.status === sf; });
+  if (sq) filtered = filtered.filter(function(r) {
+    return (r.handle || '').toLowerCase().includes(sq) || (r.display_name || '').toLowerCase().includes(sq);
+  });
+
+  var tableRows = filtered.map(function(r) {
+    var acts = [];
+    if (r.status === 'contato_inicial')
+      acts.push('<button class="period-btn" style="font-size:11px;padding:4px 10px;border-color:var(--adm);color:var(--adm)" onclick="openEnviarProposta(\'' + r.id + '\')">Enviar proposta</button>');
+    if (r.status === 'proposta_enviada')
+      acts.push('<button class="period-btn" style="font-size:11px;padding:4px 10px;color:var(--ac)" onclick="openEnviarProposta(\'' + r.id + '\')">Reenviar</button>');
+    acts.push('<button class="period-btn" style="font-size:11px;padding:4px 10px" onclick="openEditarContato(\'' + r.id + '\')">Editar</button>');
+    if (r.status !== 'sem_retorno' && r.status !== 'recusou' && r.status !== 'aceitou') {
+      acts.push('<button class="period-btn" style="font-size:11px;padding:4px 10px" onclick="openSetStatus(\'' + r.id + '\',\'sem_retorno\')">Sem retorno</button>');
+      acts.push('<button class="period-btn" style="font-size:11px;padding:4px 10px;border-color:var(--dg);color:var(--dg)" onclick="openSetStatus(\'' + r.id + '\',\'recusou\')">Recusou</button>');
+    }
+    var notes = r.notes ? r.notes.slice(0, 40) + (r.notes.length > 40 ? '…' : '') : '—';
+    return '<tr>' +
+      '<td class="td-mono" style="color:var(--tx)">@' + (r.handle || '') + '</td>' +
+      '<td style="color:var(--tx);font-weight:500">' + (r.display_name || '') + '</td>' +
+      '<td><span class="badge badge-trial" style="font-size:9px">' + (r.platform === 'instagram' ? 'IG' : 'TT') + '</span></td>' +
+      '<td class="td-mono" style="font-size:11px">' + fmtDate(r.contacted_at) + '</td>' +
+      '<td>' + outStatusBadge(r.status) + '</td>' +
+      '<td style="font-size:11px;color:var(--txm);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + (r.notes || '') + '">' + notes + '</td>' +
+      '<td><div style="display:flex;gap:4px;flex-wrap:wrap">' + acts.join('') + '</div></td>' +
+      '</tr>';
+  }).join('');
+
+  var pfOpts = [
+    '<option value="all"' + (pf==='all'?' selected':'') + '>Todas plataformas</option>',
+    '<option value="instagram"' + (pf==='instagram'?' selected':'') + '>Instagram</option>',
+    '<option value="tiktok"' + (pf==='tiktok'?' selected':'') + '>TikTok</option>',
+  ].join('');
+  var sfOpts = [
+    '<option value="all"' + (sf==='all'?' selected':'') + '>Todos status</option>',
+    '<option value="contato_inicial"' + (sf==='contato_inicial'?' selected':'') + '>Contato inicial</option>',
+    '<option value="proposta_enviada"' + (sf==='proposta_enviada'?' selected':'') + '>Proposta enviada</option>',
+    '<option value="aceitou"' + (sf==='aceitou'?' selected':'') + '>Aceitou</option>',
+    '<option value="sem_retorno"' + (sf==='sem_retorno'?' selected':'') + '>Sem retorno</option>',
+    '<option value="recusou"' + (sf==='recusou'?' selected':'') + '>Recusou</option>',
+  ].join('');
+
+  wrap.innerHTML =
+    '<div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);margin-top:0">' +
+    '<div class="kpi-card"><div class="kpi-label">Total</div><div class="kpi-value" style="font-size:24px">' + fmtN(total) + '</div></div>' +
+    '<div class="kpi-card"><div class="kpi-label">Em contato</div><div class="kpi-value" style="font-size:24px">' + fmtN(emContato) + '</div></div>' +
+    '<div class="kpi-card"><div class="kpi-label">Propostas</div><div class="kpi-value" style="font-size:24px">' + fmtN(propostas) + '</div></div>' +
+    '<div class="kpi-card"><div class="kpi-label">Aceites</div><div class="kpi-value" style="font-size:24px;color:var(--pr)">' + fmtN(aceites) + '</div></div>' +
+    '<div class="kpi-card"><div class="kpi-label">Conversão</div><div class="kpi-value" style="font-size:24px">' + convRate + '%</div></div>' +
+    '</div>' +
+    '<div class="table-card">' +
+    '<div class="table-card-header"><span class="table-card-title">Contatos</span>' +
+    '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">' +
+    '<select class="search-input" style="width:auto" onchange="state.outreachPlatformFilter=this.value;renderOutreachContatosUI(document.getElementById(\'out-tab-content\'))">' + pfOpts + '</select>' +
+    '<select class="search-input" style="width:auto" onchange="state.outreachStatusFilter=this.value;renderOutreachContatosUI(document.getElementById(\'out-tab-content\'))">' + sfOpts + '</select>' +
+    '<input class="search-input" type="text" placeholder="Buscar @ ou nome…" value="' + (state.outreachSearch || '') + '" oninput="state.outreachSearch=this.value;renderOutreachContatosUI(document.getElementById(\'out-tab-content\'))">' +
+    '</div></div>' +
+    (filtered.length
+      ? '<table><thead><tr><th>Handle</th><th>Nome</th><th>Plataforma</th><th>Contato em</th><th>Status</th><th>Obs.</th><th>Ações</th></tr></thead><tbody>' + tableRows + '</tbody></table>'
+      : '<div class="loading-rows">Nenhum contato encontrado</div>') +
+    '</div>';
+}
+
+// ---- (C) Propostas enviadas ----
+async function renderOutreachPropostas(wrap) {
+  wrap.innerHTML = '<div class="loading-rows">Carregando propostas...</div>';
+  var q = await db.from('partner_outreach')
+    .select('*')
+    .in('status', ['proposta_enviada','aceitou'])
+    .order('proposal_sent_at', { ascending: false });
+  if (q.error) { wrap.innerHTML = '<div class="loading-rows">Erro ao carregar</div>'; return; }
+  var list = q.data || [];
+
+  var tableRows = list.map(function(r) {
+    var acts = [];
+    if (r.status === 'proposta_enviada')
+      acts.push('<button class="period-btn" style="font-size:11px;padding:4px 10px;border-color:var(--pr);color:var(--pr)" onclick="confirmarAceitou(\'' + r.id + '\')">Aceitou proposta</button>');
+    if (r.proposal_pdf_path)
+      acts.push('<button class="period-btn" style="font-size:11px;padding:4px 10px" onclick="outreachBaixarPdf(\'' + r.id + '\')">Baixar PDF</button>');
+    return '<tr>' +
+      '<td style="color:var(--tx);font-weight:500">' + (r.display_name || '') + '</td>' +
+      '<td class="td-mono">@' + (r.handle || '') + '</td>' +
+      '<td><span class="badge badge-trial" style="font-size:9px">' + (r.platform === 'instagram' ? 'IG' : 'TT') + '</span></td>' +
+      '<td class="td-mono" style="font-size:11px">' + fmtDate(r.proposal_sent_at) + '</td>' +
+      '<td>' + outStatusBadge(r.status) + '</td>' +
+      '<td><div style="display:flex;gap:4px">' + acts.join('') + '</div></td>' +
+      '</tr>';
+  }).join('');
+
+  wrap.innerHTML =
+    '<div class="table-card">' +
+    '<div class="table-card-header"><span class="table-card-title">Propostas enviadas</span>' +
+    '<span style="font-size:12px;color:var(--txm)">' + list.length + ' registro' + (list.length !== 1 ? 's' : '') + '</span></div>' +
+    (list.length
+      ? '<table><thead><tr><th>Nome</th><th>Handle</th><th>Plataforma</th><th>Enviado em</th><th>Status</th><th>Ações</th></tr></thead><tbody>' + tableRows + '</tbody></table>'
+      : '<div class="loading-rows">Nenhuma proposta enviada ainda</div>') +
+    '</div>';
+}
+
+// ---- Action: Enviar proposta ----
+function openEnviarProposta(id) {
+  var row = (state.outreachContatos || []).find(function(r) { return r.id === id; });
+  var nome = row ? row.display_name : '';
+  var title = 'Enviar proposta' + (nome ? ' — ' + nome : '');
+  var bodyHtml =
+    '<div class="out-field"><label class="out-field-label">E-mail do influenciador</label>' +
+    '<input id="out-email-input" type="email" class="out-field-input" placeholder="email@exemplo.com" autocomplete="off"></div>' +
+    '<p style="font-size:11px;color:var(--txm);margin-top:4px">O PDF será gerado e enviado automaticamente (pode levar ~3s).</p>';
+  openOutModal(title, bodyHtml, 'Enviar proposta', async function() {
+    var email = (document.getElementById('out-email-input').value || '').trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { outToast('E-mail inválido', true); throw new Error('stop'); }
+    var res = await outreachCall('outreach-send-proposal', { id: id, email: email });
+    if (!res.ok) { outToast('Erro: ' + (res.data.error || 'falha no envio'), true); throw new Error('stop'); }
+    closeOutModal();
+    outToast('Proposta enviada para ' + email);
+    state.outreachContatos = null;
+    await switchOutreachTab('contatos');
+  });
+  setTimeout(function() { var el = document.getElementById('out-email-input'); if (el) el.focus(); }, 80);
+}
+
+// ---- Action: Aceitou proposta ----
+async function confirmarAceitou(id) {
+  if (!confirm('Confirmar que o influenciador aceitou? O e-mail de boas-vindas será enviado automaticamente.')) return;
+  var res = await outreachCall('outreach-accept', { id: id });
+  if (!res.ok) { outToast('Erro: ' + (res.data.error || 'falha'), true); return; }
+  outToast('E-mail de boas-vindas enviado');
+  await renderOutreachPropostas(document.getElementById('out-tab-content'));
+}
+
+// ---- Action: Baixar PDF ----
+async function outreachBaixarPdf(id) {
+  var res = await outreachCall('outreach-admin', { action: 'proposal_url', id: id });
+  if (!res.ok || !res.data.url) { outToast('Erro ao gerar link', true); return; }
+  window.open(res.data.url, '_blank');
+}
+
+// ---- Action: Editar contato ----
+function openEditarContato(id) {
+  var row = (state.outreachContatos || []).find(function(r) { return r.id === id; });
+  if (!row) return;
+  var bodyHtml =
+    '<div class="out-field"><label class="out-field-label">Handle (@)</label>' +
+    '<div class="out-field-prefix"><span class="out-field-prefix-tag">@</span>' +
+    '<input id="edit-handle" type="text" value="' + (row.handle || '') + '" autocomplete="off"></div></div>' +
+    '<div class="out-field"><label class="out-field-label">Nome</label>' +
+    '<input id="edit-name" type="text" class="out-field-input" value="' + (row.display_name || '') + '" autocomplete="off"></div>' +
+    '<div class="out-field"><label class="out-field-label">Plataforma</label>' +
+    '<select id="edit-platform" class="out-field-input">' +
+    '<option value="instagram"' + (row.platform === 'instagram' ? ' selected' : '') + '>Instagram</option>' +
+    '<option value="tiktok"' + (row.platform === 'tiktok' ? ' selected' : '') + '>TikTok</option>' +
+    '</select></div>' +
+    '<div class="out-field"><label class="out-field-label">Observações</label>' +
+    '<textarea id="edit-notes" class="out-field-input" style="resize:vertical;min-height:64px">' + (row.notes || '') + '</textarea></div>';
+  openOutModal('Editar contato', bodyHtml, 'Salvar', async function() {
+    var patch = {
+      handle: (document.getElementById('edit-handle').value || '').replace(/@/g, '').trim(),
+      display_name: (document.getElementById('edit-name').value || '').trim(),
+      platform: document.getElementById('edit-platform').value,
+      notes: (document.getElementById('edit-notes').value || '').trim() || null,
+    };
+    if (!patch.handle || !patch.display_name) { outToast('Preencha handle e nome', true); throw new Error('stop'); }
+    var res = await outreachCall('outreach-admin', { action: 'update', id: id, patch: patch });
+    if (!res.ok) {
+      outToast((res.status === 409 || res.data.error === 'duplicate') ? 'Handle já registrado nessa plataforma' : 'Erro: ' + (res.data.error || ''), true);
+      throw new Error('stop');
+    }
+    closeOutModal();
+    outToast('Contato atualizado');
+    state.outreachContatos = null;
+    await switchOutreachTab('contatos');
+  });
+}
+
+// ---- Action: set_status (sem_retorno / recusou) ----
+function openSetStatus(id, status) {
+  var label = status === 'recusou' ? 'Recusou' : 'Sem retorno';
+  var bodyHtml =
+    '<div class="out-field"><label class="out-field-label">Motivo (opcional)</label>' +
+    '<input id="out-reason-input" type="text" class="out-field-input" placeholder="Ex: não respondeu, sem interesse…"></div>';
+  openOutModal(label, bodyHtml, 'Confirmar', async function() {
+    var reason = (document.getElementById('out-reason-input').value || '').trim() || null;
+    var res = await outreachCall('outreach-admin', { action: 'set_status', id: id, status: status, reason: reason });
+    if (!res.ok) { outToast('Erro: ' + (res.data.error || ''), true); throw new Error('stop'); }
+    closeOutModal();
+    outToast('Status atualizado');
+    state.outreachContatos = null;
+    await switchOutreachTab('contatos');
+  });
 }
 
 /* ══════════════════════════════════════════════════════════
