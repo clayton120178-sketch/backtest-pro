@@ -1057,14 +1057,128 @@ main{flex:1;padding:24px 20px;max-width:1060px;width:100%;margin:0 auto}
 </div>
 
 <script>
+// ═══════════════════════════════════════════════════════════════
+// BOOT GUARDS — DEVE SER A PRIMEIRA COISA A EXECUTAR
+// ═══════════════════════════════════════════════════════════════
+const __BOOT_TS = Date.now();
+let __BOOT_OK = false;
+const __ERRORS = []; // buffer para o caso de Sentry não ter carregado ainda
+
+window.addEventListener('error', function(ev){
+  const payload = {
+    type: 'error',
+    message: ev.message,
+    filename: ev.filename,
+    lineno: ev.lineno,
+    colno: ev.colno,
+    stack: ev.error && ev.error.stack || null,
+    ts: Date.now() - __BOOT_TS,
+  };
+  console.error('[BTP]', payload);
+  __ERRORS.push(payload);
+  __reportError(payload);
+});
+
+window.addEventListener('unhandledrejection', function(ev){
+  const reason = ev.reason;
+  const payload = {
+    type: 'unhandledrejection',
+    message: reason && reason.message || String(reason),
+    stack: reason && reason.stack || null,
+    ts: Date.now() - __BOOT_TS,
+  };
+  console.error('[BTP]', payload);
+  __ERRORS.push(payload);
+  __reportError(payload);
+});
+
+function __reportError(payload){
+  try {
+    if(window.Sentry && window.Sentry.captureException){
+      const err = new Error(payload.message);
+      if(payload.stack) err.stack = payload.stack;
+      window.Sentry.captureException(err, { extra: payload });
+    }
+  } catch(e){ /* swallow */ }
+}
+
+// Boot watchdog: se INITIAL_SESSION não disparar em 12s, exibe fallback
+setTimeout(function(){
+  if(!__BOOT_OK){
+    console.error('[BTP] Boot timeout (12s) — exibindo fallback');
+    __reportError({ type:'boot_timeout', message:'Boot did not complete in 12s', errors: __ERRORS });
+    __showBootError('A aplicação não respondeu a tempo. Pode ser conexão lenta ou sessão inválida.');
+  }
+}, 12000);
+
+function __showBootError(msg){
+  if(document.getElementById('__btp_boot_error')) return;
+  document.body.innerHTML = '';
+  const root = document.createElement('div');
+  root.id = '__btp_boot_error';
+  root.style.cssText = 'min-height:100vh;display:flex;align-items:center;justify-content:center;background:#08080B;color:#F2F2F6;font-family:system-ui,-apple-system,sans-serif;padding:20px;text-align:center';
+  root.innerHTML =
+    '<div style="max-width:440px">' +
+      '<div style="font-size:56px;margin-bottom:20px;line-height:1">⚠</div>' +
+      '<h1 style="font-size:22px;font-weight:700;margin-bottom:14px;letter-spacing:-0.01em">Algo deu errado</h1>' +
+      '<p style="font-size:14px;color:#9090A0;margin-bottom:28px;line-height:1.55">' + msg + '</p>' +
+      '<button id="__btp_reset_btn" style="padding:13px 26px;background:#FFD400;color:#000;border:0;border-radius:10px;font-weight:600;cursor:pointer;font-size:14px;font-family:inherit">Limpar dados e recarregar</button>' +
+      '<div style="margin-top:18px"><a href="javascript:location.reload()" style="font-size:12px;color:#9090A0;text-decoration:underline">apenas recarregar</a></div>' +
+      '<div style="margin-top:32px;font-size:11px;color:#5A5A6B">se persistir, contato@backtestpro.com.br</div>' +
+    '</div>';
+  document.body.appendChild(root);
+  document.getElementById('__btp_reset_btn').onclick = __resetAndReload;
+}
+
+function __resetAndReload(){
+  try {
+    const toRemove = [];
+    for(let i=0; i<localStorage.length; i++){
+      const k = localStorage.key(i);
+      if(k && (k.indexOf('sb-')===0 || k.indexOf('bp-')===0 || k.indexOf('bt_')===0)) toRemove.push(k);
+    }
+    toRemove.forEach(function(k){ localStorage.removeItem(k); });
+    sessionStorage.clear();
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.getRegistrations().then(function(rs){
+        rs.forEach(function(r){ r.unregister(); });
+      }).catch(function(){});
+    }
+  } catch(e){ /* swallow */ }
+  setTimeout(function(){
+    location.replace(location.pathname + '?_reset=' + Date.now());
+  }, 100);
+}
+
+// Defensive: desregistra qualquer SW remanescente (BTP não usa SW)
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations().then(function(rs){
+    rs.forEach(function(r){
+      console.warn('[BTP] Desregistrando SW remanescente:', r.scope);
+      r.unregister();
+    });
+  }).catch(function(){});
+}
+
 // ─── CONFIG ──────────────────────────────────────────────────────────
 const SUPA_URL = 'https://lmrpxtshdiwufbfkaymg.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtcnB4dHNoZGl3dWZiZmtheW1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4OTM1MjQsImV4cCI6MjA4OTQ2OTUyNH0.c8giT7wbSAcHecrHR9IMB1x39Uy_TTA5p2-Q_QyQvXs';
 
-// ─── SUPABASE CLIENT ──────────────────────────────────────────────
-const { createClient } = supabase;
-const db = createClient(SUPA_URL, SUPA_KEY);
-window.db = db;
+// ─── SUPABASE CLIENT (com guard de inicialização) ─────────────────
+let db;
+try {
+  if(typeof supabase === 'undefined' || !supabase || !supabase.createClient){
+    throw new Error('Supabase JS não carregou (CDN bloqueada ou bloqueador ativo)');
+  }
+  const { createClient } = supabase;
+  db = createClient(SUPA_URL, SUPA_KEY);
+  window.db = db;
+} catch(err){
+  console.error('[BTP] Supabase init falhou:', err);
+  __reportError({ type:'supabase_init', message:err.message, stack:err.stack });
+  __showBootError('Não conseguimos iniciar sua sessão. Limpe os dados para começar de novo.');
+  throw err;
+}
 
 // ─── ESTADOS GLOBAIS DE AUTH ─────────────────────────────────────
 let currentUser       = null;
@@ -1456,20 +1570,26 @@ async function verificarAcesso(){
 }
 
 db.auth.onAuthStateChange(async (event, session) => {
-  if(event === 'PASSWORD_RECOVERY'){
-    // Usuário chegou pelo link de reset — mostrar tela de nova senha
-    mostrarNovaSenha();
-  } else if(event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED'){
-    if(session?.user){ currentUser = session.user; setTimeout(() => verificarAcesso(), 0); }
-  } else if(event === 'USER_UPDATED'){
-    // Senha atualizada com sucesso — entrar no app
-    if(session?.user){ currentUser = session.user; setTimeout(() => verificarAcesso(), 0); }
-  } else if(event === 'INITIAL_SESSION'){
-    if(session?.user){ currentUser = session.user; await verificarAcesso(); }
-    else { mostrarLogin(); }
-  } else if(event === 'SIGNED_OUT'){
-    currentUser = null; currentUsuario = null; currentSub = null; currentTrialCount = 0; currentScreen = null;
-    mostrarLogin();
+  try {
+    if(event === 'PASSWORD_RECOVERY'){
+      mostrarNovaSenha();
+    } else if(event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED'){
+      if(session?.user){ currentUser = session.user; setTimeout(() => verificarAcesso(), 0); }
+    } else if(event === 'USER_UPDATED'){
+      if(session?.user){ currentUser = session.user; setTimeout(() => verificarAcesso(), 0); }
+    } else if(event === 'INITIAL_SESSION'){
+      __BOOT_OK = true;
+      if(session?.user){ currentUser = session.user; await verificarAcesso(); }
+      else { mostrarLogin(); }
+    } else if(event === 'SIGNED_OUT'){
+      __BOOT_OK = true;
+      currentUser = null; currentUsuario = null; currentSub = null; currentTrialCount = 0; currentScreen = null;
+      mostrarLogin();
+    }
+  } catch(err){
+    console.error('[BTP] onAuthStateChange falhou (event=' + event + '):', err);
+    __reportError({ type:'auth_state_change', message:err.message, stack:err.stack, event:event });
+    __showBootError('Não foi possível continuar sua sessão. Limpe os dados para começar de novo.');
   }
 });
 
