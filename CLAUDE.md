@@ -29,6 +29,7 @@
 | Tela home pós-login | ✅ Implementada |
 | Motor de diagnóstico e sugestões (23 nós) | ✅ Implementado |
 | Compartilhamento de resultado (share card PNG) | ✅ Implementado |
+| Hardening de runtime (Sentry + boot guards + version check) | ✅ Junho/2026 |
 
 **Não há bloqueadores técnicos. Foco atual: go-to-market.**
 
@@ -74,6 +75,34 @@
 
 **Fluxo de backtest:**
 `state.cfg (frontend)` → `submit-backtest (Edge Function)` → `fila Supabase` → `Python worker` → `MT5 headless` → `resultado em backtests.result` → `polling frontend` → `tela de resultados`
+
+---
+
+## INFRAESTRUTURA DE RUNTIME (produção)
+
+Implementada em junho/2026. Detalhes completos em `SPEC_HARDENING_PROD.md`.
+
+**Primitivas globais disponíveis no `app.html` (e demais HTMLs):**
+
+- `__BOOT_OK` (boolean) — flag de boot completo. Watchdog de 12s exibe tela de erro se nunca virar `true`. Qualquer novo fluxo de boot deve setar `__BOOT_OK = true` no sucesso.
+- `__showBootError(msg)` — substitui o `<body>` por tela de erro com botão "Limpar dados e recarregar". Usar sempre que erro impedir o app de funcionar — nunca deixar tela branca.
+- `__reportError(payload)` — envia evento manual pro Sentry. Útil em catch blocks de fluxos críticos (pagamento, submit-backtest, auth).
+- `__resetAndReload()` — limpa storage do BTP (chaves `sb-`, `bp-`, `bt_`) e recarrega com cache bust.
+
+**Error reporting:**
+- Sentry via Loader Script no `<head>` de todos os HTMLs.
+- Captura automática: `window.onerror`, `unhandledrejection`.
+- `release` no Sentry sincronizado com `APP_VERSION` (linha ~1477 de `app.html`).
+- Erros de extensão de navegador são filtrados em `beforeSend`.
+
+**Regras de deploy:**
+- Toda alteração em `app.html`, `index.html`, `admin.html`, `afiliados.html`, `termos-afiliados.html` que vá pra produção exige bump de `APP_VERSION` em `app.html` E atualização de `/version.txt` na raiz do repo.
+- Sem isso, o toast de "Nova versão disponível" não dispara pra usuários com aba antiga aberta.
+
+**Scripts externos:**
+- Todo `<script src="...">` externo deve ter `integrity` (SRI) e `crossorigin="anonymous"`.
+- Ao atualizar versão de qualquer lib via CDN, recalcular o hash SHA-384.
+- Exceção: Google Identity Services (`accounts.google.com/gsi/client`) não publica SRI estável — manter sem.
 
 ---
 
@@ -142,7 +171,7 @@ Cobranças avulsas (não recorrentes). Free trial: 5 backtests gratuitos.
 
 - [ ] Sender de email próprio (sair do `onboarding@resend.dev`)
 - [ ] Z-API WhatsApp (captura pós-cadastro + pós-3º backtest)
-- [ ] Monitoring/alertas de produção (VPS + pipeline)
+- [ ] Monitoring/alertas de backend (VPS + pipeline Python — Sentry frontend já cobre o app)
 
 ---
 
@@ -169,6 +198,7 @@ Cobranças avulsas (não recorrentes). Free trial: 5 backtests gratuitos.
 | `07-GIT-WORKFLOW.md` | Fluxo Git |
 | `docs/motor-diagnostico.md` | Motor de diagnóstico — 23 nós documentados |
 | `docs/SUPORTE-SISTEMA.md` | Spec do sistema de suporte |
+| `SPEC_HARDENING_PROD.md` | Spec do hardening de runtime (Sentry + boot guards + version check) |
 
 ---
 
