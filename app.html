@@ -1620,8 +1620,9 @@ async function verificarAcesso(){
       if (_urlP === 'cadastro' && currentAffiliate)  { showScreen('affiliate'); return; }
       if(currentScreen === 'plans' || currentScreen === 'payment' || currentScreen === 'history') return;
       if(state?.screen === 'loading' || state?.screen === 'results') return;
-      // Não re-rotear quando o user já está trabalhando no wizard/confirm (ex.: TOKEN_REFRESHED periódico) — só após o boot inicial já ter roteado uma vez
-      if(__hasRoutedToApp && (state?.screen === 'wizard' || state?.screen === 'confirm')) return;
+      // Não re-rotear quando o user já está trabalhando no wizard/confirm (ex.: TOKEN_REFRESHED periódico).
+      // Detecta o wizard pela classe btp-mode realmente presente na tela — NÃO por state.screen, cujo default é 'wizard' mesmo na home.
+      if(__hasRoutedToApp && (document.getElementById('main')?.classList.contains('btp-mode') || state?.screen === 'confirm')) return;
       __hasRoutedToApp = true;
       if(data.role === 'admin' || currentSub || currentTrialCount < FREE_TRIAL.backtests_max){ showHome(); }
       else { showScreen('plans'); }
@@ -1659,7 +1660,7 @@ db.auth.onAuthStateChange(async (event, session) => {
 });
 
 // ─── STATE ────────────────────────────────────────────────────
-const APP_VERSION = '2.2.2'; // Versão do produto — atualizar a cada release
+const APP_VERSION = '2.2.3'; // Versão do produto — atualizar a cada release
 
 // ─── THEME ───────────────────────────────────────────────────
 function setAppTheme(t){
@@ -10308,6 +10309,7 @@ function _homeLoadSugestao(b, sug) {
 function showHome() {
   currentScreen = 'home';
   const main = document.getElementById('main');
+  main.classList.remove('btp-mode');
   main.innerHTML = '';
   const pb = document.getElementById('prog-bar');
   if (pb) { pb.innerHTML = ''; const lbl = document.createElement('div'); lbl.style.cssText = 'font-size:13px;color:var(--txs);font-weight:500'; lbl.textContent = 'Início'; pb.appendChild(lbl); }
