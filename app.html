@@ -1660,7 +1660,7 @@ db.auth.onAuthStateChange(async (event, session) => {
 });
 
 // ─── STATE ────────────────────────────────────────────────────
-const APP_VERSION = '2.2.4'; // Versão do produto — atualizar a cada release
+const APP_VERSION = '2.2.5'; // Versão do produto — atualizar a cada release
 
 // ─── THEME ───────────────────────────────────────────────────
 function setAppTheme(t){
@@ -12255,11 +12255,15 @@ const BTP_CE = (function(){
     else entry=long?q(sig.c+A.tick):q(sig.c-A.tick);
     let stop,stopAnchor;
     if(eng.stop==='fixo'){stop=long?q(entry-eng.stopPts):q(entry+eng.stopPts);stopAnchor=null;}
-    else if(eng.stop==='candle'){stop=long?q(sig.l):q(sig.h);stopAnchor=si;}
-    else if(eng.stop==='ncandles'){const win=c.slice(-eng.stopN);stop=long?q(Math.min(...win.map(x=>x.l))):q(Math.max(...win.map(x=>x.h)));stopAnchor=c.length-eng.stopN;}
+    else if(eng.stop==='candle'){const off=eng.stopOffset||0;stop=long?q(sig.l-off):q(sig.h+off);stopAnchor=si;}
+    else if(eng.stop==='ncandles'){const win=c.slice(-eng.stopN),off=eng.stopNOffset||0;const base=long?Math.min(...win.map(x=>x.l)):Math.max(...win.map(x=>x.h));stop=long?q(base-off):q(base+off);stopAnchor=c.length-eng.stopN;}
     else{stop=long?q(entry-eng.stopMult*atr):q(entry+eng.stopMult*atr);stopAnchor=null;}
     const risk=Math.abs(entry-stop);
-    const tgt=eng.tp==='fixo'?(long?q(entry+eng.tpPts):q(entry-eng.tpPts)):(long?q(entry+eng.rr*risk):q(entry-eng.rr*risk));
+    let tgt;
+    if(eng.tp==='none')tgt=null;
+    else if(eng.tp==='fixo')tgt=long?q(entry+eng.tpPts):q(entry-eng.tpPts);
+    else if(eng.tp==='atr')tgt=long?q(entry+(eng.tpMult||2)*atr):q(entry-(eng.tpMult||2)*atr);
+    else tgt=long?q(entry+eng.rr*risk):q(entry-eng.rr*risk);
     return{entry,stop,tgt,risk,atr,si,stopAnchor,zone:scene.zone,long};
   }
   function smaArr(a,p){const o=[];for(let i=0;i<a.length;i++){if(i<p-1){o.push(null);continue;}let s=0;for(let j=i-p+1;j<=i;j++)s+=a[j];o.push(s/p);}return o;}
@@ -12305,12 +12309,13 @@ const BTP_CE = (function(){
     const long=cfg.direction!=='short';
     const seed=(pk==='WIN'?1000:pk==='WDO'?2000:3000)+({rompimento:1,engolfo:2,martelo:3,gap:4,fvg:5,doji:6,estrela:7,harami:8,marubozu:9,tres_soldados:10}[scenario]||1);
     const entryMap={breakout:'rompimento',close:'fechamento',open_next:'abertura'};
-    const stopMap={fixed:'fixo',candle:'candle',n_candles:'ncandles',atr:'atr'};
-    const tpMap={fixed:'fixo',rr:'rr',atr:'fixo'};
+    const stopMap={fixed:'fixo',hl_candle:'candle',candle:'candle',n_candles:'ncandles',atr:'atr'};
+    const tpMap={fixed:'fixo',rr:'rr',atr:'atr',none:'none'};
     return{A,scenario,long,panels,overlays,seed,
       entry:entryMap[cfg.entryType]||'rompimento',
       stop:stopMap[cfg.stopType]||'fixo',
       stopPts:cfg.stopPts||200,stopN:cfg.stopCandles||5,stopMult:cfg.stopAtrMult||1.5,
+      stopOffset:cfg.stopOffset||0,stopNOffset:cfg.stopNOffset||0,tpMult:cfg.tpAtrMult||2,
       tp:tpMap[cfg.tpType]||'rr',tpPts:cfg.tpPts||400,rr:cfg.tpRR||2,
       trailType:cfg.trailing?(cfg.stopType==='atr'?'atr':cfg.stopType==='n_candles'||cfg.stopType==='candle'?'bar':'rr'):'off',appStep:state.step||0,pk,
       showPattern:(cfg.conditions||[]).some(c=>['candle','fvg','fib','gap','sweep','grab','bos','choch'].includes(c.id))};
@@ -12341,7 +12346,7 @@ const BTP_CE = (function(){
     let lo=Math.min(...c.map(x=>x.l)),hi=Math.max(...c.map(x=>x.h));
     const showEntry=appStep>=2,showRisk=appStep>=3;
     if(showEntry){lo=Math.min(lo,ov.entry);hi=Math.max(hi,ov.entry);}
-    if(showRisk){lo=Math.min(lo,ov.stop,ov.tgt);hi=Math.max(hi,ov.stop,ov.tgt);}
+    if(showRisk){lo=Math.min(lo,ov.stop);hi=Math.max(hi,ov.stop);if(ov.tgt!=null){lo=Math.min(lo,ov.tgt);hi=Math.max(hi,ov.tgt);}}
     if(ov.zone){lo=Math.min(lo,ov.zone.lo);hi=Math.max(hi,ov.zone.hi);}
     if(eng.overlays.bb){ind.bb.up.forEach(v=>v!=null&&(hi=Math.max(hi,v)));ind.bb.lo.forEach(v=>v!=null&&(lo=Math.min(lo,v)));}
     if(eng.overlays.sar){ind.sar.sar.forEach(v=>v!=null&&(hi=Math.max(hi,v),lo=Math.min(lo,v)));}
@@ -12382,7 +12387,7 @@ const BTP_CE = (function(){
       ctx.fillStyle=color;ctx.fillRect(plotW,y-9,RGUT,18);ctx.fillStyle='#06121a';ctx.font="bold 10px 'JetBrains Mono'";ctx.textAlign='center';ctx.fillText(A.fmt(p),plotW+RGUT/2,y);
       ctx.fillStyle=color;ctx.font="bold 9.5px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText(label,6,y-9<TOP?y+11:y-9);return y;
     }
-    if(showRisk){const yE=py(ov.entry),yS=py(ov.stop),yT2=py(ov.tgt);ctx.fillStyle='rgba(255,60,80,.07)';ctx.fillRect(0,Math.min(yE,yS),plotW,Math.abs(yS-yE));ctx.fillStyle='rgba(16,185,129,.07)';ctx.fillRect(0,Math.min(yE,yT2),plotW,Math.abs(yT2-yE));level(ov.tgt,C.tgt,'ALVO',[]);level(ov.stop,C.sell,(appStep===4&&eng.trailType!=='off')?'STOP INICIAL':'STOP',[]);}
+    if(showRisk){const yE=py(ov.entry),yS=py(ov.stop);ctx.fillStyle='rgba(255,60,80,.07)';ctx.fillRect(0,Math.min(yE,yS),plotW,Math.abs(yS-yE));if(ov.tgt!=null){const yT2=py(ov.tgt);ctx.fillStyle='rgba(16,185,129,.07)';ctx.fillRect(0,Math.min(yE,yT2),plotW,Math.abs(yT2-yE));level(ov.tgt,C.tgt,'ALVO',[]);}level(ov.stop,C.sell,(appStep===4&&eng.trailType!=='off')?'STOP INICIAL':'STOP',[]);}
     if(showEntry){const yE=level(ov.entry,C.entry,'ENTRADA',[6,3]);const aP=ov.long?c[ov.si].h:c[ov.si].l;ctx.strokeStyle='rgba(245,194,75,.5)';ctx.setLineDash([2,2]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(sigX,py(aP));ctx.lineTo(sigX,yE);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.entry;ctx.beginPath();if(ov.long){ctx.moveTo(sigX,yE-1);ctx.lineTo(sigX-5,yE-9);ctx.lineTo(sigX+5,yE-9);}else{ctx.moveTo(sigX,yE+1);ctx.lineTo(sigX-5,yE+9);ctx.lineTo(sigX+5,yE+9);}ctx.closePath();ctx.fill();}
     if(showRisk&&ov.stopAnchor!=null){const ax=px(ov.stopAnchor),ai=Math.min(ov.stopAnchor,c.length-1),aP2=ov.long?c[ai].l:c[ai].h;ctx.strokeStyle='rgba(255,60,80,.45)';ctx.setLineDash([2,2]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(ax,py(ov.stop));ctx.lineTo(ax,py(aP2));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(255,60,80,.8)';ctx.font="8px 'JetBrains Mono'";ctx.textAlign='center';const arrow=ov.long?'↑ mín. ':'↓ máx. ';ctx.fillText(eng.stop==='candle'?arrow+'do sinal':arrow+eng.stopN+' candles',ax,py(ov.stop)+(ov.long?14:-8));}
     if(trailing){
@@ -12455,7 +12460,7 @@ const BTP_CE = (function(){
     const el=document.getElementById('btp-legend');if(!el)return;
     if(appStep<2){el.innerHTML='';return;}
     let h=`<span><i style="background:${C.entry}"></i>Entrada ${A.fmt(ov.entry)}</span>`;
-    if(appStep>=3){h+=`<span><i style="background:${C.sell}"></i>Stop ${A.fmt(ov.stop)} · risco ${A.fmt(ov.risk)}</span><span><i style="background:${C.tgt}"></i>Alvo ${A.fmt(ov.tgt)}</span>`;}
+    if(appStep>=3){h+=`<span><i style="background:${C.sell}"></i>Stop ${A.fmt(ov.stop)} · risco ${A.fmt(ov.risk)}</span>`+(ov.tgt!=null?`<span><i style="background:${C.tgt}"></i>Alvo ${A.fmt(ov.tgt)}</span>`:`<span style="color:#5b6377">sem alvo fixo</span>`);}
     h+=`<span style="color:#5b6377">ATR(14) ${A.fmt(Math.round(ov.atr/A.tick)*A.tick)} · tick ${A.tick}</span>`;
     el.innerHTML=h;
   }
