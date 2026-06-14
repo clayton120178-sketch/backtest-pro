@@ -12130,13 +12130,24 @@ const BTP_CE = (function(){
   const PROF={
     WIN:{tick:5,dec:0,ref:129000,range:170,fmt:v=>Math.round(v).toLocaleString('pt-BR')},
     WDO:{tick:0.5,dec:1,ref:5548,range:9,fmt:v=>v.toFixed(1)},
-    ACAO:{tick:0.01,dec:2,ref:30,range:0.3,fmt:v=>v.toFixed(2)},
+    ACAO:{tick:0.01,dec:2,ref:30,range:0.24,fmt:v=>v.toFixed(2)},
+  };
+  const ACAO_REF={
+    PETR4:36,PETR3:35,VALE3:62,ITUB4:35,BBDC4:14,BBAS3:28,
+    ABEV3:13,WEGE3:52,RENT3:58,RADL3:28,MGLU3:3,LREN3:16,
+    SUZB3:54,JBSS3:32,EMBR3:55,EQTL3:30,GGBR4:22,USIM5:10,
+    CSNA3:16,CSAN3:19,BPAC11:35,BBSE3:37,ENEV3:17,PRIO3:43,
+    CPLE6:12,CMIG4:14,TIMS3:17,TOTS3:35,LWSA3:7,HAPV3:5,
   };
   function _profKey(t){
     if(!t)return 'WIN';
     if(['WIN$N','IND$N','ISP$N','BGI$N','CCM$N','ICF$N','SFI$N','ETH$N','BIT$N','OZ1D$N','DI1$N'].includes(t))return 'WIN';
     if(['WDO$N','DOL$N'].includes(t))return 'WDO';
     return 'ACAO';
+  }
+  function _acaoProf(ticker){
+    const ref=ACAO_REF[ticker]||30;
+    return{tick:0.01,dec:2,ref,range:ref*0.008,fmt:v=>v.toFixed(2)};
   }
   function _pickScenario(conds){
     for(const c of(conds||[])){
@@ -12236,7 +12247,7 @@ const BTP_CE = (function(){
   }
   function _buildEng(){
     if(typeof state==='undefined'||!state.cfg)return null;
-    const cfg=state.cfg,pk=_profKey(cfg.asset),A=PROF[pk];
+    const cfg=state.cfg,pk=_profKey(cfg.asset),A=pk==='ACAO'?_acaoProf(cfg.asset):PROF[pk];
     const scenario=_pickScenario(cfg.conditions),panels=_pickPanels(cfg.conditions),overlays=_pickOverlays(cfg.conditions);
     const long=cfg.direction!=='short';
     const seed=(pk==='WIN'?1000:pk==='WDO'?2000:3000)+({rompimento:1,engolfo:2,martelo:3,gap:4,fvg:5}[scenario]||1);
