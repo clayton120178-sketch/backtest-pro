@@ -12202,7 +12202,7 @@ const BTP_CE = (function(){
       const c3o=price+0.15*atr,c3c=c3o+0.45*atr;push(c3o,c3c+0.12*atr,c3o-0.05*atr,c3c);price=c3c;
       signalIndex=cs.length-1;zone={hi:cs[signalIndex].l,lo:c1.h,kind:'FVG'};
       patternCandles=[signalIndex-2,signalIndex-1,signalIndex];patternLabel='Fair Value Gap';
-    }else{
+    }else if(name==='rompimento'||!name){
       price=A.ref;for(let i=0;i<N-1;i++)organic((rng()-0.5)*0.3,0.5);const atr=atrOf(),top=Math.max(...cs.slice(-8).map(c=>c.h));
       let o=cs[cs.length-1].c,c=Math.max(o,top)+0.40*atr;if(c-o>1.6*atr)o=c-1.2*atr;
       push(o,c+0.15*atr,o-0.25*atr,c);price=c;signalIndex=cs.length-1;patternCandles=[signalIndex];patternLabel='Rompimento';
