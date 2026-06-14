@@ -12151,14 +12151,15 @@ const BTP_CE = (function(){
   }
   function _pickScenario(conds){
     for(const c of(conds||[])){
-      if(c.id==='fvg')return 'fvg';
-      if(c.id==='gap')return 'gap';
+      if(c.id==='fvg'||c.id==='fib')return 'fvg';
+      if(c.id==='gap'||c.id==='sweep'||c.id==='grab')return 'gap';
       if(c.id==='candle'){const cd=(c.cond||'').toLowerCase();if(cd.includes('engolfo'))return 'engolfo';if(cd.includes('martelo'))return 'martelo';}
+      if(c.id==='bos'||c.id==='choch')return 'rompimento';
     }
     return 'rompimento';
   }
-  function _pickPanels(conds){const p={ifr:false,macd:false};for(const c of(conds||[])){if(c.id==='rsi')p.ifr=true;if(c.id==='macd')p.macd=true;}return p;}
-  function _pickOverlays(conds){const o={bb:false,sma:false};for(const c of(conds||[])){if(c.id==='bb')o.bb=true;if(c.id==='sma'||c.id==='ema')o.sma=true;}return o;}
+  function _pickPanels(conds){const p={ifr:false,macd:false,stoch:false,cci:false,wil:false,adx:false};for(const c of(conds||[])){if(c.id==='rsi')p.ifr=true;if(c.id==='macd')p.macd=true;if(c.id==='stoch')p.stoch=true;if(c.id==='cci')p.cci=true;if(c.id==='williams')p.wil=true;if(c.id==='adx')p.adx=true;}return p;}
+  function _pickOverlays(conds){const o={bb:false,sma:false,vwap:false,sar:false};for(const c of(conds||[])){if(c.id==='bb')o.bb=true;if(c.id==='sma'||c.id==='ema')o.sma=true;if(c.id==='vwap')o.vwap=true;if(c.id==='sar'||c.id==='hilo')o.sar=true;}return o;}
   function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
   function buildScene(name,A,seed){
     const rng=mulberry32(seed),q=p=>Math.round(p/A.tick)*A.tick,R=A.range;let price=A.ref;const cs=[];
@@ -12220,6 +12221,12 @@ const BTP_CE = (function(){
   function bollinger(cl,p,m){const mid=smaArr(cl,p),up=[],lo=[];for(let i=0;i<cl.length;i++){if(mid[i]==null){up.push(null);lo.push(null);continue;}let s=0;for(let j=i-p+1;j<=i;j++)s+=(cl[j]-mid[i])**2;const sd=Math.sqrt(s/p);up.push(mid[i]+m*sd);lo.push(mid[i]-m*sd);}return{mid,up,lo};}
   function macdCalc(cl){const f=emaArr(cl,12),s=emaArr(cl,26);const line=cl.map((_,i)=>(f[i]!=null&&s[i]!=null)?f[i]-s[i]:null);const sg=emaArr(line,9);const hist=line.map((v,i)=>(v!=null&&sg[i]!=null)?v-sg[i]:null);return{line,sig:sg,hist};}
   function rsiCalc(cl,p){const o=[];for(let i=0;i<cl.length;i++){if(i<1){o.push(null);continue;}let g=0,l=0;for(let j=Math.max(1,i-p+1);j<=i;j++){const d=cl[j]-cl[j-1];if(d>0)g+=d;else l-=d;}const rs=l===0?100:g/(l||1e-9);o.push(100-100/(1+rs));}return o;}
+  function stochCalc(cl,hi,lo,k=14,d=3){const K=cl.map((_,i)=>{if(i<k-1)return null;const hs=hi.slice(i-k+1,i+1),ls=lo.slice(i-k+1,i+1);const hh=Math.max(...hs),ll=Math.min(...ls);return hh===ll?50:(cl[i]-ll)/(hh-ll)*100;});const D=K.map((_,i)=>{const s=K.slice(Math.max(0,i-d+1),i+1).filter(v=>v!=null);return s.length===d?s.reduce((a,b)=>a+b)/d:null;});return{k:K,d:D};}
+  function cciCalc(cl,hi,lo,per=14){return cl.map((_,i)=>{if(i<per-1)return null;const tp=Array.from({length:per},(_,j)=>(cl[i-per+1+j]+hi[i-per+1+j]+lo[i-per+1+j])/3);const mean=tp.reduce((a,b)=>a+b)/per;const md=tp.reduce((a,b)=>a+Math.abs(b-mean),0)/per;return md===0?0:((cl[i]+hi[i]+lo[i])/3-mean)/(0.015*md);});}
+  function williamsCalc(cl,hi,lo,per=14){return cl.map((_,i)=>{if(i<per-1)return null;const hh=Math.max(...hi.slice(i-per+1,i+1)),ll=Math.min(...lo.slice(i-per+1,i+1));return hh===ll?-50:(hh-cl[i])/(hh-ll)*-100;});}
+  function adxCalc(hi,lo,cl,per=14){const n=cl.length,dx=new Array(n).fill(null);let sTR=0,sDMp=0,sDMn=0;for(let i=1;i<n;i++){const tr=Math.max(hi[i]-lo[i],Math.abs(hi[i]-cl[i-1]),Math.abs(lo[i]-cl[i-1]));const pDM=hi[i]-hi[i-1],nDM=lo[i-1]-lo[i];const pdm=pDM>nDM&&pDM>0?pDM:0,ndm=nDM>pDM&&nDM>0?nDM:0;if(i<per){sTR+=tr;sDMp+=pdm;sDMn+=ndm;}else{sTR=sTR-sTR/per+tr;sDMp=sDMp-sDMp/per+pdm;sDMn=sDMn-sDMn/per+ndm;}if(i>=per&&sTR>0){const pi=100*sDMp/sTR,ni=100*sDMn/sTR,s=pi+ni;dx[i]=s===0?0:Math.abs(pi-ni)/s*100;}}let sm=0,sc=0;const res=new Array(n).fill(null);for(let i=0;i<n;i++){if(dx[i]!=null){sm+=dx[i];sc++;if(sc>=per)res[i]=sm/sc;}}return res;}
+  function vwapCalc(cl,hi,lo){let cv=0;return cl.map((_,i)=>{cv+=(cl[i]+hi[i]+lo[i])/3;return cv/(i+1);});}
+  function sarCalc(hi,lo){const n=hi.length,sar=new Array(n).fill(null);if(n<3)return{sar,bull:[]};const STEP=0.02,MAX=0.2;let bull=true,af=STEP,ep=hi[0],s=lo[0];sar[0]=s;for(let i=1;i<n;i++){let ns=s+af*(ep-s);if(bull){ns=Math.min(ns,lo[i-1],i>1?lo[i-2]:lo[i-1]);if(lo[i]<ns){bull=false;ns=ep;ep=lo[i];af=STEP;}else{if(hi[i]>ep){ep=hi[i];af=Math.min(af+STEP,MAX);}}}else{ns=Math.max(ns,hi[i-1],i>1?hi[i-2]:hi[i-1]);if(hi[i]>ns){bull=true;ns=ep;ep=hi[i];af=STEP;}else{if(lo[i]<ep){ep=lo[i];af=Math.min(af+STEP,MAX);}}}sar[i]=ns;s=ns;}return{sar,bull:sar.map((_,i)=>sar[i]!=null&&lo[i]>sar[i])};}
   function projectTrade(scene,ov,A,n){
     const q=p=>Math.round(p/A.tick)*A.tick,last=scene.candles[scene.candles.length-1],atr=ov.atr,long=ov.long;
     let price=last.c;const out=[],r=mulberry32(7777);
@@ -12264,8 +12271,8 @@ const BTP_CE = (function(){
   function _recompute(){
     const eng=_buildEng();if(!eng)return;
     const A=eng.A,scene=buildScene(eng.scenario,A,eng.seed),ov=computeOverlays(scene,A,eng);
-    const cl=scene.candles.map(k=>k.c);
-    const ind={bb:bollinger(cl,20,2),sma:smaArr(cl,20),macd:macdCalc(cl),ifr:rsiCalc(cl,14)};
+    const cl=scene.candles.map(k=>k.c),hi=scene.candles.map(k=>k.h),lo=scene.candles.map(k=>k.l);
+    const ind={bb:bollinger(cl,20,2),sma:smaArr(cl,20),macd:macdCalc(cl),ifr:rsiCalc(cl,14),stoch:stochCalc(cl,hi,lo),cci:cciCalc(cl,hi,lo),wil:williamsCalc(cl,hi,lo),adx:adxCalc(hi,lo,cl),vwap:vwapCalc(cl,hi,lo),sar:sarCalc(hi,lo)};
     const proj=projectTrade(scene,ov,A,10),stops=trailStops(proj,ov,eng.trailType);
     _cur={A,scene,ov,ind,proj,stops,eng};
     const ll=document.getElementById('btp-livelabel');
@@ -12275,7 +12282,7 @@ const BTP_CE = (function(){
     const cv=_cv();if(!cv||!_cur)return;const ctx=_ctx();if(!ctx)return;
     const{A,scene,ov,ind,proj,stops,eng}=_cur,c=scene.candles;
     const TOP=44,BOT=24,RGUT=62;
-    const footers=[];if(eng.panels.ifr)footers.push('ifr');if(eng.panels.macd)footers.push('macd');
+    const footers=[];if(eng.panels.ifr)footers.push('ifr');if(eng.panels.macd)footers.push('macd');if(eng.panels.stoch)footers.push('stoch');if(eng.panels.cci)footers.push('cci');if(eng.panels.wil)footers.push('wil');if(eng.panels.adx)footers.push('adx');
     const PANEL=92,FOOT=footers.length*PANEL,chartH=_H-TOP-BOT-FOOT,plotW=_W-RGUT,N=c.length;
     const appStep=eng.appStep,trailing=appStep===4&&eng.trailType!=='off';
     const projN=trailing?proj.length:0,TOTAL=N+projN,TSLOT=plotW/(TOTAL+1.5),BW=TSLOT*0.58;
@@ -12285,6 +12292,7 @@ const BTP_CE = (function(){
     if(showRisk){lo=Math.min(lo,ov.stop,ov.tgt);hi=Math.max(hi,ov.stop,ov.tgt);}
     if(ov.zone){lo=Math.min(lo,ov.zone.lo);hi=Math.max(hi,ov.zone.hi);}
     if(eng.overlays.bb){ind.bb.up.forEach(v=>v!=null&&(hi=Math.max(hi,v)));ind.bb.lo.forEach(v=>v!=null&&(lo=Math.min(lo,v)));}
+    if(eng.overlays.sar){ind.sar.sar.forEach(v=>v!=null&&(hi=Math.max(hi,v),lo=Math.min(lo,v)));}
     if(trailing){proj.forEach(k=>{hi=Math.max(hi,k.h);lo=Math.min(lo,k.l);});stops.forEach(s=>hi=Math.max(hi,s)||lo<s||(lo=Math.min(lo,s)));}
     const pad=(hi-lo)*0.10;lo-=pad;hi+=pad;
     const py=p=>TOP+chartH*(1-(p-lo)/(hi-lo)),px=i=>TSLOT*(i+1);
@@ -12300,6 +12308,8 @@ const BTP_CE = (function(){
       pl(bb.up);pl(bb.lo);pl(bb.mid,[3,3]);
     }
     if(eng.overlays.sma){ctx.strokeStyle='#ffc107';ctx.lineWidth=1.4;ctx.beginPath();let s=false;for(let i=0;i<N;i++){if(ind.sma[i]==null)continue;const x=px(i),y=py(ind.sma[i]);s?ctx.lineTo(x,y):(ctx.moveTo(x,y),s=true);}ctx.stroke();}
+    if(eng.overlays.vwap){ctx.strokeStyle='#e040fb';ctx.lineWidth=1.5;ctx.setLineDash([5,3]);ctx.beginPath();let sv=false;for(let i=0;i<N;i++){const y=py(ind.vwap[i]);sv?ctx.lineTo(px(i),y):(ctx.moveTo(px(i),y),sv=true);}ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#e040fb';ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText('VWAP',plotW+8,py(ind.vwap[N-1]));}
+    if(eng.overlays.sar){const sr=ind.sar;for(let i=0;i<N;i++){if(sr.sar[i]==null)continue;const y=py(sr.sar[i]),x=px(i),r=BW*0.28;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=sr.bull[i]?C.bull:C.bear;ctx.fill();}}
     if(ov.zone){const yT=py(ov.zone.hi),yB=py(ov.zone.lo);ctx.fillStyle=C.zone;ctx.fillRect(0,yT,plotW,yB-yT);ctx.strokeStyle=C.zoneln;ctx.setLineDash([4,4]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,yT);ctx.lineTo(plotW,yT);ctx.stroke();ctx.beginPath();ctx.moveTo(0,yB);ctx.lineTo(plotW,yB);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.zoneln;ctx.font="bold 9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText(ov.zone.kind,6,yT-7<TOP?yT+10:yT-7);}
     c.forEach((k,i)=>{const x=px(i),up=k.c>=k.o,col=up?C.bull:C.bear;ctx.strokeStyle=col;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(x,py(k.h));ctx.lineTo(x,py(k.l));ctx.stroke();ctx.fillStyle=col;const yO=py(k.o),yC=py(k.c),top2=Math.min(yO,yC);let hgt=Math.abs(yC-yO);if(hgt<1.2)hgt=1.2;ctx.fillRect(x-BW/2,top2,BW,hgt);});
     if(scene.patternCandles&&scene.patternCandles.length){
@@ -12340,7 +12350,7 @@ const BTP_CE = (function(){
     const lastC=c[c.length-1];ctx.fillStyle=lastC.c>=lastC.o?C.bull:C.bear;ctx.font="bold 13px 'JetBrains Mono'";ctx.textAlign='right';ctx.fillText(A.fmt(lastC.c),plotW,22);
     footers.forEach((kind,idx)=>{
       const fy0=_H-BOT-FOOT+idx*PANEL,fy1=fy0+PANEL;ctx.strokeStyle=C.border;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,fy0);ctx.lineTo(_W,fy0);ctx.stroke();
-      if(kind==='ifr')_drawIFR(ctx,fy0,fy1,px,plotW,ind.ifr);else if(kind==='macd')_drawMACD(ctx,fy0,fy1,px,plotW,ind.macd);
+      if(kind==='ifr')_drawIFR(ctx,fy0,fy1,px,plotW,ind.ifr);else if(kind==='macd')_drawMACD(ctx,fy0,fy1,px,plotW,ind.macd);else if(kind==='stoch')_drawStoch(ctx,fy0,fy1,px,plotW,ind.stoch);else if(kind==='cci')_drawCCI(ctx,fy0,fy1,px,plotW,ind.cci);else if(kind==='wil')_drawWil(ctx,fy0,fy1,px,plotW,ind.wil);else if(kind==='adx')_drawADX(ctx,fy0,fy1,px,plotW,ind.adx);
     });
     _drawLegend(ov,A,appStep);
   }
@@ -12349,6 +12359,33 @@ const BTP_CE = (function(){
     const pad=12,map=v=>fy0+pad+(fy1-fy0-2*pad)*(1-v/100);
     [30,70].forEach(lv=>{ctx.strokeStyle='rgba(255,255,255,.12)';ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(0,map(lv));ctx.lineTo(plotW,map(lv));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.dim;ctx.textAlign='left';ctx.fillText(lv,plotW+8,map(lv)+3);});
     ctx.strokeStyle='#2196f3';ctx.lineWidth=1.4;ctx.beginPath();let s=false;ifr.forEach((v,i)=>{if(v==null)return;const x=px(i),y=map(v);s?ctx.lineTo(x,y):(ctx.moveTo(x,y),s=true);});ctx.stroke();
+  }
+  function _drawStoch(ctx,fy0,fy1,px,plotW,st){
+    ctx.fillStyle=C.dim;ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText('ESTO(14,3)',8,fy0+13);
+    const pad=12,map=v=>fy0+pad+(fy1-fy0-2*pad)*(1-v/100);
+    [20,80].forEach(lv=>{ctx.strokeStyle='rgba(255,255,255,.12)';ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(0,map(lv));ctx.lineTo(plotW,map(lv));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.dim;ctx.textAlign='left';ctx.fillText(lv,plotW+8,map(lv)+3);});
+    const pl=(arr,col)=>{ctx.strokeStyle=col;ctx.lineWidth=1.4;ctx.beginPath();let s=false;arr.forEach((v,i)=>{if(v==null)return;const x=px(i),y=map(v);s?ctx.lineTo(x,y):(ctx.moveTo(x,y),s=true);});ctx.stroke();};
+    pl(st.k,'#2196f3');pl(st.d,'#ff9800');
+  }
+  function _drawCCI(ctx,fy0,fy1,px,plotW,cci){
+    ctx.fillStyle=C.dim;ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText('CCI(14)',8,fy0+13);
+    const vals=cci.filter(v=>v!=null);let mn=Math.min(-150,...vals),mx=Math.max(150,...vals);const rng=(mx-mn)||1;
+    const pad=12,map=v=>fy0+pad+(fy1-fy0-2*pad)*(1-(v-mn)/rng);
+    [-100,0,100].forEach(lv=>{ctx.strokeStyle='rgba(255,255,255,.12)';ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(0,map(lv));ctx.lineTo(plotW,map(lv));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.dim;ctx.fillText(lv,plotW+8,map(lv)+3);});
+    ctx.strokeStyle='#00bcd4';ctx.lineWidth=1.4;ctx.beginPath();let sc=false;cci.forEach((v,i)=>{if(v==null)return;const x=px(i),y=map(v);sc?ctx.lineTo(x,y):(ctx.moveTo(x,y),sc=true);});ctx.stroke();
+  }
+  function _drawWil(ctx,fy0,fy1,px,plotW,wil){
+    ctx.fillStyle=C.dim;ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText('%R(14)',8,fy0+13);
+    const pad=12,map=v=>fy0+pad+(fy1-fy0-2*pad)*(1-(v+100)/100);
+    [-20,-80].forEach(lv=>{ctx.strokeStyle='rgba(255,255,255,.12)';ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(0,map(lv));ctx.lineTo(plotW,map(lv));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.dim;ctx.fillText(lv,plotW+8,map(lv)+3);});
+    ctx.strokeStyle='#f06292';ctx.lineWidth=1.4;ctx.beginPath();let sw=false;wil.forEach((v,i)=>{if(v==null)return;const x=px(i),y=map(v);sw?ctx.lineTo(x,y):(ctx.moveTo(x,y),sw=true);});ctx.stroke();
+  }
+  function _drawADX(ctx,fy0,fy1,px,plotW,adx){
+    ctx.fillStyle=C.dim;ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText('ADX(14)',8,fy0+13);
+    const vals=adx.filter(v=>v!=null);const mx=Math.max(60,...vals);
+    const pad=12,map=v=>fy0+pad+(fy1-fy0-2*pad)*(1-v/mx);
+    [25].forEach(lv=>{ctx.strokeStyle='rgba(255,255,255,.18)';ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(0,map(lv));ctx.lineTo(plotW,map(lv));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.dim;ctx.fillText(lv,plotW+8,map(lv)+3);});
+    ctx.strokeStyle='#ab47bc';ctx.lineWidth=1.6;ctx.beginPath();let sa=false;adx.forEach((v,i)=>{if(v==null)return;const x=px(i),y=map(v);sa?ctx.lineTo(x,y):(ctx.moveTo(x,y),sa=true);});ctx.stroke();
   }
   function _drawMACD(ctx,fy0,fy1,px,plotW,m){
     ctx.fillStyle=C.dim;ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText('MACD(12,26,9)',8,fy0+13);
