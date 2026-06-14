@@ -1247,6 +1247,7 @@ let currentUsuario    = null;
 let currentSub        = null;
 let currentScreen     = null;
 let currentTrialCount = 0;
+let __hasRoutedToApp  = false; // true após o 1º roteamento pós-login (evita TOKEN_REFRESHED jogar o user de volta pra home no meio do wizard)
 
 // ─── IIFE: detecta retorno de OAuth ───────────────────────────
 (function(){
@@ -1619,6 +1620,9 @@ async function verificarAcesso(){
       if (_urlP === 'cadastro' && currentAffiliate)  { showScreen('affiliate'); return; }
       if(currentScreen === 'plans' || currentScreen === 'payment' || currentScreen === 'history') return;
       if(state?.screen === 'loading' || state?.screen === 'results') return;
+      // Não re-rotear quando o user já está trabalhando no wizard/confirm (ex.: TOKEN_REFRESHED periódico) — só após o boot inicial já ter roteado uma vez
+      if(__hasRoutedToApp && (state?.screen === 'wizard' || state?.screen === 'confirm')) return;
+      __hasRoutedToApp = true;
       if(data.role === 'admin' || currentSub || currentTrialCount < FREE_TRIAL.backtests_max){ showHome(); }
       else { showScreen('plans'); }
     } else {
@@ -1655,7 +1659,7 @@ db.auth.onAuthStateChange(async (event, session) => {
 });
 
 // ─── STATE ────────────────────────────────────────────────────
-const APP_VERSION = '2.2.1'; // Versão do produto — atualizar a cada release
+const APP_VERSION = '2.2.2'; // Versão do produto — atualizar a cada release
 
 // ─── THEME ───────────────────────────────────────────────────
 function setAppTheme(t){
@@ -9592,7 +9596,13 @@ function renderApp(opts={}) {
   rail.appendChild(sentWrap);
 
   termWrap.append(stage,rail);
+  // Preserva a rolagem do rail entre re-renders do mesmo step (evita a tela "pular pro topo" ao clicar num seletor)
+  const _oldRail=main.querySelector('.btp-rail');
+  const _oldScroll=_oldRail?_oldRail.scrollTop:0;
+  const _sameStep=(renderApp._lastWizStep===state.step);
   main.replaceChildren(termWrap);
+  if(_sameStep) rail.scrollTop=_oldScroll;
+  renderApp._lastWizStep=state.step;
   BTP_CE.start();
   _lwcFlush();
   state.animate=false;
@@ -12298,13 +12308,19 @@ const BTP_CE = (function(){
       stop:stopMap[cfg.stopType]||'fixo',
       stopPts:cfg.stopPts||200,stopN:cfg.stopCandles||5,stopMult:cfg.stopAtrMult||1.5,
       tp:tpMap[cfg.tpType]||'rr',tpPts:cfg.tpPts||400,rr:cfg.tpRR||2,
-      trailType:cfg.trailing?(cfg.stopType==='atr'?'atr':cfg.stopType==='n_candles'||cfg.stopType==='candle'?'bar':'rr'):'off',appStep:state.step||0,pk};
+      trailType:cfg.trailing?(cfg.stopType==='atr'?'atr':cfg.stopType==='n_candles'||cfg.stopType==='candle'?'bar':'rr'):'off',appStep:state.step||0,pk,
+      showPattern:(cfg.conditions||[]).some(c=>['candle','fvg','fib','gap','sweep','grab','bos','choch'].includes(c.id))};
   }
   function _recompute(){
     const eng=_buildEng();if(!eng)return;
     const A=eng.A,scene=buildScene(eng.scenario,A,eng.seed),ov=computeOverlays(scene,A,eng);
-    const cl=scene.candles.map(k=>k.c),hi=scene.candles.map(k=>k.h),lo=scene.candles.map(k=>k.l);
-    const ind={bb:bollinger(cl,20,2),sma:smaArr(cl,20),macd:macdCalc(cl),ifr:rsiCalc(cl,14),stoch:stochCalc(cl,hi,lo),cci:cciCalc(cl,hi,lo),wil:williamsCalc(cl,hi,lo),adx:adxCalc(hi,lo,cl),vwap:vwapCalc(cl,hi,lo),sar:sarCalc(hi,lo)};
+    // Warmup à esquerda (fora da área visível) p/ que Bollinger/SMA preencham o gráfico inteiro — não altera candles visíveis nem o cfg
+    const _W=26,_q=p=>Math.round(p/A.tick)*A.tick,_wr=mulberry32((eng.seed^0x9e37)>>>0);
+    const _warm=[];let _wc=scene.candles[0].o;
+    for(let i=0;i<_W;i++){const o=_wc+(_wr()-0.5)*A.range*0.6,h=Math.max(o,_wc)+_wr()*A.range*0.22,l=Math.min(o,_wc)-_wr()*A.range*0.22;_warm.unshift({o:_q(o),h:_q(h),l:_q(l),c:_q(_wc)});_wc=o;}
+    const _all=_warm.concat(scene.candles),ecl=_all.map(k=>k.c),ehi=_all.map(k=>k.h),elo=_all.map(k=>k.l),_sl=a=>a.slice(_W);
+    const _bb=bollinger(ecl,20,2),_mc=macdCalc(ecl),_st=stochCalc(ecl,ehi,elo),_sr=sarCalc(ehi,elo);
+    const ind={bb:{mid:_sl(_bb.mid),up:_sl(_bb.up),lo:_sl(_bb.lo)},sma:_sl(smaArr(ecl,20)),macd:{line:_sl(_mc.line),sig:_sl(_mc.sig),hist:_sl(_mc.hist)},ifr:_sl(rsiCalc(ecl,14)),stoch:{k:_sl(_st.k),d:_sl(_st.d)},cci:_sl(cciCalc(ecl,ehi,elo)),wil:_sl(williamsCalc(ecl,ehi,elo)),adx:_sl(adxCalc(ehi,elo,ecl)),vwap:_sl(vwapCalc(ecl,ehi,elo)),sar:{sar:_sl(_sr.sar),bull:_sl(_sr.bull)}};
     const proj=projectTrade(scene,ov,A,10),stops=trailStops(proj,ov,eng.trailType);
     _cur={A,scene,ov,ind,proj,stops,eng};
     const ll=document.getElementById('btp-livelabel');
@@ -12344,7 +12360,7 @@ const BTP_CE = (function(){
     if(eng.overlays.sar){const sr=ind.sar;for(let i=0;i<N;i++){if(sr.sar[i]==null)continue;const y=py(sr.sar[i]),x=px(i),r=BW*0.28;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=sr.bull[i]?C.bull:C.bear;ctx.fill();}}
     if(ov.zone){const yT=py(ov.zone.hi),yB=py(ov.zone.lo);ctx.fillStyle=C.zone;ctx.fillRect(0,yT,plotW,yB-yT);ctx.strokeStyle=C.zoneln;ctx.setLineDash([4,4]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,yT);ctx.lineTo(plotW,yT);ctx.stroke();ctx.beginPath();ctx.moveTo(0,yB);ctx.lineTo(plotW,yB);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.zoneln;ctx.font="bold 9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText(ov.zone.kind,6,yT-7<TOP?yT+10:yT-7);}
     c.forEach((k,i)=>{const x=px(i),up=k.c>=k.o,col=up?C.bull:C.bear;ctx.strokeStyle=col;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(x,py(k.h));ctx.lineTo(x,py(k.l));ctx.stroke();ctx.fillStyle=col;const yO=py(k.o),yC=py(k.c),top2=Math.min(yO,yC);let hgt=Math.abs(yC-yO);if(hgt<1.2)hgt=1.2;ctx.fillRect(x-BW/2,top2,BW,hgt);});
-    if(scene.patternCandles&&scene.patternCandles.length){
+    if(eng.showPattern&&scene.patternCandles&&scene.patternCandles.length){
       const pc=scene.patternCandles,pulse=0.5+0.5*Math.sin(t/430);
       const xL=px(pc[0])-BW/2-7,xR=px(pc[pc.length-1])+BW/2+7;let yh=Infinity,yl=-Infinity;
       pc.forEach(i=>{yh=Math.min(yh,py(c[i].h));yl=Math.max(yl,py(c[i].l));});
