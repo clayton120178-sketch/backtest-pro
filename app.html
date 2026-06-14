@@ -1660,7 +1660,7 @@ db.auth.onAuthStateChange(async (event, session) => {
 });
 
 // ─── STATE ────────────────────────────────────────────────────
-const APP_VERSION = '2.2.3'; // Versão do produto — atualizar a cada release
+const APP_VERSION = '2.2.4'; // Versão do produto — atualizar a cada release
 
 // ─── THEME ───────────────────────────────────────────────────
 function setAppTheme(t){
@@ -9494,6 +9494,8 @@ function updatePreview() {
     container.appendChild(buildPreview(state.step, state.cfg));
     _lwcFlush();
   }
+  // Layout terminal: recomputa o gráfico (entrada/stop/alvo) em tempo real ao mexer nos parâmetros
+  if(typeof BTP_CE !== 'undefined' && document.getElementById('btp-chart-cv')) BTP_CE.notify();
   updateSentence();
 }
 
