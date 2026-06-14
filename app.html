@@ -190,8 +190,9 @@ main.btp-mode{padding:0;max-width:none;margin:0;overflow:hidden}
 .btp-rail::-webkit-scrollbar{width:8px}
 .btp-rail::-webkit-scrollbar-thumb{background:var(--bd);border-radius:4px}
 @media(max-width:860px){
-  .btp-terminal{grid-template-columns:1fr;grid-template-rows:46vh auto;height:auto;min-height:calc(100vh - 58px)}
-  .btp-stage{border-bottom:1px solid var(--bd)}
+  main.btp-mode{overflow:visible}
+  .btp-terminal{grid-template-columns:1fr;grid-template-rows:46vh auto;height:auto;min-height:calc(100vh - 58px);overflow:visible}
+  .btp-stage{border-bottom:1px solid var(--bd);position:sticky;top:58px;z-index:10;height:46vh}
   .btp-rail{overflow-y:visible}
 }
 
