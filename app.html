@@ -1660,7 +1660,7 @@ db.auth.onAuthStateChange(async (event, session) => {
 });
 
 // ─── STATE ────────────────────────────────────────────────────
-const APP_VERSION = '2.2.5'; // Versão do produto — atualizar a cada release
+const APP_VERSION = '2.2.6'; // Versão do produto — atualizar a cada release
 
 // ─── THEME ───────────────────────────────────────────────────
 function setAppTheme(t){
@@ -12344,6 +12344,7 @@ const BTP_CE = (function(){
     const appStep=eng.appStep,trailing=appStep===4&&eng.trailType!=='off';
     const projN=trailing?proj.length:0,TOTAL=N+projN,TSLOT=plotW/(TOTAL+1.5),BW=TSLOT*0.58;
     let lo=Math.min(...c.map(x=>x.l)),hi=Math.max(...c.map(x=>x.h));
+    const _candleSpan=hi-lo; // range só dos candles — base para o padding (constante), p/ que stop/alvo se movam de fato ao invés de "grudar" na borda quando a escala cresce
     const showEntry=appStep>=2,showRisk=appStep>=3;
     if(showEntry){lo=Math.min(lo,ov.entry);hi=Math.max(hi,ov.entry);}
     if(showRisk){lo=Math.min(lo,ov.stop);hi=Math.max(hi,ov.stop);if(ov.tgt!=null){lo=Math.min(lo,ov.tgt);hi=Math.max(hi,ov.tgt);}}
@@ -12351,7 +12352,7 @@ const BTP_CE = (function(){
     if(eng.overlays.bb){ind.bb.up.forEach(v=>v!=null&&(hi=Math.max(hi,v)));ind.bb.lo.forEach(v=>v!=null&&(lo=Math.min(lo,v)));}
     if(eng.overlays.sar){ind.sar.sar.forEach(v=>v!=null&&(hi=Math.max(hi,v),lo=Math.min(lo,v)));}
     if(trailing){proj.forEach(k=>{hi=Math.max(hi,k.h);lo=Math.min(lo,k.l);});stops.forEach(s=>hi=Math.max(hi,s)||lo<s||(lo=Math.min(lo,s)));}
-    const pad=(hi-lo)*0.10;lo-=pad;hi+=pad;
+    const pad=Math.max(_candleSpan*0.12,A.tick*4);lo-=pad;hi+=pad;
     const py=p=>TOP+chartH*(1-(p-lo)/(hi-lo)),px=i=>TSLOT*(i+1);
     ctx.fillStyle=C.bg;ctx.fillRect(0,0,_W,_H);
     ctx.font="10px 'JetBrains Mono',monospace";ctx.textBaseline='middle';ctx.strokeStyle=C.grid;ctx.lineWidth=1;
