@@ -204,18 +204,17 @@ main.btp-mode{padding:0;max-width:none;margin:0;overflow:hidden}
 .s2-chip.off{opacity:.42}
 .s2-chiphead{display:flex;align-items:center;gap:9px;padding:10px 12px;cursor:pointer}
 .s2-chiphead:hover{background:#20202f}
-.s2-cdot{width:8px;height:8px;border-radius:50%;flex:none}
+.s2-cdot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--ac)}
 .s2-cinfo{flex:1;min-width:0}
 .s2-cinfo b{font-size:13px;font-weight:600;display:block}
 .s2-csum{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--txm);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.s2-crm{background:none;border:none;color:#5a5a72;font-size:12px;cursor:pointer;padding:4px 6px;border-radius:6px;flex:none}
+.s2-crm{background:none;border:none;color:var(--txm);font-size:20px;line-height:1;cursor:pointer;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:7px;flex:none}
 .s2-crm:hover{background:rgba(255,60,80,.15);color:var(--dg)}
-.s2-ceye{background:none;border:none;color:var(--ac);cursor:pointer;font-size:11px;padding:4px 5px;border-radius:6px;flex:none}
-.s2-ceye:hover{background:rgba(0,212,170,.12)}
-.s2-chip.off .s2-ceye{color:#5a5a72}
 .s2-ceditor{border-top:1px solid var(--bd);padding:11px 12px;display:flex;flex-direction:column;gap:10px;background:#15151f}
 .s2-cfield{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .s2-cfield>span{font-size:12px;color:var(--txm);flex:none}
+.s2-csel{flex:1;min-width:0;max-width:210px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx);border-radius:7px;padding:7px 30px 7px 10px;font-family:'DM Sans';font-size:12px;cursor:pointer;appearance:none;-webkit-appearance:none;text-overflow:ellipsis;background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238a8aa0' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.s2-csel:focus{border-color:var(--ac);outline:none}
 .s2-cnote{font-size:11.5px;color:var(--txm);line-height:1.4}
 /* Group */
 .s2-cgroup{border:1px solid var(--bd);border-radius:10px;overflow:hidden;margin-bottom:8px;background:rgba(255,255,255,.012)}
@@ -249,13 +248,7 @@ main.btp-mode{padding:0;max-width:none;margin:0;overflow:hidden}
 .s2-presult{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg2);border:1px solid var(--bd);border-radius:9px;padding:11px 12px;cursor:pointer;transition:.1s}
 .s2-presult:hover{border-color:var(--ac);background:rgba(0,212,170,.06)}
 .s2-presult b{font-size:13px;font-weight:600}
-.s2-ptag{font-family:'JetBrains Mono',monospace;font-size:9.5px;padding:2px 7px;border-radius:5px;white-space:nowrap}
-.s2-ptag.t-osc{background:rgba(33,150,243,.15);color:#5ab0f5}
-.s2-ptag.t-ma,.s2-ptag.t-band{background:rgba(255,193,7,.15);color:#ffce4d}
-.s2-ptag.t-pattern{background:rgba(110,231,255,.15);color:#6ee7ff}
-.s2-ptag.t-structure{background:rgba(167,139,250,.15);color:#a78bfa}
-.s2-ptag.t-vol{background:rgba(38,198,218,.15);color:#4dd0e1}
-.s2-ptag.t-smc{background:rgba(255,138,101,.15);color:#ff8a65}
+.s2-ptag{font-family:'JetBrains Mono',monospace;font-size:9.5px;padding:2px 7px;border-radius:5px;white-space:nowrap;background:var(--bg3);color:var(--txm);border:1px solid var(--bd)}
 .s2-pempty{color:#5a5a72;font-size:12.5px;text-align:center;padding:20px}
 /* Gallery */
 .s2-sgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
@@ -1739,7 +1732,7 @@ db.auth.onAuthStateChange(async (event, session) => {
 });
 
 // ─── STATE ────────────────────────────────────────────────────
-const APP_VERSION = '2.4.2'; // Versão do produto — atualizar a cada release
+const APP_VERSION = '2.4.3'; // Versão do produto — atualizar a cada release
 
 // ─── THEME ───────────────────────────────────────────────────
 function setAppTheme(t){
@@ -2162,7 +2155,7 @@ const BTP_S2_STRATS = [
     {id:'candle', set:{cond:'Martelo (alta)'}},
   ]},
   {id:'cross_ma', name:'Cruzamento de Médias', tag:'Tendência',    conds:[
-    {id:'ema',    set:{per:200,cond:'Cruzamento de médias (compra e venda)'}},
+    {id:'ema',    set:{per:9,per2:21,cond:'Cruzamento de médias (compra e venda)'}},
   ]},
   {id:'gap_open', name:'Gap de Abertura',       tag:'Preço',       conds:[
     {id:'gap',    set:{cond:'Gap de alta maior que',val:0}},
@@ -7636,7 +7629,8 @@ function renderStep1() {
   const dtHint=div('');dtHint.style.cssText='font-size:11px;color:var(--txm)';
   function updateDtHint(v){dtHint.textContent=v===0?'Sem limite':'Máximo de '+v+(v>1?' operações':' operação')+' por dia';}
   updateDtHint(cfg.maxDailyTrades);
-  dtRow.appendChild(stepper(cfg.maxDailyTrades,0,100,'',v=>{cfg.maxDailyTrades=v;renderApp();}));
+  // Sem representação no gráfico (§13) — atualiza só o hint, sem reconstruir a tela
+  dtRow.appendChild(stepper(cfg.maxDailyTrades,0,100,'',v=>{cfg.maxDailyTrades=v;updateDtHint(v);}));
   dtRow.appendChild(dtHint);
   dtBlock.appendChild(dtRow);
   el.appendChild(dtBlock);
@@ -7689,8 +7683,10 @@ function _s2DrawMini(canvas,strat) {
   ctx.fillStyle=isDark?'#0d111c':'#f0f4f8';ctx.fillRect(0,0,W,H);
   let s=strat.id.split('').reduce((a,c)=>a+c.charCodeAt(0),0)||42;
   const rnd=()=>{s=(s*1664525+1013904223)&0xffffffff;return(s>>>0)/0xffffffff;};
+  const isCross=strat.conds.some(c=>(c.id==='sma'||c.id==='ema')&&isMACrossover(c.params&&c.params.cond));
   const N=32,prices=[100];
-  for(let i=1;i<N;i++){const t=i<N/2?1.2:-0.8+rnd()*1.6;prices.push(prices[i-1]+t+(rnd()-0.5)*2.5);}
+  // Cruzamento → série em "∧" (sobe forte e cai forte) p/ as médias cruzarem visivelmente
+  for(let i=1;i<N;i++){const t=isCross?(i<N*0.55?1.8:-2.1):(i<N/2?1.2:-0.8+rnd()*1.6);prices.push(prices[i-1]+t+(rnd()-0.5)*2.2);}
   const hasOsc=strat.conds.some(c=>['rsi','stoch','macd','cci','williams','adx'].includes(c.id));
   const hasMa=strat.conds.some(c=>['sma','ema'].includes(c.id));
   const hasPat=strat.conds.some(c=>['candle','gap','fvg','bos','choch','sweep','grab','fib','prevday'].includes(c.id));
@@ -7707,13 +7703,17 @@ function _s2DrawMini(canvas,strat) {
     ctx.fillStyle=col;const cy=toY(c),oy=toY(o);
     ctx.fillRect(x,Math.min(cy,oy),bw2,Math.max(1,Math.abs(cy-oy)));
   }
-  if(hasMa){
-    const per=9,maL=[];
-    for(let i=0;i<N;i++){if(i<per-1){maL.push(null);continue;}let sm=0;for(let k=0;k<per;k++)sm+=prices[i-k];maL.push(sm/per);}
-    ctx.strokeStyle='#ffc107';ctx.lineWidth=1.5;ctx.setLineDash([]);
-    ctx.beginPath();let first=true;
-    for(let i=0;i<N;i++){if(maL[i]===null)continue;const x=pad+i*bw+bw/2,y=toY(maL[i]);if(first){ctx.moveTo(x,y);first=false;}else ctx.lineTo(x,y);}
-    ctx.stroke();
+  const maCond=strat.conds.find(c=>c.id==='sma'||c.id==='ema');
+  if(maCond){
+    const sma=per=>{const a=[];for(let i=0;i<N;i++){if(i<per-1){a.push(null);continue;}let sm=0;for(let k=0;k<per;k++)sm+=prices[i-k];a.push(sm/per);}return a;};
+    const drawMA=(arr,col,w)=>{ctx.strokeStyle=col;ctx.lineWidth=w||1.5;ctx.setLineDash([]);ctx.beginPath();let f=true;for(let i=0;i<N;i++){if(arr[i]==null)continue;const x=pad+i*bw+bw/2,y=toY(arr[i]);f?(ctx.moveTo(x,y),f=false):ctx.lineTo(x,y);}ctx.stroke();};
+    if(isMACrossover(maCond.params&&maCond.params.cond)){
+      // duas médias cruzando (curta + longa) — fiel ao cruzamento de médias
+      drawMA(sma(13),'#c2c2d6',1.6);  // longa (clara, mais visível)
+      drawMA(sma(5),'#ffc107',1.8);   // curta
+    } else {
+      drawMA(sma(8),'#ffc107',1.5);   // média única (preço vs média)
+    }
   }
   if(hasPat){
     const x=pad+(N-6)*bw;
@@ -7784,7 +7784,7 @@ function _populatePickerResults(c,ui) {
   matches.forEach(([id,info])=>{
     const row=div('s2-presult');
     const left=div('');const b=document.createElement('b');b.textContent=info.label;left.appendChild(b);
-    const tag=div('s2-ptag '+BTP_S2_TYPE_CLASS[info.cat]);tag.textContent=BTP_S2_TYPE_LABEL[info.cat]||info.cat;
+    const tag=div('s2-ptag');tag.textContent=BTP_S2_TYPE_LABEL[info.cat]||info.cat;
     const plus=div('');plus.style.cssText='color:var(--ac);font-size:18px;line-height:1;flex:none';plus.textContent='+';
     row.append(left,tag,plus);row.addEventListener('click',()=>_s2AddFromPicker(id));c.appendChild(row);
   });
@@ -7819,21 +7819,34 @@ function _s2PickerSection(el) {
 function _s2ChipEditorEl(c,idx) {
   const p=c.params,el=div('s2-ceditor');
   const ops=_s2OpsFor(c.id);
+  const isMA=(c.id==='sma'||c.id==='ema');
   if(ops&&p.cond!==undefined){
     const row=div('s2-cfield'),lbl=document.createElement('span');lbl.textContent=(c.id==='candle')?'Padrão':'Condição';
-    const sel=document.createElement('select');
-    sel.style.cssText='background:var(--bg3);border:1px solid var(--bd);color:var(--tx);border-radius:7px;padding:5px 8px;font-family:\'DM Sans\';font-size:12px;cursor:pointer;max-width:170px';
+    const sel=document.createElement('select');sel.className='s2-csel';
     ops.forEach(val=>{const opt=document.createElement('option');opt.value=val;opt.textContent=val;if(val===p.cond)opt.selected=true;sel.appendChild(opt);});
-    sel.addEventListener('change',e=>{p.cond=e.target.value;renderApp();});
+    sel.addEventListener('change',e=>{
+      const nv=e.target.value;
+      if(isMA){
+        const wasCross=isMACrossover(p.cond),nowCross=isMACrossover(nv);
+        p.cond=nv;
+        if(nowCross&&!wasCross){p.per=9;p.per2=21;}
+        else if(!nowCross&&wasCross){delete p.per2;p.per=200;}
+      } else { p.cond=nv; }
+      renderApp();
+    });
     row.append(lbl,sel);el.appendChild(row);
   }
-  if(p.per!==undefined){
-    const row=div('s2-cfield'),lb=document.createElement('span');lb.textContent=p.per2!==undefined?'Período curta':'Período';
+  // Cruzamento de médias (EMA/SMA) — período curta + longa, como no modal antigo
+  if(isMA&&isMACrossover(p.cond)){
+    if(p.per2===undefined)p.per2=21;
+    if(p.per===undefined||p.per>100)p.per=9;
+    const r1=div('s2-cfield'),l1=document.createElement('span');l1.textContent='Período curta';
+    r1.append(l1,stepper(p.per,1,500,'',v=>{p.per=v;renderApp();}));el.appendChild(r1);
+    const r2=div('s2-cfield'),l2=document.createElement('span');l2.textContent='Período longa';
+    r2.append(l2,stepper(p.per2,1,500,'',v=>{p.per2=v;renderApp();}));el.appendChild(r2);
+  } else if(p.per!==undefined){
+    const row=div('s2-cfield'),lb=document.createElement('span');lb.textContent='Período';
     row.append(lb,stepper(p.per,(c.id==='bb')?6:1,500,'',v=>{p.per=v;renderApp();}));el.appendChild(row);
-  }
-  if(p.per2!==undefined){
-    const row=div('s2-cfield'),lb=document.createElement('span');lb.textContent='Período longa';
-    row.append(lb,stepper(p.per2,1,500,'',v=>{p.per2=v;renderApp();}));el.appendChild(row);
   }
   if(p.val!==undefined){
     const row=div('s2-cfield'),_isPts=c.id==='gap'||c.id==='range';
@@ -7860,19 +7873,17 @@ function _s2ChipEditorEl(c,idx) {
 }
 
 function _s2ChipEl(c,idx) {
-  const ui=state._ui,catInfo=BTP_S2_CAT[c.id],isOpen=ui.editingIdx===idx,isOff=!!c._off;
-  const chip=div('s2-chip'+(isOpen?' open':'')+(isOff?' off':''));
+  const ui=state._ui,isOpen=ui.editingIdx===idx;
+  const chip=div('s2-chip'+(isOpen?' open':''));
   const head=div('s2-chiphead');
-  const dot=div('s2-cdot');dot.style.background=isOff?'#5a5a72':(catInfo?.col||'var(--ac)');
+  const dot=div('s2-cdot');
   const info=div('s2-cinfo');
-  const nm=document.createElement('b');nm.textContent=c.name||(catInfo?.label)||c.id;
+  const nm=document.createElement('b');nm.textContent=c.name||(BTP_S2_CAT[c.id]&&BTP_S2_CAT[c.id].label)||c.id;
   const sum=div('s2-csum');sum.textContent=condLabel(c);
   info.append(nm,sum);
-  const eye=h('button',{class:'s2-ceye',title:isOff?'Ativar':'Desativar',onclick:e=>{e.stopPropagation();_s2ToggleCond(idx);}});
-  eye.textContent=isOff?'○':'●';
-  const rm=h('button',{class:'s2-crm',title:'Remover',onclick:e=>{e.stopPropagation();_s2RemoveCond(idx);}});
+  const rm=h('button',{class:'s2-crm',title:'Remover condição',onclick:e=>{e.stopPropagation();_s2RemoveCond(idx);}});
   rm.textContent='×';
-  head.append(dot,info,eye,rm);chip.appendChild(head);
+  head.append(dot,info,rm);chip.appendChild(head);
   if(isOpen) chip.appendChild(_s2ChipEditorEl(c,idx));
   head.addEventListener('click',()=>{ui.editingIdx=isOpen?null:idx;renderApp();});
   return chip;
