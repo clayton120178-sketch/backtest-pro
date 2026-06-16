@@ -254,6 +254,8 @@ main.btp-mode{padding:0;max-width:none;margin:0;overflow:hidden}
 .s2-ptag.t-ma,.s2-ptag.t-band{background:rgba(255,193,7,.15);color:#ffce4d}
 .s2-ptag.t-pattern{background:rgba(110,231,255,.15);color:#6ee7ff}
 .s2-ptag.t-structure{background:rgba(167,139,250,.15);color:#a78bfa}
+.s2-ptag.t-vol{background:rgba(38,198,218,.15);color:#4dd0e1}
+.s2-ptag.t-smc{background:rgba(255,138,101,.15);color:#ff8a65}
 .s2-pempty{color:#5a5a72;font-size:12.5px;text-align:center;padding:20px}
 /* Gallery */
 .s2-sgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
@@ -1737,7 +1739,7 @@ db.auth.onAuthStateChange(async (event, session) => {
 });
 
 // ─── STATE ────────────────────────────────────────────────────
-const APP_VERSION = '2.4.0'; // Versão do produto — atualizar a cada release
+const APP_VERSION = '2.4.1'; // Versão do produto — atualizar a cada release
 
 // ─── THEME ───────────────────────────────────────────────────
 function setAppTheme(t){
@@ -2101,71 +2103,78 @@ const FAMOUS_STRATEGIES = [
   },
 ];
 
-// ─── §13A STEP-02 UX — Catálogo e Estratégias de Galeria ────────────────────
-const BTP_S2_CAT = {
-  rsi:     {label:'IFR / RSI',            cat:'osc',       col:'#2196f3', defParams:{per:14,cond:'cruza acima de',val:30}},
-  macd:    {label:'MACD',                 cat:'osc',       col:'#2196f3', defParams:{cond:'MACD cruza acima do sinal'}},
-  stoch:   {label:'Estocástico',          cat:'osc',       col:'#2196f3', defParams:{per:14,cond:'cruza acima de',val:20}},
-  williams:{label:'Williams %R',          cat:'osc',       col:'#2196f3', defParams:{per:14,cond:'cruza acima de',val:-80}},
-  cci:     {label:'CCI',                  cat:'osc',       col:'#2196f3', defParams:{per:14,cond:'cruza acima de',val:-100}},
-  adx:     {label:'ADX',                  cat:'osc',       col:'#2196f3', defParams:{per:14,cond:'cruza acima de',val:25}},
-  sma:     {label:'Média SMA',            cat:'ma',        col:'#ffc107', defParams:{per:200,cond:'Preço está acima'}},
-  ema:     {label:'Média EMA',            cat:'ma',        col:'#ffc107', defParams:{per:21,cond:'Preço está acima'}},
-  bb:      {label:'Bandas de Bollinger',  cat:'band',      col:'#29b6f6', defParams:{per:20,dev:2,cond:'Preço toca banda inferior'}},
-  vwap:    {label:'VWAP',                 cat:'ma',        col:'#e040fb', defParams:{cond:'Preço está acima do VWAP'}},
-  sar:     {label:'SAR Parabólico',       cat:'ma',        col:'#ffc107', defParams:{cond:'SAR está abaixo do preço'}},
-  atr:     {label:'ATR',                  cat:'osc',       col:'#2196f3', defParams:{per:14,mult:1.0,cond:'ATR ≥ X×ATR Médio'}},
-  hilo:    {label:'HiLo Activator',       cat:'ma',        col:'#ffc107', defParams:{per:6,cond:'HiLo abaixo do preço (compra)'}},
-  hilon:   {label:'HiLo N-candles',       cat:'ma',        col:'#ffc107', defParams:{per:20,cond:'Mínima dos N candles'}},
-  candle:  {label:'Padrão de Candle',     cat:'pattern',   col:'#6ee7ff', defParams:{cond:'Engolfo de alta'}},
-  gap:     {label:'Gap de Preço',         cat:'structure', col:'#a78bfa', defParams:{cond:'Gap detectado'}},
-  fvg:     {label:'Fair Value Gap',       cat:'structure', col:'#a78bfa', defParams:{dir:'Compra',cond:'FVG detectado',entryMode:'aggressive'}},
-  bos:     {label:'Break of Structure',   cat:'structure', col:'#a78bfa', defParams:{dir:'Compra',obMit:'none',leg1Min:2,leg1Max:5,corrMax:3,leg2Max:3,cond:'BoS detectado'}},
-  choch:   {label:'CHoCH',               cat:'structure', col:'#a78bfa', defParams:{dir:'Compra',obMit:'none',trendMin:5,trendMax:15,ampRatio:40,cond:'CHoCH detectado'}},
-  grab:    {label:'Liquidity Grab',       cat:'structure', col:'#a78bfa', defParams:{dir:'Compra',cond:'Liquidity Grab detectado'}},
-  sweep:   {label:'Liquidity Sweep',      cat:'structure', col:'#a78bfa', defParams:{dir:'Compra',cond:'Liquidity Sweep detectado'}},
-  fib:     {label:'Fibonacci',            cat:'structure', col:'#a78bfa', defParams:{per:14,fibLevel:'61.8%',fibMode:'touch',cond:'Preço toca nível 61.8%'}},
-  prevday: {label:'Dia Anterior',         cat:'structure', col:'#a78bfa', defParams:{cond:'Preço acima da máx. do dia anterior'}},
-  range:   {label:'Range Diário',         cat:'osc',       col:'#2196f3', defParams:{per:20,cond:'Range acima de',val:200}},
-};
-const BTP_S2_CATS = [
-  ['all','Todos'],['osc','Oscilador'],['ma','Média'],
-  ['band','Banda'],['pattern','Padrão'],['structure','Estrutura'],
-];
-// Mapa: cat → typeLabel para o picker (PROIBIDO expor render interno na UI)
-const BTP_S2_TYPE_LABEL = {osc:'Oscilador',ma:'Média',band:'Banda',pattern:'Padrão',structure:'Estrutura'};
-// classe CSS por cat
-const BTP_S2_TYPE_CLASS = {osc:'t-osc',ma:'t-ma',band:'t-band',pattern:'t-pattern',structure:'t-structure'};
+// ─── §13A STEP-02 UX — Catálogo derivado da estrutura ORIGINAL (INDS_BY_TAB) ──
+// As categorias do picker são as MESMAS famílias do cardápio original (Osciladores,
+// Tendência, Preço, Volatilidade, Padrões, Smart Money) — não uma taxonomia nova.
+const BTP_S2_TABCOL   = {'Osciladores':'#2196f3','Tendência':'#ffc107','Preço':'#a78bfa','Volatilidade':'#26c6da','Padrões':'#6ee7ff','Smart Money':'#ff8a65'};
+const BTP_S2_TABCLASS = {'Osciladores':'t-osc','Tendência':'t-ma','Preço':'t-structure','Volatilidade':'t-vol','Padrões':'t-pattern','Smart Money':'t-smc'};
+const BTP_S2_CAT = (function(){const m={};for(const tab in INDS_BY_TAB){for(const ind of INDS_BY_TAB[tab]){m[ind.id]={label:ind.name,cat:tab,col:BTP_S2_TABCOL[tab]||'#888'};}}return m;})();
+const BTP_S2_CATS = [['all','Todos']].concat(Object.keys(INDS_BY_TAB).map(t=>[t,t]));
+const BTP_S2_TYPE_LABEL = (function(){const m={};Object.keys(INDS_BY_TAB).forEach(t=>m[t]=t);return m;})();
+const BTP_S2_TYPE_CLASS = BTP_S2_TABCLASS;
+function _s2IndById(id){for(const tab in INDS_BY_TAB){const f=INDS_BY_TAB[tab].find(i=>i.id===id);if(f)return f;}return null;}
+// Defaults de params IDÊNTICOS ao openModal — garante paridade de payload (§0)
+function _s2DefParams(id){
+  const ind=_s2IndById(id);if(!ind)return {};
+  const conds=getCondsFor(id);
+  let params={per:(ind.defPer||ind.hasPer)?14:undefined,cond:conds[0]||ind.defCond,val:ind.hasVal?ind.defVal:undefined};
+  if(['sma','ema'].includes(id)){params.per=200;}
+  if(id==='bb'){params.per=20;params.dev=2;}
+  if(id==='atr'){params={per:14,mult:1.0,cond:ATR_CONDS[0]};}
+  if(id==='fvg')  params={dir:'Compra',cond:FVG_CONDS[0],entryMode:'aggressive'};
+  if(id==='bos')  params={dir:'Compra',obMit:'none',leg1Min:2,leg1Max:5,corrMax:3,leg2Max:3,cond:BOS_CONDS[0]};
+  if(id==='choch')params={dir:'Compra',obMit:'none',trendMin:5,trendMax:15,ampRatio:40,cond:CHOCH_CONDS[0]};
+  if(id==='grab') params={dir:'Compra',cond:GRAB_CONDS[0]};
+  if(id==='sweep')params={dir:'Compra',cond:SWEEP_CONDS[0]};
+  if(id==='fib')  params={per:14,fibLevel:'61.8%',fibMode:'touch',cond:'Preço toca nível 61.8%'};
+  return params;
+}
+// Operadores por indicador — reusa as listas COND originais
+function _s2OpsFor(id){
+  switch(id){
+    case 'rsi':case 'stoch':case 'cci':case 'williams':return OSC_CONDS;
+    case 'adx':return ADX_CONDS;
+    case 'sma':case 'ema':return MA_CONDS;
+    case 'bb':return BB_CONDS;
+    case 'vwap':return VWAP_CONDS;
+    case 'macd':return MACD_CONDS;
+    case 'sar':return SAR_CONDS;
+    case 'hilo':return HILO_CONDS;
+    case 'hilon':return HILON_CONDS;
+    case 'range':return RNG_CONDS;
+    case 'gap':return GAP_CONDS;
+    case 'prevday':return PREVDAY_CONDS;
+    case 'atr':return ATR_CONDS;
+    case 'candle':return CANDLE_CONDS;
+    default:return null;
+  }
+}
 
-// Estratégias famosas para a galeria (§13A) — conds usam o formato existente de state.cfg.conditions
+// Estratégias famosas para a galeria (§13A). `set` sobrescreve os defaults reais
+// (_s2DefParams) → conds sempre com params válidos p/ o payload.
 const BTP_S2_STRATS = [
-  {id:'rev_ifr',   name:'Reversão no IFR',      tag:'Reversão',    scen:'engolfo',    conds:[
-    {id:'candle', name:'Padrão de Candle', params:{cond:'Engolfo de alta'}},
-    {id:'rsi', name:'IFR (RSI)', params:{per:14,cond:'cruza acima de',val:30}},
+  {id:'rev_ifr',  name:'Reversão no IFR',     tag:'Reversão',     conds:[
+    {id:'candle', set:{cond:'Engolfo de Alta'}},
+    {id:'rsi',    set:{cond:'cruza acima de',val:30}},
   ]},
-  {id:'pullback',  name:'Pullback na Média',     tag:'Tendência',   scen:'martelo',    conds:[
-    {id:'sma', name:'SMA', params:{per:20,cond:'Preço está acima'}},
-    {id:'candle', name:'Padrão de Candle', params:{cond:'Martelo'}},
+  {id:'pullback', name:'Pullback na Média',    tag:'Tendência',    conds:[
+    {id:'sma',    set:{per:200,cond:'Preço está acima'}},
+    {id:'candle', set:{cond:'Martelo (alta)'}},
   ]},
-  {id:'cross_ma',  name:'Cruzamento de Médias',  tag:'Tendência',   scen:'rompimento', conds:[
-    {id:'ema', name:'EMA', params:{per:9,per2:21,cond:'Cruzamento de médias (compra e venda)'}},
+  {id:'cross_ma', name:'Cruzamento de Médias', tag:'Tendência',    conds:[
+    {id:'ema',    set:{per:200,cond:'Cruzamento de médias (compra e venda)'}},
   ]},
-  {id:'gap_open',  name:'Gap de Abertura',        tag:'Gap',         scen:'gap',        conds:[
-    {id:'gap', name:'Gap de Preço', params:{cond:'Gap detectado'}},
+  {id:'gap_open', name:'Gap de Abertura',       tag:'Preço',       conds:[
+    {id:'gap',    set:{cond:'Gap de alta maior que',val:0}},
   ]},
-  {id:'fvg_smc',   name:'FVG · Smart Money',     tag:'Price Action',scen:'fvg',        conds:[
-    {id:'fvg', name:'Fair Value Gap', params:{dir:'Compra',cond:'FVG detectado',entryMode:'aggressive'}},
-    {id:'rsi', name:'IFR (RSI)', params:{per:14,cond:'cruza abaixo de',val:40}},
+  {id:'fvg_smc',  name:'FVG · Smart Money',    tag:'Smart Money',  conds:[
+    {id:'fvg',    set:{}},
+    {id:'rsi',    set:{cond:'cruza abaixo de',val:40}},
   ]},
-  {id:'romp_adx',  name:'Rompimento com ADX',    tag:'Rompimento',  scen:'rompimento', conds:[
-    {id:'adx', name:'ADX', params:{per:14,cond:'cruza acima de',val:25}},
+  {id:'romp_adx', name:'Rompimento com ADX',   tag:'Tendência',    conds:[
+    {id:'adx',    set:{cond:'cruza acima de',val:25}},
   ]},
 ];
-
-// Ops disponíveis por categoria (para o chipEditor inline)
-const BTP_S2_OSC_OPS = [['cruza acima de','cruza ↑'],['cruza abaixo de','cruza ↓'],['acima de','acima de'],['abaixo de','abaixo de']];
-const BTP_S2_MA_OPS  = [['Preço está acima','preço acima'],['Preço está abaixo','preço abaixo'],['Preço cruza acima','cruza ↑'],['Preço cruza abaixo','cruza ↓'],['Cruzamento de médias (compra e venda)','cruzamento']];
-const BTP_S2_BB_OPS  = [['Preço toca banda inferior','toca inferior'],['Preço toca banda superior','toca superior'],['Preço rompe banda inferior','rompe inferior'],['Preço rompe banda superior','rompe superior']];
 
 function applyStrategy(strategy) {
   const cfg=state.cfg;
@@ -7643,14 +7652,14 @@ function renderStep1() {
 function _s2ApplyStrat(stratId) {
   const st=BTP_S2_STRATS.find(s=>s.id===stratId);
   if(!st) return;
-  state.cfg.conditions=st.conds.map(c=>({id:c.id,name:c.name,params:{...c.params},_group:st.name}));
+  state.cfg.conditions=st.conds.map(c=>{const ind=_s2IndById(c.id);return {id:c.id,name:ind?ind.name:c.id,params:Object.assign(_s2DefParams(c.id),c.set||{}),_group:st.name};});
   state._ui.showGallery=false;state._ui.railMode='list';state._ui.editingIdx=null;
   renderApp();
 }
 
 function _s2AddFromPicker(condId) {
-  const cat=BTP_S2_CAT[condId];if(!cat) return;
-  state.cfg.conditions.push({id:condId,name:cat.label,params:{...cat.defParams}});
+  const ind=_s2IndById(condId);if(!ind) return;
+  state.cfg.conditions.push({id:condId,name:ind.name,params:_s2DefParams(condId)});
   state._ui.railMode='list';state._ui.editingIdx=state.cfg.conditions.length-1;
   renderApp();
 }
@@ -7682,9 +7691,9 @@ function _s2DrawMini(canvas,strat) {
   const rnd=()=>{s=(s*1664525+1013904223)&0xffffffff;return(s>>>0)/0xffffffff;};
   const N=32,prices=[100];
   for(let i=1;i<N;i++){const t=i<N/2?1.2:-0.8+rnd()*1.6;prices.push(prices[i-1]+t+(rnd()-0.5)*2.5);}
-  const hasOsc=strat.conds.some(c=>{const ct=BTP_S2_CAT[c.id]?.cat;return ct==='osc'&&c.id!=='atr'&&c.id!=='range';});
-  const hasMa=strat.conds.some(c=>BTP_S2_CAT[c.id]?.cat==='ma');
-  const hasPat=strat.conds.some(c=>{const ct=BTP_S2_CAT[c.id]?.cat;return ct==='pattern'||ct==='structure';});
+  const hasOsc=strat.conds.some(c=>['rsi','stoch','macd','cci','williams','adx'].includes(c.id));
+  const hasMa=strat.conds.some(c=>['sma','ema'].includes(c.id));
+  const hasPat=strat.conds.some(c=>['candle','gap','fvg','bos','choch','sweep','grab','fib','prevday'].includes(c.id));
   const pH=hasOsc?Math.floor(H*0.58):H;
   const minP=Math.min(...prices),maxP=Math.max(...prices),rng=maxP-minP||1;
   const pad=W*0.04,bw=(W-pad*2)/N;
@@ -7739,9 +7748,13 @@ function _s2DrawMinis() {
 
 function _s2GallerySection(el) {
   const title=div('');
-  title.style.cssText='font-size:12px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px';
+  title.style.cssText='font-size:12px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px';
   title.textContent='Estratégias conhecidas, prontas pra testar';
   el.appendChild(title);
+  const sub=div('');
+  sub.style.cssText='font-size:11.5px;color:var(--txm);line-height:1.4;margin-bottom:12px';
+  sub.textContent='Comece por uma e veja como ela se comporta nos seus dados. Ajuste do seu jeito — ou monte a sua do zero.';
+  el.appendChild(sub);
   const grid=div('s2-sgrid');
   BTP_S2_STRATS.forEach(st=>{
     const card=div('s2-scard');
@@ -7757,7 +7770,7 @@ function _s2GallerySection(el) {
     grid.appendChild(card);
   });
   el.appendChild(grid);
-  const scratch=h('button',{class:'s2-addbtn',onclick:()=>{state._ui.showGallery=false;state._ui.railMode='list';renderApp();}});
+  const scratch=h('button',{class:'s2-addbtn',onclick:()=>{state._ui.showGallery=false;state._ui.railMode='picker';renderApp();}});
   scratch.textContent='Configurar minha estratégia do zero';
   el.appendChild(scratch);
   requestAnimationFrame(()=>_s2DrawMinis());
@@ -7804,16 +7817,13 @@ function _s2PickerSection(el) {
 }
 
 function _s2ChipEditorEl(c,idx) {
-  const p=c.params,cat=BTP_S2_CAT[c.id]?.cat,el=div('s2-ceditor');
-  let ops=null;
-  if(cat==='osc') ops=BTP_S2_OSC_OPS;
-  else if(cat==='ma') ops=BTP_S2_MA_OPS;
-  else if(cat==='band') ops=BTP_S2_BB_OPS;
+  const p=c.params,el=div('s2-ceditor');
+  const ops=_s2OpsFor(c.id);
   if(ops&&p.cond!==undefined){
-    const row=div('s2-cfield'),lbl=document.createElement('span');lbl.textContent='Condição';
+    const row=div('s2-cfield'),lbl=document.createElement('span');lbl.textContent=(c.id==='candle')?'Padrão':'Condição';
     const sel=document.createElement('select');
-    sel.style.cssText='background:var(--bg3);border:1px solid var(--bd);color:var(--tx);border-radius:7px;padding:5px 8px;font-family:\'DM Sans\';font-size:12px;cursor:pointer;max-width:160px';
-    ops.forEach(([val,lab])=>{const opt=document.createElement('option');opt.value=val;opt.textContent=lab;if(val===p.cond)opt.selected=true;sel.appendChild(opt);});
+    sel.style.cssText='background:var(--bg3);border:1px solid var(--bd);color:var(--tx);border-radius:7px;padding:5px 8px;font-family:\'DM Sans\';font-size:12px;cursor:pointer;max-width:170px';
+    ops.forEach(val=>{const opt=document.createElement('option');opt.value=val;opt.textContent=val;if(val===p.cond)opt.selected=true;sel.appendChild(opt);});
     sel.addEventListener('change',e=>{p.cond=e.target.value;renderApp();});
     row.append(lbl,sel);el.appendChild(row);
   }
@@ -7974,14 +7984,17 @@ function renderStep2() {
 
   const dvd=document.createElement('div');dvd.style.cssText='height:1px;background:var(--bd)';el.appendChild(dvd);
 
-  if(!ui.showGallery&&ui.railMode!=='picker'){
+  // Galeria é a entrada padrão quando não há condições (§13A: "conditions vazio OU pediu Estratégias")
+  const showGallery=ui.showGallery||(cfg.conditions.length===0&&ui.railMode!=='picker');
+
+  if(!showGallery&&ui.railMode!=='picker'){
     const condTitle=div('');condTitle.style.cssText='font-size:13px;color:var(--txs);line-height:1.6';
     condTitle.innerHTML='Quando <strong style="color:var(--tx)">TODAS</strong> estas condições forem verdadeiras simultaneamente:';
     el.appendChild(condTitle);
   }
 
   const sect=div('');
-  if(ui.showGallery) _s2GallerySection(sect);
+  if(showGallery) _s2GallerySection(sect);
   else if(ui.railMode==='picker') _s2PickerSection(sect);
   else _s2ListSection(sect);
   el.appendChild(sect);
@@ -12846,16 +12859,20 @@ const BTP_CE = (function(){
     ctx.fillStyle=C.bg;ctx.fillRect(0,0,_W,_H);
     ctx.font="10px 'JetBrains Mono',monospace";ctx.textBaseline='middle';ctx.strokeStyle=C.grid;ctx.lineWidth=1;
     for(let g=0;g<=6;g++){const p=lo+(hi-lo)*g/6,y=py(p);ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(plotW,y);ctx.stroke();ctx.fillStyle=C.dim;ctx.textAlign='left';ctx.fillText(A.fmt(Math.round(p/A.tick)*A.tick),plotW+8,y);}
-    // Janela operacional — sombreia fora do horário e marca os limites (§3/§7/§13)
+    // Janela operacional — sombreia fora do horário e marca início / última entrada / encerramento (§3/§7/§13)
     if(eng.sess&&eng.sess.start!=null&&!trailing){
       const s=eng.sess,span=Math.max(1,s.dayEnd-s.dayStart),fr=m=>Math.max(0,Math.min(1,(m-s.dayStart)/span)),xAt=f=>px(f*(N-1));
-      const xS=xAt(fr(s.start)),xE=xAt(fr(s.lastEntry!=null?s.lastEntry:s.end));
+      const xS=xAt(fr(s.start)),xLE=s.lastEntry!=null?xAt(fr(s.lastEntry)):null,xE=s.end!=null?xAt(fr(s.end)):null;
+      const rightEdge=(xE!=null?xE:(xLE!=null?xLE:plotW));
       ctx.fillStyle='rgba(8,12,22,0.5)';
       if(xS>1)ctx.fillRect(0,TOP,xS,chartH);
-      if(xE<plotW-1)ctx.fillRect(xE,TOP,plotW-xE,chartH);
-      ctx.strokeStyle='rgba(245,194,75,0.3)';ctx.setLineDash([3,4]);ctx.lineWidth=1;ctx.textBaseline='middle';
-      [[xS,state.cfg.tStart],[xE,state.cfg.tLastEntry]].forEach(([x,lb])=>{if(x<=1||x>=plotW-1)return;ctx.beginPath();ctx.moveTo(x,TOP);ctx.lineTo(x,TOP+chartH);ctx.stroke();ctx.fillStyle='rgba(245,194,75,0.65)';ctx.font="8px 'JetBrains Mono'";ctx.textAlign='center';ctx.fillText(lb,x,TOP+chartH-7);});
-      ctx.setLineDash([]);
+      if(rightEdge<plotW-1)ctx.fillRect(rightEdge,TOP,plotW-rightEdge,chartH);
+      ctx.textBaseline='middle';
+      [[xS,state.cfg.tStart,'rgba(245,194,75,',0],[xLE,state.cfg.tLastEntry,'rgba(245,194,75,',1],[xE,state.cfg.tEnd,'rgba(255,60,80,',0]].forEach(([x,lb,col,tier])=>{
+        if(x==null||x<=1||x>=plotW-1)return;
+        ctx.strokeStyle=col+'0.32)';ctx.setLineDash([3,4]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,TOP);ctx.lineTo(x,TOP+chartH);ctx.stroke();ctx.setLineDash([]);
+        ctx.fillStyle=col+'0.75)';ctx.font="8px 'JetBrains Mono'";ctx.textAlign='center';ctx.fillText(lb,x,TOP+chartH-7-tier*11);
+      });
     }
     if(eng.overlays.bb){
       const bb=ind.bb;ctx.fillStyle='rgba(41,182,246,0.07)';ctx.beginPath();let started=false;
