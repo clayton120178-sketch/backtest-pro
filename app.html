@@ -1732,7 +1732,7 @@ db.auth.onAuthStateChange(async (event, session) => {
 });
 
 // ─── STATE ────────────────────────────────────────────────────
-const APP_VERSION = '2.4.3'; // Versão do produto — atualizar a cada release
+const APP_VERSION = '2.4.4'; // Versão do produto — atualizar a cada release
 
 // ─── THEME ───────────────────────────────────────────────────
 function setAppTheme(t){
@@ -9934,7 +9934,12 @@ function renderApp(opts={}) {
 
   // Nav
   const nav=div('nav-footer');
-  const backBtn=h('button',{class:'btn btnS',onclick:()=>{if(state.step>0){state.dir='bwd';state.animate=true;state.step--;renderApp();}}});
+  const backBtn=h('button',{class:'btn btnS',onclick:()=>{
+    // No passo 2, "Voltar" primeiro sai do picker/galeria (cardápio), depois volta de passo (issue 4)
+    if(state.step===1 && state._ui.railMode==='picker'){state._ui.railMode='list';state._ui.search='';renderApp();return;}
+    if(state.step===1 && state._ui.showGallery && state.cfg.conditions.length>0){state._ui.showGallery=false;renderApp();return;}
+    if(state.step>0){state.dir='bwd';state.animate=true;state.step--;renderApp();}
+  }});
   backBtn.innerHTML=IC.back+' Voltar';
   if(state.step===0) backBtn.style.visibility='hidden';
 
@@ -12818,7 +12823,20 @@ const BTP_CE = (function(){
     // Janela operacional — minutos do dia (faixa vertical sombreada, §3/§7/§13)
     const _toMin=s=>{const m=/^(\d{1,2}):(\d{2})/.exec(s||'');return m?(+m[1])*60+(+m[2]):null;};
     const sess={start:_toMin(cfg.tStart),lastEntry:_toMin(cfg.tLastEntry),end:_toMin(cfg.tEnd),dayStart:540,dayEnd:1105};
-    return{A,scenario,long,panels,overlays,seed,sess,
+    // Params reais das condições ativas → o gráfico reflete período/valor configurados (issue 3)
+    const _cond=id=>(cfg.conditions||[]).find(c=>c.id===id&&!c._off);
+    const _ma=_cond('sma')||_cond('ema'),_bb=_cond('bb'),_rsi=_cond('rsi'),_st=_cond('stoch'),_cci=_cond('cci'),_wil=_cond('williams'),_adx=_cond('adx');
+    const _num=(c,k,d)=>{const v=c&&c.params&&c.params[k];return(typeof v==='number'&&!isNaN(v))?v:d;};
+    const indCfg={
+      smaPer:_num(_ma,'per',20), smaPer2:_ma&&_ma.params&&isMACrossover(_ma.params.cond)?_num(_ma,'per2',21):null,
+      bbPer:_num(_bb,'per',20), bbDev:_num(_bb,'dev',2),
+      rsiPer:_num(_rsi,'per',14), rsiVal:_num(_rsi,'val',null),
+      stochPer:_num(_st,'per',14), stochVal:_num(_st,'val',null),
+      cciPer:_num(_cci,'per',14), cciVal:_num(_cci,'val',null),
+      wilPer:_num(_wil,'per',14), wilVal:_num(_wil,'val',null),
+      adxPer:_num(_adx,'per',14), adxVal:_num(_adx,'val',null),
+    };
+    return{A,scenario,long,panels,overlays,seed,sess,indCfg,
       entry:entryMap[cfg.entryType]||'rompimento',
       stop:stopMap[cfg.stopType]||'fixo',
       stopPts:cfg.stopPts||200,stopN:cfg.stopCandles||5,stopMult:cfg.stopAtrMult||1.5,
@@ -12836,12 +12854,14 @@ const BTP_CE = (function(){
     const _warm=[];let _wc=scene.candles[0].o;
     for(let i=0;i<_W;i++){const o=_wc+(_wr()-0.5)*A.range*0.6,h=Math.max(o,_wc)+_wr()*A.range*0.22,l=Math.min(o,_wc)-_wr()*A.range*0.22;_warm.unshift({o:_q(o),h:_q(h),l:_q(l),c:_q(_wc)});_wc=o;}
     const _all=_warm.concat(scene.candles),ecl=_all.map(k=>k.c),ehi=_all.map(k=>k.h),elo=_all.map(k=>k.l),_sl=a=>a.slice(_W);
-    const _bb=bollinger(ecl,20,2),_mc=macdCalc(ecl),_st=stochCalc(ecl,ehi,elo),_sr=sarCalc(ehi,elo);
+    // Períodos reais das condições (issue 3) — o gráfico reflete o que o usuário configurou
+    const ic=eng.indCfg,_cl=(v,mn,mx)=>Math.max(mn,Math.min(mx,v||mn));
+    const _bb=bollinger(ecl,_cl(ic.bbPer,2,200),ic.bbDev||2),_mc=macdCalc(ecl),_st=stochCalc(ecl,ehi,elo,_cl(ic.stochPer,2,200)),_sr=sarCalc(ehi,elo);
     // Volume sintético determinístico + OBV (painéis de rodapé, §10)
     const _vr=mulberry32((eng.seed^0x5151)>>>0);
     const vol=scene.candles.map(k=>(Math.abs(k.c-k.o)+(k.h-k.l)*0.4)*(0.6+_vr()*0.9)+A.range*0.18);
     let _ob=0;const obv=scene.candles.map((k,i)=>{if(i>0)_ob+=(k.c>=scene.candles[i-1].c?1:-1)*vol[i];return _ob;});
-    const ind={bb:{mid:_sl(_bb.mid),up:_sl(_bb.up),lo:_sl(_bb.lo)},sma:_sl(smaArr(ecl,20)),macd:{line:_sl(_mc.line),sig:_sl(_mc.sig),hist:_sl(_mc.hist)},ifr:_sl(rsiCalc(ecl,14)),stoch:{k:_sl(_st.k),d:_sl(_st.d)},cci:_sl(cciCalc(ecl,ehi,elo)),wil:_sl(williamsCalc(ecl,ehi,elo)),adx:_sl(adxCalc(ehi,elo,ecl)),vwap:_sl(vwapCalc(ecl,ehi,elo)),sar:{sar:_sl(_sr.sar),bull:_sl(_sr.bull)},vol,obv};
+    const ind={bb:{mid:_sl(_bb.mid),up:_sl(_bb.up),lo:_sl(_bb.lo)},sma:_sl(smaArr(ecl,_cl(ic.smaPer,2,200))),sma2:ic.smaPer2?_sl(smaArr(ecl,_cl(ic.smaPer2,2,200))):null,macd:{line:_sl(_mc.line),sig:_sl(_mc.sig),hist:_sl(_mc.hist)},ifr:_sl(rsiCalc(ecl,_cl(ic.rsiPer,2,200))),stoch:{k:_sl(_st.k),d:_sl(_st.d)},cci:_sl(cciCalc(ecl,ehi,elo,_cl(ic.cciPer,2,200))),wil:_sl(williamsCalc(ecl,ehi,elo,_cl(ic.wilPer,2,200))),adx:_sl(adxCalc(ehi,elo,ecl,_cl(ic.adxPer,2,200))),vwap:_sl(vwapCalc(ecl,ehi,elo)),sar:{sar:_sl(_sr.sar),bull:_sl(_sr.bull)},vol,obv};
     const proj=projectTrade(scene,ov,A,10),stops=trailStops(proj,ov,eng.trailType);
     _cur={A,scene,ov,ind,proj,stops,eng};
     const ll=document.getElementById('btp-livelabel');
@@ -12893,7 +12913,11 @@ const BTP_CE = (function(){
       const pl=(arr,dash)=>{ctx.strokeStyle='#29b6f6';ctx.lineWidth=1.1;ctx.setLineDash(dash||[]);ctx.beginPath();let s=false;for(let i=0;i<N;i++){if(arr[i]==null)continue;const x=px(i),y=py(arr[i]);s?ctx.lineTo(x,y):(ctx.moveTo(x,y),s=true);}ctx.stroke();ctx.setLineDash([]);};
       pl(bb.up);pl(bb.lo);pl(bb.mid,[3,3]);
     }
-    if(eng.overlays.sma){ctx.strokeStyle='#ffc107';ctx.lineWidth=1.4;ctx.beginPath();let s=false;for(let i=0;i<N;i++){if(ind.sma[i]==null)continue;const x=px(i),y=py(ind.sma[i]);s?ctx.lineTo(x,y):(ctx.moveTo(x,y),s=true);}ctx.stroke();}
+    if(eng.overlays.sma){
+      const _drawLine=(arr,col)=>{ctx.strokeStyle=col;ctx.lineWidth=1.4;ctx.beginPath();let s=false;for(let i=0;i<N;i++){if(arr[i]==null)continue;const x=px(i),y=py(arr[i]);s?ctx.lineTo(x,y):(ctx.moveTo(x,y),s=true);}ctx.stroke();};
+      if(ind.sma2){_drawLine(ind.sma2,'#c2c2d6');}  // média longa (cruzamento)
+      _drawLine(ind.sma,'#ffc107');                  // média (curta)
+    }
     if(eng.overlays.vwap){ctx.strokeStyle='#e040fb';ctx.lineWidth=1.5;ctx.setLineDash([5,3]);ctx.beginPath();let sv=false;for(let i=0;i<N;i++){const y=py(ind.vwap[i]);sv?ctx.lineTo(px(i),y):(ctx.moveTo(px(i),y),sv=true);}ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#e040fb';ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText('VWAP',plotW+8,py(ind.vwap[N-1]));}
     if(eng.overlays.sar){const sr=ind.sar;for(let i=0;i<N;i++){if(sr.sar[i]==null)continue;const y=py(sr.sar[i]),x=px(i),r=BW*0.28;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=sr.bull[i]?C.bull:C.bear;ctx.fill();}}
     if(ov.zone){const yT=py(ov.zone.hi),yB=py(ov.zone.lo);ctx.fillStyle=C.zone;ctx.fillRect(0,yT,plotW,yB-yT);ctx.strokeStyle=C.zoneln;ctx.setLineDash([4,4]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,yT);ctx.lineTo(plotW,yT);ctx.stroke();ctx.beginPath();ctx.moveTo(0,yB);ctx.lineTo(plotW,yB);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.zoneln;ctx.font="bold 9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText(ov.zone.kind,6,yT-7<TOP?yT+10:yT-7);}
@@ -12954,12 +12978,13 @@ const BTP_CE = (function(){
     const an=eng.pk==='ACAO'?state.cfg.asset:(eng.pk==='WDO'?'WDO':'WIN')+'FUT';
     ctx.fillText(an,16,22);let hx=16+ctx.measureText(an).width+10;
     ctx.fillStyle=C.dim;ctx.font="11px 'JetBrains Mono'";const tfD=(state.cfg.tf||'5m').toUpperCase();ctx.fillText(tfD,hx,22);hx+=ctx.measureText(tfD).width+12;
-    const tags=[];if(eng.overlays.bb)tags.push(['BB(20,2)','#29b6f6']);if(eng.overlays.sma)tags.push(['SMA(20)','#ffc107']);
+    const tags=[];const _ic=eng.indCfg;if(eng.overlays.bb)tags.push(['BB('+_ic.bbPer+','+_ic.bbDev+')','#29b6f6']);if(eng.overlays.sma)tags.push([(_ic.smaPer2?('MM '+_ic.smaPer+'×'+_ic.smaPer2):('MM('+_ic.smaPer+')')),'#ffc107']);
     tags.forEach(([tx,col])=>{ctx.fillStyle=col;ctx.font="10px 'JetBrains Mono'";ctx.fillText('· '+tx,hx,22);hx+=ctx.measureText('· '+tx).width+8;});
     const lastC=c[c.length-1];ctx.fillStyle=lastC.c>=lastC.o?C.bull:C.bear;ctx.font="bold 13px 'JetBrains Mono'";ctx.textAlign='right';ctx.fillText(A.fmt(lastC.c),plotW,22);
     footers.forEach((kind,idx)=>{
       const fy0=_H-BOT-FOOT+idx*PANEL,fy1=fy0+PANEL;ctx.strokeStyle=C.border;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,fy0);ctx.lineTo(_W,fy0);ctx.stroke();
-      if(kind==='ifr')_drawIFR(ctx,fy0,fy1,px,plotW,ind.ifr);else if(kind==='macd')_drawMACD(ctx,fy0,fy1,px,plotW,ind.macd);else if(kind==='stoch')_drawStoch(ctx,fy0,fy1,px,plotW,ind.stoch);else if(kind==='cci')_drawCCI(ctx,fy0,fy1,px,plotW,ind.cci);else if(kind==='wil')_drawWil(ctx,fy0,fy1,px,plotW,ind.wil);else if(kind==='adx')_drawADX(ctx,fy0,fy1,px,plotW,ind.adx);else if(kind==='vol')_drawVol(ctx,fy0,fy1,px,plotW,ind.vol,c,BW);else if(kind==='obv')_drawOBV(ctx,fy0,fy1,px,plotW,ind.obv);
+      const ic2=eng.indCfg;
+      if(kind==='ifr')_drawIFR(ctx,fy0,fy1,px,plotW,ind.ifr,ic2);else if(kind==='macd')_drawMACD(ctx,fy0,fy1,px,plotW,ind.macd);else if(kind==='stoch')_drawStoch(ctx,fy0,fy1,px,plotW,ind.stoch,ic2);else if(kind==='cci')_drawCCI(ctx,fy0,fy1,px,plotW,ind.cci,ic2);else if(kind==='wil')_drawWil(ctx,fy0,fy1,px,plotW,ind.wil,ic2);else if(kind==='adx')_drawADX(ctx,fy0,fy1,px,plotW,ind.adx,ic2);else if(kind==='vol')_drawVol(ctx,fy0,fy1,px,plotW,ind.vol,c,BW);else if(kind==='obv')_drawOBV(ctx,fy0,fy1,px,plotW,ind.obv);
     });
     _drawLegend(ov,A,appStep);
   }
@@ -12973,38 +12998,45 @@ const BTP_CE = (function(){
     const mn=Math.min(...obv),mx=Math.max(...obv),rng=(mx-mn)||1,pad=14,map=v=>fy0+pad+(fy1-fy0-2*pad)*(1-(v-mn)/rng);
     ctx.strokeStyle='#26c6da';ctx.lineWidth=1.4;ctx.beginPath();obv.forEach((v,i)=>{const x=px(i),y=map(v);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});ctx.stroke();
   }
-  function _drawIFR(ctx,fy0,fy1,px,plotW,ifr){
-    ctx.fillStyle=C.dim;ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText('IFR(14)',8,fy0+13);
+  // Linha de limiar configurada pelo usuário (destaque) — reflete o "valor" da condição (issue 3)
+  function _thrLine(ctx,plotW,y,txt){ctx.strokeStyle='rgba(245,194,75,.85)';ctx.setLineDash([5,3]);ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(plotW,y);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#F5C24B';ctx.font="bold 9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText(txt,plotW+8,y+3);}
+  function _drawIFR(ctx,fy0,fy1,px,plotW,ifr,ic){
+    ctx.fillStyle=C.dim;ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText('IFR('+((ic&&ic.rsiPer)||14)+')',8,fy0+13);
     const pad=12,map=v=>fy0+pad+(fy1-fy0-2*pad)*(1-v/100);
     [30,70].forEach(lv=>{ctx.strokeStyle='rgba(255,255,255,.12)';ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(0,map(lv));ctx.lineTo(plotW,map(lv));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.dim;ctx.textAlign='left';ctx.fillText(lv,plotW+8,map(lv)+3);});
     ctx.strokeStyle='#2196f3';ctx.lineWidth=1.4;ctx.beginPath();let s=false;ifr.forEach((v,i)=>{if(v==null)return;const x=px(i),y=map(v);s?ctx.lineTo(x,y):(ctx.moveTo(x,y),s=true);});ctx.stroke();
+    if(ic&&ic.rsiVal!=null&&ic.rsiVal>=0&&ic.rsiVal<=100)_thrLine(ctx,plotW,map(ic.rsiVal),ic.rsiVal);
   }
-  function _drawStoch(ctx,fy0,fy1,px,plotW,st){
-    ctx.fillStyle=C.dim;ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText('ESTO(14,3)',8,fy0+13);
+  function _drawStoch(ctx,fy0,fy1,px,plotW,st,ic){
+    ctx.fillStyle=C.dim;ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText('ESTO('+((ic&&ic.stochPer)||14)+',3)',8,fy0+13);
     const pad=12,map=v=>fy0+pad+(fy1-fy0-2*pad)*(1-v/100);
     [20,80].forEach(lv=>{ctx.strokeStyle='rgba(255,255,255,.12)';ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(0,map(lv));ctx.lineTo(plotW,map(lv));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.dim;ctx.textAlign='left';ctx.fillText(lv,plotW+8,map(lv)+3);});
     const pl=(arr,col)=>{ctx.strokeStyle=col;ctx.lineWidth=1.4;ctx.beginPath();let s=false;arr.forEach((v,i)=>{if(v==null)return;const x=px(i),y=map(v);s?ctx.lineTo(x,y):(ctx.moveTo(x,y),s=true);});ctx.stroke();};
     pl(st.k,'#2196f3');pl(st.d,'#ff9800');
+    if(ic&&ic.stochVal!=null&&ic.stochVal>=0&&ic.stochVal<=100)_thrLine(ctx,plotW,map(ic.stochVal),ic.stochVal);
   }
-  function _drawCCI(ctx,fy0,fy1,px,plotW,cci){
-    ctx.fillStyle=C.dim;ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText('CCI(14)',8,fy0+13);
-    const vals=cci.filter(v=>v!=null);let mn=Math.min(-150,...vals),mx=Math.max(150,...vals);const rng=(mx-mn)||1;
+  function _drawCCI(ctx,fy0,fy1,px,plotW,cci,ic){
+    ctx.fillStyle=C.dim;ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText('CCI('+((ic&&ic.cciPer)||14)+')',8,fy0+13);
+    const vals=cci.filter(v=>v!=null);let mn=Math.min(-150,...vals),mx=Math.max(150,...vals);if(ic&&ic.cciVal!=null){mn=Math.min(mn,ic.cciVal);mx=Math.max(mx,ic.cciVal);}const rng=(mx-mn)||1;
     const pad=12,map=v=>fy0+pad+(fy1-fy0-2*pad)*(1-(v-mn)/rng);
     [-100,0,100].forEach(lv=>{ctx.strokeStyle='rgba(255,255,255,.12)';ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(0,map(lv));ctx.lineTo(plotW,map(lv));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.dim;ctx.fillText(lv,plotW+8,map(lv)+3);});
     ctx.strokeStyle='#00bcd4';ctx.lineWidth=1.4;ctx.beginPath();let sc=false;cci.forEach((v,i)=>{if(v==null)return;const x=px(i),y=map(v);sc?ctx.lineTo(x,y):(ctx.moveTo(x,y),sc=true);});ctx.stroke();
+    if(ic&&ic.cciVal!=null)_thrLine(ctx,plotW,map(ic.cciVal),ic.cciVal);
   }
-  function _drawWil(ctx,fy0,fy1,px,plotW,wil){
-    ctx.fillStyle=C.dim;ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText('%R(14)',8,fy0+13);
+  function _drawWil(ctx,fy0,fy1,px,plotW,wil,ic){
+    ctx.fillStyle=C.dim;ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText('%R('+((ic&&ic.wilPer)||14)+')',8,fy0+13);
     const pad=12,map=v=>fy0+pad+(fy1-fy0-2*pad)*(1-(v+100)/100);
     [-20,-80].forEach(lv=>{ctx.strokeStyle='rgba(255,255,255,.12)';ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(0,map(lv));ctx.lineTo(plotW,map(lv));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.dim;ctx.fillText(lv,plotW+8,map(lv)+3);});
     ctx.strokeStyle='#f06292';ctx.lineWidth=1.4;ctx.beginPath();let sw=false;wil.forEach((v,i)=>{if(v==null)return;const x=px(i),y=map(v);sw?ctx.lineTo(x,y):(ctx.moveTo(x,y),sw=true);});ctx.stroke();
+    if(ic&&ic.wilVal!=null&&ic.wilVal>=-100&&ic.wilVal<=0)_thrLine(ctx,plotW,map(ic.wilVal),ic.wilVal);
   }
-  function _drawADX(ctx,fy0,fy1,px,plotW,adx){
-    ctx.fillStyle=C.dim;ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText('ADX(14)',8,fy0+13);
+  function _drawADX(ctx,fy0,fy1,px,plotW,adx,ic){
+    ctx.fillStyle=C.dim;ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText('ADX('+((ic&&ic.adxPer)||14)+')',8,fy0+13);
     const vals=adx.filter(v=>v!=null);const mx=Math.max(60,...vals);
     const pad=12,map=v=>fy0+pad+(fy1-fy0-2*pad)*(1-v/mx);
-    [25].forEach(lv=>{ctx.strokeStyle='rgba(255,255,255,.18)';ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(0,map(lv));ctx.lineTo(plotW,map(lv));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.dim;ctx.fillText(lv,plotW+8,map(lv)+3);});
+    const _lv=(ic&&ic.adxVal!=null)?ic.adxVal:25;
     ctx.strokeStyle='#ab47bc';ctx.lineWidth=1.6;ctx.beginPath();let sa=false;adx.forEach((v,i)=>{if(v==null)return;const x=px(i),y=map(v);sa?ctx.lineTo(x,y):(ctx.moveTo(x,y),sa=true);});ctx.stroke();
+    _thrLine(ctx,plotW,map(_lv),_lv);
   }
   function _drawMACD(ctx,fy0,fy1,px,plotW,m){
     ctx.fillStyle=C.dim;ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText('MACD(12,26,9)',8,fy0+13);
