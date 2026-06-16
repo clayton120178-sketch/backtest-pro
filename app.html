@@ -215,6 +215,10 @@ main.btp-mode{padding:0;max-width:none;margin:0;overflow:hidden}
 .s2-cfield>span{font-size:12px;color:var(--txm);flex:none}
 .s2-csel{flex:1;min-width:0;max-width:210px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx);border-radius:7px;padding:7px 30px 7px 10px;font-family:'DM Sans';font-size:12px;cursor:pointer;appearance:none;-webkit-appearance:none;text-overflow:ellipsis;background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238a8aa0' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
 .s2-csel:focus{border-color:var(--ac);outline:none}
+.s2-seg{display:flex;gap:6px;margin-bottom:4px}
+.s2-segbtn{flex:1;background:var(--bg2);border:1px solid var(--bd);color:var(--txm);border-radius:8px;padding:8px 6px;font-family:'DM Sans';font-weight:600;font-size:11.5px;cursor:pointer;transition:.12s}
+.s2-segbtn:hover{border-color:var(--bdh)}
+.s2-segbtn.on{background:var(--ac);color:#04261f;border-color:var(--ac)}
 .s2-cnote{font-size:11.5px;color:var(--txm);line-height:1.4}
 /* Group */
 .s2-cgroup{border:1px solid var(--bd);border-radius:10px;overflow:hidden;margin-bottom:8px;background:rgba(255,255,255,.012)}
@@ -1734,7 +1738,7 @@ db.auth.onAuthStateChange(async (event, session) => {
 });
 
 // ─── STATE ────────────────────────────────────────────────────
-const APP_VERSION = '2.4.5'; // Versão do produto — atualizar a cada release
+const APP_VERSION = '2.4.6'; // Versão do produto — atualizar a cada release
 
 // ─── THEME ───────────────────────────────────────────────────
 function setAppTheme(t){
@@ -2141,6 +2145,7 @@ function _s2OpsFor(id){
     case 'prevday':return PREVDAY_CONDS;
     case 'atr':return ATR_CONDS;
     case 'candle':return CANDLE_CONDS;
+    case 'fvg':return FVG_CONDS;
     default:return null;
   }
 }
@@ -7821,58 +7826,83 @@ function _s2PickerSection(el) {
 }
 
 function _s2ChipEditorEl(c,idx) {
-  const p=c.params,el=div('s2-ceditor');
-  const ops=_s2OpsFor(c.id);
-  const isMA=(c.id==='sma'||c.id==='ema');
-  if(ops&&p.cond!==undefined){
-    const row=div('s2-cfield'),lbl=document.createElement('span');lbl.textContent=(c.id==='candle')?'Padrão':'Condição';
+  const p=c.params,el=div('s2-ceditor'),id=c.id;
+  // helpers de campo (tudo no rail — sem modal)
+  function mkSel(label,opts,cur,onChange){
+    const row=div('s2-cfield'),lb=document.createElement('span');lb.textContent=label;
     const sel=document.createElement('select');sel.className='s2-csel';
-    ops.forEach(val=>{const opt=document.createElement('option');opt.value=val;opt.textContent=val;if(val===p.cond)opt.selected=true;sel.appendChild(opt);});
-    sel.addEventListener('change',e=>{
-      const nv=e.target.value;
-      if(isMA){
-        const wasCross=isMACrossover(p.cond),nowCross=isMACrossover(nv);
-        p.cond=nv;
-        if(nowCross&&!wasCross){p.per=9;p.per2=21;}
-        else if(!nowCross&&wasCross){delete p.per2;p.per=200;}
-      } else { p.cond=nv; }
-      renderApp();
-    });
-    row.append(lbl,sel);el.appendChild(row);
+    opts.forEach(o=>{const val=Array.isArray(o)?o[0]:o,txt=Array.isArray(o)?o[1]:o;const opt=document.createElement('option');opt.value=val;opt.textContent=txt;if(val===cur)opt.selected=true;sel.appendChild(opt);});
+    sel.addEventListener('change',e=>onChange(e.target.value));row.append(lb,sel);el.appendChild(row);
   }
-  // Cruzamento de médias (EMA/SMA) — período curta + longa, como no modal antigo
-  if(isMA&&isMACrossover(p.cond)){
-    if(p.per2===undefined)p.per2=21;
-    if(p.per===undefined||p.per>100)p.per=9;
-    const r1=div('s2-cfield'),l1=document.createElement('span');l1.textContent='Período curta';
-    r1.append(l1,stepper(p.per,1,500,'',v=>{p.per=v;renderApp();}));el.appendChild(r1);
-    const r2=div('s2-cfield'),l2=document.createElement('span');l2.textContent='Período longa';
-    r2.append(l2,stepper(p.per2,1,500,'',v=>{p.per2=v;renderApp();}));el.appendChild(r2);
-  } else if(p.per!==undefined){
-    const row=div('s2-cfield'),lb=document.createElement('span');lb.textContent='Período';
-    row.append(lb,stepper(p.per,(c.id==='bb')?6:1,500,'',v=>{p.per=v;renderApp();}));el.appendChild(row);
+  function mkStep(label,v,mn,mx,onChange){const row=div('s2-cfield'),lb=document.createElement('span');lb.textContent=label;row.append(lb,stepper(v,mn,mx,'',onChange));el.appendChild(row);}
+
+  // ── Médias móveis: escolher a ABORDAGEM primeiro (filtro de tendência × cruzamento) ──
+  if(id==='sma'||id==='ema'){
+    const MA_FILTER=['Preço está acima','Preço está abaixo','Preço cruza acima','Preço cruza abaixo'];
+    const MA_CROSS=['Média curta cruza acima da longa','Média curta cruza abaixo da longa','Cruzamento de médias (compra e venda)'];
+    const isCross=isMACrossover(p.cond);
+    const seg=div('s2-seg');
+    const mkSeg=(txt,active,fn)=>{const b=h('button',{class:'s2-segbtn'+(active?' on':''),onclick:fn});b.textContent=txt;seg.appendChild(b);};
+    mkSeg('Filtro de tendência',!isCross,()=>{if(isCross){p.cond='Preço está acima';p.per=200;delete p.per2;renderApp();}});
+    mkSeg('Cruzamento de médias',isCross,()=>{if(!isCross){p.cond='Cruzamento de médias (compra e venda)';p.per=9;p.per2=21;renderApp();}});
+    el.appendChild(seg);
+    if(isCross){
+      if(p.per2===undefined)p.per2=21;if(p.per===undefined||p.per>100)p.per=9;
+      mkSel('Condição',MA_CROSS,p.cond,v=>{p.cond=v;renderApp();});
+      mkStep('Período curta',p.per,1,500,v=>{p.per=v;renderApp();});
+      mkStep('Período longa',p.per2,1,500,v=>{p.per2=v;renderApp();});
+    } else {
+      mkSel('Condição',MA_FILTER,p.cond,v=>{p.cond=v;renderApp();});
+      mkStep('Período',p.per||200,1,500,v=>{p.per=v;renderApp();});
+    }
+    return el;
   }
+
+  // ── Direção (estruturas SMC) ──
+  if(p.dir!==undefined) mkSel('Direção',['Compra','Venda'],p.dir,v=>{p.dir=v;renderApp();});
+
+  // ── Condição / Padrão ──
+  const ops=_s2OpsFor(id);
+  if(ops&&p.cond!==undefined){
+    mkSel(id==='candle'?'Padrão':'Condição',ops,p.cond,v=>{p.cond=v;if(id==='fvg')p.entryMode=(v===FVG_CONDS[0])?'aggressive':'mitigation';renderApp();});
+  }
+
+  // ── Período (osciladores/BB; fib usa abaixo) ──
+  if(p.per!==undefined&&id!=='fib') mkStep('Período',p.per,(id==='bb')?6:1,500,v=>{p.per=v;renderApp();});
+
+  // ── Valor / Tamanho ──
   if(p.val!==undefined){
-    const row=div('s2-cfield'),_isPts=c.id==='gap'||c.id==='range';
-    const lb=document.createElement('span');lb.textContent=_isPts?'Tamanho mínimo':'Valor';
-    const _vMin=(c.id==='rsi'||c.id==='stoch'||c.id==='adx')?0:c.id==='williams'?-100:-999;
-    const _vMax=(c.id==='rsi'||c.id==='stoch'||c.id==='adx')?100:c.id==='williams'?0:99999;
-    row.append(lb,_isPts?stepperPoints(p.val,0,5000,state.cfg.asset,v=>{p.val=v;renderApp();}):stepper(p.val,_vMin,_vMax,'',v=>{p.val=v;renderApp();}));
+    const _isPts=id==='gap'||id==='range';
+    const _vMin=(id==='rsi'||id==='stoch'||id==='adx')?0:id==='williams'?-100:-999;
+    const _vMax=(id==='rsi'||id==='stoch'||id==='adx')?100:id==='williams'?0:99999;
+    const row=div('s2-cfield'),sp=document.createElement('span');sp.textContent=_isPts?'Tamanho mínimo':'Valor';
+    row.append(sp,_isPts?stepperPoints(p.val,0,5000,state.cfg.asset,v=>{p.val=v;renderApp();}):stepper(p.val,_vMin,_vMax,'',v=>{p.val=v;renderApp();}));
     el.appendChild(row);
   }
-  if(p.dev!==undefined){
-    const row=div('s2-cfield'),lb=document.createElement('span');lb.textContent='Desvio';
-    row.append(lb,stepperDecimal(p.dev,0.5,5,0.5,'σ',v=>{p.dev=v;renderApp();}));el.appendChild(row);
+  // ── Desvio (BB) · Multiplicador (ATR) ──
+  if(p.dev!==undefined){const row=div('s2-cfield'),sp=document.createElement('span');sp.textContent='Desvio';row.append(sp,stepperDecimal(p.dev,0.5,5,0.5,'σ',v=>{p.dev=v;renderApp();}));el.appendChild(row);}
+  if(p.mult!==undefined){const row=div('s2-cfield'),sp=document.createElement('span');sp.textContent='Multiplicador';row.append(sp,stepperDecimal(p.mult,0.1,10,0.1,'×',v=>{p.mult=v;renderApp();}));el.appendChild(row);}
+
+  // ── Fibonacci (inline — nível + modo, reconstrói a condição) ──
+  if(p.fibLevel!==undefined){
+    const _sync=()=>{p.cond=(p.fibMode==='touch'?'Preço toca nível ':'Preço cruza nível ')+(p.fibLevel||'61.8%');};
+    if(p.per!==undefined) mkStep('Período do swing',p.per,2,200,v=>{p.per=v;renderApp();});
+    mkSel('Nível',FIB_LEVELS,p.fibLevel,v=>{p.fibLevel=v;_sync();renderApp();});
+    if(p.fibMode!==undefined) mkSel('Modo',FIB_MODES,p.fibMode,v=>{p.fibMode=v;_sync();renderApp();});
   }
-  if(p.mult!==undefined){
-    const row=div('s2-cfield'),lb=document.createElement('span');lb.textContent='Multiplicador';
-    row.append(lb,stepperDecimal(p.mult,0.1,10,0.1,'×',v=>{p.mult=v;renderApp();}));el.appendChild(row);
-  }
-  if(['fvg','bos','choch','grab','sweep','fib'].includes(c.id)){
-    const note=div('s2-cnote');note.textContent='Parâmetros avançados disponíveis via editor completo.';
-    const adv=h('button',{class:'s2-ghostbtn',style:{marginTop:'4px',fontSize:'12px',padding:'8px 12px'},onclick:()=>openModal(false)});
-    adv.textContent='Configurar avançado ▸';el.append(note,adv);
-  }
+
+  // ── Filtro de Order Block (BoS/CHoCH) ──
+  if(p.obMit!==undefined) mkSel('Filtro Order Block',[['none','Sem filtro'],['touch','Toque'],['validation','Validação']],p.obMit,v=>{p.obMit=v;renderApp();});
+  // ── BoS — pernas ──
+  if(p.leg1Min!==undefined) mkStep('1ª perna — mín',p.leg1Min,2,20,v=>{p.leg1Min=Math.min(v,p.leg1Max||v);renderApp();});
+  if(p.leg1Max!==undefined) mkStep('1ª perna — máx',p.leg1Max,2,30,v=>{p.leg1Max=v;renderApp();});
+  if(p.corrMax!==undefined) mkStep('Correção — máx',p.corrMax,1,20,v=>{p.corrMax=v;renderApp();});
+  if(p.leg2Max!==undefined) mkStep('2ª perna — máx',p.leg2Max,1,20,v=>{p.leg2Max=v;renderApp();});
+  // ── CHoCH — tendência prévia ──
+  if(p.trendMin!==undefined) mkStep('Tendência — mín',p.trendMin,2,50,v=>{p.trendMin=Math.min(v,p.trendMax||v);renderApp();});
+  if(p.trendMax!==undefined) mkStep('Tendência — máx',p.trendMax,2,80,v=>{p.trendMax=v;renderApp();});
+  if(p.ampRatio!==undefined) mkStep('Amplitude mín (%)',p.ampRatio,5,95,v=>{p.ampRatio=v;renderApp();});
+
   return el;
 }
 
