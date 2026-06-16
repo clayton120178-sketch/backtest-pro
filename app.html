@@ -1739,7 +1739,7 @@ db.auth.onAuthStateChange(async (event, session) => {
 });
 
 // ─── STATE ────────────────────────────────────────────────────
-const APP_VERSION = '2.4.1'; // Versão do produto — atualizar a cada release
+const APP_VERSION = '2.4.2'; // Versão do produto — atualizar a cada release
 
 // ─── THEME ───────────────────────────────────────────────────
 function setAppTheme(t){
@@ -7889,7 +7889,7 @@ function _s2ListSection(el) {
     const blocks=[];let curGrp=null,curBlk=null;
     conds.forEach((c,i)=>{
       const g=c._group||null;
-      if(g!==curGrp){if(curBlk)blocks.push(curBlk);curGrp=g;curBlk=g?{type:'group',name:g,items:[{c,i}]}:{type:'list',items:[{c,i}]};}
+      if(curBlk===null||g!==curGrp){if(curBlk)blocks.push(curBlk);curGrp=g;curBlk=g?{type:'group',name:g,items:[{c,i}]}:{type:'list',items:[{c,i}]};}
       else curBlk.items.push({c,i});
     });
     if(curBlk)blocks.push(curBlk);
