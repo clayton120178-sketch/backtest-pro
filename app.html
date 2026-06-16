@@ -1694,7 +1694,9 @@ async function verificarAcesso(){
       if(state?.screen === 'loading' || state?.screen === 'results') return;
       // Não re-rotear quando o user já está trabalhando no wizard/confirm (ex.: TOKEN_REFRESHED periódico).
       // Detecta o wizard pela classe btp-mode realmente presente na tela — NÃO por state.screen, cujo default é 'wizard' mesmo na home.
-      if(__hasRoutedToApp && (document.getElementById('main')?.classList.contains('btp-mode') || state?.screen === 'confirm')) return;
+      // IMPORTANTE: se o wizard está na tela, NUNCA re-rotear — independe de __hasRoutedToApp (que pode ter ficado false se a 1ª verificarAcesso retornou cedo).
+      if(document.getElementById('main')?.classList.contains('btp-mode') || state?.screen === 'confirm') return;
+      if(__hasRoutedToApp && currentScreen === 'home') return;
       __hasRoutedToApp = true;
       if(data.role === 'admin' || currentSub || currentTrialCount < FREE_TRIAL.backtests_max){ showHome(); }
       else { showScreen('plans'); }
@@ -1732,7 +1734,7 @@ db.auth.onAuthStateChange(async (event, session) => {
 });
 
 // ─── STATE ────────────────────────────────────────────────────
-const APP_VERSION = '2.4.4'; // Versão do produto — atualizar a cada release
+const APP_VERSION = '2.4.5'; // Versão do produto — atualizar a cada release
 
 // ─── THEME ───────────────────────────────────────────────────
 function setAppTheme(t){
@@ -7683,7 +7685,9 @@ function _s2DrawMini(canvas,strat) {
   ctx.fillStyle=isDark?'#0d111c':'#f0f4f8';ctx.fillRect(0,0,W,H);
   let s=strat.id.split('').reduce((a,c)=>a+c.charCodeAt(0),0)||42;
   const rnd=()=>{s=(s*1664525+1013904223)&0xffffffff;return(s>>>0)/0xffffffff;};
-  const isCross=strat.conds.some(c=>(c.id==='sma'||c.id==='ema')&&isMACrossover(c.params&&c.params.cond));
+  // conds da galeria usam `set` (overrides); conds aplicados usam `params`
+  const _ccond=c=>((c.set||c.params||{}).cond);
+  const isCross=strat.conds.some(c=>(c.id==='sma'||c.id==='ema')&&isMACrossover(_ccond(c)));
   const N=32,prices=[100];
   // Cruzamento → série em "∧" (sobe forte e cai forte) p/ as médias cruzarem visivelmente
   for(let i=1;i<N;i++){const t=isCross?(i<N*0.55?1.8:-2.1):(i<N/2?1.2:-0.8+rnd()*1.6);prices.push(prices[i-1]+t+(rnd()-0.5)*2.2);}
@@ -7707,7 +7711,7 @@ function _s2DrawMini(canvas,strat) {
   if(maCond){
     const sma=per=>{const a=[];for(let i=0;i<N;i++){if(i<per-1){a.push(null);continue;}let sm=0;for(let k=0;k<per;k++)sm+=prices[i-k];a.push(sm/per);}return a;};
     const drawMA=(arr,col,w)=>{ctx.strokeStyle=col;ctx.lineWidth=w||1.5;ctx.setLineDash([]);ctx.beginPath();let f=true;for(let i=0;i<N;i++){if(arr[i]==null)continue;const x=pad+i*bw+bw/2,y=toY(arr[i]);f?(ctx.moveTo(x,y),f=false):ctx.lineTo(x,y);}ctx.stroke();};
-    if(isMACrossover(maCond.params&&maCond.params.cond)){
+    if(isMACrossover(_ccond(maCond))){
       // duas médias cruzando (curta + longa) — fiel ao cruzamento de médias
       drawMA(sma(13),'#c2c2d6',1.6);  // longa (clara, mais visível)
       drawMA(sma(5),'#ffc107',1.8);   // curta
