@@ -1738,7 +1738,7 @@ db.auth.onAuthStateChange(async (event, session) => {
 });
 
 // ─── STATE ────────────────────────────────────────────────────
-const APP_VERSION = '2.4.8'; // Versão do produto — atualizar a cada release
+const APP_VERSION = '2.4.9'; // Versão do produto — atualizar a cada release
 
 // ─── THEME ───────────────────────────────────────────────────
 function setAppTheme(t){
@@ -2586,12 +2586,9 @@ function getCondImpliedDir(cond) {
     if(ct.includes('venda')) return 'short';
     return null;
   }
-  // Gap
-  if(id==='gap'){
-    if(ct.includes('alta')) return 'long';
-    if(ct.includes('baixa')) return 'short';
-    return null;
-  }
+  // Gap — tipo do gap (alta/baixa) define a CENA, não a direção: o usuário pode
+  // operar continuação (compra no gap de alta) ou fade (venda) livremente.
+  if(id==='gap') return null;
   // Candle patterns
   if(id==='candle'){
     if(ct.includes('alta')||ct.includes('manhã')) return 'long';
@@ -12568,9 +12565,15 @@ const BTP_CE = (function(){
     for(const c of(conds||[])){
       const cd=((c.params&&c.params.cond)||'').toLowerCase();
       if((c.id==='sma'||c.id==='ema')&&isMACrossover(c.params&&c.params.cond))return 'cross_ma';
+      if(c.id==='sma'||c.id==='ema'||c.id==='vwap'){
+        if(cd.includes('cruza acima'))return 'ma_crossup';
+        if(cd.includes('cruza abaixo'))return 'ma_crossdown';
+        if(cd.includes('abaixo'))return 'ma_below';
+        if(cd.includes('acima'))return 'ma_above';
+      }
       if(c.id==='fvg')return 'fvg';
       if(c.id==='fib')return 'fib';
-      if(c.id==='gap')return 'gap';
+      if(c.id==='gap')return cd.includes('baixa')?'gap_down':'gap';
       if(c.id==='sweep'||c.id==='grab')return 'sweep';
       if(c.id==='bos')return 'bos';
       if(c.id==='choch')return 'choch';
@@ -12608,8 +12611,8 @@ const BTP_CE = (function(){
     }
     return 'rompimento';
   }
-  function _pickPanels(conds){const p={ifr:false,macd:false,stoch:false,cci:false,wil:false,adx:false,vol:false,obv:false};for(const c of(conds||[])){if(c.id==='rsi')p.ifr=true;if(c.id==='macd')p.macd=true;if(c.id==='stoch')p.stoch=true;if(c.id==='cci')p.cci=true;if(c.id==='williams')p.wil=true;if(c.id==='adx')p.adx=true;if(c.id==='volume')p.vol=true;if(c.id==='obv')p.obv=true;}return p;}
-  function _pickOverlays(conds){const o={bb:false,sma:false,vwap:false,sar:false};for(const c of(conds||[])){if(c.id==='bb')o.bb=true;if(c.id==='sma'||c.id==='ema')o.sma=true;if(c.id==='vwap')o.vwap=true;if(c.id==='sar'||c.id==='hilo')o.sar=true;}return o;}
+  function _pickPanels(conds){const p={ifr:false,macd:false,stoch:false,cci:false,wil:false,adx:false,vol:false,obv:false,range:false};for(const c of(conds||[])){if(c.id==='rsi')p.ifr=true;if(c.id==='macd')p.macd=true;if(c.id==='stoch')p.stoch=true;if(c.id==='cci')p.cci=true;if(c.id==='williams')p.wil=true;if(c.id==='adx')p.adx=true;if(c.id==='volume')p.vol=true;if(c.id==='obv')p.obv=true;if(c.id==='range')p.range=true;}return p;}
+  function _pickOverlays(conds){const o={bb:false,sma:false,vwap:false,sar:false,hilo:false,hilon:false};for(const c of(conds||[])){if(c.id==='bb')o.bb=true;if(c.id==='sma'||c.id==='ema')o.sma=true;if(c.id==='vwap')o.vwap=true;if(c.id==='sar')o.sar=true;if(c.id==='hilo')o.hilo=true;if(c.id==='hilon')o.hilon=true;}return o;}
   function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
   function buildScene(name,A,seed,long){
     const rng=mulberry32(seed),q=p=>Math.round(p/A.tick)*A.tick,R=A.range;let price=A.ref;const cs=[];
@@ -12724,6 +12727,25 @@ const BTP_CE = (function(){
       const gapLow=prevHigh+0.85*atr,gapO=gapLow+0.12*atr,c=gapO+0.55*atr;
       push(gapO,c+0.16*atr,gapLow,c);price=c;signalIndex=cs.length-1;zone={hi:gapLow,lo:prevHigh,kind:'GAP'};
       patternCandles=[signalIndex-1,signalIndex];patternLabel='Gap de alta';
+    }else if(name==='gap_down'){
+      price=A.ref;for(let i=0;i<N-1;i++)organic((rng()-0.6)*0.4,0.55);const atr=atrOf(),preGap=cs[cs.length-1],prevLow=preGap.l;
+      const gapHigh=prevLow-0.85*atr,gapO=gapHigh-0.12*atr,c=gapO-0.55*atr;
+      push(gapO,gapO+0.08*atr,c-0.16*atr,c);price=c;signalIndex=cs.length-1;zone={hi:prevLow,lo:gapHigh,kind:'GAP'};
+      patternCandles=[signalIndex-1,signalIndex];patternLabel='Gap de baixa';
+    }else if(name==='ma_above'){
+      price=A.ref-R*4;for(let i=0;i<N;i++)organic(0.4,0.6);
+      signalIndex=cs.length-1;patternCandles=[signalIndex];patternLabel='Preço acima da média';
+    }else if(name==='ma_below'){
+      price=A.ref+R*4;for(let i=0;i<N;i++)organic(-0.4,0.6);
+      signalIndex=cs.length-1;patternCandles=[signalIndex];patternLabel='Preço abaixo da média';
+    }else if(name==='ma_crossup'){
+      price=A.ref+R*4;const half=Math.round(N*0.48);
+      for(let i=0;i<half;i++)organic(-0.42,0.65);for(let i=0;i<N-half;i++)organic(0.52,0.65);
+      signalIndex=cs.length-1;patternCandles=[signalIndex];patternLabel='Preço cruza a média (alta)';
+    }else if(name==='ma_crossdown'){
+      price=A.ref-R*4;const half=Math.round(N*0.48);
+      for(let i=0;i<half;i++)organic(0.42,0.65);for(let i=0;i<N-half;i++)organic(-0.52,0.65);
+      signalIndex=cs.length-1;patternCandles=[signalIndex];patternLabel='Preço cruza a média (baixa)';
     }else if(name==='fvg'){
       price=A.ref;for(let i=0;i<N-3;i++)organic((rng()-0.45)*0.4,0.5);const atr=atrOf();
       const c1=push(price,price+0.42*atr,price-0.12*atr,price+0.30*atr);price=c1.c;
@@ -12869,7 +12891,7 @@ const BTP_CE = (function(){
     const sess={start:_toMin(cfg.tStart),lastEntry:_toMin(cfg.tLastEntry),end:_toMin(cfg.tEnd),dayStart:540,dayEnd:1105};
     // Params reais das condições ativas → o gráfico reflete período/valor configurados (issue 3)
     const _cond=id=>(cfg.conditions||[]).find(c=>c.id===id&&!c._off);
-    const _ma=_cond('sma')||_cond('ema'),_bb=_cond('bb'),_rsi=_cond('rsi'),_st=_cond('stoch'),_cci=_cond('cci'),_wil=_cond('williams'),_adx=_cond('adx');
+    const _ma=_cond('sma')||_cond('ema'),_bb=_cond('bb'),_rsi=_cond('rsi'),_st=_cond('stoch'),_cci=_cond('cci'),_wil=_cond('williams'),_adx=_cond('adx'),_hilo=_cond('hilo'),_hilon=_cond('hilon'),_rng=_cond('range');
     const _num=(c,k,d)=>{const v=c&&c.params&&c.params[k];return(typeof v==='number'&&!isNaN(v))?v:d;};
     const indCfg={
       smaPer:_num(_ma,'per',20), smaPer2:_ma&&_ma.params&&isMACrossover(_ma.params.cond)?_num(_ma,'per2',21):null,
@@ -12879,6 +12901,8 @@ const BTP_CE = (function(){
       cciPer:_num(_cci,'per',14), cciVal:_num(_cci,'val',null),
       wilPer:_num(_wil,'per',14), wilVal:_num(_wil,'val',null),
       adxPer:_num(_adx,'per',14), adxVal:_num(_adx,'val',null),
+      hiloPer:_num(_hilo,'per',6), hilonPer:_num(_hilon,'per',20),
+      rngPer:_num(_rng,'per',20), rngVal:_num(_rng,'val',null),
     };
     return{A,scenario,long,panels,overlays,seed,sess,indCfg,
       entry:entryMap[cfg.entryType]||'rompimento',
@@ -12905,11 +12929,21 @@ const BTP_CE = (function(){
     const _vr=mulberry32((eng.seed^0x5151)>>>0);
     const vol=scene.candles.map(k=>(Math.abs(k.c-k.o)+(k.h-k.l)*0.4)*(0.6+_vr()*0.9)+A.range*0.18);
     let _ob=0;const obv=scene.candles.map((k,i)=>{if(i>0)_ob+=(k.c>=scene.candles[i-1].c?1:-1)*vol[i];return _ob;});
-    const ind={bb:{mid:_sl(_bb.mid),up:_sl(_bb.up),lo:_sl(_bb.lo)},sma:_sl(smaArr(ecl,_disp(ic.smaPer))),sma2:ic.smaPer2?_sl(smaArr(ecl,_disp(ic.smaPer2))):null,macd:{line:_sl(_mc.line),sig:_sl(_mc.sig),hist:_sl(_mc.hist)},ifr:_sl(rsiCalc(ecl,_disp(ic.rsiPer))),stoch:{k:_sl(_st.k),d:_sl(_st.d)},cci:_sl(cciCalc(ecl,ehi,elo,_disp(ic.cciPer))),wil:_sl(williamsCalc(ecl,ehi,elo,_disp(ic.wilPer))),adx:_sl(adxCalc(ehi,elo,ecl,_disp(ic.adxPer))),vwap:_sl(vwapCalc(ecl,ehi,elo)),sar:{sar:_sl(_sr.sar),bull:_sl(_sr.bull)},vol,obv};
-    // Cruzamento de médias: alinhar o candle de SINAL ao ponto EXATO de cruzamento (issue 2b — entrada coincide com o cruzamento)
+    // HiLo Activator (linha em escada, §10/issue 5) + canal Máx/Mín de N períodos (Donchian, issue 7) + Range (issue 6)
+    const _rollMax=(a,p)=>a.map((_,i)=>{if(i<p-1)return null;let m=-Infinity;for(let j=i-p+1;j<=i;j++)m=Math.max(m,a[j]);return m;});
+    const _rollMin=(a,p)=>a.map((_,i)=>{if(i<p-1)return null;let m=Infinity;for(let j=i-p+1;j<=i;j++)m=Math.min(m,a[j]);return m;});
+    const _hiloCalc=(per)=>{const mh=smaArr(ehi,per),ml=smaArr(elo,per),o=[];let mode=1;for(let i=0;i<ecl.length;i++){if(mh[i]==null||ml[i]==null){o.push(null);continue;}if(mode===1&&ecl[i]<ml[i])mode=-1;else if(mode===-1&&ecl[i]>mh[i])mode=1;o.push(mode===1?ml[i]:mh[i]);}return o;};
+    const _hP=_disp(ic.hilonPer);
+    const ind={bb:{mid:_sl(_bb.mid),up:_sl(_bb.up),lo:_sl(_bb.lo)},sma:_sl(smaArr(ecl,_disp(ic.smaPer))),sma2:ic.smaPer2?_sl(smaArr(ecl,_disp(ic.smaPer2))):null,macd:{line:_sl(_mc.line),sig:_sl(_mc.sig),hist:_sl(_mc.hist)},ifr:_sl(rsiCalc(ecl,_disp(ic.rsiPer))),stoch:{k:_sl(_st.k),d:_sl(_st.d)},cci:_sl(cciCalc(ecl,ehi,elo,_disp(ic.cciPer))),wil:_sl(williamsCalc(ecl,ehi,elo,_disp(ic.wilPer))),adx:_sl(adxCalc(ehi,elo,ecl,_disp(ic.adxPer))),vwap:_sl(vwapCalc(ecl,ehi,elo)),sar:{sar:_sl(_sr.sar),bull:_sl(_sr.bull)},hilo:_sl(_hiloCalc(_disp(ic.hiloPer))),hilonHi:_sl(_rollMax(ehi,_hP)),hilonLo:_sl(_rollMin(elo,_hP)),range:scene.candles.map(k=>k.h-k.l),vol,obv};
+    // Alinhar o candle de SINAL ao ponto EXATO do cruzamento (entrada coincide com o sinal do indicador)
     if(eng.scenario==='cross_ma'&&ind.sma&&ind.sma2){
       let cx=null;
       for(let i=1;i<ind.sma.length;i++){const a0=ind.sma[i-1],b0=ind.sma2[i-1],a1=ind.sma[i],b1=ind.sma2[i];if(a0==null||b0==null||a1==null||b1==null)continue;const d0=a0-b0,d1=a1-b1;if((d0<=0&&d1>0)||(d0>=0&&d1<0))cx=i;}
+      if(cx!=null)scene.signalIndex=Math.min(cx,scene.candles.length-1);
+    } else if((eng.scenario==='ma_crossup'||eng.scenario==='ma_crossdown')&&ind.sma){
+      // cruzamento PREÇO × média
+      const cc=scene.candles,up=eng.scenario==='ma_crossup';let cx=null;
+      for(let i=1;i<ind.sma.length;i++){const m0=ind.sma[i-1],m1=ind.sma[i];if(m0==null||m1==null)continue;const d0=cc[i-1].c-m0,d1=cc[i].c-m1;if(up?(d0<=0&&d1>0):(d0>=0&&d1<0))cx=i;}
       if(cx!=null)scene.signalIndex=Math.min(cx,scene.candles.length-1);
     }
     const ov=computeOverlays(scene,A,eng);
@@ -12922,7 +12956,7 @@ const BTP_CE = (function(){
     const cv=_cv();if(!cv||!_cur)return;const ctx=_ctx();if(!ctx)return;
     const{A,scene,ov,ind,proj,stops,eng}=_cur,c=scene.candles;
     const TOP=44,BOT=24,RGUT=62;
-    const footers=[];if(eng.panels.ifr)footers.push('ifr');if(eng.panels.macd)footers.push('macd');if(eng.panels.stoch)footers.push('stoch');if(eng.panels.cci)footers.push('cci');if(eng.panels.wil)footers.push('wil');if(eng.panels.adx)footers.push('adx');if(eng.panels.vol)footers.push('vol');if(eng.panels.obv)footers.push('obv');
+    const footers=[];if(eng.panels.ifr)footers.push('ifr');if(eng.panels.macd)footers.push('macd');if(eng.panels.stoch)footers.push('stoch');if(eng.panels.cci)footers.push('cci');if(eng.panels.wil)footers.push('wil');if(eng.panels.adx)footers.push('adx');if(eng.panels.range)footers.push('range');if(eng.panels.vol)footers.push('vol');if(eng.panels.obv)footers.push('obv');
     const PANEL=92,FOOT=footers.length*PANEL,chartH=_H-TOP-BOT-FOOT,plotW=_W-RGUT,N=c.length;
     const appStep=eng.appStep,trailing=appStep===4&&eng.trailType!=='off';
     const projN=trailing?proj.length:0,TOTAL=N+projN,TSLOT=plotW/(TOTAL+1.5),BW=TSLOT*0.58;
@@ -12936,6 +12970,8 @@ const BTP_CE = (function(){
     if(eng.overlays.bb){ind.bb.up.forEach(v=>v!=null&&(hi=Math.max(hi,v)));ind.bb.lo.forEach(v=>v!=null&&(lo=Math.min(lo,v)));}
     if(eng.overlays.sma){ind.sma.forEach(v=>v!=null&&(hi=Math.max(hi,v),lo=Math.min(lo,v)));if(ind.sma2)ind.sma2.forEach(v=>v!=null&&(hi=Math.max(hi,v),lo=Math.min(lo,v)));}
     if(eng.overlays.sar){ind.sar.sar.forEach(v=>v!=null&&(hi=Math.max(hi,v),lo=Math.min(lo,v)));}
+    if(eng.overlays.hilo){ind.hilo.forEach(v=>v!=null&&(hi=Math.max(hi,v),lo=Math.min(lo,v)));}
+    if(eng.overlays.hilon){ind.hilonHi.forEach(v=>v!=null&&(hi=Math.max(hi,v)));ind.hilonLo.forEach(v=>v!=null&&(lo=Math.min(lo,v)));}
     if(trailing){proj.forEach(k=>{hi=Math.max(hi,k.h);lo=Math.min(lo,k.l);});stops.forEach(s=>hi=Math.max(hi,s)||lo<s||(lo=Math.min(lo,s)));}
     const pad=Math.max(_candleSpan*0.12,A.tick*4);lo-=pad;hi+=pad;
     const py=p=>TOP+chartH*(1-(p-lo)/(hi-lo)),px=i=>TSLOT*(i+1);
@@ -12972,14 +13008,17 @@ const BTP_CE = (function(){
     }
     if(eng.overlays.vwap){ctx.strokeStyle='#e040fb';ctx.lineWidth=1.5;ctx.setLineDash([5,3]);ctx.beginPath();let sv=false;for(let i=0;i<N;i++){const y=py(ind.vwap[i]);sv?ctx.lineTo(px(i),y):(ctx.moveTo(px(i),y),sv=true);}ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#e040fb';ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText('VWAP',plotW+8,py(ind.vwap[N-1]));}
     if(eng.overlays.sar){const sr=ind.sar;for(let i=0;i<N;i++){if(sr.sar[i]==null)continue;const y=py(sr.sar[i]),x=px(i),r=BW*0.28;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=sr.bull[i]?C.bull:C.bear;ctx.fill();}}
+    // HiLo Activator — linha em escada (verde dá suporte / vermelha dá resistência), como nas plataformas premium (issue 5)
+    if(eng.overlays.hilo){const hl=ind.hilo;ctx.lineWidth=1.8;for(let i=1;i<N;i++){if(hl[i]==null||hl[i-1]==null)continue;const below=hl[i]<=c[i].c;ctx.strokeStyle=below?C.bull:C.bear;ctx.beginPath();ctx.moveTo(px(i-1),py(hl[i-1]));ctx.lineTo(px(i),py(hl[i]));ctx.stroke();}ctx.fillStyle=C.dim;ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';for(let i=N-1;i>=0;i--){if(hl[i]!=null){ctx.fillText('HiLo',plotW+8,py(hl[i]));break;}}}
+    // Máx/Mín de N períodos — canal (Donchian) (issue 7)
+    if(eng.overlays.hilon){const hh=ind.hilonHi,ll=ind.hilonLo;const dl=(arr,col)=>{ctx.strokeStyle=col;ctx.lineWidth=1.4;ctx.setLineDash([5,3]);ctx.beginPath();let s=false;for(let i=0;i<N;i++){if(arr[i]==null)continue;const x=px(i),y=py(arr[i]);s?ctx.lineTo(x,y):(ctx.moveTo(x,y),s=true);}ctx.stroke();ctx.setLineDash([]);};dl(hh,'#ff7043');dl(ll,'#26c6da');ctx.fillStyle='#ff7043';ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';if(hh[N-1]!=null)ctx.fillText('Máx N',plotW+8,py(hh[N-1]));ctx.fillStyle='#26c6da';if(ll[N-1]!=null)ctx.fillText('Mín N',plotW+8,py(ll[N-1]));}
     if(ov.zone){const yT=py(ov.zone.hi),yB=py(ov.zone.lo);ctx.fillStyle=C.zone;ctx.fillRect(0,yT,plotW,yB-yT);ctx.strokeStyle=C.zoneln;ctx.setLineDash([4,4]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,yT);ctx.lineTo(plotW,yT);ctx.stroke();ctx.beginPath();ctx.moveTo(0,yB);ctx.lineTo(plotW,yB);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.zoneln;ctx.font="bold 9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText(ov.zone.kind,6,yT-7<TOP?yT+10:yT-7);}
     c.forEach((k,i)=>{const x=px(i),up=k.c>=k.o,col=up?C.bull:C.bear;ctx.strokeStyle=col;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(x,py(k.h));ctx.lineTo(x,py(k.l));ctx.stroke();ctx.fillStyle=col;const yO=py(k.o),yC=py(k.c),top2=Math.min(yO,yC);let hgt=Math.abs(yC-yO);if(hgt<1.2)hgt=1.2;ctx.fillRect(x-BW/2,top2,BW,hgt);});
     // Marcador do ponto de cruzamento — visível já no passo Condições (antes da entrada existir)
-    if(eng.scenario==='cross_ma'&&!showEntry&&ind.sma&&ov.si!=null){
+    if((eng.scenario==='cross_ma'||eng.scenario==='ma_crossup'||eng.scenario==='ma_crossdown')&&!showEntry&&ind.sma&&ov.si!=null){
       const xC=px(ov.si),pv=(ind.sma[ov.si]!=null?ind.sma[ov.si]:c[ov.si].c),yC=py(pv),pulse=0.5+0.5*Math.sin(t/430);
       ctx.strokeStyle='rgba(245,194,75,'+(0.22+0.18*pulse)+')';ctx.setLineDash([3,4]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(xC,TOP);ctx.lineTo(xC,TOP+chartH);ctx.stroke();ctx.setLineDash([]);
       ctx.fillStyle='#F5C24B';ctx.beginPath();ctx.arc(xC,yC,3.5+1.5*pulse,0,Math.PI*2);ctx.fill();
-      ctx.font="bold 9px 'JetBrains Mono'";ctx.textAlign='center';ctx.fillStyle='#F5C24B';const _ly=yC-13<TOP?yC+18:yC-13;ctx.fillText('CRUZAMENTO',xC,_ly);
     }
     // Estrutura de swing (topo/fundo duplo, traps, pivôs, BOS, CHoCH, sweep) — §6.2
     if(scene.swings&&scene.swings.length){
@@ -13044,9 +13083,16 @@ const BTP_CE = (function(){
     footers.forEach((kind,idx)=>{
       const fy0=_H-BOT-FOOT+idx*PANEL,fy1=fy0+PANEL;ctx.strokeStyle=C.border;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,fy0);ctx.lineTo(_W,fy0);ctx.stroke();
       const ic2=eng.indCfg;
-      if(kind==='ifr')_drawIFR(ctx,fy0,fy1,px,plotW,ind.ifr,ic2);else if(kind==='macd')_drawMACD(ctx,fy0,fy1,px,plotW,ind.macd);else if(kind==='stoch')_drawStoch(ctx,fy0,fy1,px,plotW,ind.stoch,ic2);else if(kind==='cci')_drawCCI(ctx,fy0,fy1,px,plotW,ind.cci,ic2);else if(kind==='wil')_drawWil(ctx,fy0,fy1,px,plotW,ind.wil,ic2);else if(kind==='adx')_drawADX(ctx,fy0,fy1,px,plotW,ind.adx,ic2);else if(kind==='vol')_drawVol(ctx,fy0,fy1,px,plotW,ind.vol,c,BW);else if(kind==='obv')_drawOBV(ctx,fy0,fy1,px,plotW,ind.obv);
+      if(kind==='ifr')_drawIFR(ctx,fy0,fy1,px,plotW,ind.ifr,ic2);else if(kind==='macd')_drawMACD(ctx,fy0,fy1,px,plotW,ind.macd);else if(kind==='stoch')_drawStoch(ctx,fy0,fy1,px,plotW,ind.stoch,ic2);else if(kind==='cci')_drawCCI(ctx,fy0,fy1,px,plotW,ind.cci,ic2);else if(kind==='wil')_drawWil(ctx,fy0,fy1,px,plotW,ind.wil,ic2);else if(kind==='adx')_drawADX(ctx,fy0,fy1,px,plotW,ind.adx,ic2);else if(kind==='vol')_drawVol(ctx,fy0,fy1,px,plotW,ind.vol,c,BW);else if(kind==='obv')_drawOBV(ctx,fy0,fy1,px,plotW,ind.obv);else if(kind==='range')_drawRange(ctx,fy0,fy1,px,plotW,ind.range,BW,A,ic2.rngVal);
     });
     _drawLegend(ov,A,appStep);
+  }
+  function _drawRange(ctx,fy0,fy1,px,plotW,rng,BW,A,thr){
+    ctx.fillStyle=C.dim;ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText('RANGE (máx−mín)',8,fy0+13);
+    const vals=rng.filter(v=>v!=null);let mx=Math.max(1,...vals);if(thr!=null)mx=Math.max(mx,thr*1.1);
+    const base=fy1-8,h=fy1-fy0-22;
+    rng.forEach((v,i)=>{const x=px(i),bh=h*(v/mx),ok=thr!=null&&v>=thr;ctx.fillStyle=ok?'rgba(245,194,75,0.6)':'rgba(120,130,160,0.4)';ctx.fillRect(x-BW/2,base-bh,BW,bh);});
+    if(thr!=null){const y=base-h*(thr/mx);ctx.strokeStyle='rgba(245,194,75,.85)';ctx.setLineDash([5,3]);ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(plotW,y);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#F5C24B';ctx.font="bold 9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText(A.fmt?Math.round(thr):thr,plotW+8,y+3);}
   }
   function _drawVol(ctx,fy0,fy1,px,plotW,vol,c,BW){
     ctx.fillStyle=C.dim;ctx.font="9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText('VOLUME',8,fy0+13);
