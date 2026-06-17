@@ -1738,7 +1738,7 @@ db.auth.onAuthStateChange(async (event, session) => {
 });
 
 // ─── STATE ────────────────────────────────────────────────────
-const APP_VERSION = '2.4.7'; // Versão do produto — atualizar a cada release
+const APP_VERSION = '2.4.8'; // Versão do produto — atualizar a cada release
 
 // ─── THEME ───────────────────────────────────────────────────
 function setAppTheme(t){
@@ -12620,14 +12620,14 @@ const BTP_CE = (function(){
     const atrOf=(n=14)=>{const s=cs.slice(-n);return s.reduce((a,x)=>a+(x.h-x.l),0)/Math.max(1,s.length);};
     let zone=null,signalIndex,patternCandles,patternLabel,swings=[],impulseLeg=null;const N=46;
     if(name==='cross_ma'){
-      // Cruzamento de médias: golden cross (long) = vale→subida; death cross (short) = topo→queda.
-      // O ponto exato de cruzamento é alinhado ao sinal em _recompute (depois de calcular as médias).
+      // Cruzamento de médias: golden cross (long) = tendência de baixa→reversão de alta; death cross (short) = inverso.
+      // Candles orgânicos (mesma estética dos demais cenários). O cruzamento exato é alinhado ao sinal em _recompute.
       const up=(long!==false);
       price=up?A.ref+R*5:A.ref-R*5;
-      const mid=Math.round(N*0.5);
-      walkTo(up?A.ref-R*5:A.ref+R*5, mid, 0.5);      // 1ª metade na direção contrária
-      walkTo(up?A.ref+R*6:A.ref-R*6, N-mid-1, 0.55); // 2ª metade reverte → cruzamento
-      signalIndex=cs.length-1;patternCandles=[signalIndex];patternLabel=up?'Cruzamento de Médias':'Cruzamento de Médias';
+      const half=Math.round(N*0.48);
+      for(let i=0;i<half;i++)organic(up?-0.42:0.42,0.7);   // 1ª metade: tendência contrária
+      for(let i=0;i<N-half;i++)organic(up?0.5:-0.5,0.7);    // 2ª metade: reverte → cruzamento
+      signalIndex=cs.length-1;patternCandles=[signalIndex];patternLabel='Cruzamento de Médias';
     }else if(name==='rompimento'||!name){
       price=A.ref;for(let i=0;i<N-1;i++)organic((rng()-0.5)*0.3,0.5);
       const atr=atrOf(),top=Math.max(...cs.slice(-8).map(c=>c.h));let o=cs[cs.length-1].c,c=Math.max(o,top)+0.40*atr;
@@ -12974,6 +12974,13 @@ const BTP_CE = (function(){
     if(eng.overlays.sar){const sr=ind.sar;for(let i=0;i<N;i++){if(sr.sar[i]==null)continue;const y=py(sr.sar[i]),x=px(i),r=BW*0.28;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=sr.bull[i]?C.bull:C.bear;ctx.fill();}}
     if(ov.zone){const yT=py(ov.zone.hi),yB=py(ov.zone.lo);ctx.fillStyle=C.zone;ctx.fillRect(0,yT,plotW,yB-yT);ctx.strokeStyle=C.zoneln;ctx.setLineDash([4,4]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,yT);ctx.lineTo(plotW,yT);ctx.stroke();ctx.beginPath();ctx.moveTo(0,yB);ctx.lineTo(plotW,yB);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.zoneln;ctx.font="bold 9px 'JetBrains Mono'";ctx.textAlign='left';ctx.fillText(ov.zone.kind,6,yT-7<TOP?yT+10:yT-7);}
     c.forEach((k,i)=>{const x=px(i),up=k.c>=k.o,col=up?C.bull:C.bear;ctx.strokeStyle=col;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(x,py(k.h));ctx.lineTo(x,py(k.l));ctx.stroke();ctx.fillStyle=col;const yO=py(k.o),yC=py(k.c),top2=Math.min(yO,yC);let hgt=Math.abs(yC-yO);if(hgt<1.2)hgt=1.2;ctx.fillRect(x-BW/2,top2,BW,hgt);});
+    // Marcador do ponto de cruzamento — visível já no passo Condições (antes da entrada existir)
+    if(eng.scenario==='cross_ma'&&!showEntry&&ind.sma&&ov.si!=null){
+      const xC=px(ov.si),pv=(ind.sma[ov.si]!=null?ind.sma[ov.si]:c[ov.si].c),yC=py(pv),pulse=0.5+0.5*Math.sin(t/430);
+      ctx.strokeStyle='rgba(245,194,75,'+(0.22+0.18*pulse)+')';ctx.setLineDash([3,4]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(xC,TOP);ctx.lineTo(xC,TOP+chartH);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle='#F5C24B';ctx.beginPath();ctx.arc(xC,yC,3.5+1.5*pulse,0,Math.PI*2);ctx.fill();
+      ctx.font="bold 9px 'JetBrains Mono'";ctx.textAlign='center';ctx.fillStyle='#F5C24B';const _ly=yC-13<TOP?yC+18:yC-13;ctx.fillText('CRUZAMENTO',xC,_ly);
+    }
     // Estrutura de swing (topo/fundo duplo, traps, pivôs, BOS, CHoCH, sweep) — §6.2
     if(scene.swings&&scene.swings.length){
       ctx.save();ctx.textBaseline='middle';
