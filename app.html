@@ -1738,7 +1738,7 @@ db.auth.onAuthStateChange(async (event, session) => {
 });
 
 // ─── STATE ────────────────────────────────────────────────────
-const APP_VERSION = '2.4.6'; // Versão do produto — atualizar a cada release
+const APP_VERSION = '2.4.7'; // Versão do produto — atualizar a cada release
 
 // ─── THEME ───────────────────────────────────────────────────
 function setAppTheme(t){
@@ -12567,6 +12567,7 @@ const BTP_CE = (function(){
   function _pickScenario(conds){
     for(const c of(conds||[])){
       const cd=((c.params&&c.params.cond)||'').toLowerCase();
+      if((c.id==='sma'||c.id==='ema')&&isMACrossover(c.params&&c.params.cond))return 'cross_ma';
       if(c.id==='fvg')return 'fvg';
       if(c.id==='fib')return 'fib';
       if(c.id==='gap')return 'gap';
@@ -12610,7 +12611,7 @@ const BTP_CE = (function(){
   function _pickPanels(conds){const p={ifr:false,macd:false,stoch:false,cci:false,wil:false,adx:false,vol:false,obv:false};for(const c of(conds||[])){if(c.id==='rsi')p.ifr=true;if(c.id==='macd')p.macd=true;if(c.id==='stoch')p.stoch=true;if(c.id==='cci')p.cci=true;if(c.id==='williams')p.wil=true;if(c.id==='adx')p.adx=true;if(c.id==='volume')p.vol=true;if(c.id==='obv')p.obv=true;}return p;}
   function _pickOverlays(conds){const o={bb:false,sma:false,vwap:false,sar:false};for(const c of(conds||[])){if(c.id==='bb')o.bb=true;if(c.id==='sma'||c.id==='ema')o.sma=true;if(c.id==='vwap')o.vwap=true;if(c.id==='sar'||c.id==='hilo')o.sar=true;}return o;}
   function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
-  function buildScene(name,A,seed){
+  function buildScene(name,A,seed,long){
     const rng=mulberry32(seed),q=p=>Math.round(p/A.tick)*A.tick,R=A.range;let price=A.ref;const cs=[];
     const push=(o,h,l,c)=>{cs.push({o:q(o),h:q(h),l:q(l),c:q(c)});return cs[cs.length-1];};
     function organic(drift,vol){const o=price,body=(rng()-0.5+drift)*R*vol;let c=o+body;const up=rng()*R*0.42*vol,dn=rng()*R*0.42*vol;const h=Math.max(o,c)+up,l=Math.min(o,c)-dn;price=c;return push(o,h,l,c);}
@@ -12618,7 +12619,16 @@ const BTP_CE = (function(){
     function walkTo(target,bars,vol){vol=vol||0.5;const start=price;for(let b=0;b<bars;b++){const o=price,frac=(b+1)/bars;let c=start+(target-start)*frac+(rng()-0.5)*R*vol*0.5;const up=rng()*R*0.26*vol,dn=rng()*R*0.26*vol;push(o,Math.max(o,c)+up,Math.min(o,c)-dn,c);price=c;}}
     const atrOf=(n=14)=>{const s=cs.slice(-n);return s.reduce((a,x)=>a+(x.h-x.l),0)/Math.max(1,s.length);};
     let zone=null,signalIndex,patternCandles,patternLabel,swings=[],impulseLeg=null;const N=46;
-    if(name==='rompimento'||!name){
+    if(name==='cross_ma'){
+      // Cruzamento de médias: golden cross (long) = vale→subida; death cross (short) = topo→queda.
+      // O ponto exato de cruzamento é alinhado ao sinal em _recompute (depois de calcular as médias).
+      const up=(long!==false);
+      price=up?A.ref+R*5:A.ref-R*5;
+      const mid=Math.round(N*0.5);
+      walkTo(up?A.ref-R*5:A.ref+R*5, mid, 0.5);      // 1ª metade na direção contrária
+      walkTo(up?A.ref+R*6:A.ref-R*6, N-mid-1, 0.55); // 2ª metade reverte → cruzamento
+      signalIndex=cs.length-1;patternCandles=[signalIndex];patternLabel=up?'Cruzamento de Médias':'Cruzamento de Médias';
+    }else if(name==='rompimento'||!name){
       price=A.ref;for(let i=0;i<N-1;i++)organic((rng()-0.5)*0.3,0.5);
       const atr=atrOf(),top=Math.max(...cs.slice(-8).map(c=>c.h));let o=cs[cs.length-1].c,c=Math.max(o,top)+0.40*atr;
       if(c-o>1.6*atr)o=c-1.2*atr;push(o,c+0.15*atr,o-0.25*atr,c);price=c;
@@ -12882,20 +12892,27 @@ const BTP_CE = (function(){
   }
   function _recompute(){
     const eng=_buildEng();if(!eng)return;
-    const A=eng.A,scene=buildScene(eng.scenario,A,eng.seed),ov=computeOverlays(scene,A,eng);
+    const A=eng.A,scene=buildScene(eng.scenario,A,eng.seed,eng.long);
     // Warmup à esquerda (fora da área visível) p/ que Bollinger/SMA preencham o gráfico inteiro — não altera candles visíveis nem o cfg
-    const _W=26,_q=p=>Math.round(p/A.tick)*A.tick,_wr=mulberry32((eng.seed^0x9e37)>>>0);
+    const _W=30,_q=p=>Math.round(p/A.tick)*A.tick,_wr=mulberry32((eng.seed^0x9e37)>>>0);
     const _warm=[];let _wc=scene.candles[0].o;
     for(let i=0;i<_W;i++){const o=_wc+(_wr()-0.5)*A.range*0.6,h=Math.max(o,_wc)+_wr()*A.range*0.22,l=Math.min(o,_wc)-_wr()*A.range*0.22;_warm.unshift({o:_q(o),h:_q(h),l:_q(l),c:_q(_wc)});_wc=o;}
     const _all=_warm.concat(scene.candles),ecl=_all.map(k=>k.c),ehi=_all.map(k=>k.h),elo=_all.map(k=>k.l),_sl=a=>a.slice(_W);
-    // Períodos reais das condições (issue 3) — o gráfico reflete o que o usuário configurou
-    const ic=eng.indCfg,_cl=(v,mn,mx)=>Math.max(mn,Math.min(mx,v||mn));
-    const _bb=bollinger(ecl,_cl(ic.bbPer,2,200),ic.bbDev||2),_mc=macdCalc(ecl),_st=stochCalc(ecl,ehi,elo,_cl(ic.stochPer,2,200)),_sr=sarCalc(ehi,elo);
+    // Período REAL vai no payload; período de EXIBIÇÃO é clampado p/ a média/indicador caber na cena ilustrativa e SEMPRE aparecer (issue 1)
+    const ic=eng.indCfg,_disp=v=>Math.max(2,Math.min(v||2,28));
+    const _bb=bollinger(ecl,_disp(ic.bbPer),ic.bbDev||2),_mc=macdCalc(ecl),_st=stochCalc(ecl,ehi,elo,_disp(ic.stochPer)),_sr=sarCalc(ehi,elo);
     // Volume sintético determinístico + OBV (painéis de rodapé, §10)
     const _vr=mulberry32((eng.seed^0x5151)>>>0);
     const vol=scene.candles.map(k=>(Math.abs(k.c-k.o)+(k.h-k.l)*0.4)*(0.6+_vr()*0.9)+A.range*0.18);
     let _ob=0;const obv=scene.candles.map((k,i)=>{if(i>0)_ob+=(k.c>=scene.candles[i-1].c?1:-1)*vol[i];return _ob;});
-    const ind={bb:{mid:_sl(_bb.mid),up:_sl(_bb.up),lo:_sl(_bb.lo)},sma:_sl(smaArr(ecl,_cl(ic.smaPer,2,200))),sma2:ic.smaPer2?_sl(smaArr(ecl,_cl(ic.smaPer2,2,200))):null,macd:{line:_sl(_mc.line),sig:_sl(_mc.sig),hist:_sl(_mc.hist)},ifr:_sl(rsiCalc(ecl,_cl(ic.rsiPer,2,200))),stoch:{k:_sl(_st.k),d:_sl(_st.d)},cci:_sl(cciCalc(ecl,ehi,elo,_cl(ic.cciPer,2,200))),wil:_sl(williamsCalc(ecl,ehi,elo,_cl(ic.wilPer,2,200))),adx:_sl(adxCalc(ehi,elo,ecl,_cl(ic.adxPer,2,200))),vwap:_sl(vwapCalc(ecl,ehi,elo)),sar:{sar:_sl(_sr.sar),bull:_sl(_sr.bull)},vol,obv};
+    const ind={bb:{mid:_sl(_bb.mid),up:_sl(_bb.up),lo:_sl(_bb.lo)},sma:_sl(smaArr(ecl,_disp(ic.smaPer))),sma2:ic.smaPer2?_sl(smaArr(ecl,_disp(ic.smaPer2))):null,macd:{line:_sl(_mc.line),sig:_sl(_mc.sig),hist:_sl(_mc.hist)},ifr:_sl(rsiCalc(ecl,_disp(ic.rsiPer))),stoch:{k:_sl(_st.k),d:_sl(_st.d)},cci:_sl(cciCalc(ecl,ehi,elo,_disp(ic.cciPer))),wil:_sl(williamsCalc(ecl,ehi,elo,_disp(ic.wilPer))),adx:_sl(adxCalc(ehi,elo,ecl,_disp(ic.adxPer))),vwap:_sl(vwapCalc(ecl,ehi,elo)),sar:{sar:_sl(_sr.sar),bull:_sl(_sr.bull)},vol,obv};
+    // Cruzamento de médias: alinhar o candle de SINAL ao ponto EXATO de cruzamento (issue 2b — entrada coincide com o cruzamento)
+    if(eng.scenario==='cross_ma'&&ind.sma&&ind.sma2){
+      let cx=null;
+      for(let i=1;i<ind.sma.length;i++){const a0=ind.sma[i-1],b0=ind.sma2[i-1],a1=ind.sma[i],b1=ind.sma2[i];if(a0==null||b0==null||a1==null||b1==null)continue;const d0=a0-b0,d1=a1-b1;if((d0<=0&&d1>0)||(d0>=0&&d1<0))cx=i;}
+      if(cx!=null)scene.signalIndex=Math.min(cx,scene.candles.length-1);
+    }
+    const ov=computeOverlays(scene,A,eng);
     const proj=projectTrade(scene,ov,A,10),stops=trailStops(proj,ov,eng.trailType);
     _cur={A,scene,ov,ind,proj,stops,eng};
     const ll=document.getElementById('btp-livelabel');
@@ -12917,6 +12934,7 @@ const BTP_CE = (function(){
     if(appStep===4&&eng.partial&&ov.partial!=null){lo=Math.min(lo,ov.partial);hi=Math.max(hi,ov.partial);}
     if(ov.zone){lo=Math.min(lo,ov.zone.lo);hi=Math.max(hi,ov.zone.hi);}
     if(eng.overlays.bb){ind.bb.up.forEach(v=>v!=null&&(hi=Math.max(hi,v)));ind.bb.lo.forEach(v=>v!=null&&(lo=Math.min(lo,v)));}
+    if(eng.overlays.sma){ind.sma.forEach(v=>v!=null&&(hi=Math.max(hi,v),lo=Math.min(lo,v)));if(ind.sma2)ind.sma2.forEach(v=>v!=null&&(hi=Math.max(hi,v),lo=Math.min(lo,v)));}
     if(eng.overlays.sar){ind.sar.sar.forEach(v=>v!=null&&(hi=Math.max(hi,v),lo=Math.min(lo,v)));}
     if(trailing){proj.forEach(k=>{hi=Math.max(hi,k.h);lo=Math.min(lo,k.l);});stops.forEach(s=>hi=Math.max(hi,s)||lo<s||(lo=Math.min(lo,s)));}
     const pad=Math.max(_candleSpan*0.12,A.tick*4);lo-=pad;hi+=pad;
@@ -13012,7 +13030,8 @@ const BTP_CE = (function(){
     const an=eng.pk==='ACAO'?state.cfg.asset:(eng.pk==='WDO'?'WDO':'WIN')+'FUT';
     ctx.fillText(an,16,22);let hx=16+ctx.measureText(an).width+10;
     ctx.fillStyle=C.dim;ctx.font="11px 'JetBrains Mono'";const tfD=(state.cfg.tf||'5m').toUpperCase();ctx.fillText(tfD,hx,22);hx+=ctx.measureText(tfD).width+12;
-    const tags=[];const _ic=eng.indCfg;if(eng.overlays.bb)tags.push(['BB('+_ic.bbPer+','+_ic.bbDev+')','#29b6f6']);if(eng.overlays.sma)tags.push([(_ic.smaPer2?('MM '+_ic.smaPer+'×'+_ic.smaPer2):('MM('+_ic.smaPer+')')),'#ffc107']);
+    const tags=[];const _ic=eng.indCfg;if(eng.overlays.bb)tags.push(['BB('+_ic.bbPer+','+_ic.bbDev+')','#29b6f6']);
+    if(eng.overlays.sma){if(_ic.smaPer2){tags.push(['curta '+_ic.smaPer,'#ffc107']);tags.push(['longa '+_ic.smaPer2,'#c2c2d6']);}else{tags.push(['MM('+_ic.smaPer+')','#ffc107']);}}
     tags.forEach(([tx,col])=>{ctx.fillStyle=col;ctx.font="10px 'JetBrains Mono'";ctx.fillText('· '+tx,hx,22);hx+=ctx.measureText('· '+tx).width+8;});
     const lastC=c[c.length-1];ctx.fillStyle=lastC.c>=lastC.o?C.bull:C.bear;ctx.font="bold 13px 'JetBrains Mono'";ctx.textAlign='right';ctx.fillText(A.fmt(lastC.c),plotW,22);
     footers.forEach((kind,idx)=>{
